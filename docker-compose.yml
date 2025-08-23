@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: tenantly-postgres
+    environment:
+      POSTGRES_DB: tenantly
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - tenantly-network
+
+  # Go API Service
+  api:
+    build:
+      context: ./backend/api
+      dockerfile: Dockerfile
+    container_name: tenantly-api
+    environment:
+      DATABASE_URL: postgres://postgres:password@postgres:5432/tenantly?sslmode=disable
+      JWT_SECRET: your-secret-key-change-in-production
+      JWT_EXPIRATION: 8h
+      ENVIRONMENT: development
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - tenantly-network
+    volumes:
+      - ./backend/api/migrations:/app/migrations
+
+  # Angular Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tenantly-frontend
+    ports:
+      - "4200:80"
+    depends_on:
+      - api
+    networks:
+      - tenantly-network
+    volumes:
+      - ./backend/api/migrations:/app/migrations
+
+  # C# Notification Service
+  notification-service:
+    build:
+      context: ./backend/notification-service
+      dockerfile: Dockerfile
+    container_name: tenantly-notification-service
+    environment:
+      Database__ConnectionString: Host=postgres;Database=tenantly;Username=postgres;Password=password
+      Notifications__ProcessingIntervalSeconds: 30
+    depends_on:
+      - postgres
+    networks:
+      - tenantly-network
+    volumes:
+      - ./notification-logs:/app/logs
+
+volumes:
+  postgres_data:
+  notification-logs:
+
+networks:
+  tenantly-network:
+    driver: bridge

@@ -1,0 +1,47 @@
+package main
+
+import (
+	"log"
+	"os"
+
+	"github.com/ysnarafat/tenantly/internal/config"
+	"github.com/ysnarafat/tenantly/internal/database"
+	"github.com/ysnarafat/tenantly/internal/server"
+
+	"github.com/joho/godotenv"
+)
+
+func main() {
+	// Load environment variables
+	if err := godotenv.Load(); err != nil {
+		log.Println("No .env file found, using system environment variables")
+	}
+
+	// Load configuration
+	cfg := config.Load()
+
+	// Initialize database
+	db, err := database.Connect(cfg.DatabaseURL)
+	if err != nil {
+		log.Fatal("Failed to connect to database:", err)
+	}
+	defer db.Close()
+
+	// Run migrations
+	if err := database.RunMigrations(cfg.DatabaseURL); err != nil {
+		log.Fatal("Failed to run migrations:", err)
+	}
+
+	// Initialize and start server
+	srv := server.New(cfg, db)
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Printf("Starting Tenantly API server on port %s", port)
+	if err := srv.Start(":" + port); err != nil {
+		log.Fatal("Failed to start server:", err)
+	}
+}

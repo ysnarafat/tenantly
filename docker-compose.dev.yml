@@ -1,0 +1,11 @@
+version: "3.9"
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "4200:4200"
+    volumes:
+      - ./frontend:/app           # Mount source for hot reload
+      - /app/node_modules         # Avoid overwriting node_modules

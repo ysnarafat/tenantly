@@ -1,0 +1,18 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install Angular CLI globally
+RUN npm install -g @angular/cli
+
+# Copy only package.json first (cache layer)
+COPY package*.json ./
+RUN npm install
+
+# Copy all sources
+COPY . .
+
+EXPOSE 4200
+
+# Run Angular dev server with polling (for Docker FS notifications)
+CMD ["ng", "serve", "--host", "0.0.0.0", "--poll", "2000"]
