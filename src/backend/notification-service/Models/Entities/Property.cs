@@ -1,10 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using TenantlyNotificationService.Models.Interfaces;
 
 namespace TenantlyNotificationService.Models.Entities;
 
 [Table("properties")]
-public class Property
+public class Property : IAuditableEntity
 {
     [Key]
     [Column("id")]
@@ -48,4 +49,5 @@ public class Property
 
     // Navigation properties
     public virtual ICollection<Shop> Shops { get; set; } = new List<Shop>();
+    public virtual ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
 }

@@ -18,7 +18,11 @@ func main() {
 	}
 
 	// Load configuration
-	cfg := config.Load()
+	cfg, err := config.Load()
+
+	if err != nil {
+		log.Fatal("Failed to load configs:", err)
+	}
 
 	// Initialize database
 	db, err := database.Connect(cfg.DatabaseURL)
@@ -29,7 +33,7 @@ func main() {
 
 	// Run migrations
 	if err := database.RunMigrations(cfg.DatabaseURL); err != nil {
-		log.Fatal("Failed to run migrations:", err)
+		log.Fatal("Failed to run migrations: ", err)
 	}
 
 	// Initialize and start server

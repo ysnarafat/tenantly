@@ -1,6 +1,7 @@
 using TenantlyNotificationService.Services;
 using TenantlyNotificationService.Configuration;
 using TenantlyNotificationService.Data;
+using TenantlyNotificationService.Data.Interceptors;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -18,8 +19,12 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? builder.Configuration.GetSection("Database:ConnectionString").Value
     ?? throw new InvalidOperationException("Connection string not found.");
 
-builder.Services.AddDbContext<TenantlyDbContext>(options =>
-    options.UseNpgsql(connectionString));
+// Register the interceptor as a service
+builder.Services.AddScoped<AuditInterceptor>();
+
+builder.Services.AddDbContext<TenantlyDbContext>((serviceProvider, options) =>
+    options.UseNpgsql(connectionString)
+           .AddInterceptors(serviceProvider.GetRequiredService<AuditInterceptor>()));
 
 // Add configuration
 builder.Services.Configure<NotificationSettings>(
@@ -42,9 +47,6 @@ var host = builder.Build();
 try
 {
     Log.Information("Starting Tenantly Notification Service");
-    
-    // Ensure database is up to date
-    await TenantlyNotificationService.Data.DatabaseMigrationService.EnsureDatabaseUpdatedAsync(host.Services);
     
     await host.RunAsync();
 }

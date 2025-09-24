@@ -1,11 +1,12 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using TenantlyNotificationService.Models.Entities;
+using TenantlyNotificationService.Models.Interfaces;
 
 namespace TenantlyNotificationService.Models;
 
 [Table("notification_queue")]
-public class NotificationQueue
+public class NotificationQueue : IAuditableEntity
 {
     [Key]
     [Column("id")]

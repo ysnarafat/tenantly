@@ -126,4 +126,14 @@ func (a *AuditService) GetAuditLogsByRecord(tableName string, recordID int) ([]m
 			&log.CreatedAt,
 		)
 		if err != nil {
-			return nil, fmt.Err
+			return nil, fmt.Errorf("failed to scan audit log row: %w", err)
+		}
+		logs = append(logs, log)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating audit log rows: %w", err)
+	}
+
+	return logs, nil
+}
