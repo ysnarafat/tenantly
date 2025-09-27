@@ -1,0 +1,112 @@
+package repositories
+
+import (
+	"database/sql"
+	"fmt"
+
+	"github.com/ysnarafat/tenantly/internal/models"
+)
+
+type UserRepository struct {
+	db *sql.DB
+}
+
+func NewUserRepository(db *sql.DB) *UserRepository {
+	return &UserRepository{db: db}
+}
+
+func (r *UserRepository) Create(user *models.User) error {
+	query := `
+		INSERT INTO users (username, email, password_hash, role, active)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, created_at, updated_at`
+
+	return r.db.QueryRow(query, user.Username, user.Email, user.PasswordHash, user.Role, user.Active).
+		Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
+}
+
+func (r *UserRepository) GetByID(id int) (*models.User, error) {
+	user := &models.User{}
+	query := `
+		SELECT id, username, email, password_hash, role, active, created_at, updated_at
+		FROM users WHERE id = $1 AND active = true`
+
+	err := r.db.QueryRow(query, id).Scan(
+		&user.ID, &user.Username, &user.Email, &user.PasswordHash,
+		&user.Role, &user.Active, &user.CreatedAt, &user.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (r *UserRepository) GetByUsername(username string) (*models.User, error) {
+	user := &models.User{}
+	query := `
+		SELECT id, username, email, password_hash, role, active, created_at, updated_at
+		FROM users WHERE username = $1 AND active = true`
+
+	err := r.db.QueryRow(query, username).Scan(
+		&user.ID, &user.Username, &user.Email, &user.PasswordHash,
+		&user.Role, &user.Active, &user.CreatedAt, &user.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (r *UserRepository) GetAll() ([]*models.User, error) {
+	query := `
+		SELECT id, username, email, password_hash, role, active, created_at, updated_at
+		FROM users WHERE active = true ORDER BY created_at DESC`
+
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*models.User
+	for rows.Next() {
+		user := &models.User{}
+		err := rows.Scan(
+			&user.ID, &user.Username, &user.Email, &user.PasswordHash,
+			&user.Role, &user.Active, &user.CreatedAt, &user.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	return users, nil
+}
+
+func (r *UserRepository) Update(id int, updates map[string]interface{}) error {
+	if len(updates) == 0 {
+		return fmt.Errorf("no fields to update")
+	}
+
+	query := "UPDATE users SET updated_at = NOW()"
+	args := []interface{}{}
+	argIndex := 1
+
+	for field, value := range updates {
+		query += fmt.Sprintf(", %s = $%d", field, argIndex)
+		args = append(args, value)
+		argIndex++
+	}
+
+	query += fmt.Sprintf(" WHERE id = $%d", argIndex)
+	args = append(args, id)
+
+	_, err := r.db.Exec(query, args...)
+	return err
+}
+
+func (r *UserRepository) Delete(id int) error {
+	query := "UPDATE users SET active = false, updated_at = NOW() WHERE id = $1"
+	_, err := r.db.Exec(query, id)
+	return err
+}
