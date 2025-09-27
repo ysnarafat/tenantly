@@ -20,17 +20,130 @@ func NewUserHandler(userService *services.UserService) *UserHandler {
 func (h *UserHandler) Login(c *gin.Context) {
 	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid request format",
+			"code":    "INVALID_REQUEST",
+			"details": err.Error(),
+		})
 		return
 	}
 
-	response, err := h.userService.Login(&req)
+	clientIP := c.ClientIP()
+	userAgent := c.GetHeader("User-Agent")
+
+	response, err := h.userService.Login(&req, clientIP, userAgent)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": err.Error(),
+			"code":  "LOGIN_FAILED",
+		})
 		return
 	}
 
 	c.JSON(http.StatusOK, response)
+}
+
+func (h *UserHandler) RefreshToken(c *gin.Context) {
+	var req models.RefreshTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request format",
+			"code":  "INVALID_REQUEST",
+		})
+		return
+	}
+
+	response, err := h.userService.RefreshToken(req.RefreshToken)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": err.Error(),
+			"code":  "TOKEN_REFRESH_FAILED",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *UserHandler) Logout(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "User not authenticated",
+			"code":  "NOT_AUTHENTICATED",
+		})
+		return
+	}
+
+	clientIP := c.ClientIP()
+	userAgent := c.GetHeader("User-Agent")
+
+	if err := h.userService.Logout(userID.(int), clientIP, userAgent); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to logout",
+			"code":  "LOGOUT_FAILED",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Successfully logged out",
+	})
+}
+
+func (h *UserHandler) ChangePassword(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "User not authenticated",
+			"code":  "NOT_AUTHENTICATED",
+		})
+		return
+	}
+
+	var req models.ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request format",
+			"code":  "INVALID_REQUEST",
+		})
+		return
+	}
+
+	if err := h.userService.ChangePassword(userID.(int), req.CurrentPassword, req.NewPassword); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+			"code":  "PASSWORD_CHANGE_FAILED",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Password changed successfully",
+	})
+}
+
+func (h *UserHandler) ResetPassword(c *gin.Context) {
+	var req models.ResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request format",
+			"code":  "INVALID_REQUEST",
+		})
+		return
+	}
+
+	if err := h.userService.ResetPassword(req.Email); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to process password reset",
+			"code":  "PASSWORD_RESET_FAILED",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "If the email exists, a password reset link has been sent",
+	})
 }
 
 func (h *UserHandler) CreateUser(c *gin.Context) {

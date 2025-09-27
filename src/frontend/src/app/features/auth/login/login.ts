@@ -40,19 +40,25 @@ export class Login {
 
   onSubmit() {
     if (this.loginForm.valid) {
-      // Placeholder implementation - will be completed in later tasks
-      this.snackBar.open('Login functionality will be implemented in later tasks', 'Close', {
-        duration: 3000,
-      });
-
       const loginRequest: LoginRequest = {
         username: this.loginForm.value.username,
         password: this.loginForm.value.password,
       };
 
-      if (this.authService.login(loginRequest)) {
-        this.router.navigate(['/dashboard']);
-      }
+      this.authService.login(loginRequest).subscribe({
+        next: (response) => {
+          this.snackBar.open('Login successful!', 'Close', { duration: 3000 });
+          this.router.navigate(['/dashboard']);
+        },
+        error: (error) => {
+          console.error('Login error:', error);
+          this.snackBar.open(
+            error.error?.error || 'Login failed. Please check your credentials.',
+            'Close',
+            { duration: 5000 }
+          );
+        },
+      });
     }
   }
 }

@@ -1,44 +1,251 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/ysnarafat/tenantly/internal/database"
+	"github.com/ysnarafat/tenantly/internal/models"
 )
 
-func AuthRequired(jwtSecret string) gin.HandlerFunc {
+// Role constants for authorization
+const (
+	RoleAdmin           = "Admin"
+	RolePropertyManager = "PropertyManager"
+	RoleAccountant      = "Accountant"
+)
+
+// AuthMiddleware handles JWT authentication and sets user context
+func AuthRequired(jwtSecret string, auditService *database.AuditService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Authorization header required",
+				"code":  "AUTH_HEADER_MISSING",
+			})
 			c.Abort()
 			return
 		}
 
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 		if tokenString == authHeader {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Bearer token required"})
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Bearer token required",
+				"code":  "INVALID_TOKEN_FORMAT",
+			})
 			c.Abort()
 			return
 		}
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			// Validate signing method
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
 			return []byte(jwtSecret), nil
 		})
 
-		if err != nil || !token.Valid {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+		if err != nil {
+			// Log failed authentication attempt
+			if auditService != nil {
+				auditService.LogSystemAction(
+					models.AuditActionLogin,
+					models.TableUsers,
+					nil,
+					nil,
+					map[string]interface{}{
+						"error":      "invalid_token",
+						"ip_address": c.ClientIP(),
+						"user_agent": c.GetHeader("User-Agent"),
+						"timestamp":  time.Now(),
+					},
+				)
+			}
+
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid or expired token",
+				"code":  "TOKEN_INVALID",
+			})
 			c.Abort()
 			return
 		}
 
-		if claims, ok := token.Claims.(jwt.MapClaims); ok {
-			c.Set("user_id", claims["user_id"])
-			c.Set("role", claims["role"])
+		if !token.Valid {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Token is not valid",
+				"code":  "TOKEN_INVALID",
+			})
+			c.Abort()
+			return
+		}
+
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid token claims",
+				"code":  "INVALID_CLAIMS",
+			})
+			c.Abort()
+			return
+		}
+
+		// Extract and validate claims
+		userID, ok := claims["user_id"].(float64)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid user ID in token",
+				"code":  "INVALID_USER_ID",
+			})
+			c.Abort()
+			return
+		}
+
+		role, ok := claims["role"].(string)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid role in token",
+				"code":  "INVALID_ROLE",
+			})
+			c.Abort()
+			return
+		}
+
+		username, _ := claims["username"].(string)
+
+		// Set user context
+		c.Set("user_id", int(userID))
+		c.Set("role", role)
+		c.Set("username", username)
+
+		// Log successful authentication
+		if auditService != nil {
+			auditService.LogUserAction(
+				int(userID),
+				"ACCESS",
+				models.TableUsers,
+				nil,
+				nil,
+				map[string]interface{}{
+					"endpoint":   c.Request.URL.Path,
+					"method":     c.Request.Method,
+					"ip_address": c.ClientIP(),
+					"user_agent": c.GetHeader("User-Agent"),
+					"timestamp":  time.Now(),
+				},
+			)
 		}
 
 		c.Next()
 	}
+}
+
+// RequireRole creates middleware that requires specific roles
+func RequireRole(roles ...string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userRole, exists := c.Get("role")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "User role not found in context",
+				"code":  "ROLE_NOT_FOUND",
+			})
+			c.Abort()
+			return
+		}
+
+		role, ok := userRole.(string)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Invalid role type",
+				"code":  "INVALID_ROLE_TYPE",
+			})
+			c.Abort()
+			return
+		}
+
+		// Check if user has required role
+		for _, requiredRole := range roles {
+			if role == requiredRole {
+				c.Next()
+				return
+			}
+		}
+
+		// Log unauthorized access attempt
+		userID, _ := c.Get("user_id")
+		if _, ok := userID.(int); ok {
+			// Note: We'd need to pass auditService here, but for now we'll skip logging
+			// This could be improved by using dependency injection or context
+		}
+
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": fmt.Sprintf("Access denied. Required roles: %v, user role: %s", roles, role),
+			"code":  "INSUFFICIENT_PERMISSIONS",
+		})
+		c.Abort()
+	}
+}
+
+// RequireAdmin middleware for admin-only endpoints
+func RequireAdmin() gin.HandlerFunc {
+	return RequireRole(RoleAdmin)
+}
+
+// RequireAdminOrPropertyManager middleware for admin or property manager endpoints
+func RequireAdminOrPropertyManager() gin.HandlerFunc {
+	return RequireRole(RoleAdmin, RolePropertyManager)
+}
+
+// RequireAnyRole middleware that allows any authenticated user
+func RequireAnyRole() gin.HandlerFunc {
+	return RequireRole(RoleAdmin, RolePropertyManager, RoleAccountant)
+}
+
+// GetUserID helper function to extract user ID from context
+func GetUserID(c *gin.Context) (int, error) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		return 0, fmt.Errorf("user ID not found in context")
+	}
+
+	id, ok := userID.(int)
+	if !ok {
+		return 0, fmt.Errorf("invalid user ID type")
+	}
+
+	return id, nil
+}
+
+// GetUserRole helper function to extract user role from context
+func GetUserRole(c *gin.Context) (string, error) {
+	role, exists := c.Get("role")
+	if !exists {
+		return "", fmt.Errorf("user role not found in context")
+	}
+
+	roleStr, ok := role.(string)
+	if !ok {
+		return "", fmt.Errorf("invalid role type")
+	}
+
+	return roleStr, nil
+}
+
+// GetUsername helper function to extract username from context
+func GetUsername(c *gin.Context) (string, error) {
+	username, exists := c.Get("username")
+	if !exists {
+		return "", fmt.Errorf("username not found in context")
+	}
+
+	usernameStr, ok := username.(string)
+	if !ok {
+		return "", fmt.Errorf("invalid username type")
+	}
+
+	return usernameStr, nil
 }

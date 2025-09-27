@@ -45,9 +45,25 @@ func (r *UserRepository) GetByUsername(username string) (*models.User, error) {
 	user := &models.User{}
 	query := `
 		SELECT id, username, email, password_hash, role, active, created_at, updated_at
-		FROM users WHERE username = $1 AND active = true`
+		FROM users WHERE username = $1`
 
 	err := r.db.QueryRow(query, username).Scan(
+		&user.ID, &user.Username, &user.Email, &user.PasswordHash,
+		&user.Role, &user.Active, &user.CreatedAt, &user.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (r *UserRepository) GetByEmail(email string) (*models.User, error) {
+	user := &models.User{}
+	query := `
+		SELECT id, username, email, password_hash, role, active, created_at, updated_at
+		FROM users WHERE email = $1`
+
+	err := r.db.QueryRow(query, email).Scan(
 		&user.ID, &user.Username, &user.Email, &user.PasswordHash,
 		&user.Role, &user.Active, &user.CreatedAt, &user.UpdatedAt,
 	)

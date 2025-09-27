@@ -45,6 +45,16 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
+    path: 'leases',
+    loadComponent: () => import('./features/leases/lease-list/lease-list').then((m) => m.LeaseList),
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'attachments',
+    loadComponent: () => import('./features/attachments/attachment-list/attachment-list').then((m) => m.AttachmentList),
+    canActivate: [AuthGuard],
+  },
+  {
     path: '**',
     redirectTo: '/dashboard',
   },

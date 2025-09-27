@@ -33,6 +33,21 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	Token string `json:"token"`
-	User  User   `json:"user"`
+	Token        string    `json:"token"`
+	RefreshToken string    `json:"refresh_token"`
+	User         User      `json:"user"`
+	ExpiresAt    time.Time `json:"expires_at"`
+}
+
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
+}
+
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password" binding:"required"`
+	NewPassword     string `json:"new_password" binding:"required,min=8"`
+}
+
+type ResetPasswordRequest struct {
+	Email string `json:"email" binding:"required,email"`
 }
