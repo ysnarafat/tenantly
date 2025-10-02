@@ -1,8 +1,11 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { Observable } from 'rxjs';
+import { tap, map, take } from 'rxjs/operators';
+import { Store } from '@ngrx/store';
 import { environment } from '../../../environments/environment';
+import { AppState } from '../../store';
+import * as AuthSelectors from '../../store/auth/auth.selectors';
 
 export interface LoginRequest {
   username: string;
@@ -44,6 +47,7 @@ export interface ResetPasswordRequest {
 })
 export class AuthService {
   private http = inject(HttpClient);
+  private store = inject(Store<AppState>);
   private readonly TOKEN_KEY = 'tenantly_token';
   private readonly REFRESH_TOKEN_KEY = 'tenantly_refresh_token';
   private readonly USER_KEY = 'tenantly_user';
@@ -52,8 +56,8 @@ export class AuthService {
   // DEMO MODE: Set to true to enable demo login (disable for production)
   private readonly DEMO_MODE = true; // <-- Set to false to disable demo login
 
-  private isAuthenticatedSubject = new BehaviorSubject<boolean>(this.hasToken());
-  public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
+  // Backward compatibility - now uses NgRx store
+  public isAuthenticated$ = this.store.select(AuthSelectors.selectIsAuthenticated);
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
     if (this.DEMO_MODE) {
@@ -74,7 +78,6 @@ export class AuthService {
           expires_at: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(), // 8 hours
         };
         this.storeAuthData(demoResponse);
-        this.isAuthenticatedSubject.next(true);
         // Return observable that emits the demo response
         return new Observable<LoginResponse>((observer) => {
           observer.next(demoResponse);
@@ -91,7 +94,6 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${environment.apiUrl}/api/v1/auth/login`, credentials).pipe(
       tap((response) => {
         this.storeAuthData(response);
-        this.isAuthenticatedSubject.next(true);
       })
     );
   }
@@ -171,11 +173,15 @@ export class AuthService {
   }
 
   getUser(): User | null {
+    // For backward compatibility, still read from localStorage
+    // In the future, this should use NgRx store
     const user = localStorage.getItem(this.USER_KEY);
     return user ? JSON.parse(user) : null;
   }
 
   getUserRole(): string {
+    // For backward compatibility, still read from localStorage
+    // In the future, this should use NgRx store
     const user = this.getUser();
     return user?.role || '';
   }
@@ -221,6 +227,7 @@ export class AuthService {
     localStorage.setItem(this.REFRESH_TOKEN_KEY, response.refresh_token);
     localStorage.setItem(this.USER_KEY, JSON.stringify(response.user));
     localStorage.setItem(this.EXPIRES_AT_KEY, response.expires_at);
+    // Note: NgRx effects will handle state updates
   }
 
   private clearAuthData(): void {
@@ -228,6 +235,6 @@ export class AuthService {
     localStorage.removeItem(this.REFRESH_TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     localStorage.removeItem(this.EXPIRES_AT_KEY);
-    this.isAuthenticatedSubject.next(false);
+    // Note: NgRx effects will handle state updates
   }
 }
