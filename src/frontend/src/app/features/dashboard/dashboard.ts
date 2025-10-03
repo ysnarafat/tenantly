@@ -6,9 +6,13 @@ import { MatGridListModule } from '@angular/material/grid-list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
+import { Store } from '@ngrx/store';
+import { Observable } from 'rxjs';
 import { LeaseService, LeaseWithDetails } from '../../core/services/lease.service';
 import { AttachmentService, Attachment } from '../../core/services/attachment.service';
 import { AuthService } from '../../core/services/auth.service';
+import { AppState } from '../../store';
+import * as AuthSelectors from '../../store/auth/auth.selectors';
 
 interface DashboardStats {
   totalRentDue: number;
@@ -40,6 +44,15 @@ export class Dashboard implements OnInit {
   private leaseService = inject(LeaseService);
   private attachmentService = inject(AttachmentService);
   private authService = inject(AuthService);
+  private store = inject(Store<AppState>);
+
+  // NgRx selectors for reactive data
+  user$ = this.store.select(AuthSelectors.selectUser);
+  userRole$ = this.store.select(AuthSelectors.selectUserRole);
+  isAdmin$ = this.store.select(AuthSelectors.selectIsAdmin);
+  isPropertyManager$ = this.store.select(AuthSelectors.selectIsPropertyManager);
+  canViewLeases$ = this.store.select(AuthSelectors.selectCanViewLeases);
+  canViewAttachments$ = this.store.select(AuthSelectors.selectCanViewAttachments);
 
   stats: DashboardStats = {
     totalRentDue: 0,
@@ -138,6 +151,12 @@ export class Dashboard implements OnInit {
     return new Date(dateString).toLocaleDateString('en-BD');
   }
 
+  // Reactive methods using NgRx selectors
+  getUserRole$(): Observable<string> {
+    return this.userRole$;
+  }
+
+  // Backward compatibility methods (synchronous)
   getUserRole(): string {
     return this.authService.getUserRole();
   }

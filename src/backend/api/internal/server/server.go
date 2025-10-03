@@ -85,6 +85,7 @@ func (s *Server) setupRoutes() {
 			auth.POST("/login", userHandler.Login)
 			auth.POST("/refresh", userHandler.RefreshToken)
 			auth.POST("/reset-password", userHandler.ResetPassword)
+			auth.POST("/confirm-reset-password", userHandler.ConfirmPasswordReset)
 		}
 
 		// Protected routes

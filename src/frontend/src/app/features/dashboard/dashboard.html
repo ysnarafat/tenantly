@@ -2,7 +2,7 @@
   <div class="header">
     <h1>Dashboard</h1>
     <div class="user-info">
-      <mat-chip selected color="primary">{{ getUserRole() }}</mat-chip>
+      <mat-chip selected color="primary">{{ userRole$ | async }}</mat-chip>
     </div>
   </div>
 
@@ -92,7 +92,7 @@
   <!-- Recent Activity -->
   <div class="activity-section">
     <!-- Expiring Leases -->
-    <mat-card class="activity-card" *ngIf="canViewLeases() && expiringLeases.length > 0">
+    <mat-card class="activity-card" *ngIf="(canViewLeases$ | async) && expiringLeases.length > 0">
       <mat-card-header>
         <mat-card-title>
           <mat-icon>event</mat-icon>
@@ -118,7 +118,7 @@
     </mat-card>
 
     <!-- Recent Leases -->
-    <mat-card class="activity-card" *ngIf="canViewLeases()">
+    <mat-card class="activity-card" *ngIf="canViewLeases$ | async">
       <mat-card-header>
         <mat-card-title>
           <mat-icon>assignment</mat-icon>
@@ -145,7 +145,7 @@
     </mat-card>
 
     <!-- Recent Attachments -->
-    <mat-card class="activity-card" *ngIf="canViewAttachments()">
+    <mat-card class="activity-card" *ngIf="canViewAttachments$ | async">
       <mat-card-header>
         <mat-card-title>
           <mat-icon>attach_file</mat-icon>

@@ -6,6 +6,7 @@ import { Store } from '@ngrx/store';
 import { environment } from '../../../environments/environment';
 import { AppState } from '../../store';
 import * as AuthSelectors from '../../store/auth/auth.selectors';
+import * as AuthActions from '../../store/auth/auth.actions';
 
 export interface LoginRequest {
   username: string;
@@ -56,112 +57,46 @@ export class AuthService {
   // DEMO MODE: Set to true to enable demo login (disable for production)
   private readonly DEMO_MODE = true; // <-- Set to false to disable demo login
 
-  // Backward compatibility - now uses NgRx store
+  // NgRx store selectors for reactive access
   public isAuthenticated$ = this.store.select(AuthSelectors.selectIsAuthenticated);
+  public user$ = this.store.select(AuthSelectors.selectUser);
+  public loading$ = this.store.select(AuthSelectors.selectAuthLoading);
+  public error$ = this.store.select(AuthSelectors.selectAuthError);
+  public userRole$ = this.store.select(AuthSelectors.selectUserRole);
 
-  login(credentials: LoginRequest): Observable<LoginResponse> {
-    if (this.DEMO_MODE) {
-      // DEMO: Accept demo credentials (username: demo, password: demo123)
-      if (credentials.username === 'demo' && credentials.password === 'demo123') {
-        const demoResponse: LoginResponse = {
-          token: 'demo-token',
-          refresh_token: 'demo-refresh-token',
-          user: {
-            id: 1,
-            username: 'demo',
-            email: 'demo@tenantly.com',
-            role: 'Admin',
-            active: true,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          expires_at: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(), // 8 hours
-        };
-        this.storeAuthData(demoResponse);
-        // Return observable that emits the demo response
-        return new Observable<LoginResponse>((observer) => {
-          observer.next(demoResponse);
-          observer.complete();
-        });
-      } else {
-        // Simulate failed login
-        return new Observable<LoginResponse>((observer) => {
-          observer.error({ error: 'Invalid demo credentials' });
-        });
-      }
-    }
-    // PRODUCTION: Use real API
-    return this.http.post<LoginResponse>(`${environment.apiUrl}/api/v1/auth/login`, credentials).pipe(
-      tap((response) => {
-        this.storeAuthData(response);
-      })
-    );
+  login(credentials: LoginRequest): void {
+    // Dispatch login action to NgRx store
+    this.store.dispatch(AuthActions.login({ credentials }));
   }
 
-  logout(): Observable<any> {
-    if (this.DEMO_MODE) {
-      this.clearAuthData();
-      return new Observable((observer) => {
-        observer.next({ message: 'Successfully logged out' });
-        observer.complete();
-      });
-    }
-
-    return this.http.post(`${environment.apiUrl}/api/v1/auth/logout`, {}).pipe(
-      tap(() => {
-        this.clearAuthData();
-      })
-    );
+  logout(): void {
+    // Dispatch logout action to NgRx store
+    this.store.dispatch(AuthActions.logout());
   }
 
-  refreshToken(): Observable<LoginResponse> {
-    const refreshToken = this.getRefreshToken();
-    if (!refreshToken) {
-      throw new Error('No refresh token available');
-    }
-
-    if (this.DEMO_MODE) {
-      const demoResponse: LoginResponse = {
-        token: 'demo-token-refreshed',
-        refresh_token: 'demo-refresh-token-refreshed',
-        user: this.getUser()!,
-        expires_at: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(),
-      };
-      this.storeAuthData(demoResponse);
-      return new Observable((observer) => {
-        observer.next(demoResponse);
-        observer.complete();
-      });
-    }
-
-    const request: RefreshTokenRequest = { refresh_token: refreshToken };
-    return this.http.post<LoginResponse>(`${environment.apiUrl}/api/v1/auth/refresh`, request).pipe(
-      tap((response) => {
-        this.storeAuthData(response);
-      })
-    );
+  refreshToken(): void {
+    // Dispatch refresh token action to NgRx store
+    this.store.dispatch(AuthActions.refreshToken());
   }
 
-  changePassword(request: ChangePasswordRequest): Observable<any> {
-    if (this.DEMO_MODE) {
-      return new Observable((observer) => {
-        observer.next({ message: 'Password changed successfully' });
-        observer.complete();
-      });
-    }
-
-    return this.http.post(`${environment.apiUrl}/api/v1/auth/change-password`, request);
+  changePassword(request: ChangePasswordRequest): void {
+    // Dispatch change password action to NgRx store
+    this.store.dispatch(AuthActions.changePassword({ request }));
   }
 
-  resetPassword(request: ResetPasswordRequest): Observable<any> {
-    if (this.DEMO_MODE) {
-      return new Observable((observer) => {
-        observer.next({ message: 'If the email exists, a password reset link has been sent' });
-        observer.complete();
-      });
-    }
+  resetPassword(request: ResetPasswordRequest): void {
+    // Dispatch reset password action to NgRx store
+    this.store.dispatch(AuthActions.resetPassword({ request }));
+  }
 
-    return this.http.post(`${environment.apiUrl}/api/v1/auth/reset-password`, request);
+  clearError(): void {
+    // Dispatch clear error action to NgRx store
+    this.store.dispatch(AuthActions.clearError());
+  }
+
+  initializeAuth(): void {
+    // Dispatch initialize auth action to NgRx store
+    this.store.dispatch(AuthActions.initializeAuth());
   }
 
   getToken(): string | null {
@@ -173,21 +108,24 @@ export class AuthService {
   }
 
   getUser(): User | null {
-    // For backward compatibility, still read from localStorage
-    // In the future, this should use NgRx store
-    const user = localStorage.getItem(this.USER_KEY);
-    return user ? JSON.parse(user) : null;
+    // Synchronous access to user from NgRx store
+    let user: User | null = null;
+    this.store.select(AuthSelectors.selectUser).pipe(take(1)).subscribe(u => user = u);
+    return user;
   }
 
   getUserRole(): string {
-    // For backward compatibility, still read from localStorage
-    // In the future, this should use NgRx store
-    const user = this.getUser();
-    return user?.role || '';
+    // Synchronous access to user role from NgRx store
+    let role = '';
+    this.store.select(AuthSelectors.selectUserRole).pipe(take(1)).subscribe(r => role = r);
+    return role;
   }
 
   isAuthenticated(): boolean {
-    return this.hasToken() && !this.isTokenExpired();
+    // Synchronous access to authentication status from NgRx store
+    let isAuth = false;
+    this.store.select(AuthSelectors.selectIsAuthenticated).pipe(take(1)).subscribe(auth => isAuth = auth);
+    return isAuth;
   }
 
   isTokenExpired(): boolean {
@@ -207,15 +145,42 @@ export class AuthService {
   }
 
   isAdmin(): boolean {
-    return this.hasRole('Admin');
+    let isAdmin = false;
+    this.store.select(AuthSelectors.selectIsAdmin).pipe(take(1)).subscribe(admin => isAdmin = admin);
+    return isAdmin;
   }
 
   isPropertyManager(): boolean {
-    return this.hasRole('PropertyManager');
+    let isPM = false;
+    this.store.select(AuthSelectors.selectIsPropertyManager).pipe(take(1)).subscribe(pm => isPM = pm);
+    return isPM;
   }
 
   isAccountant(): boolean {
-    return this.hasRole('Accountant');
+    let isAccountant = false;
+    this.store.select(AuthSelectors.selectIsAccountant).pipe(take(1)).subscribe(acc => isAccountant = acc);
+    return isAccountant;
+  }
+
+  // Reactive versions for components
+  hasRole$(role: string): Observable<boolean> {
+    return this.store.select(AuthSelectors.selectHasRole(role));
+  }
+
+  hasAnyRole$(roles: string[]): Observable<boolean> {
+    return this.store.select(AuthSelectors.selectHasAnyRole(roles));
+  }
+
+  isAdmin$(): Observable<boolean> {
+    return this.store.select(AuthSelectors.selectIsAdmin);
+  }
+
+  isPropertyManager$(): Observable<boolean> {
+    return this.store.select(AuthSelectors.selectIsPropertyManager);
+  }
+
+  isAccountant$(): Observable<boolean> {
+    return this.store.select(AuthSelectors.selectIsAccountant);
   }
 
   private hasToken(): boolean {

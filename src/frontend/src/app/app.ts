@@ -1,12 +1,14 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ViewChild, signal, computed, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet, Router, RouterModule } from '@angular/router';
+import { RouterOutlet, RouterModule } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSidenavModule } from '@angular/material/sidenav';
+import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
-import { take } from 'rxjs/operators';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthFacade } from './store/auth/auth.facade';
 
 @Component({
@@ -21,45 +23,72 @@ import { AuthFacade } from './store/auth/auth.facade';
     MatIconModule,
     MatSidenavModule,
     MatListModule,
+    MatTooltipModule,
   ],
   templateUrl: './app.html',
   styleUrls: ['./app.scss'],
 })
 export class App implements OnInit {
+  @ViewChild('sidenav') sidenav!: MatSidenav;
+
   public authFacade = inject(AuthFacade);
-  private router = inject(Router);
+  private breakpointObserver = inject(BreakpointObserver);
 
-  // Observable streams from NgRx store
-  isAuthenticated$ = this.authFacade.isAuthenticated$;
-  userRole$ = this.authFacade.userRole$;
-  isAdmin$ = this.authFacade.isAdmin$;
-  isProp= this.authFacade.user$;
+  // Signals for reactive state
+  isAuthenticated = signal(false);
+  userRole = signal('');
+  isAdmin = signal(false);
+  isPropertyManager = signal(false);
+  isMobile = signal(false);
 
-  // Temporary fallback for debugging
-  get hasTokenInStorage(): boolean {
-    return !!localStorage.getItem('tenantly_token');
+  // Computed signals for derived state
+  sidenavMode = computed(() => this.isMobile() ? 'over' as const : 'side' as const);
+  sidenavOpened = computed(() => !this.isMobile());
+  fixedTopGap = computed(() => this.isMobile() ? 64 : 0);
+
+  constructor() {
+    // Subscribe to observables and update signals
+    this.authFacade.isAuthenticated$
+      .pipe(takeUntilDestroyed())
+      .subscribe(isAuth => this.isAuthenticated.set(isAuth));
+
+    this.authFacade.userRole$
+      .pipe(takeUntilDestroyed())
+      .subscribe(role => this.userRole.set(role));
+
+    this.authFacade.isAdmin$
+      .pipe(takeUntilDestroyed())
+      .subscribe(isAdmin => this.isAdmin.set(isAdmin));
+
+    this.authFacade.isPropertyManager$
+      .pipe(takeUntilDestroyed())
+      .subscribe(isPM => this.isPropertyManager.set(isPM));
+
+    this.breakpointObserver.observe([Breakpoints.Handset])
+      .pipe(takeUntilDestroyed())
+      .subscribe(result => this.isMobile.set(result.matches));
   }
 
   ngOnInit() {
     // Initialize auth state from localStorage
     this.authFacade.initializeAuth();
-    
-    // Debug: Log authentication status
-    this.isAuthenticated$.subscribe(isAuth => {
-      console.log('Authentication status:', isAuth);
-    });
   }
 
   logout() {
     this.authFacade.logout();
   }
 
-  // Backward compatibility method
-  isAdmin(): boolean {
-    // This is synchronous for template usage
-    // For reactive usage, use isAdmin$ observable
-    let isAdmin = false;
-    this.isAdmin$.pipe(take(1)).subscribe(admin => isAdmin = admin);
-    return isAdmin;
+  // Close sidenav on mobile after navigation
+  onNavigate() {
+    if (this.isMobile() && this.sidenav) {
+      this.sidenav.close();
+    }
+  }
+
+  // Toggle sidenav
+  toggleSidenav() {
+    if (this.sidenav) {
+      this.sidenav.toggle();
+    }
   }
 }

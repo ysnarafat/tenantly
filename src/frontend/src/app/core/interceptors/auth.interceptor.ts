@@ -1,20 +1,31 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, switchMap, throwError } from 'rxjs';
+import { Store } from '@ngrx/store';
+import { catchError, switchMap, throwError, take, filter } from 'rxjs';
 import { AuthService } from '../services/auth.service';
+import { AppState } from '../../store';
+import * as AuthSelectors from '../../store/auth/auth.selectors';
+import * as AuthActions from '../../store/auth/auth.actions';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
+  const store = inject(Store<AppState>);
   const router = inject(Router);
-  const token = authService.getToken();
-
+  
   // Skip auth for login and refresh endpoints
   if (req.url.includes('/auth/login') || req.url.includes('/auth/refresh') || req.url.includes('/auth/reset-password')) {
     return next(req);
   }
 
-  if (token && !authService.isTokenExpired()) {
+  // Get token from NgRx store
+  let token: string | null = null;
+  let isTokenExpired = false;
+  
+  store.select(AuthSelectors.selectToken).pipe(take(1)).subscribe(t => token = t);
+  store.select(AuthSelectors.selectIsTokenExpired).pipe(take(1)).subscribe(expired => isTokenExpired = expired);
+
+  if (token && !isTokenExpired) {
     const authReq = req.clone({
       headers: req.headers.set('Authorization', `Bearer ${token}`),
     });
@@ -23,10 +34,13 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       catchError((error: HttpErrorResponse) => {
         if (error.status === 401) {
           // Token might be expired, try to refresh
-          return authService.refreshToken().pipe(
-            switchMap(() => {
-              // Retry the original request with new token
-              const newToken = authService.getToken();
+          authService.refreshToken();
+          
+          // Wait for refresh to complete and retry
+          return store.select(AuthSelectors.selectToken).pipe(
+            filter(newToken => !!newToken && newToken !== token),
+            take(1),
+            switchMap((newToken) => {
               const retryReq = req.clone({
                 headers: req.headers.set('Authorization', `Bearer ${newToken}`),
               });
@@ -43,11 +57,14 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         return throwError(() => error);
       })
     );
-  } else if (authService.getRefreshToken() && authService.isTokenExpired()) {
+  } else if (localStorage.getItem('tenantly_refresh_token') && isTokenExpired) {
     // Token is expired but we have a refresh token
-    return authService.refreshToken().pipe(
-      switchMap(() => {
-        const newToken = authService.getToken();
+    authService.refreshToken();
+    
+    return store.select(AuthSelectors.selectToken).pipe(
+      filter(newToken => !!newToken),
+      take(1),
+      switchMap((newToken) => {
         const authReq = req.clone({
           headers: req.headers.set('Authorization', `Bearer ${newToken}`),
         });

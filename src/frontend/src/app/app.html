@@ -1,65 +1,74 @@
-@if ((isAuthenticated$ | async) || hasTokenInStorage) {
+@if (isAuthenticated()) {
   <div class="app-container">
     <mat-toolbar color="primary">
-      <button mat-icon-button (click)="sidenav.toggle()">
+      <button mat-icon-button (click)="toggleSidenav()" class="menu-button">
         <mat-icon>menu</mat-icon>
       </button>
-      <span>Tenantly</span>
+      <span class="app-title">Tenantly</span>
       <span class="spacer"></span>
-      <button mat-button (click)="logout()">
-        <mat-icon>logout</mat-icon>
-        Logout
-      </button>
+      <div class="user-info">
+        <span class="user-role">{{ userRole() }}</span>
+        <button mat-icon-button (click)="logout()" matTooltip="Logout">
+          <mat-icon>logout</mat-icon>
+        </button>
+      </div>
     </mat-toolbar>
 
     <mat-sidenav-container class="sidenav-container">
-      <mat-sidenav #sidenav mode="side" opened class="sidenav">
+      <mat-sidenav 
+        #sidenav 
+        [mode]="sidenavMode()" 
+        [opened]="sidenavOpened()" 
+        class="sidenav"
+        [fixedInViewport]="isMobile()"
+        [fixedTopGap]="fixedTopGap()"
+      >
         <mat-nav-list>
-          <a mat-list-item routerLink="/dashboard" routerLinkActive="active">
+          <a mat-list-item routerLink="/dashboard" routerLinkActive="active" (click)="onNavigate()">
             <mat-icon>dashboard</mat-icon>
             <span>Dashboard</span>
           </a>
           
-          @if ((isAdmin$ | async) || (authFacade.isPropertyManager$ | async)) {
-            <a mat-list-item routerLink="/shops" routerLinkActive="active">
+          @if (isAdmin() || isPropertyManager()) {
+            <a mat-list-item routerLink="/shops" routerLinkActive="active" (click)="onNavigate()">
               <mat-icon>store</mat-icon>
               <span>Shops</span>
             </a>
           }
           
-          @if ((isAdmin$ | async) || (authFacade.isPropertyManager$ | async)) {
-            <a mat-list-item routerLink="/tenants" routerLinkActive="active">
+          @if (isAdmin() || isPropertyManager()) {
+            <a mat-list-item routerLink="/tenants" routerLinkActive="active" (click)="onNavigate()">
               <mat-icon>people</mat-icon>
               <span>Tenants</span>
             </a>
           }
           
-          <a mat-list-item routerLink="/payments" routerLinkActive="active">
+          <a mat-list-item routerLink="/payments" routerLinkActive="active" (click)="onNavigate()">
             <mat-icon>payment</mat-icon>
             <span>Payments</span>
           </a>
           
-          @if ((isAdmin$ | async) || (authFacade.isPropertyManager$ | async)) {
-            <a mat-list-item routerLink="/leases" routerLinkActive="active">
+          @if (isAdmin() || isPropertyManager()) {
+            <a mat-list-item routerLink="/leases" routerLinkActive="active" (click)="onNavigate()">
               <mat-icon>assignment</mat-icon>
               <span>Leases</span>
             </a>
           }
           
-          @if ((isAdmin$ | async) || (authFacade.isPropertyManager$ | async)) {
-            <a mat-list-item routerLink="/attachments" routerLinkActive="active">
+          @if (isAdmin() || isPropertyManager()) {
+            <a mat-list-item routerLink="/attachments" routerLinkActive="active" (click)="onNavigate()">
               <mat-icon>attach_file</mat-icon>
               <span>Attachments</span>
             </a>
           }
           
-          <a mat-list-item routerLink="/reports" routerLinkActive="active">
+          <a mat-list-item routerLink="/reports" routerLinkActive="active" (click)="onNavigate()">
             <mat-icon>assessment</mat-icon>
             <span>Reports</span>
           </a>
           
-          @if (isAdmin$ | async) {
-            <a mat-list-item routerLink="/users" routerLinkActive="active">
+          @if (isAdmin()) {
+            <a mat-list-item routerLink="/users" routerLinkActive="active" (click)="onNavigate()">
               <mat-icon>admin_panel_settings</mat-icon>
               <span>Users</span>
             </a>

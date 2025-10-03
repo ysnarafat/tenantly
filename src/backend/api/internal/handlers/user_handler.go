@@ -5,15 +5,15 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/ysnarafat/tenantly/internal/interfaces"
 	"github.com/ysnarafat/tenantly/internal/models"
-	"github.com/ysnarafat/tenantly/internal/services"
 )
 
 type UserHandler struct {
-	userService *services.UserService
+	userService interfaces.UserServiceInterface
 }
 
-func NewUserHandler(userService *services.UserService) *UserHandler {
+func NewUserHandler(userService interfaces.UserServiceInterface) *UserHandler {
 	return &UserHandler{userService: userService}
 }
 
@@ -127,8 +127,9 @@ func (h *UserHandler) ResetPassword(c *gin.Context) {
 	var req models.ResetPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request format",
-			"code":  "INVALID_REQUEST",
+			"error":   "Invalid request format",
+			"code":    "INVALID_REQUEST",
+			"details": err.Error(),
 		})
 		return
 	}
@@ -143,6 +144,30 @@ func (h *UserHandler) ResetPassword(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "If the email exists, a password reset link has been sent",
+	})
+}
+
+func (h *UserHandler) ConfirmPasswordReset(c *gin.Context) {
+	var req models.ConfirmPasswordResetRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid request format",
+			"code":    "INVALID_REQUEST",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	if err := h.userService.ConfirmPasswordReset(req.Token, req.NewPassword); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+			"code":  "PASSWORD_RESET_CONFIRMATION_FAILED",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Password has been reset successfully",
 	})
 }
 

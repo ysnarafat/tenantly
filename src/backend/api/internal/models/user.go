@@ -51,3 +51,17 @@ type ChangePasswordRequest struct {
 type ResetPasswordRequest struct {
 	Email string `json:"email" binding:"required,email"`
 }
+
+type ResetPasswordToken struct {
+	ID        int       `json:"id" db:"id"`
+	UserID    int       `json:"user_id" db:"user_id"`
+	Token     string    `json:"token" db:"token"`
+	ExpiresAt time.Time `json:"expires_at" db:"expires_at"`
+	Used      bool      `json:"used" db:"used"`
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+}
+
+type ConfirmPasswordResetRequest struct {
+	Token       string `json:"token" binding:"required"`
+	NewPassword string `json:"new_password" binding:"required,min=8"`
+}

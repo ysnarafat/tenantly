@@ -19,12 +19,22 @@
           mat-raised-button
           color="primary"
           type="submit"
-          [disabled]="loginForm.invalid"
+          [disabled]="loginForm.invalid || loading()"
           class="w-100"
         >
-          Login
+          @if (loading()) {
+            <mat-spinner diameter="20" class="inline-spinner"></mat-spinner>
+            Logging in...
+          } @else {
+            Login
+          }
         </button>
       </form>
+      
+      <div class="demo-info">
+        <strong>Demo Credentials:</strong>
+        Username: demo | Password: demo123
+      </div>
     </mat-card-content>
   </mat-card>
 </div>
