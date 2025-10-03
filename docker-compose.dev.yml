@@ -1,11 +1,28 @@
-version: "3.9"
+version: '3.9'
+
 services:
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.dev
+  api:
+    extends:
+      file: docker-compose.yml
+      service: api
+    environment:
+      ENVIRONMENT: development
     ports:
-      - "4200:4200"
+      - "8080:8080"
     volumes:
-      - ./frontend:/app           # Mount source for hot reload
-      - /app/node_modules         # Avoid overwriting node_modules
+      - ./backend/api:/app
+      - ./backend/api/migrations:/app/migrations
+
+  frontend:
+    extends:
+      file: docker-compose.yml
+      service: frontend
+    ports:
+      - "4200:80"
+
+  postgres:
+    extends:
+      file: docker-compose.yml
+      service: postgres
+    ports:
+      - "5432:5432"

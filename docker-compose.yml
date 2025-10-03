@@ -1,9 +1,10 @@
-version: '3.8'
+version: '3.9'
+name: tenantly
 
 services:
   # PostgreSQL Database
   postgres:
-    image: postgres:15-alpine
+    image: postgres:18.0-alpine
     container_name: tenantly-postgres
     environment:
       POSTGRES_DB: tenantly
@@ -20,7 +21,7 @@ services:
   # Go API Service
   api:
     build:
-      context: ./backend/api
+      context: ./src/backend/api
       dockerfile: Dockerfile
     container_name: tenantly-api
     environment:
@@ -40,7 +41,7 @@ services:
   # Angular Frontend
   frontend:
     build:
-      context: ./frontend
+      context: ./src/frontend
       dockerfile: Dockerfile
     container_name: tenantly-frontend
     ports:
@@ -49,13 +50,11 @@ services:
       - api
     networks:
       - tenantly-network
-    volumes:
-      - ./backend/api/migrations:/app/migrations
 
   # C# Notification Service
   notification-service:
     build:
-      context: ./backend/notification-service
+      context: ./src/backend/notification-service
       dockerfile: Dockerfile
     container_name: tenantly-notification-service
     environment:

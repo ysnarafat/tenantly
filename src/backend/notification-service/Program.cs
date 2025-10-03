@@ -1,21 +1,20 @@
-using TenantlyNotificationService.Services;
+using Microsoft.EntityFrameworkCore;
+using Serilog;
 using TenantlyNotificationService.Configuration;
 using TenantlyNotificationService.Data;
 using TenantlyNotificationService.Data.Interceptors;
-using Microsoft.EntityFrameworkCore;
-using Serilog;
+using TenantlyNotificationService.Services;
 
 var builder = Host.CreateApplicationBuilder(args);
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
     .CreateLogger();
 
 builder.Services.AddSerilog();
 
 // Add EF Core
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? builder.Configuration.GetSection("Database:ConnectionString").Value
     ?? throw new InvalidOperationException("Connection string not found.");
 
@@ -47,7 +46,7 @@ var host = builder.Build();
 try
 {
     Log.Information("Starting Tenantly Notification Service");
-    
+
     await host.RunAsync();
 }
 catch (Exception ex)
