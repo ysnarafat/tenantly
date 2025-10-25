@@ -1,10 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using TenantlyNotificationService.Models.Interfaces;
 
 namespace TenantlyNotificationService.Models.Entities;
 
 [Table("users")]
-public class User
+public class User : IAuditableEntity
 {
     [Key]
     [Column("id")]

@@ -47,7 +47,7 @@ func (s *UserService) CreateUser(req *models.CreateUserRequest) (*models.User, e
 func (s *UserService) Login(req *models.LoginRequest) (*models.LoginResponse, error) {
 	user, err := s.userRepo.GetByUsername(req.Username)
 	if err != nil {
-		return nil, fmt.Errorf("invalid credentials")
+		return nil, fmt.Errorf("no user found with that username")
 	}
 
 	// Check password

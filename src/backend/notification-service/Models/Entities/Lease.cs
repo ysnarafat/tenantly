@@ -1,10 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using TenantlyNotificationService.Models.Interfaces;
 
 namespace TenantlyNotificationService.Models.Entities;
 
 [Table("leases")]
-public class Lease
+public class Lease : IAuditableEntity
 {
     [Key]
     [Column("id")]
@@ -48,4 +49,6 @@ public class Lease
 
     [ForeignKey("TenantId")]
     public virtual Tenant Tenant { get; set; } = null!;
+    
+    public virtual ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
 }
