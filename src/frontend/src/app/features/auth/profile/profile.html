@@ -1,0 +1,141 @@
+<div class="profile-container">
+  <h1>User Profile</h1>
+
+  <div class="profile-content" *ngIf="user">
+    <!-- User Information Card -->
+    <mat-card class="user-info-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>person</mat-icon>
+          User Information
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="user-details">
+          <div class="detail-row">
+            <label>Username:</label>
+            <span>{{ user.username }}</span>
+          </div>
+          <div class="detail-row">
+            <label>Email:</label>
+            <span>{{ user.email }}</span>
+          </div>
+          <div class="detail-row">
+            <label>Role:</label>
+            <mat-chip [color]="getRoleColor(user.role)" selected>
+              {{ user.role }}
+            </mat-chip>
+          </div>
+          <div class="detail-row">
+            <label>Status:</label>
+            <mat-chip [color]="user.active ? 'primary' : 'warn'" selected>
+              {{ user.active ? 'Active' : 'Inactive' }}
+            </mat-chip>
+          </div>
+          <div class="detail-row">
+            <label>Member Since:</label>
+            <span>{{ formatDate(user.created_at) }}</span>
+          </div>
+          <div class="detail-row">
+            <label>Last Updated:</label>
+            <span>{{ formatDate(user.updated_at) }}</span>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Security Card -->
+    <mat-card class="security-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>security</mat-icon>
+          Security Settings
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="security-actions">
+          <button 
+            mat-raised-button 
+            color="primary" 
+            (click)="toggleChangePassword()"
+            [disabled]="isChangingPassword">
+            <mat-icon>lock</mat-icon>
+            {{ showChangePassword ? 'Cancel' : 'Change Password' }}
+          </button>
+        </div>
+
+        <!-- Change Password Form -->
+        <div class="change-password-section" *ngIf="showChangePassword">
+          <form [formGroup]="changePasswordForm" (ngSubmit)="onChangePassword()">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Current Password</mat-label>
+              <mat-icon matPrefix>lock_outline</mat-icon>
+              <input 
+                matInput 
+                type="password" 
+                formControlName="currentPassword"
+                placeholder="Enter your current password">
+              <mat-error *ngIf="changePasswordForm.get('currentPassword')?.hasError('required')">
+                Current password is required
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>New Password</mat-label>
+              <mat-icon matPrefix>lock</mat-icon>
+              <input 
+                matInput 
+                type="password" 
+                formControlName="newPassword"
+                placeholder="Enter your new password">
+              <mat-error *ngIf="changePasswordForm.get('newPassword')?.hasError('required')">
+                New password is required
+              </mat-error>
+              <mat-error *ngIf="changePasswordForm.get('newPassword')?.hasError('minlength')">
+                Password must be at least 8 characters long
+              </mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Confirm New Password</mat-label>
+              <mat-icon matPrefix>lock</mat-icon>
+              <input 
+                matInput 
+                type="password" 
+                formControlName="confirmPassword"
+                placeholder="Confirm your new password">
+              <mat-error *ngIf="changePasswordForm.get('confirmPassword')?.hasError('required')">
+                Please confirm your new password
+              </mat-error>
+              <mat-error *ngIf="changePasswordForm.get('confirmPassword')?.hasError('passwordMismatch')">
+                Passwords do not match
+              </mat-error>
+            </mat-form-field>
+
+            <div class="form-actions">
+              <button 
+                mat-raised-button 
+                color="primary" 
+                type="submit"
+                [disabled]="!changePasswordForm.valid || isChangingPassword">
+                <mat-icon>save</mat-icon>
+                {{ isChangingPassword ? 'Changing...' : 'Change Password' }}
+              </button>
+              <button 
+                mat-button 
+                type="button" 
+                (click)="toggleChangePassword()"
+                [disabled]="isChangingPassword">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <div *ngIf="!user" class="loading-container">
+    <p>Loading user information...</p>
+  </div>
+</div>

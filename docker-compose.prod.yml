@@ -1,0 +1,22 @@
+version: '3.9'
+
+services:
+  api:
+    environment:
+      ENVIRONMENT: production
+    ports:
+      - "8080:8080"
+    restart: always
+
+  frontend:
+    ports:
+      - "80:80"
+    restart: always
+
+  postgres:
+    ports:
+      - "5432:5432"
+    restart: always
+
+  notification-service:
+    restart: always

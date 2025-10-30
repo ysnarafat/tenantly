@@ -1,0 +1,37 @@
+name: Deploy to Dev Server
+
+on:
+  push:
+    branches:
+      - develop
+
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    environment: dev 
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.DEV_SSH_PRIVATE_KEY }}
+
+      - name: Copy files to dev server
+        run: |
+          rsync -avz \
+            -e "ssh -o StrictHostKeyChecking=no" \
+            ./ \
+            ${{ secrets.DEV_USER }}@${{ secrets.DEV_HOST }}:/home/${{ secrets.DEV_USER }}/tenantly/ \
+            --rsync-path="mkdir -p /home/${{ secrets.DEV_USER }}/tenantly && rsync"
+
+      - name: Deploy with Docker Compose
+        run: |
+          ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=5 ${{ secrets.DEV_USER }}@${{ secrets.DEV_HOST }} "
+            cd /home/${{ secrets.DEV_USER }}/tenantly &&
+            docker compose -f docker-compose.yml -f docker-compose.dev.yml pull &&
+            docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+          "

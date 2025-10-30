@@ -6,22 +6,112 @@
 
 .sidenav-container {
   flex: 1;
+  height: calc(100vh - 64px); // Account for toolbar height
 }
 
 .sidenav {
   width: 250px;
+  
+  @media (max-width: 768px) {
+    width: 280px; // Slightly wider on mobile for better touch targets
+  }
 }
 
 .main-content {
   padding: 20px;
+  overflow-y: auto;
+  
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
+  
+  @media (max-width: 480px) {
+    padding: 12px;
+  }
 }
 
 .spacer {
   flex: 1 1 auto;
 }
 
-mat-nav-list a {
+.app-title {
+  font-size: 1.25rem;
+  font-weight: 500;
+  
+  @media (max-width: 480px) {
+    font-size: 1.1rem;
+  }
+}
+
+.user-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  
+  .user-role {
+    font-size: 0.875rem;
+    opacity: 0.8;
+    
+    @media (max-width: 480px) {
+      display: none; // Hide role text on very small screens
+    }
+  }
+}
+
+.menu-button {
+  margin-right: 8px;
+}
+
+// Navigation list styling
+mat-nav-list {
+  padding-top: 8px;
+  
+  a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    min-height: 48px; // Better touch targets
+    
+    mat-icon {
+      width: 24px;
+      height: 24px;
+      font-size: 24px;
+    }
+    
+    span {
+      font-size: 0.875rem;
+      font-weight: 400;
+    }
+    
+    &.active {
+      background-color: rgba(0, 0, 0, 0.04);
+      color: var(--mdc-theme-primary, #1976d2);
+      
+      mat-icon {
+        color: var(--mdc-theme-primary, #1976d2);
+      }
+    }
+    
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.04);
+    }
+  }
+}
+
+// Mobile-specific adjustments
+@media (max-width: 768px) {
+  .sidenav-container {
+    height: calc(100vh - 56px); // Smaller toolbar on mobile
+  }
+  
+  mat-toolbar {
+    height: 56px;
+    padding: 0 16px;
+  }
+}
+
+// Backdrop for mobile sidenav
+.mat-drawer-backdrop.mat-drawer-shown {
+  background-color: rgba(0, 0, 0, 0.6);
 }

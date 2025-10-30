@@ -1,0 +1,142 @@
+.attachment-list-container {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+
+    h1 {
+      margin: 0;
+      color: #333;
+    }
+  }
+
+  .filters {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+
+    mat-form-field {
+      min-width: 200px;
+      flex: 1;
+    }
+  }
+
+  .table-container {
+    .attachment-table {
+      width: 100%;
+
+      .file-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .file-icon {
+          color: #666;
+        }
+
+        .file-details {
+          .file-name {
+            font-weight: 500;
+            margin-bottom: 4px;
+          }
+
+          .content-type {
+            font-size: 0.875rem;
+            color: #666;
+          }
+        }
+      }
+
+      .description {
+        margin-bottom: 8px;
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .tags {
+        mat-chip-listbox {
+          mat-chip {
+            font-size: 0.75rem;
+            height: 24px;
+            margin: 2px;
+          }
+        }
+      }
+
+      .delete-action {
+        color: #f44336;
+      }
+    }
+
+    .loading-container {
+      text-align: center;
+      padding: 48px;
+      color: #666;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px;
+      color: #666;
+
+      mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+        margin-bottom: 16px;
+        color: #ccc;
+      }
+
+      h3 {
+        margin: 16px 0 8px 0;
+        color: #333;
+      }
+
+      p {
+        margin-bottom: 24px;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .attachment-list-container {
+    padding: 16px;
+
+    .header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 16px;
+
+      h1 {
+        text-align: center;
+      }
+    }
+
+    .filters {
+      flex-direction: column;
+
+      mat-form-field {
+        min-width: unset;
+      }
+    }
+
+    .table-container {
+      overflow-x: auto;
+
+      .attachment-table {
+        .description {
+          max-width: 200px;
+        }
+      }
+    }
+  }
+}

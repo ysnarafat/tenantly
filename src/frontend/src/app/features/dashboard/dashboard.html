@@ -1,35 +1,180 @@
 <div class="dashboard-container">
-  <h1>Dashboard</h1>
+  <div class="header">
+    <h1>Dashboard</h1>
+    <div class="user-info">
+      <mat-chip selected color="primary">{{ userRole$ | async }}</mat-chip>
+    </div>
+  </div>
 
-  <mat-grid-list cols="4" rowHeight="200px" gutterSize="16px">
-    <mat-grid-tile>
-      <mat-card class="summary-card">
-        <h2>৳0</h2>
-        <p>Total Rent Due</p>
-      </mat-card>
-    </mat-grid-tile>
+  <!-- Statistics Cards -->
+  <div class="stats-grid">
+    <mat-card class="stat-card rent-due">
+      <mat-card-content>
+        <div class="stat-content">
+          <div class="stat-value">{{ formatCurrency(stats.totalRentDue) }}</div>
+          <div class="stat-label">Total Rent Due</div>
+        </div>
+        <mat-icon class="stat-icon">account_balance_wallet</mat-icon>
+      </mat-card-content>
+    </mat-card>
 
-    <mat-grid-tile>
-      <mat-card class="summary-card">
-        <h2>৳0</h2>
-        <p>Collected This Month</p>
-      </mat-card>
-    </mat-grid-tile>
+    <mat-card class="stat-card collected">
+      <mat-card-content>
+        <div class="stat-content">
+          <div class="stat-value">{{ formatCurrency(stats.collectedThisMonth) }}</div>
+          <div class="stat-label">Collected This Month</div>
+        </div>
+        <mat-icon class="stat-icon">trending_up</mat-icon>
+      </mat-card-content>
+    </mat-card>
 
-    <mat-grid-tile>
-      <mat-card class="summary-card">
-        <h2>৳0</h2>
-        <p>Pending Payments</p>
-      </mat-card>
-    </mat-grid-tile>
+    <mat-card class="stat-card pending">
+      <mat-card-content>
+        <div class="stat-content">
+          <div class="stat-value">{{ formatCurrency(stats.pendingPayments) }}</div>
+          <div class="stat-label">Pending Payments</div>
+        </div>
+        <mat-icon class="stat-icon">schedule</mat-icon>
+      </mat-card-content>
+    </mat-card>
 
-    <mat-grid-tile>
-      <mat-card class="summary-card">
-        <h2>0</h2>
-        <p>Overdue Shops</p>
-      </mat-card>
-    </mat-grid-tile>
-  </mat-grid-list>
+    <mat-card class="stat-card overdue">
+      <mat-card-content>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.overdueShops }}</div>
+          <div class="stat-label">Overdue Shops</div>
+        </div>
+        <mat-icon class="stat-icon">warning</mat-icon>
+      </mat-card-content>
+    </mat-card>
 
-  <p class="placeholder-text">Dashboard functionality will be implemented in later tasks</p>
+    <mat-card class="stat-card active-leases">
+      <mat-card-content>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.activeLeases }}</div>
+          <div class="stat-label">Active Leases</div>
+        </div>
+        <mat-icon class="stat-icon">assignment</mat-icon>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card expiring">
+      <mat-card-content>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.expiringLeases }}</div>
+          <div class="stat-label">Expiring Soon</div>
+        </div>
+        <mat-icon class="stat-icon">event</mat-icon>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card attachments">
+      <mat-card-content>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.totalAttachments }}</div>
+          <div class="stat-label">Total Attachments</div>
+        </div>
+        <mat-icon class="stat-icon">attach_file</mat-icon>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card recent-files">
+      <mat-card-content>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats.recentAttachments }}</div>
+          <div class="stat-label">Recent Files</div>
+        </div>
+        <mat-icon class="stat-icon">cloud_upload</mat-icon>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="activity-section">
+    <!-- Expiring Leases -->
+    <mat-card class="activity-card" *ngIf="(canViewLeases$ | async) && expiringLeases.length > 0">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>event</mat-icon>
+          Leases Expiring Soon
+        </mat-card-title>
+        <button mat-button routerLink="/leases" color="primary">View All</button>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="lease-list">
+          <div class="lease-item" *ngFor="let lease of expiringLeases">
+            <div class="lease-info">
+              <div class="shop-name">{{ lease.shop_name }} ({{ lease.shop_number }})</div>
+              <div class="tenant-name">{{ lease.tenant_name }}</div>
+            </div>
+            <div class="lease-status">
+              <mat-chip color="warn" selected>
+                {{ lease.days_remaining }} days left
+              </mat-chip>
+            </div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Recent Leases -->
+    <mat-card class="activity-card" *ngIf="canViewLeases$ | async">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>assignment</mat-icon>
+          Recent Leases
+        </mat-card-title>
+        <button mat-button routerLink="/leases" color="primary">View All</button>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="lease-list">
+          <div class="lease-item" *ngFor="let lease of recentLeases">
+            <div class="lease-info">
+              <div class="shop-name">{{ lease.shop_name }} ({{ lease.shop_number }})</div>
+              <div class="tenant-name">{{ lease.tenant_name }}</div>
+            </div>
+            <div class="lease-rent">
+              {{ formatCurrency(lease.monthly_rent) }}/month
+            </div>
+          </div>
+        </div>
+        <div *ngIf="recentLeases.length === 0" class="empty-message">
+          No recent leases found.
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Recent Attachments -->
+    <mat-card class="activity-card" *ngIf="canViewAttachments$ | async">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>attach_file</mat-icon>
+          Recent Attachments
+        </mat-card-title>
+        <button mat-button routerLink="/attachments" color="primary">View All</button>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="attachment-list">
+          <div class="attachment-item" *ngFor="let attachment of recentAttachments">
+            <mat-icon class="file-icon">{{ getFileIcon(attachment.content_type) }}</mat-icon>
+            <div class="attachment-info">
+              <div class="file-name">{{ attachment.file_name }}</div>
+              <div class="upload-date">{{ formatDate(attachment.created_at) }}</div>
+            </div>
+            <mat-chip [color]="getTypeColor(attachment.attachment_type)" selected>
+              {{ attachment.attachment_type }}
+            </mat-chip>
+          </div>
+        </div>
+        <div *ngIf="recentAttachments.length === 0" class="empty-message">
+          No recent attachments found.
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <p>Loading dashboard data...</p>
+  </div>
 </div>

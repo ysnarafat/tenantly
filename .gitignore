@@ -93,8 +93,6 @@ packages/
 project.lock.json
 project.fragment.lock.json
 
-# Entity Framework Migrations
-migrations/
 
 # Rider / JetBrains IDE
 .idea/
@@ -108,3 +106,4 @@ secrets.json
 *.mdf
 *.ldf
 *.kiro
+*.secrets

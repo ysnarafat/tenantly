@@ -45,9 +45,25 @@ func (r *UserRepository) GetByUsername(username string) (*models.User, error) {
 	user := &models.User{}
 	query := `
 		SELECT id, username, email, password_hash, role, active, created_at, updated_at
-		FROM users WHERE username = $1 AND active = true`
+		FROM users WHERE username = $1`
 
 	err := r.db.QueryRow(query, username).Scan(
+		&user.ID, &user.Username, &user.Email, &user.PasswordHash,
+		&user.Role, &user.Active, &user.CreatedAt, &user.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (r *UserRepository) GetByEmail(email string) (*models.User, error) {
+	user := &models.User{}
+	query := `
+		SELECT id, username, email, password_hash, role, active, created_at, updated_at
+		FROM users WHERE email = $1`
+
+	err := r.db.QueryRow(query, email).Scan(
 		&user.ID, &user.Username, &user.Email, &user.PasswordHash,
 		&user.Role, &user.Active, &user.CreatedAt, &user.UpdatedAt,
 	)
@@ -108,5 +124,45 @@ func (r *UserRepository) Update(id int, updates map[string]interface{}) error {
 func (r *UserRepository) Delete(id int) error {
 	query := "UPDATE users SET active = false, updated_at = NOW() WHERE id = $1"
 	_, err := r.db.Exec(query, id)
+	return err
+}
+
+// Password reset token methods
+func (r *UserRepository) CreateResetToken(token *models.ResetPasswordToken) error {
+	query := `
+		INSERT INTO password_reset_tokens (user_id, token, expires_at, used)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id, created_at`
+
+	return r.db.QueryRow(query, token.UserID, token.Token, token.ExpiresAt, token.Used).
+		Scan(&token.ID, &token.CreatedAt)
+}
+
+func (r *UserRepository) GetResetToken(token string) (*models.ResetPasswordToken, error) {
+	resetToken := &models.ResetPasswordToken{}
+	query := `
+		SELECT id, user_id, token, expires_at, used, created_at
+		FROM password_reset_tokens 
+		WHERE token = $1 AND used = false AND expires_at > NOW()`
+
+	err := r.db.QueryRow(query, token).Scan(
+		&resetToken.ID, &resetToken.UserID, &resetToken.Token,
+		&resetToken.ExpiresAt, &resetToken.Used, &resetToken.CreatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return resetToken, nil
+}
+
+func (r *UserRepository) MarkResetTokenUsed(tokenID int) error {
+	query := "UPDATE password_reset_tokens SET used = true WHERE id = $1"
+	_, err := r.db.Exec(query, tokenID)
+	return err
+}
+
+func (r *UserRepository) CleanupExpiredTokens() error {
+	query := "DELETE FROM password_reset_tokens WHERE expires_at < NOW() OR used = true"
+	_, err := r.db.Exec(query)
 	return err
 }

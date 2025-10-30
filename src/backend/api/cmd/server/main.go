@@ -13,8 +13,11 @@ import (
 
 func main() {
 	// Load environment variables
-	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using system environment variables")
+	if err := godotenv.Load(".env", "src/backend/api/.env"); err != nil {
+		// Try loading from the api directory if not found in current directory
+		if err := godotenv.Load("src/backend/api/.env"); err != nil {
+			log.Println("No .env file found, using system environment variables")
+		}
 	}
 
 	// Load configuration
@@ -27,7 +30,7 @@ func main() {
 	// Initialize database
 	db, err := database.Connect(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+		log.Fatal("Failed to connect to database: ", err)
 	}
 	defer db.Close()
 

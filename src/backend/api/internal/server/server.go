@@ -3,9 +3,11 @@ package server
 import (
 	"database/sql"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ysnarafat/tenantly/internal/config"
+	"github.com/ysnarafat/tenantly/internal/database"
 	"github.com/ysnarafat/tenantly/internal/handlers"
 	"github.com/ysnarafat/tenantly/internal/middleware"
 	"github.com/ysnarafat/tenantly/internal/repositories"
@@ -32,8 +34,19 @@ func New(cfg *config.Config, db *sql.DB) *Server {
 }
 
 func (s *Server) setupMiddleware() {
+	// Security headers
+	s.router.Use(middleware.SecurityHeadersMiddleware())
+
 	// CORS middleware
 	s.router.Use(middleware.CORS())
+
+	// Rate limiting (5 requests per second per IP)
+	rateLimiter := middleware.NewRateLimiter(100, time.Minute)
+	auditService := database.NewAuditService(s.db)
+	s.router.Use(middleware.RateLimitMiddleware(rateLimiter, auditService))
+
+	// Request logging and audit
+	s.router.Use(middleware.AuditMiddleware(auditService))
 
 	// Request logging
 	s.router.Use(gin.Logger())
@@ -43,11 +56,14 @@ func (s *Server) setupMiddleware() {
 }
 
 func (s *Server) setupRoutes() {
+	// Initialize audit service
+	auditService := database.NewAuditService(s.db)
+
 	// Initialize repositories
 	userRepo := repositories.NewUserRepository(s.db)
 
 	// Initialize services
-	userService := services.NewUserService(userRepo, s.config.JWTSecret)
+	userService := services.NewUserService(userRepo, auditService, s.config.JWTSecret, s.config.JWTExpiration)
 
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService)
@@ -63,24 +79,35 @@ func (s *Server) setupRoutes() {
 	// API v1 routes
 	v1 := s.router.Group("/api/v1")
 	{
-		// Authentication routes
+		// Authentication routes (public)
 		auth := v1.Group("/auth")
 		{
 			auth.POST("/login", userHandler.Login)
+			auth.POST("/refresh", userHandler.RefreshToken)
+			auth.POST("/reset-password", userHandler.ResetPassword)
+			auth.POST("/confirm-reset-password", userHandler.ConfirmPasswordReset)
 		}
 
 		// Protected routes
+		auditService := database.NewAuditService(s.db)
 		protected := v1.Group("/")
-		protected.Use(middleware.AuthRequired(s.config.JWTSecret))
+		protected.Use(middleware.AuthRequired(s.config.JWTSecret, auditService))
+		protected.Use(middleware.SessionTimeoutMiddleware(auditService))
 		{
-			// User management routes
+			// Authentication routes (protected)
+			authProtected := protected.Group("/auth")
+			{
+				authProtected.POST("/logout", userHandler.Logout)
+				authProtected.POST("/change-password", userHandler.ChangePassword)
+			}
+			// User management routes (role-based access)
 			users := protected.Group("/users")
 			{
-				users.GET("", userHandler.GetUsers)
-				users.POST("", userHandler.CreateUser)
-				users.GET("/:id", userHandler.GetUser)
-				users.PUT("/:id", userHandler.UpdateUser)
-				users.DELETE("/:id", userHandler.DeleteUser)
+				users.GET("", middleware.RequireAdminOrPropertyManager(), userHandler.GetUsers)
+				users.POST("", middleware.RequireAdmin(), userHandler.CreateUser)
+				users.GET("/:id", middleware.RequireAnyRole(), userHandler.GetUser)
+				users.PUT("/:id", middleware.RequireAdmin(), userHandler.UpdateUser)
+				users.DELETE("/:id", middleware.RequireAdmin(), userHandler.DeleteUser)
 			}
 
 			// Placeholder routes for other modules (will be implemented in later tasks)
