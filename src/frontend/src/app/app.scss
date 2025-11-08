@@ -10,7 +10,8 @@
 }
 
 .sidenav {
-  width: 250px;
+  width: 260px;
+  border-right: 1px solid rgba(0, 0, 0, 0.12);
   
   @media (max-width: 768px) {
     width: 280px; // Slightly wider on mobile for better touch targets
@@ -34,26 +35,76 @@
   flex: 1 1 auto;
 }
 
+.app-toolbar {
+  position: relative;
+  z-index: 2;
+}
+
+.app-branding {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  
+  @media (max-width: 768px) {
+    gap: 0;
+  }
+}
+
 .app-title {
-  font-size: 1.25rem;
-  font-weight: 500;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  
+  @media (max-width: 768px) {
+    font-size: 1.25rem;
+  }
   
   @media (max-width: 480px) {
     font-size: 1.1rem;
   }
 }
 
+.app-subtitle {
+  font-size: 0.75rem;
+  font-weight: 400;
+  opacity: 0.85;
+  line-height: 1;
+  
+  @media (max-width: 768px) {
+    font-size: 0.7rem;
+  }
+  
+  @media (max-width: 480px) {
+    display: none;
+  }
+}
+
 .user-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   
-  .user-role {
-    font-size: 0.875rem;
-    opacity: 0.8;
+  .user-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
     
-    @media (max-width: 480px) {
-      display: none; // Hide role text on very small screens
+    @media (max-width: 768px) {
+      display: none;
+    }
+    
+    .user-name {
+      font-size: 0.875rem;
+      font-weight: 500;
+      line-height: 1;
+    }
+    
+    .user-role {
+      font-size: 0.75rem;
+      opacity: 0.8;
+      line-height: 1;
     }
   }
 }
@@ -64,37 +115,106 @@
 
 // Navigation list styling
 mat-nav-list {
-  padding-top: 8px;
+  padding: 0;
   
-  a {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 16px;
-    min-height: 48px; // Better touch targets
+  h3[matSubheader] {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: rgba(0, 0, 0, 0.54);
+    padding: 16px 16px 8px 16px;
+    margin: 0;
+    line-height: 1.2;
+    height: auto;
+    min-height: auto;
+  }
+  
+  mat-divider {
+    margin: 8px 0;
+  }
+  
+  a[mat-list-item] {
+    height: 48px !important;
+    padding: 0 16px !important;
+    transition: all 0.2s ease;
+    position: relative;
+    
+    // Force inline layout
+    &::ng-deep,
+    & {
+      .mdc-list-item__content {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 16px !important;
+        padding: 0 !important;
+        height: 48px !important;
+      }
+      
+      .mat-mdc-list-item-unscoped-content {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 16px !important;
+        width: 100% !important;
+      }
+    }
     
     mat-icon {
-      width: 24px;
-      height: 24px;
-      font-size: 24px;
+      width: 24px !important;
+      height: 24px !important;
+      font-size: 24px !important;
+      line-height: 24px !important;
+      color: rgba(0, 0, 0, 0.54);
+      transition: color 0.2s ease;
+      flex-shrink: 0 !important;
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      margin: 0 !important;
     }
     
     span {
       font-size: 0.875rem;
       font-weight: 400;
+      color: rgba(0, 0, 0, 0.87);
+      transition: color 0.2s ease;
+      line-height: 1.5;
+      flex: 1;
+      display: inline-block;
+      vertical-align: middle;
     }
     
     &.active {
-      background-color: rgba(0, 0, 0, 0.04);
-      color: var(--mdc-theme-primary, #1976d2);
+      background-color: rgba(25, 118, 210, 0.08);
+      
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background-color: var(--mdc-theme-primary, #1976d2);
+      }
       
       mat-icon {
         color: var(--mdc-theme-primary, #1976d2);
       }
+      
+      span {
+        color: var(--mdc-theme-primary, #1976d2);
+        font-weight: 500;
+      }
     }
     
-    &:hover {
+    &:hover:not(.active) {
       background-color: rgba(0, 0, 0, 0.04);
+      
+      mat-icon {
+        color: rgba(0, 0, 0, 0.87);
+      }
     }
   }
 }
@@ -114,4 +234,50 @@ mat-nav-list {
 // Backdrop for mobile sidenav
 .mat-drawer-backdrop.mat-drawer-shown {
   background-color: rgba(0, 0, 0, 0.6);
+}
+
+// Fix Material list item alignment issues
+.mat-mdc-list-item {
+  &.mat-mdc-list-item-interactive {
+    cursor: pointer;
+  }
+  
+  .mat-mdc-list-item-unscoped-content {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    width: 100% !important;
+    gap: 16px !important;
+  }
+}
+
+// Ensure icons and text are properly aligned
+.mdc-list-item__content {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  width: 100% !important;
+  gap: 16px !important;
+}
+
+// Fix for Material 3 list items
+mat-list-item {
+  &.mdc-list-item {
+    height: 48px !important;
+    padding: 0 !important;
+  }
+}
+
+// Force inline layout for nav list items
+mat-nav-list {
+  .mat-mdc-list-item {
+    height: 48px !important;
+    
+    .mdc-list-item__primary-text {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      gap: 16px !important;
+    }
+  }
 }

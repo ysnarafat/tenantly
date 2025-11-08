@@ -7,9 +7,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatDividerModule } from '@angular/material/divider';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthFacade } from './store/auth/auth.facade';
+import { PermissionService } from './core/services/permission.service';
+import { Permission } from './core/models/role.model';
 
 @Component({
   selector: 'app-root',
@@ -24,6 +28,8 @@ import { AuthFacade } from './store/auth/auth.facade';
     MatSidenavModule,
     MatListModule,
     MatTooltipModule,
+    MatMenuModule,
+    MatDividerModule,
   ],
   templateUrl: './app.html',
   styleUrls: ['./app.scss'],
@@ -32,14 +38,20 @@ export class App implements OnInit {
   @ViewChild('sidenav') sidenav!: MatSidenav;
 
   public authFacade = inject(AuthFacade);
+  public permissions = inject(PermissionService);
   private breakpointObserver = inject(BreakpointObserver);
 
   // Signals for reactive state
   isAuthenticated = signal(false);
   userRole = signal('');
-  isAdmin = signal(false);
-  isPropertyManager = signal(false);
+  user = signal<any>(null);
   isMobile = signal(false);
+  
+  // Computed permission signals
+  canManageProperties = computed(() => this.permissions.hasPermission(Permission.MANAGE_PROPERTIES));
+  canManageTenants = computed(() => this.permissions.hasPermission(Permission.MANAGE_TENANTS));
+  canManageDocuments = computed(() => this.permissions.hasPermission(Permission.MANAGE_DOCUMENTS));
+  canManageUsers = computed(() => this.permissions.hasPermission(Permission.MANAGE_USERS));
 
   // Computed signals for derived state
   sidenavMode = computed(() => this.isMobile() ? 'over' as const : 'side' as const);
@@ -56,13 +68,11 @@ export class App implements OnInit {
       .pipe(takeUntilDestroyed())
       .subscribe(role => this.userRole.set(role));
 
-    this.authFacade.isAdmin$
-      .pipe(takeUntilDestroyed())
-      .subscribe(isAdmin => this.isAdmin.set(isAdmin));
+    // Permission-based signals are handled by PermissionService
 
-    this.authFacade.isPropertyManager$
+    this.authFacade.user$
       .pipe(takeUntilDestroyed())
-      .subscribe(isPM => this.isPropertyManager.set(isPM));
+      .subscribe(user => this.user.set(user));
 
     this.breakpointObserver.observe([Breakpoints.Handset])
       .pipe(takeUntilDestroyed())

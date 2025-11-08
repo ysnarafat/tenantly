@@ -3,13 +3,17 @@ DROP TRIGGER IF EXISTS update_notification_queue_updated_at ON notification_queu
 DROP TRIGGER IF EXISTS update_payments_updated_at ON payments;
 DROP TRIGGER IF EXISTS update_leases_updated_at ON leases;
 DROP TRIGGER IF EXISTS update_tenants_updated_at ON tenants;
-DROP TRIGGER IF EXISTS update_shops_updated_at ON shops;
+DROP TRIGGER IF EXISTS update_units_updated_at ON units;
+DROP TRIGGER IF EXISTS update_buildings_updated_at ON buildings;
+DROP TRIGGER IF EXISTS update_properties_updated_at ON properties;
 DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 
 DROP TRIGGER IF EXISTS audit_payments_trigger ON payments;
 DROP TRIGGER IF EXISTS audit_leases_trigger ON leases;
 DROP TRIGGER IF EXISTS audit_tenants_trigger ON tenants;
-DROP TRIGGER IF EXISTS audit_shops_trigger ON shops;
+DROP TRIGGER IF EXISTS audit_units_trigger ON units;
+DROP TRIGGER IF EXISTS audit_buildings_trigger ON buildings;
+DROP TRIGGER IF EXISTS audit_properties_trigger ON properties;
 DROP TRIGGER IF EXISTS audit_users_trigger ON users;
 
 -- Drop functions
@@ -25,14 +29,18 @@ DROP INDEX IF EXISTS idx_audit_log_user_id;
 DROP INDEX IF EXISTS idx_payments_receipt_number;
 DROP INDEX IF EXISTS idx_payments_year_month;
 DROP INDEX IF EXISTS idx_payments_tenant_status;
-DROP INDEX IF EXISTS idx_leases_shop_active;
+DROP INDEX IF EXISTS idx_leases_end_date;
+DROP INDEX IF EXISTS idx_leases_unit_active;
 DROP INDEX IF EXISTS idx_leases_tenant_active;
 DROP INDEX IF EXISTS idx_leases_start_date;
 DROP INDEX IF EXISTS idx_tenants_nid;
 DROP INDEX IF EXISTS idx_tenants_email;
 DROP INDEX IF EXISTS idx_tenants_phone;
-DROP INDEX IF EXISTS idx_shops_floor_section;
-DROP INDEX IF EXISTS idx_shops_property_active;
+DROP INDEX IF EXISTS idx_units_floor_section;
+DROP INDEX IF EXISTS idx_units_building_active;
+DROP INDEX IF EXISTS idx_buildings_code;
+DROP INDEX IF EXISTS idx_buildings_property_active;
+DROP INDEX IF EXISTS idx_properties_code;
 DROP INDEX IF EXISTS idx_users_active;
 DROP INDEX IF EXISTS idx_users_role;
 DROP INDEX IF EXISTS idx_users_email;
