@@ -1,11 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { 
-  Property, 
-  PropertyWithStats, 
-  CreatePropertyRequest, 
-  UpdatePropertyRequest 
+import {
+  Property,
+  PropertyWithStats,
+  CreatePropertyRequest,
+  UpdatePropertyRequest,
+  PropertyListResponse
 } from '../models';
 import { environment } from '../../../environments/environment';
 
@@ -16,12 +17,12 @@ export class PropertyService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/properties`;
 
-  getProperties(params?: { active?: boolean }): Observable<Property[]> {
+  getProperties(params?: { active?: boolean }): Observable<PropertyListResponse> {
     let httpParams = new HttpParams();
     if (params?.active !== undefined) {
       httpParams = httpParams.set('active', params.active.toString());
     }
-    return this.http.get<Property[]>(this.apiUrl, { params: httpParams });
+    return this.http.get<PropertyListResponse>(this.apiUrl, { params: httpParams });
   }
 
   getProperty(id: number): Observable<Property> {

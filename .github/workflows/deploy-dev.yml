@@ -20,7 +20,10 @@ jobs:
 
       - name: Copy files to dev server
         run: |
-          rsync -avz \
+          rsync -avz --delete \
+            --exclude '.env' \
+            --exclude 'notification-logs' \
+            --exclude '.git' \
             -e "ssh -o StrictHostKeyChecking=no" \
             ./ \
             ${{ secrets.DEV_USER }}@${{ secrets.DEV_HOST }}:/home/${{ secrets.DEV_USER }}/tenantly/ \

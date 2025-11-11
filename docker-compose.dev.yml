@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   api:
     container_name: tenantly-api-dev    
@@ -16,4 +14,3 @@ services:
     container_name: tenantly-frontend-dev
     environment:
       - NODE_ENV=development
-
