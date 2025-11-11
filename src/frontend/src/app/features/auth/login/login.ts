@@ -51,11 +51,6 @@ export class Login implements OnInit {
     this.authService.error$
       .pipe(takeUntilDestroyed())
       .subscribe(error => this.error.set(error));
-  }
-
-  ngOnInit() {
-    // Clear any previous errors when component initializes
-    this.authService.clearError();
 
     // Listen for authentication success
     this.authService.isAuthenticated$
@@ -82,6 +77,11 @@ export class Login implements OnInit {
           { duration: 5000 }
         );
       });
+  }
+
+  ngOnInit() {
+    // Clear any previous errors when component initializes
+    this.authService.clearError();
   }
 
   onSubmit() {

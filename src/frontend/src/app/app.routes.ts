@@ -17,14 +17,19 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
-    path: 'shops',
-    loadComponent: () => import('./features/shops/shop-list/shop-list').then((m) => m.ShopList),
+    path: 'properties',
+    loadComponent: () => import('./features/properties/property-list/property-list.component').then((m) => m.PropertyListComponent),
     canActivate: [AuthGuard],
   },
   {
     path: 'tenants',
     loadComponent: () =>
       import('./features/tenants/tenant-list/tenant-list').then((m) => m.TenantList),
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'leases',
+    loadComponent: () => import('./features/leases/lease-list/lease-list').then((m) => m.LeaseList),
     canActivate: [AuthGuard],
   },
   {
@@ -40,19 +45,25 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
+    path: 'documents',
+    loadComponent: () => import('./features/attachments/attachment-list/attachment-list').then((m) => m.AttachmentList),
+    canActivate: [AuthGuard],
+  },
+  {
     path: 'users',
     loadComponent: () => import('./features/users/user-list/user-list').then((m) => m.UserList),
     canActivate: [AuthGuard],
   },
+  // Legacy routes for backward compatibility
   {
-    path: 'leases',
-    loadComponent: () => import('./features/leases/lease-list/lease-list').then((m) => m.LeaseList),
-    canActivate: [AuthGuard],
+    path: 'shops',
+    redirectTo: 'properties',
+    pathMatch: 'full',
   },
   {
     path: 'attachments',
-    loadComponent: () => import('./features/attachments/attachment-list/attachment-list').then((m) => m.AttachmentList),
-    canActivate: [AuthGuard],
+    redirectTo: 'documents',
+    pathMatch: 'full',
   },
   {
     path: '**',

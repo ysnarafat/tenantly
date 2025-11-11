@@ -1,0 +1,62 @@
+export type PaymentStatus = 'Paid' | 'Due' | 'Partial' | 'Overdue';
+
+export interface Payment {
+  id: number;
+  unit_id: number;
+  tenant_id: number;
+  building_id: number;
+  property_id: number;
+  month: number;
+  year: number;
+  amount_due: number;
+  amount_paid: number;
+  status: PaymentStatus;
+  payment_method?: string;
+  payment_date?: string; // ISO 8601 date
+  notes?: string;
+  receipt_number?: string;
+  due_date?: string; // ISO 8601 date
+  created_at: string; // ISO 8601 UTC timestamp
+  updated_at: string; // ISO 8601 UTC timestamp
+}
+
+export interface PaymentWithDetails extends Payment {
+  property_name: string;
+  building_name: string;
+  building_code: string;
+  unit_number: string;
+  unit_type: string;
+  tenant_name: string;
+}
+
+export interface CreatePaymentRequest {
+  unit_id: number;
+  tenant_id: number;
+  building_id: number;
+  property_id: number;
+  month: number;
+  year: number;
+  amount_due: number;
+  due_date?: string;
+}
+
+export interface UpdatePaymentRequest {
+  amount_paid?: number;
+  status?: PaymentStatus;
+  payment_method?: string;
+  payment_date?: string;
+  notes?: string;
+  receipt_number?: string;
+}
+
+export interface DashboardSummary {
+  total_due: number;
+  total_paid: number;
+  total_pending: number;
+  total_overdue: number;
+  collection_rate: number;
+  property_count: number;
+  building_count: number;
+  unit_count: number;
+  tenant_count: number;
+}
