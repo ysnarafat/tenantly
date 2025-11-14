@@ -87,8 +87,6 @@ type BuildingWithStats struct {
 	OccupancyRate float64 `json:"occupancy_rate"`
 }
 
-// PaginationInfo represents common pagination metadata
-
 // BulkCreateBuildingsRequest represents the request to create multiple buildings
 type BulkCreateBuildingsRequest struct {
 	PropertyID int                     `json:"property_id" binding:"required"`
@@ -107,11 +105,7 @@ type BuildingSearchFilters struct {
 	Offset       int           `json:"offset"`
 }
 
-// PropertyStatistics represents aggregated statistics for a property
-
-// PropertyWithBuildings represents a property with its buildings
-
-// BuildingAnalytics represents detailed analytics for a building
+// BuildingAnalytics represents building performance metrics
 type BuildingAnalytics struct {
 	BuildingID     int     `json:"building_id"`
 	UnitCount      int     `json:"unit_count"`
