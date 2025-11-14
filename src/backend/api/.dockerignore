@@ -1,0 +1,64 @@
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+main
+*.test
+*.out
+
+# Dependency directories
+vendor/
+
+# Environment files
+.env*
+
+# Logs
+*.log
+logs/
+
+# Testing
+coverage.txt
+coverage.html
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# CI/CD files
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Editor files
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
