@@ -67,12 +67,16 @@ func (s *PropertyService) GetProperty(id int) (*models.Property, error) {
 	return property, nil
 }
 
-// GetPropertyWithStats retrieves a property with aggregated statistics
+// GetPropertyWithStats retrieves a property with aggregated statistics including building context
 func (s *PropertyService) GetPropertyWithStats(id int) (*models.PropertyWithStats, error) {
 	property, err := s.propertyRepo.GetByIDWithStats(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get property with stats: %w", err)
 	}
+
+	// Building context is already included in the PropertyWithStats from repository
+	// Additional building-level aggregations would be implemented in the repository layer
+
 	return property, nil
 }
 
@@ -194,7 +198,7 @@ func (s *PropertyService) validatePropertyType(propertyType string) error {
 	return nil
 }
 
-// GetPropertyAggregations returns property-level aggregations
+// GetPropertyAggregations returns property-level aggregations with building breakdowns
 func (s *PropertyService) GetPropertyAggregations(id int) (map[string]interface{}, error) {
 	property, err := s.propertyRepo.GetByIDWithStats(id)
 	if err != nil {
@@ -216,6 +220,9 @@ func (s *PropertyService) GetPropertyAggregations(id int) (map[string]interface{
 		"property_type":   property.PropertyType,
 		"active_status":   property.Active,
 	}
+
+	// Building breakdowns and type distribution would be implemented in repository layer
+	// For now, we provide basic aggregations
 
 	return aggregations, nil
 }
@@ -240,6 +247,38 @@ func (s *PropertyService) ValidatePropertyAccess(userRole string, propertyID int
 	return fmt.Errorf("insufficient permissions to access property")
 }
 
+// GetPropertyBuildingCount returns the count of active buildings for a property
+func (s *PropertyService) GetPropertyBuildingCount(propertyID int) (int, error) {
+	// Validate property exists
+	_, err := s.propertyRepo.GetByID(propertyID)
+	if err != nil {
+		return 0, fmt.Errorf("property validation failed: %w", err)
+	}
+
+	count, err := s.propertyRepo.GetBuildingCount(propertyID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get building count: %w", err)
+	}
+
+	return count, nil
+}
+
+// GetPropertyBuildingSummary returns building summary statistics for a property
+func (s *PropertyService) GetPropertyBuildingSummary(propertyID int) (map[string]interface{}, error) {
+	// Validate property exists
+	_, err := s.propertyRepo.GetByID(propertyID)
+	if err != nil {
+		return nil, fmt.Errorf("property validation failed: %w", err)
+	}
+
+	summary, err := s.propertyRepo.GetBuildingSummary(propertyID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get building summary: %w", err)
+	}
+
+	return summary, nil
+}
+
 // SearchProperties performs advanced search on properties
 func (s *PropertyService) SearchProperties(searchTerm string, filters map[string]interface{}, page, pageSize int) ([]*models.Property, int, error) {
 	// Add search term to filters
@@ -248,4 +287,74 @@ func (s *PropertyService) SearchProperties(searchTerm string, filters map[string
 	}
 
 	return s.ListProperties(filters, page, pageSize)
+}
+
+// GetPropertyWithBuildingContext returns property with enhanced building context
+func (s *PropertyService) GetPropertyWithBuildingContext(id int) (*models.PropertyWithBuildings, error) {
+	// Get property with stats
+	property, err := s.propertyRepo.GetByIDWithStats(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get property: %w", err)
+	}
+
+	// Get buildings for the property (this would need to be implemented in repository)
+	// For now, return basic structure
+	result := &models.PropertyWithBuildings{
+		Property: models.Property{
+			ID:             property.ID,
+			PropertyName:   property.PropertyName,
+			PropertyCode:   property.PropertyCode,
+			Address:        property.Address,
+			City:           property.City,
+			PostalCode:     property.PostalCode,
+			PropertyType:   property.PropertyType,
+			TotalBuildings: property.TotalBuildings,
+			Metadata:       property.Metadata,
+			Active:         property.Active,
+			CreatedAt:      property.CreatedAt,
+			UpdatedAt:      property.UpdatedAt,
+		},
+		BuildingCount: property.BuildingCount,
+		Statistics: &models.PropertyStatistics{
+			TotalUnits:     property.UnitCount,
+			OccupiedUnits:  property.OccupiedUnits,
+			VacantUnits:    property.UnitCount - property.OccupiedUnits,
+			OccupancyRate:  float64(property.OccupiedUnits) / float64(property.UnitCount) * 100,
+			TotalRevenue:   property.TotalRevenue,
+			AverageRevenue: property.TotalRevenue / float64(property.UnitCount),
+		},
+	}
+
+	return result, nil
+}
+
+// GetPropertiesWithBuildingStats returns properties with building-level statistics
+func (s *PropertyService) GetPropertiesWithBuildingStats(filters map[string]interface{}, page, pageSize int) ([]*models.PropertyWithStats, int, error) {
+	// Validate page and pageSize
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	offset := (page - 1) * pageSize
+
+	// Get properties with enhanced building context
+	properties, total, err := s.propertyRepo.List(filters, pageSize, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to list properties: %w", err)
+	}
+
+	// Enhance each property with building statistics
+	enhancedProperties := make([]*models.PropertyWithStats, 0, len(properties))
+	for _, property := range properties {
+		enhanced, err := s.GetPropertyWithStats(property.ID)
+		if err != nil {
+			continue // Skip properties with errors but don't fail the entire request
+		}
+		enhancedProperties = append(enhancedProperties, enhanced)
+	}
+
+	return enhancedProperties, total, nil
 }

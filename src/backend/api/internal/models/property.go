@@ -83,3 +83,57 @@ type PropertyWithStats struct {
 	OccupiedUnits int     `json:"occupied_units"`
 	TotalRevenue  float64 `json:"total_revenue"`
 }
+
+// PropertyWithBuildings includes property with its buildings in hierarchical structure
+type PropertyWithBuildings struct {
+	Property
+	Buildings     []*Building         `json:"buildings"`
+	BuildingCount int                 `json:"building_count"`
+	Statistics    *PropertyStatistics `json:"statistics,omitempty"`
+}
+
+// PropertyWithBuildingsStats includes property with buildings and their statistics
+type PropertyWithBuildingsStats struct {
+	Property
+	Buildings     []*BuildingWithStats `json:"buildings"`
+	BuildingCount int                  `json:"building_count"`
+	Statistics    *PropertyStatistics  `json:"statistics,omitempty"`
+}
+
+// PropertyStatistics contains aggregated statistics for a property
+type PropertyStatistics struct {
+	TotalUnits     int     `json:"total_units"`
+	OccupiedUnits  int     `json:"occupied_units"`
+	VacantUnits    int     `json:"vacant_units"`
+	OccupancyRate  float64 `json:"occupancy_rate"`
+	TotalRevenue   float64 `json:"total_revenue"`
+	AverageRevenue float64 `json:"average_revenue"`
+}
+
+// BuildingListRequest represents request parameters for building listing
+type BuildingListRequest struct {
+	Page         int    `form:"page" binding:"omitempty,min=1"`
+	PageSize     int    `form:"page_size" binding:"omitempty,min=1,max=100"`
+	SortBy       string `form:"sort_by" binding:"omitempty,oneof=building_name building_code building_type total_floors construction_year created_at"`
+	SortOrder    string `form:"sort_order" binding:"omitempty,oneof=asc desc"`
+	BuildingType string `form:"building_type" binding:"omitempty,oneof=Residential Commercial Mixed"`
+	ActiveStatus *bool  `form:"active_status"`
+	IncludeStats bool   `form:"include_stats"`
+}
+
+// BuildingListResponse represents paginated building list response
+type BuildingListResponse struct {
+	Buildings  interface{}         `json:"buildings"` // Can be []*Building or []*BuildingWithStats
+	Pagination *PaginationInfo     `json:"pagination"`
+	Statistics *PropertyStatistics `json:"statistics,omitempty"`
+}
+
+// PaginationInfo contains pagination metadata
+type PaginationInfo struct {
+	CurrentPage int  `json:"current_page"`
+	PageSize    int  `json:"page_size"`
+	TotalItems  int  `json:"total_items"`
+	TotalPages  int  `json:"total_pages"`
+	HasNext     bool `json:"has_next"`
+	HasPrev     bool `json:"has_prev"`
+}

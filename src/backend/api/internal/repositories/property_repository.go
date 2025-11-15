@@ -276,7 +276,7 @@ func (r *PropertyRepository) Update(id int, updates *models.UpdatePropertyReques
 		return r.GetByID(id)
 	}
 
-	setParts = append(setParts, fmt.Sprintf("updated_at = NOW() AT TIME ZONE 'UTC'"))
+	setParts = append(setParts, "updated_at = NOW() AT TIME ZONE 'UTC'")
 
 	query := fmt.Sprintf(`
 		UPDATE properties 
@@ -376,4 +376,78 @@ func (r *PropertyRepository) HasActiveUnits(id int) (bool, error) {
 		return false, fmt.Errorf("failed to check active units: %w", err)
 	}
 	return exists, nil
+}
+
+// GetBuildingCount returns the count of active buildings for a property
+func (r *PropertyRepository) GetBuildingCount(propertyID int) (int, error) {
+	query := `SELECT COUNT(*) FROM buildings WHERE property_id = $1 AND active_status = true`
+	var count int
+	err := r.db.QueryRow(query, propertyID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get building count: %w", err)
+	}
+	return count, nil
+}
+
+// GetBuildingSummary returns building summary statistics for a property
+func (r *PropertyRepository) GetBuildingSummary(propertyID int) (map[string]interface{}, error) {
+	query := `
+		SELECT 
+			COUNT(*) as total_buildings,
+			COUNT(CASE WHEN building_type = 'Residential' THEN 1 END) as residential_buildings,
+			COUNT(CASE WHEN building_type = 'Commercial' THEN 1 END) as commercial_buildings,
+			COUNT(CASE WHEN building_type = 'Mixed' THEN 1 END) as mixed_buildings,
+			COUNT(CASE WHEN has_elevator = true THEN 1 END) as buildings_with_elevator,
+			AVG(total_floors) as average_floors,
+			MIN(total_floors) as min_floors,
+			MAX(total_floors) as max_floors,
+			COUNT(CASE WHEN construction_year IS NOT NULL THEN 1 END) as buildings_with_construction_year,
+			AVG(CASE WHEN construction_year IS NOT NULL THEN construction_year END) as average_construction_year
+		FROM buildings 
+		WHERE property_id = $1 AND active_status = true`
+
+	var totalBuildings, residentialBuildings, commercialBuildings, mixedBuildings, buildingsWithElevator int
+	var buildingsWithConstructionYear int
+	var averageFloors, minFloors, maxFloors, averageConstructionYear sql.NullFloat64
+
+	err := r.db.QueryRow(query, propertyID).Scan(
+		&totalBuildings,
+		&residentialBuildings,
+		&commercialBuildings,
+		&mixedBuildings,
+		&buildingsWithElevator,
+		&averageFloors,
+		&minFloors,
+		&maxFloors,
+		&buildingsWithConstructionYear,
+		&averageConstructionYear,
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get building summary: %w", err)
+	}
+
+	summary := map[string]interface{}{
+		"total_buildings":                  totalBuildings,
+		"residential_buildings":            residentialBuildings,
+		"commercial_buildings":             commercialBuildings,
+		"mixed_buildings":                  mixedBuildings,
+		"buildings_with_elevator":          buildingsWithElevator,
+		"buildings_with_construction_year": buildingsWithConstructionYear,
+	}
+
+	if averageFloors.Valid {
+		summary["average_floors"] = averageFloors.Float64
+	}
+	if minFloors.Valid {
+		summary["min_floors"] = int(minFloors.Float64)
+	}
+	if maxFloors.Valid {
+		summary["max_floors"] = int(maxFloors.Float64)
+	}
+	if averageConstructionYear.Valid {
+		summary["average_construction_year"] = int(averageConstructionYear.Float64)
+	}
+
+	return summary, nil
 }
