@@ -6,8 +6,6 @@ on:
       - develop
 
   pull_request:
-    branches:
-      - develop
 
 jobs:
   deploy-dev:

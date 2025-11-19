@@ -172,22 +172,40 @@ func AuditMiddleware(auditService *database.AuditService) gin.HandlerFunc {
 		}
 
 		if auditService != nil {
-			auditService.LogUserAction(
-				*userIDInt,
-				"API_REQUEST",
-				"api_requests",
-				nil,
-				nil,
-				map[string]interface{}{
-					"method":      c.Request.Method,
-					"endpoint":    c.Request.URL.Path,
-					"status_code": c.Writer.Status(),
-					"duration_ms": duration.Milliseconds(),
-					"ip_address":  c.ClientIP(),
-					"user_agent":  c.GetHeader("User-Agent"),
-					"timestamp":   start,
-				},
-			)
+			if userIDInt != nil {
+				auditService.LogUserAction(
+					*userIDInt,
+					"API_REQUEST",
+					"api_requests",
+					nil,
+					nil,
+					map[string]interface{}{
+						"method":      c.Request.Method,
+						"endpoint":    c.Request.URL.Path,
+						"status_code": c.Writer.Status(),
+						"duration_ms": duration.Milliseconds(),
+						"ip_address":  c.ClientIP(),
+						"user_agent":  c.GetHeader("User-Agent"),
+						"timestamp":   start,
+					},
+				)
+			} else {
+				auditService.LogSystemAction(
+					"API_REQUEST",
+					"api_requests",
+					nil,
+					nil,
+					map[string]interface{}{
+						"method":      c.Request.Method,
+						"endpoint":    c.Request.URL.Path,
+						"status_code": c.Writer.Status(),
+						"duration_ms": duration.Milliseconds(),
+						"ip_address":  c.ClientIP(),
+						"user_agent":  c.GetHeader("User-Agent"),
+						"timestamp":   start,
+					},
+				)
+			}
 		}
 	}
 }

@@ -48,14 +48,14 @@ button[type="submit"] {
   height: 48px;
   font-size: 1rem;
   font-weight: 500;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   
   &.w-100 {
     width: 100%;
   }
   
-  .inline-spinner {
-    margin-right: 8px;
-  }
 }
 
 // Demo credentials info (you can add this to the template if needed)

@@ -14,7 +14,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   
   // Skip auth for login and refresh endpoints
-  if (req.url.includes('/auth/login') || req.url.includes('/auth/refresh') || req.url.includes('/auth/reset-password')) {
+  if (req.url.includes('/auth/login') || req.url.includes('/auth/refresh') || req.url.includes('/auth/reset-password') || req.url.includes('/auth/confirm-reset-password')) {
     return next(req);
   }
 

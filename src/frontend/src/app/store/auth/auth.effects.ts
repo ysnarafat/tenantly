@@ -26,7 +26,7 @@ export class AuthEffects {
         }
         
         // Production API call
-        return this.http.post<any>(`${environment.apiUrl}/api/v1/auth/login`, credentials).pipe(
+        return this.http.post<any>(`${environment.apiUrl}/auth/login`, credentials).pipe(
           map((response) => AuthActions.loginSuccess({ response })),
           catchError((error) => of(AuthActions.loginFailure({ error })))
         );
@@ -43,7 +43,7 @@ export class AuthEffects {
           localStorage.setItem('tenantly_token', response.token);
           localStorage.setItem('tenantly_refresh_token', response.refresh_token);
           localStorage.setItem('tenantly_user', JSON.stringify(response.user));
-          localStorage.setItem('tenantly_expires_at', response.expires_at);
+          localStorage.setItem('tenantly_expires_at', typeof response.expires_at === 'string' ? response.expires_at : new Date(response.expires_at).toISOString());
           
           // Navigate to dashboard
           this.router.navigate(['/dashboard']);
@@ -62,7 +62,7 @@ export class AuthEffects {
         }
         
         // Production API call
-        return this.http.post(`${environment.apiUrl}/api/v1/auth/logout`, {}).pipe(
+        return this.http.post(`${environment.apiUrl}/auth/logout`, {}).pipe(
           map(() => AuthActions.logoutSuccess()),
           catchError((error) => of(AuthActions.logoutFailure({ error })))
         );
@@ -105,7 +105,7 @@ export class AuthEffects {
         
         // Production API call
         const request = { refresh_token: refreshToken };
-        return this.http.post<any>(`${environment.apiUrl}/api/v1/auth/refresh`, request).pipe(
+        return this.http.post<any>(`${environment.apiUrl}/auth/refresh`, request).pipe(
           map((response) => AuthActions.refreshTokenSuccess({ response })),
           catchError((error) => of(AuthActions.refreshTokenFailure({ error })))
         );
@@ -122,7 +122,7 @@ export class AuthEffects {
           localStorage.setItem('tenantly_token', response.token);
           localStorage.setItem('tenantly_refresh_token', response.refresh_token);
           localStorage.setItem('tenantly_user', JSON.stringify(response.user));
-          localStorage.setItem('tenantly_expires_at', response.expires_at);
+          localStorage.setItem('tenantly_expires_at', typeof response.expires_at === 'string' ? response.expires_at : new Date(response.expires_at).toISOString());
         })
       ),
     { dispatch: false }
@@ -155,7 +155,7 @@ export class AuthEffects {
         }
         
         // Production API call
-        return this.http.post<any>(`${environment.apiUrl}/api/v1/auth/change-password`, request).pipe(
+        return this.http.post<any>(`${environment.apiUrl}/auth/change-password`, request).pipe(
           map((response) => AuthActions.changePasswordSuccess({ message: response.message })),
           catchError((error) => of(AuthActions.changePasswordFailure({ error })))
         );
@@ -173,7 +173,7 @@ export class AuthEffects {
         }
         
         // Production API call
-        return this.http.post<any>(`${environment.apiUrl}/api/v1/auth/reset-password`, request).pipe(
+        return this.http.post<any>(`${environment.apiUrl}/auth/reset-password`, request).pipe(
           map((response) => AuthActions.resetPasswordSuccess({ message: response.message })),
           catchError((error) => of(AuthActions.resetPasswordFailure({ error })))
         );
@@ -183,7 +183,7 @@ export class AuthEffects {
 
   // Helper methods
   private isDemoMode(): boolean {
-    return true; // Set to false for production
+    return false; // Set to false for production
   }
 
   private createDemoResponse(suffix: string = ''): any {

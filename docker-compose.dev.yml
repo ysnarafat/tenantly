@@ -2,27 +2,18 @@ version: '3.9'
 
 services:
   api:
-    extends:
-      file: docker-compose.yml
-      service: api
+    container_name: tenantly-api-dev    
     environment:
+      DATABASE_URL: postgres://postgres:password@postgres:5432/tenantly?sslmode=disable
+      JWT_SECRET: your-secret-key-change-in-production
+      JWT_EXPIRATION: 8h
       ENVIRONMENT: development
-    ports:
-      - "8080:8080"
     volumes:
-      - ./backend/api:/app
-      - ./backend/api/migrations:/app/migrations
+      - ./src/backend/api:/app
+      - ./src/backend/api/migrations:/app/migrations
 
   frontend:
-    extends:
-      file: docker-compose.yml
-      service: frontend
-    ports:
-      - "4200:80"
+    container_name: tenantly-frontend-dev
+    environment:
+      - NODE_ENV=development
 
-  postgres:
-    extends:
-      file: docker-compose.yml
-      service: postgres
-    ports:
-      - "5432:5432"

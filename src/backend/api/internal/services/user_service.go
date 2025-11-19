@@ -172,6 +172,7 @@ func (s *UserService) CreateUser(req *models.CreateUserRequest) (*models.User, e
 }
 
 func (s *UserService) Login(req *models.LoginRequest, clientIP, userAgent string) (*models.LoginResponse, error) {
+
 	// Normalize username
 	username := strings.TrimSpace(req.Username)
 

@@ -37,8 +37,8 @@ func (s *Server) setupMiddleware() {
 	// Security headers
 	s.router.Use(middleware.SecurityHeadersMiddleware())
 
-	// CORS middleware
-	s.router.Use(middleware.CORS())
+	// CORS is handled by nginx proxy, no need for API-level CORS
+	// s.router.Use(middleware.CORS())
 
 	// Rate limiting (5 requests per second per IP)
 	rateLimiter := middleware.NewRateLimiter(100, time.Minute)
@@ -92,7 +92,8 @@ func (s *Server) setupRoutes() {
 		auditService := database.NewAuditService(s.db)
 		protected := v1.Group("/")
 		protected.Use(middleware.AuthRequired(s.config.JWTSecret, auditService))
-		protected.Use(middleware.SessionTimeoutMiddleware(auditService))
+		// Session timeout middleware can be added later if needed
+		// protected.Use(middleware.SessionTimeoutMiddleware(auditService))
 		{
 			// Authentication routes (protected)
 			authProtected := protected.Group("/auth")

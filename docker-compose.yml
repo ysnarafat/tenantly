@@ -24,19 +24,14 @@ services:
       context: ./src/backend/api
       dockerfile: Dockerfile
     container_name: tenantly-api
-    environment:
-      DATABASE_URL: postgres://postgres:password@postgres:5432/tenantly?sslmode=disable
-      JWT_SECRET: your-secret-key-change-in-production
-      JWT_EXPIRATION: 8h
-      ENVIRONMENT: development
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     depends_on:
       - postgres
     networks:
       - tenantly-network
     volumes:
-      - ./backend/api/migrations:/app/migrations
+      - ./src/backend/api/migrations:/app/migrations
 
   # Angular Frontend
   frontend:
@@ -44,10 +39,24 @@ services:
       context: ./src/frontend
       dockerfile: Dockerfile
     container_name: tenantly-frontend
-    ports:
-      - "4200:80"
+    expose:
+      - "80"
     depends_on:
       - api
+    networks:
+      - tenantly-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: tenantly-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+      - frontend
     networks:
       - tenantly-network
 
