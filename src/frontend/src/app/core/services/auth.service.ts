@@ -27,7 +27,7 @@ export interface LoginResponse {
   token: string;
   refresh_token: string;
   user: User;
-  expires_at: string;
+  expires_at: string | Date;
 }
 
 export interface RefreshTokenRequest {
@@ -55,7 +55,7 @@ export class AuthService {
   private readonly EXPIRES_AT_KEY = 'tenantly_expires_at';
 
   // DEMO MODE: Set to true to enable demo login (disable for production)
-  private readonly DEMO_MODE = true; // <-- Set to false to disable demo login
+  private readonly DEMO_MODE = false; // <-- Set to false to disable demo login
 
   // NgRx store selectors for reactive access
   public isAuthenticated$ = this.store.select(AuthSelectors.selectIsAuthenticated);
@@ -191,7 +191,7 @@ export class AuthService {
     localStorage.setItem(this.TOKEN_KEY, response.token);
     localStorage.setItem(this.REFRESH_TOKEN_KEY, response.refresh_token);
     localStorage.setItem(this.USER_KEY, JSON.stringify(response.user));
-    localStorage.setItem(this.EXPIRES_AT_KEY, response.expires_at);
+    localStorage.setItem(this.EXPIRES_AT_KEY, typeof response.expires_at === 'string' ? response.expires_at : new Date(response.expires_at).toISOString());
     // Note: NgRx effects will handle state updates
   }
 

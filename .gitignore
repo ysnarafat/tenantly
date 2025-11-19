@@ -107,3 +107,4 @@ secrets.json
 *.ldf
 *.kiro
 *.secrets
+*/tmp
