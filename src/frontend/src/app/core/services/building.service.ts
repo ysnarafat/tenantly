@@ -6,7 +6,8 @@ import {
   Building,
   BuildingWithStats,
   CreateBuildingRequest,
-  UpdateBuildingRequest
+  UpdateBuildingRequest,
+  BuildingListResponse
 } from '../models';
 import { environment } from '../../../environments/environment';
 
@@ -17,7 +18,7 @@ export class BuildingService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/buildings`;
 
-  getBuildings(params?: { property_id?: number; active?: boolean }): Observable<Building[]> {
+  getBuildings(params?: { property_id?: number; active?: boolean }): Observable<BuildingListResponse> {
     let httpParams = new HttpParams();
     if (params?.property_id) {
       httpParams = httpParams.set('property_id', params.property_id.toString());
@@ -25,15 +26,11 @@ export class BuildingService {
     if (params?.active !== undefined) {
       httpParams = httpParams.set('active', params.active.toString());
     }
-    return this.http.get<any>(this.apiUrl, { params: httpParams }).pipe(
-      map(response => response.buildings)
-    );
+    return this.http.get<BuildingListResponse>(this.apiUrl, { params: httpParams });
   }
 
-  getBuildingsByProperty(propertyId: number): Observable<Building[]> {
-    return this.http.get<any>(`${environment.apiUrl}/properties/${propertyId}/buildings`).pipe(
-      map(response => response.buildings)
-    );
+  getBuildingsByProperty(propertyId: number): Observable<BuildingListResponse> {
+    return this.http.get<BuildingListResponse>(`${environment.apiUrl}/properties/${propertyId}/buildings`);
   }
 
   getBuilding(id: number): Observable<Building> {

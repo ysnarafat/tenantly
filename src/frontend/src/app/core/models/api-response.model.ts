@@ -17,6 +17,8 @@ export interface PaginatedResponse<T> {
 }
 
 // Specific response for properties since the key is 'properties' not 'data'
+
+
 export interface PropertyListResponse {
     properties: Property[];
     pagination: Pagination;

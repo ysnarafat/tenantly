@@ -60,7 +60,8 @@ func (r *PropertyRepository) Create(property *models.CreatePropertyRequest) (*mo
 func (r *PropertyRepository) GetByID(id int) (*models.Property, error) {
 	query := `
 		SELECT id, property_name, property_code, address, city, postal_code, property_type,
-		       total_buildings, metadata, active, created_at, updated_at
+		       (SELECT COUNT(*) FROM buildings b WHERE b.property_id = properties.id AND b.active_status = true) as total_buildings,
+		       metadata, active, created_at, updated_at
 		FROM properties
 		WHERE id = $1`
 
@@ -178,7 +179,8 @@ func (r *PropertyRepository) List(filters map[string]interface{}, limit, offset 
 	// Get properties with pagination
 	query := fmt.Sprintf(`
 		SELECT id, property_name, property_code, address, city, postal_code, property_type,
-		       total_buildings, metadata, active, created_at, updated_at
+		       (SELECT COUNT(*) FROM buildings b WHERE b.property_id = properties.id AND b.active_status = true) as total_buildings,
+		       metadata, active, created_at, updated_at
 		FROM properties
 		WHERE %s
 		ORDER BY created_at DESC
@@ -450,4 +452,52 @@ func (r *PropertyRepository) GetBuildingSummary(propertyID int) (map[string]inte
 	}
 
 	return summary, nil
+}
+
+// GetBuildingAggregations returns aggregated building data for a property
+func (r *PropertyRepository) GetBuildingAggregations(propertyID int) (map[string]interface{}, error) {
+	// Placeholder implementation until analytics module is fully integrated
+	return map[string]interface{}{
+		"property_id": propertyID,
+		"aggregations": map[string]interface{}{
+			"occupancy_rate": 0.0,
+			"revenue":        0.0,
+		},
+	}, nil
+}
+
+// GetBuildingBreakdowns returns building breakdowns for a property
+func (r *PropertyRepository) GetBuildingBreakdowns(propertyID int) (interface{}, error) {
+	// Placeholder implementation
+	return map[string]interface{}{
+		"property_id": propertyID,
+		"breakdowns":  []interface{}{},
+	}, nil
+}
+
+// GetBuildingTypeDistribution returns building type distribution for a property
+func (r *PropertyRepository) GetBuildingTypeDistribution(propertyID int) (interface{}, error) {
+	query := `
+		SELECT building_type, COUNT(*) as count
+		FROM buildings
+		WHERE property_id = $1 AND active_status = true
+		GROUP BY building_type`
+
+	rows, err := r.db.Query(query, propertyID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get building type distribution: %w", err)
+	}
+	defer rows.Close()
+
+	distribution := make(map[string]int)
+	for rows.Next() {
+		var buildingType string
+		var count int
+		if err := rows.Scan(&buildingType, &count); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+		distribution[buildingType] = count
+	}
+
+	return distribution, nil
 }

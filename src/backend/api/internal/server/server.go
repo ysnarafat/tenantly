@@ -63,6 +63,7 @@ func (s *Server) setupRoutes() {
 	userRepo := repositories.NewUserRepository(s.db)
 	propertyRepo := repositories.NewPropertyRepository(s.db)
 	buildingRepo := repositories.NewBuildingRepository(s.db)
+	unitRepo := repositories.NewUnitRepository(s.db)
 
 	// Initialize metadata validator
 	metadataValidator := services.NewBuildingMetadataValidator()
@@ -71,11 +72,13 @@ func (s *Server) setupRoutes() {
 	userService := services.NewUserService(userRepo, auditService, s.config.JWTSecret, s.config.JWTExpiration)
 	propertyService := services.NewPropertyService(propertyRepo, auditService)
 	buildingService := services.NewBuildingService(buildingRepo, propertyRepo, auditService, metadataValidator)
+	unitService := services.NewUnitService(unitRepo, buildingRepo, propertyRepo, auditService)
 
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService)
 	propertyHandler := handlers.NewPropertyHandler(propertyService)
 	buildingHandler := handlers.NewBuildingHandler(buildingService)
+	unitHandler := handlers.NewUnitHandler(unitService)
 
 	// Health check endpoint
 	s.router.GET("/health", func(c *gin.Context) {
@@ -134,6 +137,9 @@ func (s *Server) setupRoutes() {
 				// Property-building relationship endpoints with property validation middleware
 				properties.GET("/:id/buildings", middleware.RequireAnyRole(), middleware.PropertyValidationMiddleware(propertyRepo), buildingHandler.GetPropertyBuildings)
 				properties.POST("/:id/buildings/bulk", middleware.RequireAdminOrPropertyManager(), middleware.PropertyValidationMiddleware(propertyRepo), buildingHandler.BulkCreateBuildings)
+				
+				// Property-unit relationship endpoints
+				properties.GET("/:id/units", middleware.RequireAnyRole(), middleware.PropertyValidationMiddleware(propertyRepo), unitHandler.GetUnitsByProperty)
 			}
 
 			// Building management routes
@@ -150,6 +156,19 @@ func (s *Server) setupRoutes() {
 				buildings.GET("/:id/analytics", middleware.RequireAnyRole(), buildingHandler.GetBuildingAnalytics)
 				buildings.GET("/:id/units", middleware.RequireAnyRole(), buildingHandler.GetBuildingUnits)
 				buildings.PUT("/:id/status", middleware.RequireAdminOrPropertyManager(), buildingHandler.UpdateBuildingStatus)
+				
+				// Building-unit relationship endpoints
+				buildings.GET("/:id/units/list", middleware.RequireAnyRole(), unitHandler.GetUnitsByBuilding)
+			}
+
+			// Unit management routes
+			units := protected.Group("/units")
+			{
+				units.POST("", middleware.RequireAdminOrPropertyManager(), unitHandler.CreateUnit)
+				units.GET("/:id", middleware.RequireAnyRole(), unitHandler.GetUnit)
+				units.PUT("/:id", middleware.RequireAdminOrPropertyManager(), unitHandler.UpdateUnit)
+				units.DELETE("/:id", middleware.RequireAdmin(), unitHandler.DeleteUnit)
+				units.GET("/:id/hierarchy", middleware.RequireAnyRole(), unitHandler.GetUnitHierarchyContext)
 			}
 
 			// Placeholder routes for other modules (will be implemented in later tasks)

@@ -11,7 +11,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { PropertyService } from '../../../core/services/property.service';
 import { BuildingService } from '../../../core/services/building.service';
 import { UnitService } from '../../../core/services/unit.service';
-import { Property, Building, Unit, PropertyListResponse } from '../../../core/models';
+import { Property, Building, Unit, PropertyListResponse, BuildingListResponse, UnitListResponse } from '../../../core/models';
 
 interface PropertyWithHierarchy extends Property {
   buildings?: BuildingWithUnits[];
@@ -80,8 +80,8 @@ export class PropertyListComponent implements OnInit {
 
   loadBuildings(property: PropertyWithHierarchy) {
     this.buildingService.getBuildingsByProperty(property.id).subscribe({
-      next: (buildings) => {
-        property.buildings = buildings.map(b => ({ ...b, expanded: false }));
+      next: (response: BuildingListResponse) => {
+        property.buildings = response.buildings.map((b: Building) => ({ ...b, expanded: false }));
       },
       error: (err: any) => {
         console.error('Error loading buildings:', err);
@@ -99,8 +99,8 @@ export class PropertyListComponent implements OnInit {
 
   loadUnits(building: BuildingWithUnits) {
     this.unitService.getUnitsByBuilding(building.id).subscribe({
-      next: (units) => {
-        building.units = units;
+      next: (response: UnitListResponse) => {
+        building.units = response.units;
       },
       error: (err: any) => {
         console.error('Error loading units:', err);

@@ -829,7 +829,7 @@ func (r *BuildingRepository) GetBuildingUnits(buildingID int, offset, limit int)
 	query := `
 		SELECT 
 			u.id, u.unit_number, u.unit_name, u.floor, u.section, u.unit_type, u.monthly_rent, u.active,
-			COALESCE(t.full_name, '') as tenant_name,
+			COALESCE(t.name, '') as tenant_name,
 			COALESCE(l.active, false) as lease_active
 		FROM units u
 		LEFT JOIN leases l ON u.id = l.unit_id AND l.active = true

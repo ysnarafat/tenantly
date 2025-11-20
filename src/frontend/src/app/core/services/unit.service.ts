@@ -1,12 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { 
-  Unit, 
-  UnitWithDetails, 
+import {
+  Unit,
+  UnitWithDetails,
   UnitType,
-  CreateUnitRequest, 
-  UpdateUnitRequest 
+  CreateUnitRequest,
+  UpdateUnitRequest,
+  UnitListResponse
 } from '../models';
 import { environment } from '../../../environments/environment';
 
@@ -17,9 +18,9 @@ export class UnitService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/units`;
 
-  getUnits(params?: { 
-    property_id?: number; 
-    building_id?: number; 
+  getUnits(params?: {
+    property_id?: number;
+    building_id?: number;
     unit_type?: UnitType;
     active?: boolean;
   }): Observable<Unit[]> {
@@ -39,8 +40,8 @@ export class UnitService {
     return this.http.get<Unit[]>(this.apiUrl, { params: httpParams });
   }
 
-  getUnitsByBuilding(buildingId: number): Observable<Unit[]> {
-    return this.http.get<Unit[]>(`${environment.apiUrl}/buildings/${buildingId}/units`);
+  getUnitsByBuilding(buildingId: number): Observable<UnitListResponse> {
+    return this.http.get<UnitListResponse>(`${environment.apiUrl}/buildings/${buildingId}/units`);
   }
 
   getUnit(id: number): Observable<Unit> {
