@@ -7,145 +7,28 @@
     </button>
   </div>
 
-  @if (loading()) {
-    <div class="loading-container">
-      <mat-spinner></mat-spinner>
-      <p>Loading properties...</p>
-    </div>
-  }
-
-  @if (error()) {
-    <mat-card class="error-card">
-      <mat-icon color="warn">error</mat-icon>
-      <p>{{ error() }}</p>
-      <button mat-button (click)="loadProperties()">Retry</button>
-    </mat-card>
-  }
-
   @if (!loading() && !error()) {
-    <div class="properties-grid">
-      @for (property of properties(); track property.id) {
-        <mat-card class="property-card">
-          <mat-card-header>
-            <mat-icon mat-card-avatar>business</mat-icon>
-            <mat-card-title>{{ property.property_name }}</mat-card-title>
-            <mat-card-subtitle>{{ property.property_code }}</mat-card-subtitle>
-          </mat-card-header>
-
-          <mat-card-content>
-            <div class="property-info">
-              <div class="info-row">
-                <mat-icon>location_on</mat-icon>
-                <span>{{ property.address }}, {{ property.city }}</span>
-              </div>
-              <div class="info-row">
-                <mat-chip [color]="getPropertyTypeColor(property.property_type)" selected>
-                  {{ property.property_type }}
-                </mat-chip>
-                <span class="building-count">{{ property.total_buildings }} Building(s)</span>
-              </div>
-            </div>
-
-            <!-- Buildings Section -->
-            @if (property.expanded) {
-              <div class="buildings-section">
-                <div class="section-header">
-                  <h3>Buildings</h3>
-                  <button
-                    mat-mini-fab
-                    color="primary"
-                    matTooltip="Add Building"
-                    (click)="addBuilding(property)"
-                  >
-                    <mat-icon>add</mat-icon>
-                  </button>
-                </div>
-
-                @if (property.buildings) {
-                  @for (building of property.buildings; track building.id) {
-                    <mat-card class="building-card">
-                      <div class="building-header" (click)="toggleBuilding(building)">
-                        <mat-icon>apartment</mat-icon>
-                        <div class="building-info">
-                          <strong>{{ building.building_name }}</strong>
-                          <span class="building-code">{{ building.building_code }}</span>
-                        </div>
-                        <mat-icon class="expand-icon">
-                          {{ building.expanded ? 'expand_less' : 'expand_more' }}
-                        </mat-icon>
-                      </div>
-
-                      <!-- Units Section -->
-                      @if (building.expanded && building.units) {
-                        <div class="units-section">
-                          <div class="section-header">
-                            <h4>Units</h4>
-                            <button
-                              mat-mini-fab
-                              color="accent"
-                              matTooltip="Add Unit"
-                              class="small-fab"
-                              (click)="addUnit(building, property)"
-                            >
-                              <mat-icon>add</mat-icon>
-                            </button>
-                          </div>
-                          <div class="units-grid">
-                            @for (unit of building.units; track unit.id) {
-                              <div class="unit-item">
-                                <mat-icon [class]="'unit-icon ' + unit.unit_type.toLowerCase()">
-                                  {{ getUnitTypeIcon(unit.unit_type) }}
-                                </mat-icon>
-                                <div class="unit-details">
-                                  <strong>{{ unit.unit_number }}</strong>
-                                  <span class="unit-type">{{ unit.unit_type }}</span>
-                                  <span class="unit-rent">৳{{ unit.monthly_rent }}/mo</span>
-                                </div>
-                              </div>
-                            }
-                          </div>
-                        </div>
-                      }
-                    </mat-card>
-                  }
-                } @else {
-                  <div class="loading-buildings">
-                    <mat-spinner diameter="30"></mat-spinner>
-                    <span>Loading buildings...</span>
-                  </div>
-                }
-              </div>
-            }
-          </mat-card-content>
-
-          <mat-card-actions>
-            <button mat-button (click)="toggleProperty(property)">
-              <mat-icon>{{ property.expanded ? 'expand_less' : 'expand_more' }}</mat-icon>
-              {{ property.expanded ? 'Hide' : 'Show' }} Buildings
-            </button>
-            <button mat-button (click)="editProperty(property)">
-              <mat-icon>edit</mat-icon>
-              Edit
-            </button>
-            <button mat-button color="warn" (click)="deleteProperty(property)">
-              <mat-icon>delete</mat-icon>
-              Delete
-            </button>
-          </mat-card-actions>
-        </mat-card>
-      }
-    </div>
-
-    @if (properties().length === 0) {
-      <mat-card class="empty-state">
-        <mat-icon>domain</mat-icon>
-        <h2>No Properties Yet</h2>
-        <p>Get started by adding your first property</p>
-        <button mat-raised-button color="primary" (click)="addProperty()">
-          <mat-icon>add</mat-icon>
-          Add Property
-        </button>
-      </mat-card>
+  <div class="properties-grid">
+    @for (property of displayedProperties(); track property.id) {
+    <app-property-card [property]="property" (toggleProperty)="toggleProperty($event)"
+      (editProperty)="editProperty($event)" (deleteProperty)="deleteProperty($event)"
+      (addBuilding)="addBuilding($event)" (toggleBuilding)="toggleBuilding($event)"
+      (addUnit)="addUnit($event.building, $event.property)"
+      (editUnit)="editUnit($event.unit, $event.building, $event.property)"
+      (deleteUnit)="deleteUnit($event.unit, $event.building)" />
     }
+  </div>
+
+  @if (properties().length === 0) {
+  <mat-card class="empty-state">
+    <mat-icon>domain</mat-icon>
+    <h2>No Properties Yet</h2>
+    <p>Get started by adding your first property</p>
+    <button mat-raised-button color="primary" (click)="addProperty()">
+      <mat-icon>add</mat-icon>
+      Add Property
+    </button>
+  </mat-card>
+  }
   }
 </div>

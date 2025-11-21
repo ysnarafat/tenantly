@@ -8,7 +8,12 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { PropertyService } from '../../../core/services/property.service';
+import { MatDialog } from '@angular/material/dialog';
+import { Store } from '@ngrx/store';
+import { PropertyActions } from '../store/property.actions';
+import { BuildingActions } from '../store/building.actions';
+import { UnitActions } from '../store/unit.actions';
+import { selectAllProperties, selectPropertyLoading, selectPropertyError } from '../store/property.selectors';
 import { BuildingService } from '../../../core/services/building.service';
 import { UnitService } from '../../../core/services/unit.service';
 import {
@@ -47,21 +52,40 @@ interface BuildingWithUnits extends Building {
   styleUrls: ['./property-list.component.scss'],
 })
 export class PropertyListComponent implements OnInit {
-  private propertyService = inject(PropertyService);
+  private store = inject(Store);
   private buildingService = inject(BuildingService);
   private unitService = inject(UnitService);
+  private dialog = inject(MatDialog);
 
-  properties = signal<PropertyWithHierarchy[]>([]);
-  loading = signal(false);
-  error = signal<string | null>(null);
+  // Store selectors
+  properties = this.store.selectSignal(selectAllProperties);
+  loading = this.store.selectSignal(selectPropertyLoading);
+  error = this.store.selectSignal(selectPropertyError);
+
+  // UI state
+  expandedProperties = signal<Set<number>>(new Set());
+  loadedBuildings = signal<Map<number, BuildingWithUnits[]>>(new Map());
+
+  // Combined state for template
+  displayedProperties = computed(() => {
+    const props = this.properties();
+    const expandedProps = this.expandedProperties();
+    const buildingsMap = this.loadedBuildings();
+
+    return props.map(p => ({
+      ...p,
+      expanded: expandedProps.has(p.id),
+      buildings: buildingsMap.get(p.id)
+    })) as DisplayedProperty[];
+  });
 
   ngOnInit() {
-    this.loadProperties();
+    this.store.dispatch(PropertyActions.loadProperties({ active: true }));
   }
 
-  loadProperties() {
-    this.loading.set(true);
-    this.error.set(null);
+  toggleProperty(property: Property) {
+    const expanded = this.expandedProperties();
+    const newExpanded = new Set(expanded);
 
     this.propertyService.getProperties({ active: true }).subscribe({
       next: (response: PropertyListResponse) => {
@@ -82,12 +106,18 @@ export class PropertyListComponent implements OnInit {
     if (property.expanded && !property.buildings) {
       this.loadBuildings(property);
     }
+    this.expandedProperties.set(newExpanded);
   }
 
-  loadBuildings(property: PropertyWithHierarchy) {
-    this.buildingService.getBuildingsByProperty(property.id).subscribe({
+  loadBuildings(propertyId: number) {
+    this.buildingService.getBuildingsByProperty(propertyId).subscribe({
       next: (response: BuildingListResponse) => {
-        property.buildings = response.buildings.map((b: Building) => ({ ...b, expanded: false }));
+        const buildings = response.buildings.map((b: Building) => ({ ...b, expanded: false }));
+        this.loadedBuildings.update(map => {
+          const newMap = new Map(map);
+          newMap.set(propertyId, buildings);
+          return newMap;
+        });
       },
       error: (err: any) => {
         console.error('Error loading buildings:', err);
@@ -144,36 +174,121 @@ export class PropertyListComponent implements OnInit {
     }
   }
 
-  // Add handlers
+  // Property CRUD handlers
   addProperty() {
-    console.log('Add Property clicked');
-    // TODO: Open dialog to add property
-    alert('Add Property form will be implemented here');
+    const dialogRef = this.dialog.open(PropertyFormDialogComponent, {
+      width: '600px',
+      data: { mode: 'create' }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.store.dispatch(PropertyActions.createProperty({ property: result }));
+      }
+    });
   }
 
-  addBuilding(property: PropertyWithHierarchy) {
-    console.log('Add Building to property:', property.property_name);
-    // TODO: Open dialog to add building
-    alert(`Add Building to ${property.property_name} will be implemented here`);
+  editProperty(property: DisplayedProperty) {
+    const dialogRef = this.dialog.open(PropertyFormDialogComponent, {
+      width: '600px',
+      data: { mode: 'edit', property }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.store.dispatch(PropertyActions.updateProperty({
+          id: property.id,
+          property: result
+        }));
+      }
+    });
   }
 
-  addUnit(building: BuildingWithUnits, property: PropertyWithHierarchy) {
-    console.log('Add Unit to building:', building.building_name);
-    // TODO: Open dialog to add unit
-    alert(`Add Unit to ${building.building_name} will be implemented here`);
-  }
-
-  editProperty(property: PropertyWithHierarchy) {
-    console.log('Edit property:', property.property_name);
-    // TODO: Open dialog to edit property
-    alert(`Edit ${property.property_name} will be implemented here`);
-  }
-
-  deleteProperty(property: PropertyWithHierarchy) {
-    console.log('Delete property:', property.property_name);
-    // TODO: Confirm and delete property
+  deleteProperty(property: DisplayedProperty) {
     if (confirm(`Are you sure you want to delete ${property.property_name}?`)) {
-      alert('Delete functionality will be implemented here');
+      this.store.dispatch(PropertyActions.deleteProperty({ id: property.id }));
+    }
+  }
+
+  // Building CRUD handlers
+  addBuilding(property: DisplayedProperty) {
+    const dialogRef = this.dialog.open(BuildingFormDialogComponent, {
+      width: '600px',
+      data: { mode: 'create', property }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.store.dispatch(BuildingActions.createBuilding({ request: result }));
+        // Reload buildings after creation
+        setTimeout(() => {
+          this.loadBuildings(property.id);
+        }, 500);
+      }
+    });
+  }
+
+  editBuilding(building: BuildingWithUnits, property: DisplayedProperty) {
+    const dialogRef = this.dialog.open(BuildingFormDialogComponent, {
+      width: '600px',
+      data: { mode: 'edit', building, property }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.store.dispatch(BuildingActions.updateBuilding({
+          id: building.id,
+          request: result
+        }));
+      }
+    });
+  }
+
+  deleteBuilding(building: BuildingWithUnits, propertyId: number) {
+    if (confirm(`Are you sure you want to delete ${building.building_name}?`)) {
+      this.store.dispatch(BuildingActions.deleteBuilding({ id: building.id }));
+      // Reload buildings for this property after deletion
+      setTimeout(() => this.loadBuildings(propertyId), 500);
+    }
+  }
+
+  // Unit CRUD handlers
+  addUnit(building: BuildingWithUnits, property: DisplayedProperty) {
+    const dialogRef = this.dialog.open(UnitFormDialogComponent, {
+      width: '600px',
+      data: { mode: 'create', building, property }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.store.dispatch(UnitActions.createUnit({ request: result }));
+        // Reload units for this building after creation
+        setTimeout(() => this.loadUnits(building), 500);
+      }
+    });
+  }
+
+  editUnit(unit: Unit, building: BuildingWithUnits, property: DisplayedProperty) {
+    const dialogRef = this.dialog.open(UnitFormDialogComponent, {
+      width: '600px',
+      data: { mode: 'edit', unit, building, property }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.store.dispatch(UnitActions.updateUnit({
+          id: unit.id,
+          request: result
+        }));
+      }
+    });
+  }
+
+  deleteUnit(unit: Unit, building: BuildingWithUnits) {
+    if (confirm(`Are you sure you want to delete unit ${unit.unit_number}?`)) {
+      this.store.dispatch(UnitActions.deleteUnit({ id: unit.id }));
+      // Reload units for this building after deletion
+      setTimeout(() => this.loadUnits(building), 500);
     }
   }
 }

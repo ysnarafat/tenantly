@@ -23,7 +23,7 @@ export class UnitService {
     building_id?: number;
     unit_type?: UnitType;
     active?: boolean;
-  }): Observable<Unit[]> {
+  }): Observable<UnitListResponse> {
     let httpParams = new HttpParams();
     if (params?.property_id) {
       httpParams = httpParams.set('property_id', params.property_id.toString());
@@ -37,7 +37,7 @@ export class UnitService {
     if (params?.active !== undefined) {
       httpParams = httpParams.set('active', params.active.toString());
     }
-    return this.http.get<Unit[]>(this.apiUrl, { params: httpParams });
+    return this.http.get<UnitListResponse>(this.apiUrl, { params: httpParams });
   }
 
   getUnitsByBuilding(buildingId: number): Observable<UnitListResponse> {
