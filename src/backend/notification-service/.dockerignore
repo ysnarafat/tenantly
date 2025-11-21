@@ -1,0 +1,62 @@
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# .NET build artifacts
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.docstates
+*.dll
+*.exe
+*.pdb
+*.log
+
+# NuGet packages
+packages/
+*.nupkg
+
+# Environment files
+.env*
+
+# Logs
+logs/
+*.log
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# CI/CD files
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Visual Studio files
+*.suo
+*.ntvs*
+*.njsproj
+*.sln.docstates

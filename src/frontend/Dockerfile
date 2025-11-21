@@ -3,15 +3,18 @@ FROM node:25-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files first for better caching
 COPY package*.json ./
-RUN npm ci
+
+# Install dependencies (this layer will be cached if package*.json don't change)
+RUN npm ci --silent && \
+    npm cache clean --force
 
 # Copy source code
 COPY . .
 
-# Build the application
-RUN npm run build
+# Build the application with optimizations
+RUN npm run build -- --configuration=production
 
 # Production stage
 FROM nginx:alpine

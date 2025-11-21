@@ -62,14 +62,20 @@ func (s *Server) setupRoutes() {
 	// Initialize repositories
 	userRepo := repositories.NewUserRepository(s.db)
 	propertyRepo := repositories.NewPropertyRepository(s.db)
+	buildingRepo := repositories.NewBuildingRepository(s.db)
+
+	// Initialize metadata validator
+	metadataValidator := services.NewBuildingMetadataValidator()
 
 	// Initialize services
 	userService := services.NewUserService(userRepo, auditService, s.config.JWTSecret, s.config.JWTExpiration)
 	propertyService := services.NewPropertyService(propertyRepo, auditService)
+	buildingService := services.NewBuildingService(buildingRepo, propertyRepo, auditService, metadataValidator)
 
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService)
 	propertyHandler := handlers.NewPropertyHandler(propertyService)
+	buildingHandler := handlers.NewBuildingHandler(buildingService)
 
 	// Health check endpoint
 	s.router.GET("/health", func(c *gin.Context) {
@@ -124,6 +130,26 @@ func (s *Server) setupRoutes() {
 				properties.PUT("/:id", middleware.RequireAdminOrPropertyManager(), propertyHandler.UpdateProperty)
 				properties.DELETE("/:id", middleware.RequireAdmin(), propertyHandler.DeleteProperty)
 				properties.GET("/:id/aggregations", middleware.RequireAnyRole(), propertyHandler.GetPropertyAggregations)
+
+				// Property-building relationship endpoints with property validation middleware
+				properties.GET("/:id/buildings", middleware.RequireAnyRole(), middleware.PropertyValidationMiddleware(propertyRepo), buildingHandler.GetPropertyBuildings)
+				properties.POST("/:id/buildings/bulk", middleware.RequireAdminOrPropertyManager(), middleware.PropertyValidationMiddleware(propertyRepo), buildingHandler.BulkCreateBuildings)
+			}
+
+			// Building management routes
+			buildings := protected.Group("/buildings")
+			{
+				buildings.GET("", middleware.RequireAnyRole(), buildingHandler.GetBuildings)
+				buildings.POST("", middleware.RequireAdminOrPropertyManager(), buildingHandler.CreateBuilding)
+				buildings.GET("/search", middleware.RequireAnyRole(), buildingHandler.AdvancedSearchBuildings)
+				buildings.GET("/export", middleware.RequireAnyRole(), buildingHandler.ExportBuildingData)
+				buildings.GET("/types/:type/metadata", middleware.RequireAnyRole(), buildingHandler.GetBuildingMetadataSchema)
+				buildings.GET("/:id", middleware.RequireAnyRole(), buildingHandler.GetBuilding)
+				buildings.PUT("/:id", middleware.RequireAdminOrPropertyManager(), buildingHandler.UpdateBuilding)
+				buildings.DELETE("/:id", middleware.RequireAdmin(), buildingHandler.DeleteBuilding)
+				buildings.GET("/:id/analytics", middleware.RequireAnyRole(), buildingHandler.GetBuildingAnalytics)
+				buildings.GET("/:id/units", middleware.RequireAnyRole(), buildingHandler.GetBuildingUnits)
+				buildings.PUT("/:id/status", middleware.RequireAdminOrPropertyManager(), buildingHandler.UpdateBuildingStatus)
 			}
 
 			// Placeholder routes for other modules (will be implemented in later tasks)

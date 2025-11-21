@@ -18,7 +18,10 @@ type NotificationQueue struct {
 
 type CreateNotificationRequest struct {
 	TenantID         int    `json:"tenant_id" binding:"required"`
-	ShopID           int    `json:"shop_id" binding:"required"`
+	UnitID           int    `json:"unit_id" binding:"required"`
+	ShopID           int    `json:"shop_id" binding:"omitempty"` // For backward compatibility
+	BuildingID       int    `json:"building_id" binding:"omitempty"`
+	PropertyID       int    `json:"property_id" binding:"omitempty"`
 	Message          string `json:"message" binding:"required"`
 	NotificationType string `json:"notification_type" binding:"required,oneof=SMS Email Reminder"`
 	Recipient        string `json:"recipient" binding:"required"`
@@ -32,8 +35,12 @@ type UpdateNotificationRequest struct {
 
 type NotificationWithDetails struct {
 	NotificationQueue
-	TenantName string `json:"tenant_name" db:"tenant_name"`
-	ShopName   string `json:"shop_name" db:"shop_name"`
+	TenantName   string `json:"tenant_name" db:"tenant_name"`
+	ShopName     string `json:"shop_name" db:"shop_name"`
+	UnitNumber   string `json:"unit_number" db:"unit_number"`
+	BuildingName string `json:"building_name" db:"building_name"`
+	BuildingCode string `json:"building_code" db:"building_code"`
+	PropertyName string `json:"property_name" db:"property_name"`
 }
 
 // Notification type constants

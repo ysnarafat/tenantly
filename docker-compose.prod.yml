@@ -1,16 +1,29 @@
-version: '3.9'
-
 services:
+  # PostgreSQL Database (Production - Completely Internal)
+  postgres:
+    extends:
+      file: docker-compose.yml
+      service: postgres
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-this-in-production}
+    # NO PORTS EXPOSED - Database is completely internal in production
+    restart: always
+    
+  # Go API Service (Production)
   api:
+    extends:
+      file: docker-compose.yml
+      service: api
     environment:
       ENVIRONMENT: production
     restart: always
 
+  # Angular Frontend (Production)
   frontend:
     restart: always
 
-  postgres:
-    restart: always
-
-  notification-service:
-    restart: always
+# NO DATABASE ADMINISTRATION SERVICES IN PRODUCTION
+# For secure database access, use one of these methods:
+# 1. SSH tunnel: ssh -L 5432:localhost:5432 user@server
+# 2. VPN connection with docker-compose.secure-admin.yml
+# 3. Direct container access: docker exec -it tenantly-postgres psql -U postgres -d tenantly

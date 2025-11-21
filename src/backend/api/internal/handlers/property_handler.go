@@ -110,7 +110,7 @@ func (h *PropertyHandler) GetProperties(c *gin.Context) {
 	})
 }
 
-// GetProperty retrieves a single property by ID
+// GetProperty retrieves a single property by ID with enhanced building information
 func (h *PropertyHandler) GetProperty(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.Atoi(idStr)
@@ -121,6 +121,7 @@ func (h *PropertyHandler) GetProperty(c *gin.Context) {
 
 	// Check if stats are requested
 	includeStats := c.Query("include_stats") == "true"
+	includeBuildings := c.Query("include_buildings") == "true"
 
 	if includeStats {
 		property, err := h.propertyService.GetPropertyWithStats(id)
@@ -136,7 +137,17 @@ func (h *PropertyHandler) GetProperty(c *gin.Context) {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"property": property})
+		response := gin.H{"property": property}
+
+		// Add building information if requested
+		if includeBuildings {
+			buildingStats, err := h.propertyService.GetPropertyBuildingSummary(id)
+			if err == nil {
+				response["building_summary"] = buildingStats
+			}
+		}
+
+		c.JSON(http.StatusOK, response)
 	} else {
 		property, err := h.propertyService.GetProperty(id)
 		if err != nil {
@@ -151,7 +162,17 @@ func (h *PropertyHandler) GetProperty(c *gin.Context) {
 			return
 		}
 
-		c.JSON(http.StatusOK, gin.H{"property": property})
+		response := gin.H{"property": property}
+
+		// Add basic building count if requested
+		if includeBuildings {
+			buildingCount, err := h.propertyService.GetPropertyBuildingCount(id)
+			if err == nil {
+				response["building_count"] = buildingCount
+			}
+		}
+
+		c.JSON(http.StatusOK, response)
 	}
 }
 
