@@ -38,7 +38,7 @@ func (s *Server) setupMiddleware() {
 	s.router.Use(middleware.SecurityHeadersMiddleware())
 
 	// CORS is handled by nginx proxy, no need for API-level CORS
-	// s.router.Use(middleware.CORS())
+	s.router.Use(middleware.CORS(s.config.Environment))
 
 	// Rate limiting (5 requests per second per IP)
 	rateLimiter := middleware.NewRateLimiter(100, time.Minute)
@@ -61,12 +61,15 @@ func (s *Server) setupRoutes() {
 
 	// Initialize repositories
 	userRepo := repositories.NewUserRepository(s.db)
+	propertyRepo := repositories.NewPropertyRepository(s.db)
 
 	// Initialize services
 	userService := services.NewUserService(userRepo, auditService, s.config.JWTSecret, s.config.JWTExpiration)
+	propertyService := services.NewPropertyService(propertyRepo, auditService)
 
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService)
+	propertyHandler := handlers.NewPropertyHandler(propertyService)
 
 	// Health check endpoint
 	s.router.GET("/health", func(c *gin.Context) {
@@ -109,6 +112,18 @@ func (s *Server) setupRoutes() {
 				users.GET("/:id", middleware.RequireAnyRole(), userHandler.GetUser)
 				users.PUT("/:id", middleware.RequireAdmin(), userHandler.UpdateUser)
 				users.DELETE("/:id", middleware.RequireAdmin(), userHandler.DeleteUser)
+			}
+
+			// Property management routes
+			properties := protected.Group("/properties")
+			{
+				properties.GET("", middleware.RequireAnyRole(), propertyHandler.GetProperties)
+				properties.POST("", middleware.RequireAdminOrPropertyManager(), propertyHandler.CreateProperty)
+				properties.GET("/search", middleware.RequireAnyRole(), propertyHandler.SearchProperties)
+				properties.GET("/:id", middleware.RequireAnyRole(), propertyHandler.GetProperty)
+				properties.PUT("/:id", middleware.RequireAdminOrPropertyManager(), propertyHandler.UpdateProperty)
+				properties.DELETE("/:id", middleware.RequireAdmin(), propertyHandler.DeleteProperty)
+				properties.GET("/:id/aggregations", middleware.RequireAnyRole(), propertyHandler.GetPropertyAggregations)
 			}
 
 			// Placeholder routes for other modules (will be implemented in later tasks)

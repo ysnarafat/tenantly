@@ -47,7 +47,7 @@ type Building struct {
 	HasElevator      bool             `json:"has_elevator" db:"has_elevator"`
 	ConstructionYear int              `json:"construction_year" db:"construction_year"`
 	Metadata         BuildingMetadata `json:"metadata" db:"metadata"`
-	Active           bool             `json:"active" db:"active"`
+	ActiveStatus     bool             `json:"active_status" db:"active_status"`
 	CreatedAt        time.Time        `json:"created_at" db:"created_at"`
 	UpdatedAt        time.Time        `json:"updated_at" db:"updated_at"`
 }
@@ -62,6 +62,7 @@ type CreateBuildingRequest struct {
 	HasElevator      bool             `json:"has_elevator"`
 	ConstructionYear int              `json:"construction_year" binding:"omitempty,gte=1900,lte=2100"`
 	Metadata         BuildingMetadata `json:"metadata" binding:"omitempty"`
+	ActiveStatus     bool             `json:"active_status"`
 }
 
 // UpdateBuildingRequest represents the request to update a building
@@ -72,7 +73,7 @@ type UpdateBuildingRequest struct {
 	HasElevator      *bool             `json:"has_elevator"`
 	ConstructionYear *int              `json:"construction_year" binding:"omitempty,gte=1900,lte=2100"`
 	Metadata         *BuildingMetadata `json:"metadata" binding:"omitempty"`
-	Active           *bool             `json:"active"`
+	ActiveStatus     *bool             `json:"active_status"`
 }
 
 // BuildingWithStats includes building with aggregated statistics
@@ -83,4 +84,118 @@ type BuildingWithStats struct {
 	OccupiedUnits int     `json:"occupied_units"`
 	TotalRevenue  float64 `json:"total_revenue"`
 	OccupancyRate float64 `json:"occupancy_rate"`
+}
+
+// BuildingAnalytics represents detailed analytics for a building
+type BuildingAnalytics struct {
+	BuildingID     int     `json:"building_id"`
+	UnitCount      int     `json:"unit_count"`
+	OccupiedUnits  int     `json:"occupied_units"`
+	VacantUnits    int     `json:"vacant_units"`
+	MonthlyRevenue float64 `json:"monthly_revenue"`
+	AverageRent    float64 `json:"average_rent"`
+	TotalArea      float64 `json:"total_area"`
+	OccupancyRate  float64 `json:"occupancy_rate"`
+}
+
+// PaginationInfo represents common pagination metadata
+type PaginationInfo struct {
+	CurrentPage int  `json:"current_page"`
+	PageSize    int  `json:"page_size"`
+	TotalItems  int  `json:"total_items"`
+	TotalPages  int  `json:"total_pages"`
+	HasNext     bool `json:"has_next"`
+	HasPrev     bool `json:"has_prev"`
+}
+
+// BuildingSearchFilters represents filters for building search
+type BuildingSearchFilters struct {
+	PropertyID   *int          `json:"property_id"`
+	BuildingType *BuildingType `json:"building_type"`
+	ActiveStatus *bool         `json:"active_status"`
+	HasElevator  *bool         `json:"has_elevator"`
+	MinFloors    *int          `json:"min_floors"`
+	MaxFloors    *int          `json:"max_floors"`
+	Limit        int           `json:"limit"`
+	Offset       int           `json:"offset"`
+}
+
+// BuildingSearchRequest represents advanced search request
+type BuildingSearchRequest struct {
+	PropertyID       *int    `json:"property_id"`
+	BuildingType     string  `json:"building_type"`
+	ActiveStatus     *bool   `json:"active_status"`
+	HasElevator      *bool   `json:"has_elevator"`
+	MinFloors        *int    `json:"min_floors"`
+	MaxFloors        *int    `json:"max_floors"`
+	ConstructionYear *int    `json:"construction_year"`
+	SearchTerm       string  `json:"search_term"`
+	MetadataQuery    string  `json:"metadata_query"`
+	SortBy           string  `json:"sort_by"`
+	SortOrder        string  `json:"sort_order"`
+	Page             int     `json:"page"`
+	PageSize         int     `json:"page_size"`
+	IncludeStats     bool    `json:"include_stats"`
+}
+
+// BuildingUnitSummary represents a summary of a unit in a building
+type BuildingUnitSummary struct {
+	UnitID      int      `json:"unit_id"`
+	UnitNumber  string   `json:"unit_number"`
+	UnitName    *string  `json:"unit_name"`
+	Floor       int      `json:"floor"`
+	Section     *string  `json:"section"`
+	UnitType    UnitType `json:"unit_type"`
+	MonthlyRent float64  `json:"monthly_rent"`
+	Active      bool     `json:"active"`
+	TenantName  string   `json:"tenant_name"`
+	LeaseActive bool     `json:"lease_active"`
+}
+
+// BuildingListResponse represents the response for a list of buildings
+type BuildingListResponse struct {
+	Buildings  []*BuildingWithStats `json:"buildings"`
+	Pagination *PaginationInfo      `json:"pagination"`
+	Statistics *PropertyStatistics  `json:"statistics,omitempty"`
+}
+
+// PropertyStatistics represents aggregated statistics for a property
+type PropertyStatistics struct {
+	TotalUnits     int     `json:"total_units"`
+	OccupiedUnits  int     `json:"occupied_units"`
+	VacantUnits    int     `json:"vacant_units"`
+	TotalRevenue   float64 `json:"total_revenue"`
+	OccupancyRate  float64 `json:"occupancy_rate"`
+	AverageRevenue float64 `json:"average_revenue"`
+}
+
+// PropertyWithBuildings represents a property with its buildings
+type PropertyWithBuildings struct {
+	Property      Property            `json:"property"`
+	Buildings     []*Building         `json:"buildings"`
+	BuildingCount int                 `json:"building_count"`
+	Statistics    *PropertyStatistics `json:"statistics,omitempty"`
+}
+
+// BuildingUnitsResponse represents the response for building units
+type BuildingUnitsResponse struct {
+	BuildingID   int                    `json:"building_id"`
+	BuildingName string                 `json:"building_name"`
+	BuildingCode string                 `json:"building_code"`
+	Units        []*BuildingUnitSummary `json:"units"`
+	Pagination   *PaginationInfo        `json:"pagination"`
+	Summary      struct {
+		TotalUnits    int     `json:"total_units"`
+		OccupiedUnits int     `json:"occupied_units"`
+		VacantUnits   int     `json:"vacant_units"`
+		TotalRevenue  float64 `json:"total_revenue"`
+	} `json:"summary"`
+}
+
+// MetadataSchemaResponse represents the schema for building metadata
+type MetadataSchemaResponse struct {
+	BuildingType string                   `json:"building_type"`
+	Schema       map[string]interface{}   `json:"schema"`
+	Examples     map[string]interface{}   `json:"examples"`
+	Description  string                   `json:"description"`
 }

@@ -42,8 +42,8 @@ type Property struct {
 	PropertyName   string           `json:"property_name" db:"property_name"`
 	PropertyCode   string           `json:"property_code" db:"property_code"`
 	Address        string           `json:"address" db:"address"`
-	City           string           `json:"city" db:"city"`
-	PostalCode     string           `json:"postal_code" db:"postal_code"`
+	City           *string          `json:"city" db:"city"`
+	PostalCode     *string          `json:"postal_code" db:"postal_code"`
 	PropertyType   PropertyType     `json:"property_type" db:"property_type"`
 	TotalBuildings int              `json:"total_buildings" db:"total_buildings"`
 	Metadata       PropertyMetadata `json:"metadata" db:"metadata"`

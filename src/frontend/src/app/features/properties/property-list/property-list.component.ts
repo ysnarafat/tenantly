@@ -11,7 +11,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { PropertyService } from '../../../core/services/property.service';
 import { BuildingService } from '../../../core/services/building.service';
 import { UnitService } from '../../../core/services/unit.service';
-import { Property, Building, Unit } from '../../../core/models';
+import { Property, Building, Unit, PropertyListResponse } from '../../../core/models';
 
 interface PropertyWithHierarchy extends Property {
   buildings?: BuildingWithUnits[];
@@ -58,11 +58,11 @@ export class PropertyListComponent implements OnInit {
     this.error.set(null);
 
     this.propertyService.getProperties({ active: true }).subscribe({
-      next: (properties) => {
-        this.properties.set(properties.map(p => ({ ...p, expanded: false })));
+      next: (response: PropertyListResponse) => {
+        this.properties.set(response.properties.map((p: Property) => ({ ...p, expanded: false })));
         this.loading.set(false);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.error.set('Failed to load properties');
         this.loading.set(false);
         console.error('Error loading properties:', err);
@@ -83,7 +83,7 @@ export class PropertyListComponent implements OnInit {
       next: (buildings) => {
         property.buildings = buildings.map(b => ({ ...b, expanded: false }));
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error loading buildings:', err);
       }
     });
@@ -102,7 +102,7 @@ export class PropertyListComponent implements OnInit {
       next: (units) => {
         building.units = units;
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error loading units:', err);
       }
     });
