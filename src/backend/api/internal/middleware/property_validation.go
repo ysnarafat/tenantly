@@ -14,6 +14,10 @@ func PropertyValidationMiddleware(propertyRepo *repositories.PropertyRepository)
 		// Get property ID from URL parameter
 		propertyIDStr := c.Param("propertyId")
 		if propertyIDStr == "" {
+			propertyIDStr = c.Param("id")
+		}
+
+		if propertyIDStr == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Property ID is required"})
 			c.Abort()
 			return

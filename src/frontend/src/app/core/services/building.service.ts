@@ -1,11 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { 
-  Building, 
-  BuildingWithStats, 
-  CreateBuildingRequest, 
-  UpdateBuildingRequest 
+import { map } from 'rxjs/operators';
+import {
+  Building,
+  BuildingWithStats,
+  CreateBuildingRequest,
+  UpdateBuildingRequest
 } from '../models';
 import { environment } from '../../../environments/environment';
 
@@ -24,11 +25,15 @@ export class BuildingService {
     if (params?.active !== undefined) {
       httpParams = httpParams.set('active', params.active.toString());
     }
-    return this.http.get<Building[]>(this.apiUrl, { params: httpParams });
+    return this.http.get<any>(this.apiUrl, { params: httpParams }).pipe(
+      map(response => response.buildings)
+    );
   }
 
   getBuildingsByProperty(propertyId: number): Observable<Building[]> {
-    return this.http.get<Building[]>(`${environment.apiUrl}/properties/${propertyId}/buildings`);
+    return this.http.get<any>(`${environment.apiUrl}/properties/${propertyId}/buildings`).pipe(
+      map(response => response.buildings)
+    );
   }
 
   getBuilding(id: number): Observable<Building> {
