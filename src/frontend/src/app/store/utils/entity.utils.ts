@@ -11,7 +11,7 @@ export function createGenericEntityAdapter<T extends { id: number | string }>():
 // Entity state interface
 export interface EntityState<T> {
   ids: (string | number)[];
-  entities: { [id: string | number]: T };
+  entities: Record<string | number, T>;
   loading: boolean;
   error: any;
   selectedId: string | number | null;

@@ -9,13 +9,13 @@ export enum AttachmentType {
   INVOICE = 'INVOICE',
   PHOTO = 'PHOTO',
   DOCUMENT = 'DOCUMENT',
-  OTHER = 'OTHER'
+  OTHER = 'OTHER',
 }
 
 export enum AttachmentStatus {
   ACTIVE = 'ACTIVE',
   ARCHIVED = 'ARCHIVED',
-  DELETED = 'DELETED'
+  DELETED = 'DELETED',
 }
 
 export interface Attachment {
@@ -131,7 +131,7 @@ export class AttachmentService {
   getAttachmentById(id: number): Observable<Attachment> {
     if (this.DEMO_MODE) {
       return new Observable((observer) => {
-        const attachment = this.demoAttachments.find(a => a.id === id);
+        const attachment = this.demoAttachments.find((a) => a.id === id);
         if (attachment) {
           observer.next(attachment);
         } else {
@@ -148,25 +148,25 @@ export class AttachmentService {
     if (this.DEMO_MODE) {
       return new Observable((observer) => {
         let filteredAttachments: Attachment[] = [];
-        
+
         switch (entityType) {
           case 'lease':
-            filteredAttachments = this.demoAttachments.filter(a => a.lease_id === entityId);
+            filteredAttachments = this.demoAttachments.filter((a) => a.lease_id === entityId);
             break;
           case 'shop':
-            filteredAttachments = this.demoAttachments.filter(a => a.shop_id === entityId);
+            filteredAttachments = this.demoAttachments.filter((a) => a.shop_id === entityId);
             break;
           case 'tenant':
-            filteredAttachments = this.demoAttachments.filter(a => a.tenant_id === entityId);
+            filteredAttachments = this.demoAttachments.filter((a) => a.tenant_id === entityId);
             break;
           case 'payment':
-            filteredAttachments = this.demoAttachments.filter(a => a.payment_id === entityId);
+            filteredAttachments = this.demoAttachments.filter((a) => a.payment_id === entityId);
             break;
           case 'property':
-            filteredAttachments = this.demoAttachments.filter(a => a.property_id === entityId);
+            filteredAttachments = this.demoAttachments.filter((a) => a.property_id === entityId);
             break;
         }
-        
+
         observer.next(filteredAttachments);
         observer.complete();
       });
@@ -179,7 +179,7 @@ export class AttachmentService {
     if (this.DEMO_MODE) {
       return new Observable((observer) => {
         const newAttachment: Attachment = {
-          id: Math.max(...this.demoAttachments.map(a => a.id)) + 1,
+          id: Math.max(...this.demoAttachments.map((a) => a.id)) + 1,
           file_name: request.file.name,
           file_path: `/uploads/${request.attachment_type.toLowerCase()}/${request.file.name}`,
           content_type: request.file.type,
@@ -197,7 +197,7 @@ export class AttachmentService {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         };
-        
+
         this.demoAttachments.push(newAttachment);
         observer.next(newAttachment);
         observer.complete();
@@ -221,7 +221,7 @@ export class AttachmentService {
   updateAttachment(id: number, request: UpdateAttachmentRequest): Observable<any> {
     if (this.DEMO_MODE) {
       return new Observable((observer) => {
-        const attachmentIndex = this.demoAttachments.findIndex(a => a.id === id);
+        const attachmentIndex = this.demoAttachments.findIndex((a) => a.id === id);
         if (attachmentIndex !== -1) {
           this.demoAttachments[attachmentIndex] = {
             ...this.demoAttachments[attachmentIndex],
@@ -242,7 +242,7 @@ export class AttachmentService {
   deleteAttachment(id: number): Observable<any> {
     if (this.DEMO_MODE) {
       return new Observable((observer) => {
-        const attachmentIndex = this.demoAttachments.findIndex(a => a.id === id);
+        const attachmentIndex = this.demoAttachments.findIndex((a) => a.id === id);
         if (attachmentIndex !== -1) {
           this.demoAttachments[attachmentIndex].status = AttachmentStatus.DELETED;
           observer.next({ message: 'Attachment deleted successfully' });
@@ -272,7 +272,7 @@ export class AttachmentService {
   getAttachmentsByType(type: AttachmentType): Observable<Attachment[]> {
     if (this.DEMO_MODE) {
       return new Observable((observer) => {
-        const filteredAttachments = this.demoAttachments.filter(a => a.attachment_type === type);
+        const filteredAttachments = this.demoAttachments.filter((a) => a.attachment_type === type);
         observer.next(filteredAttachments);
         observer.complete();
       });
@@ -284,10 +284,11 @@ export class AttachmentService {
   searchAttachments(query: string): Observable<Attachment[]> {
     if (this.DEMO_MODE) {
       return new Observable((observer) => {
-        const filteredAttachments = this.demoAttachments.filter(a => 
-          a.file_name.toLowerCase().includes(query.toLowerCase()) ||
-          a.description?.toLowerCase().includes(query.toLowerCase()) ||
-          a.tags?.toLowerCase().includes(query.toLowerCase())
+        const filteredAttachments = this.demoAttachments.filter(
+          (a) =>
+            a.file_name.toLowerCase().includes(query.toLowerCase()) ||
+            a.description?.toLowerCase().includes(query.toLowerCase()) ||
+            a.tags?.toLowerCase().includes(query.toLowerCase())
         );
         observer.next(filteredAttachments);
         observer.complete();

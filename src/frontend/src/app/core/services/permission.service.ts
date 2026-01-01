@@ -1,14 +1,19 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { AuthService } from './auth.service';
-import { Permission, hasPermission, hasAnyPermission, hasAllPermissions } from '../models/role.model';
+import {
+  Permission,
+  hasPermission,
+  hasAnyPermission,
+  hasAllPermissions,
+} from '../models/role.model';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class PermissionService {
   private authService = inject(AuthService);
-  
+
   // Current user role as signal
   private userRole = signal<string>('');
 
@@ -16,7 +21,7 @@ export class PermissionService {
     // Subscribe to role changes
     this.authService.userRole$
       .pipe(takeUntilDestroyed())
-      .subscribe(role => this.userRole.set(role));
+      .subscribe((role) => this.userRole.set(role));
   }
 
   /**

@@ -1,5 +1,10 @@
 import { createAction, props } from '@ngrx/store';
-import { Property, PropertyWithStats, CreatePropertyRequest, UpdatePropertyRequest } from '../../core/models';
+import {
+  Property,
+  PropertyWithStats,
+  CreatePropertyRequest,
+  UpdatePropertyRequest,
+} from '../../core/models';
 
 // Load Properties
 export const loadProperties = createAction(
@@ -18,10 +23,7 @@ export const loadPropertiesFailure = createAction(
 );
 
 // Load Single Property
-export const loadProperty = createAction(
-  '[Property] Load Property',
-  props<{ id: number }>()
-);
+export const loadProperty = createAction('[Property] Load Property', props<{ id: number }>());
 
 export const loadPropertySuccess = createAction(
   '[Property] Load Property Success',
@@ -82,10 +84,7 @@ export const updatePropertyFailure = createAction(
 );
 
 // Delete Property
-export const deleteProperty = createAction(
-  '[Property] Delete Property',
-  props<{ id: number }>()
-);
+export const deleteProperty = createAction('[Property] Delete Property', props<{ id: number }>());
 
 export const deletePropertySuccess = createAction(
   '[Property] Delete Property Success',
@@ -104,6 +103,4 @@ export const selectProperty = createAction(
 );
 
 // Clear Property State
-export const clearPropertyState = createAction(
-  '[Property] Clear Property State'
-);
+export const clearPropertyState = createAction('[Property] Clear Property State');

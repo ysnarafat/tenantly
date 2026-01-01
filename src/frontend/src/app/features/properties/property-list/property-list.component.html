@@ -51,11 +51,16 @@
               <div class="buildings-section">
                 <div class="section-header">
                   <h3>Buildings</h3>
-                  <button mat-mini-fab color="primary" matTooltip="Add Building" (click)="addBuilding(property)">
+                  <button
+                    mat-mini-fab
+                    color="primary"
+                    matTooltip="Add Building"
+                    (click)="addBuilding(property)"
+                  >
                     <mat-icon>add</mat-icon>
                   </button>
                 </div>
-                
+
                 @if (property.buildings) {
                   @for (building of property.buildings; track building.id) {
                     <mat-card class="building-card">
@@ -75,7 +80,13 @@
                         <div class="units-section">
                           <div class="section-header">
                             <h4>Units</h4>
-                            <button mat-mini-fab color="accent" matTooltip="Add Unit" class="small-fab" (click)="addUnit(building, property)">
+                            <button
+                              mat-mini-fab
+                              color="accent"
+                              matTooltip="Add Unit"
+                              class="small-fab"
+                              (click)="addUnit(building, property)"
+                            >
                               <mat-icon>add</mat-icon>
                             </button>
                           </div>

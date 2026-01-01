@@ -14,14 +14,14 @@ export class AuthGuard implements CanActivate {
   canActivate(): Observable<boolean> {
     return this.authFacade.isAuthenticated$.pipe(
       take(1),
-      map(isAuthenticated => {
+      map((isAuthenticated) => {
         if (isAuthenticated) {
           return true;
         } else {
           // Check localStorage as fallback
           const token = localStorage.getItem('tenantly_token');
           const expiresAt = localStorage.getItem('tenantly_expires_at');
-          
+
           if (token && expiresAt) {
             const isExpired = new Date() >= new Date(expiresAt);
             if (!isExpired) {
@@ -30,7 +30,7 @@ export class AuthGuard implements CanActivate {
               return true;
             }
           }
-          
+
           this.router.navigate(['/login']);
           return false;
         }

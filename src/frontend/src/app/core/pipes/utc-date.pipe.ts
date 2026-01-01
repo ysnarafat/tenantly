@@ -3,13 +3,13 @@ import { DateUtilsService } from '../services/date-utils.service';
 
 @Pipe({
   name: 'utcDate',
-  standalone: true
+  standalone: true,
 })
 export class UtcDatePipe implements PipeTransform {
   private dateUtils = inject(DateUtilsService);
 
   transform(
-    value: string | null | undefined, 
+    value: string | null | undefined,
     format: 'short' | 'medium' | 'long' | 'full' | 'date' | 'time' | 'relative' = 'medium'
   ): string {
     if (!value) return '';

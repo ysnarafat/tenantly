@@ -1,7 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 import { Store } from '@ngrx/store';
 import { of } from 'rxjs';
-import { AuthService, LoginRequest, ChangePasswordRequest, ResetPasswordRequest } from './auth.service';
+import {
+  AuthService,
+  LoginRequest,
+  ChangePasswordRequest,
+  ResetPasswordRequest,
+} from './auth.service';
 import { AppState } from '../../store';
 import * as AuthActions from '../../store/auth/auth.actions';
 import * as AuthSelectors from '../../store/auth/auth.selectors';
@@ -24,10 +29,7 @@ describe('AuthService', () => {
     const storeSpy = jasmine.createSpyObj('Store', ['select', 'dispatch']);
 
     TestBed.configureTestingModule({
-      providers: [
-        AuthService,
-        { provide: Store, useValue: storeSpy },
-      ],
+      providers: [AuthService, { provide: Store, useValue: storeSpy }],
     });
 
     service = TestBed.inject(AuthService);
@@ -54,9 +56,9 @@ describe('AuthService', () => {
   describe('login', () => {
     it('should dispatch login action', () => {
       const credentials: LoginRequest = { username: 'test', password: 'test' };
-      
+
       service.login(credentials);
-      
+
       expect(store.dispatch).toHaveBeenCalledWith(AuthActions.login({ credentials }));
     });
   });
@@ -64,7 +66,7 @@ describe('AuthService', () => {
   describe('logout', () => {
     it('should dispatch logout action', () => {
       service.logout();
-      
+
       expect(store.dispatch).toHaveBeenCalledWith(AuthActions.logout());
     });
   });
@@ -72,7 +74,7 @@ describe('AuthService', () => {
   describe('refreshToken', () => {
     it('should dispatch refreshToken action', () => {
       service.refreshToken();
-      
+
       expect(store.dispatch).toHaveBeenCalledWith(AuthActions.refreshToken());
     });
   });
@@ -80,9 +82,9 @@ describe('AuthService', () => {
   describe('changePassword', () => {
     it('should dispatch changePassword action', () => {
       const request: ChangePasswordRequest = { current_password: 'old', new_password: 'new' };
-      
+
       service.changePassword(request);
-      
+
       expect(store.dispatch).toHaveBeenCalledWith(AuthActions.changePassword({ request }));
     });
   });
@@ -90,9 +92,9 @@ describe('AuthService', () => {
   describe('resetPassword', () => {
     it('should dispatch resetPassword action', () => {
       const request: ResetPasswordRequest = { email: 'test@example.com' };
-      
+
       service.resetPassword(request);
-      
+
       expect(store.dispatch).toHaveBeenCalledWith(AuthActions.resetPassword({ request }));
     });
   });
@@ -100,7 +102,7 @@ describe('AuthService', () => {
   describe('clearError', () => {
     it('should dispatch clearError action', () => {
       service.clearError();
-      
+
       expect(store.dispatch).toHaveBeenCalledWith(AuthActions.clearError());
     });
   });
@@ -108,7 +110,7 @@ describe('AuthService', () => {
   describe('initializeAuth', () => {
     it('should dispatch initializeAuth action', () => {
       service.initializeAuth();
-      
+
       expect(store.dispatch).toHaveBeenCalledWith(AuthActions.initializeAuth());
     });
   });
@@ -116,7 +118,7 @@ describe('AuthService', () => {
   describe('getUser', () => {
     it('should return user from store', () => {
       const result = service.getUser();
-      
+
       expect(result).toEqual(mockUser);
       expect(store.select).toHaveBeenCalledWith(AuthSelectors.selectUser);
     });
@@ -125,7 +127,7 @@ describe('AuthService', () => {
   describe('getUserRole', () => {
     it('should return user role from store', () => {
       const result = service.getUserRole();
-      
+
       expect(result).toBe('Admin');
       expect(store.select).toHaveBeenCalledWith(AuthSelectors.selectUserRole);
     });
@@ -134,7 +136,7 @@ describe('AuthService', () => {
   describe('isAuthenticated', () => {
     it('should return authentication status from store', () => {
       const result = service.isAuthenticated();
-      
+
       expect(result).toBe(true);
       expect(store.select).toHaveBeenCalledWith(AuthSelectors.selectIsAuthenticated);
     });
@@ -143,7 +145,7 @@ describe('AuthService', () => {
   describe('hasRole', () => {
     it('should return true when user has the specified role', () => {
       const result = service.hasRole('Admin');
-      
+
       expect(result).toBe(true);
     });
 
@@ -154,7 +156,7 @@ describe('AuthService', () => {
       });
 
       const result = service.hasRole('Admin');
-      
+
       expect(result).toBe(false);
     });
   });
@@ -162,7 +164,7 @@ describe('AuthService', () => {
   describe('hasAnyRole', () => {
     it('should return true when user has one of the specified roles', () => {
       const result = service.hasAnyRole(['Admin', 'PropertyManager']);
-      
+
       expect(result).toBe(true);
     });
 
@@ -173,7 +175,7 @@ describe('AuthService', () => {
       });
 
       const result = service.hasAnyRole(['Admin', 'PropertyManager']);
-      
+
       expect(result).toBe(false);
     });
   });
@@ -181,7 +183,7 @@ describe('AuthService', () => {
   describe('isAdmin', () => {
     it('should return true for admin user', () => {
       const result = service.isAdmin();
-      
+
       expect(result).toBe(true);
       expect(store.select).toHaveBeenCalledWith(AuthSelectors.selectIsAdmin);
     });
@@ -190,7 +192,7 @@ describe('AuthService', () => {
   describe('isPropertyManager', () => {
     it('should return false for admin user', () => {
       const result = service.isPropertyManager();
-      
+
       expect(result).toBe(false);
       expect(store.select).toHaveBeenCalledWith(AuthSelectors.selectIsPropertyManager);
     });
@@ -199,7 +201,7 @@ describe('AuthService', () => {
   describe('isAccountant', () => {
     it('should return false for admin user', () => {
       const result = service.isAccountant();
-      
+
       expect(result).toBe(false);
       expect(store.select).toHaveBeenCalledWith(AuthSelectors.selectIsAccountant);
     });
@@ -208,32 +210,32 @@ describe('AuthService', () => {
   describe('reactive methods', () => {
     it('should provide reactive hasRole$', () => {
       const result$ = service.hasRole$('Admin');
-      
+
       expect(result$).toBeDefined();
     });
 
     it('should provide reactive hasAnyRole$', () => {
       const roles = ['Admin', 'PropertyManager'];
       const result$ = service.hasAnyRole$(roles);
-      
+
       expect(result$).toBeDefined();
     });
 
     it('should provide reactive isAdmin$', () => {
       const result$ = service.isAdmin$();
-      
+
       expect(result$).toBeDefined();
     });
 
     it('should provide reactive isPropertyManager$', () => {
       const result$ = service.isPropertyManager$();
-      
+
       expect(result$).toBeDefined();
     });
 
     it('should provide reactive isAccountant$', () => {
       const result$ = service.isAccountant$();
-      
+
       expect(result$).toBeDefined();
     });
   });

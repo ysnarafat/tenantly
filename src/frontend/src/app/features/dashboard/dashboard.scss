@@ -29,7 +29,9 @@
     margin-bottom: 32px;
 
     .stat-card {
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
       cursor: pointer;
 
       &:hover {
@@ -69,42 +71,58 @@
 
       &.rent-due {
         border-left: 4px solid #2196f3;
-        .stat-icon { color: #2196f3; }
+        .stat-icon {
+          color: #2196f3;
+        }
       }
 
       &.collected {
         border-left: 4px solid #4caf50;
-        .stat-icon { color: #4caf50; }
+        .stat-icon {
+          color: #4caf50;
+        }
       }
 
       &.pending {
         border-left: 4px solid #ff9800;
-        .stat-icon { color: #ff9800; }
+        .stat-icon {
+          color: #ff9800;
+        }
       }
 
       &.overdue {
         border-left: 4px solid #f44336;
-        .stat-icon { color: #f44336; }
+        .stat-icon {
+          color: #f44336;
+        }
       }
 
       &.active-leases {
         border-left: 4px solid #9c27b0;
-        .stat-icon { color: #9c27b0; }
+        .stat-icon {
+          color: #9c27b0;
+        }
       }
 
       &.expiring {
         border-left: 4px solid #ff5722;
-        .stat-icon { color: #ff5722; }
+        .stat-icon {
+          color: #ff5722;
+        }
       }
 
       &.attachments {
         border-left: 4px solid #607d8b;
-        .stat-icon { color: #607d8b; }
+        .stat-icon {
+          color: #607d8b;
+        }
       }
 
       &.recent-files {
         border-left: 4px solid #795548;
-        .stat-icon { color: #795548; }
+        .stat-icon {
+          color: #795548;
+        }
       }
     }
   }

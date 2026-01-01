@@ -1,14 +1,12 @@
 <div class="lease-list-container">
   <div class="header">
     <h1>Lease Management</h1>
-    <button 
-      mat-raised-button 
-      color="primary" 
-      (click)="createLease()"
-      *ngIf="canEdit()">
+    @if (canEdit()) {
+    <button mat-raised-button color="primary" (click)="createLease()">
       <mat-icon>add</mat-icon>
       New Lease
     </button>
+    }
   </div>
 
   <mat-card>
@@ -80,14 +78,17 @@
                   <mat-icon>visibility</mat-icon>
                   <span>View Details</span>
                 </button>
-                <button mat-menu-item (click)="editLease(lease)" *ngIf="canEdit()">
+                @if (canEdit()) {
+                <button mat-menu-item (click)="editLease(lease)">
                   <mat-icon>edit</mat-icon>
                   <span>Edit</span>
                 </button>
-                <button mat-menu-item (click)="deleteLease(lease)" *ngIf="canDelete()" class="delete-action">
+                } @if (canDelete()) {
+                <button mat-menu-item (click)="deleteLease(lease)" class="delete-action">
                   <mat-icon>delete</mat-icon>
                   <span>Delete</span>
                 </button>
+                }
               </mat-menu>
             </td>
           </ng-container>
@@ -96,19 +97,23 @@
           <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
         </table>
 
-        <div *ngIf="loading" class="loading-container">
+        @if (loading) {
+        <div class="loading-container">
           <p>Loading leases...</p>
         </div>
-
-        <div *ngIf="!loading && leases.length === 0" class="empty-state">
+        } @if (!loading && leases.length === 0) {
+        <div class="empty-state">
           <mat-icon>assignment</mat-icon>
           <h3>No leases found</h3>
           <p>Start by creating your first lease agreement.</p>
-          <button mat-raised-button color="primary" (click)="createLease()" *ngIf="canEdit()">
+          @if (canEdit()) {
+          <button mat-raised-button color="primary" (click)="createLease()">
             <mat-icon>add</mat-icon>
             Create Lease
           </button>
+          }
         </div>
+        }
       </div>
     </mat-card-content>
   </mat-card>

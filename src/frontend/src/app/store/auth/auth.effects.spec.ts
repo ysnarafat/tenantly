@@ -89,7 +89,9 @@ describe('AuthEffects', () => {
 
       effects.loginSuccess$.subscribe(() => {
         expect(localStorage.getItem('tenantly_token')).toBe(mockLoginResponse.token);
-        expect(localStorage.getItem('tenantly_refresh_token')).toBe(mockLoginResponse.refresh_token);
+        expect(localStorage.getItem('tenantly_refresh_token')).toBe(
+          mockLoginResponse.refresh_token
+        );
         expect(localStorage.getItem('tenantly_user')).toBe(JSON.stringify(mockLoginResponse.user));
         expect(localStorage.getItem('tenantly_expires_at')).toBe(mockLoginResponse.expires_at);
         expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
@@ -166,7 +168,9 @@ describe('AuthEffects', () => {
 
       effects.refreshTokenSuccess$.subscribe(() => {
         expect(localStorage.getItem('tenantly_token')).toBe(mockLoginResponse.token);
-        expect(localStorage.getItem('tenantly_refresh_token')).toBe(mockLoginResponse.refresh_token);
+        expect(localStorage.getItem('tenantly_refresh_token')).toBe(
+          mockLoginResponse.refresh_token
+        );
         expect(localStorage.getItem('tenantly_user')).toBe(JSON.stringify(mockLoginResponse.user));
         expect(localStorage.getItem('tenantly_expires_at')).toBe(mockLoginResponse.expires_at);
         done();
@@ -218,7 +222,9 @@ describe('AuthEffects', () => {
 
       effects.resetPassword$.subscribe((result) => {
         expect(result.type).toBe(AuthActions.resetPasswordSuccess.type);
-        expect((result as any).message).toBe('If the email exists, a password reset link has been sent');
+        expect((result as any).message).toBe(
+          'If the email exists, a password reset link has been sent'
+        );
         done();
       });
     });

@@ -1,107 +1,103 @@
 @if (isAuthenticated()) {
-  <div class="app-container">
-    <mat-toolbar color="primary" class="app-toolbar">
-      <button mat-icon-button (click)="toggleSidenav()" class="menu-button">
-        <mat-icon>menu</mat-icon>
+<div class="app-container">
+  <mat-toolbar color="primary" class="app-toolbar">
+    <button mat-icon-button (click)="toggleSidenav()" class="menu-button">
+      <mat-icon>menu</mat-icon>
+    </button>
+    <div class="app-branding">
+      <span class="app-title">Tenantly</span>
+      <span class="app-subtitle">Tenant Management System</span>
+    </div>
+    <span class="spacer"></span>
+    <div class="user-info">
+      <div class="user-details">
+        <span class="user-name">{{ user()?.username || 'User' }}</span>
+        <span class="user-role">{{ userRole() }}</span>
+      </div>
+      <button mat-icon-button [matMenuTriggerFor]="userMenu" matTooltip="Account">
+        <mat-icon>account_circle</mat-icon>
       </button>
-      <div class="app-branding">
-        <span class="app-title">Tenantly</span>
-        <span class="app-subtitle">Tenant Management System</span>
-      </div>
-      <span class="spacer"></span>
-      <div class="user-info">
-        <div class="user-details">
-          <span class="user-name">{{ user()?.username || 'User' }}</span>
-          <span class="user-role">{{ userRole() }}</span>
-        </div>
-        <button mat-icon-button [matMenuTriggerFor]="userMenu" matTooltip="Account">
-          <mat-icon>account_circle</mat-icon>
+      <mat-menu #userMenu="matMenu">
+        <button mat-menu-item disabled>
+          <mat-icon>person</mat-icon>
+          <span>{{ user()?.username }}</span>
         </button>
-        <mat-menu #userMenu="matMenu">
-          <button mat-menu-item disabled>
-            <mat-icon>person</mat-icon>
-            <span>{{ user()?.username }}</span>
-          </button>
-          <button mat-menu-item disabled>
-            <mat-icon>badge</mat-icon>
-            <span>{{ userRole() }}</span>
-          </button>
-          <mat-divider></mat-divider>
-          <button mat-menu-item (click)="logout()">
-            <mat-icon>logout</mat-icon>
-            <span>Logout</span>
-          </button>
-        </mat-menu>
-      </div>
-    </mat-toolbar>
+        <button mat-menu-item disabled>
+          <mat-icon>badge</mat-icon>
+          <span>{{ userRole() }}</span>
+        </button>
+        <mat-divider></mat-divider>
+        <button mat-menu-item (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          <span>Logout</span>
+        </button>
+      </mat-menu>
+    </div>
+  </mat-toolbar>
 
-    <mat-sidenav-container class="sidenav-container">
-      <mat-sidenav 
-        #sidenav 
-        [mode]="sidenavMode()" 
-        [opened]="sidenavOpened()" 
-        class="sidenav"
-        [fixedInViewport]="isMobile()"
-        [fixedTopGap]="fixedTopGap()"
-      >
-        <mat-nav-list>
-          <a mat-list-item routerLink="/dashboard" routerLinkActive="active" (click)="onNavigate()">
-            <mat-icon>dashboard</mat-icon>
-            <span>Dashboard</span>
-          </a>
-          
-          @if (canManageProperties()) {
-            <a mat-list-item routerLink="/properties" routerLinkActive="active" (click)="onNavigate()">
-              <mat-icon>meeting_room</mat-icon>
-              <span>Units</span>
-            </a>
-          }
-          
-          @if (canManageTenants()) {
-            <a mat-list-item routerLink="/tenants" routerLinkActive="active" (click)="onNavigate()">
-              <mat-icon>people</mat-icon>
-              <span>Tenants</span>
-            </a>
-            
-            <a mat-list-item routerLink="/leases" routerLinkActive="active" (click)="onNavigate()">
-              <mat-icon>assignment</mat-icon>
-              <span>Leases</span>
-            </a>
-          }
-          
-          <a mat-list-item routerLink="/payments" routerLinkActive="active" (click)="onNavigate()">
-            <mat-icon>payment</mat-icon>
-            <span>Payments</span>
-          </a>
-          
-          <a mat-list-item routerLink="/reports" routerLinkActive="active" (click)="onNavigate()">
-            <mat-icon>assessment</mat-icon>
-            <span>Reports</span>
-          </a>
-          
-          @if (canManageDocuments()) {
-            <a mat-list-item routerLink="/documents" routerLinkActive="active" (click)="onNavigate()">
-              <mat-icon>folder</mat-icon>
-              <span>Documents</span>
-            </a>
-          }
-          
-          @if (canManageUsers()) {
-            <mat-divider></mat-divider>
-            
-            <a mat-list-item routerLink="/users" routerLinkActive="active" (click)="onNavigate()">
-              <mat-icon>admin_panel_settings</mat-icon>
-              <span>Users</span>
-            </a>
-          }
-        </mat-nav-list>
-      </mat-sidenav>
+  <mat-sidenav-container class="sidenav-container">
+    <mat-sidenav
+      #sidenav
+      [mode]="sidenavMode()"
+      [opened]="sidenavOpened()"
+      class="sidenav"
+      [fixedInViewport]="isMobile()"
+      [fixedTopGap]="fixedTopGap()"
+    >
+      <mat-nav-list>
+        <a mat-list-item routerLink="/dashboard" routerLinkActive="active" (click)="onNavigate()">
+          <mat-icon>dashboard</mat-icon>
+          <span>Dashboard</span>
+        </a>
 
-      <mat-sidenav-content class="main-content">
-        <router-outlet></router-outlet>
-      </mat-sidenav-content>
-    </mat-sidenav-container>
-  </div>
+        @if (canManageProperties()) {
+        <a mat-list-item routerLink="/properties" routerLinkActive="active" (click)="onNavigate()">
+          <mat-icon>meeting_room</mat-icon>
+          <span>Units</span>
+        </a>
+        } @if (canManageTenants()) {
+        <a mat-list-item routerLink="/tenants" routerLinkActive="active" (click)="onNavigate()">
+          <mat-icon>people</mat-icon>
+          <span>Tenants</span>
+        </a>
+
+        <a mat-list-item routerLink="/leases" routerLinkActive="active" (click)="onNavigate()">
+          <mat-icon>assignment</mat-icon>
+          <span>Leases</span>
+        </a>
+        }
+
+        <a mat-list-item routerLink="/payments" routerLinkActive="active" (click)="onNavigate()">
+          <mat-icon>payment</mat-icon>
+          <span>Payments</span>
+        </a>
+
+        <a mat-list-item routerLink="/reports" routerLinkActive="active" (click)="onNavigate()">
+          <mat-icon>assessment</mat-icon>
+          <span>Reports</span>
+        </a>
+
+        @if (canManageDocuments()) {
+        <a mat-list-item routerLink="/documents" routerLinkActive="active" (click)="onNavigate()">
+          <mat-icon>folder</mat-icon>
+          <span>Documents</span>
+        </a>
+        } @if (canManageUsers()) {
+        <mat-divider></mat-divider>
+
+        <a mat-list-item routerLink="/users" routerLinkActive="active" (click)="onNavigate()">
+          <mat-icon>admin_panel_settings</mat-icon>
+          <span>Users</span>
+        </a>
+        }
+      </mat-nav-list>
+    </mat-sidenav>
+
+    <mat-sidenav-content class="main-content">
+      <router-outlet></router-outlet>
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+</div>
 } @else {
-  <router-outlet></router-outlet>
+<router-outlet></router-outlet>
 }

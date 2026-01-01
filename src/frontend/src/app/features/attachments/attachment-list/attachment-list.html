@@ -1,15 +1,15 @@
 <div class="attachment-list-container">
-  <div class="header" *ngIf="showHeader">
+  @if (showHeader) {
+  <div class="header">
     <h1>Attachments</h1>
-    <button 
-      mat-raised-button 
-      color="primary" 
-      (click)="uploadAttachment()"
-      *ngIf="canUpload()">
+    @if (canUpload()) {
+    <button mat-raised-button color="primary" (click)="uploadAttachment()">
       <mat-icon>cloud_upload</mat-icon>
       Upload File
     </button>
+    }
   </div>
+  }
 
   <mat-card>
     <mat-card-content>
@@ -19,17 +19,21 @@
           <mat-label>Filter by Type</mat-label>
           <mat-select [(value)]="selectedType" (selectionChange)="onTypeFilterChange()">
             <mat-option value="ALL">All Types</mat-option>
-            <mat-option *ngFor="let type of attachmentTypes" [value]="type">
-              {{ type }}
-            </mat-option>
+            @for (type of attachmentTypes; track type) {
+            <mat-option [value]="type"> {{ type }} </mat-option>
+            }
           </mat-select>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
           <mat-label>Search</mat-label>
           <mat-icon matPrefix>search</mat-icon>
-          <input matInput [(ngModel)]="searchQuery" (input)="onSearchChange()" 
-                 placeholder="Search by filename, description, or tags">
+          <input
+            matInput
+            [(ngModel)]="searchQuery"
+            (input)="onSearchChange()"
+            placeholder="Search by filename, description, or tags"
+          />
         </mat-form-field>
       </div>
 
@@ -71,26 +75,23 @@
           <ng-container matColumnDef="description">
             <th mat-header-cell *matHeaderCellDef>Description</th>
             <td mat-cell *matCellDef="let attachment">
-              <div class="description">
-                {{ attachment.description || 'No description' }}
-              </div>
-              <div class="tags" *ngIf="attachment.tags">
+              <div class="description">{{ attachment.description || 'No description' }}</div>
+              @if (attachment.tags) {
+              <div class="tags">
                 <mat-chip-listbox>
-                  <mat-chip *ngFor="let tag of attachment.tags.split(',')" 
-                           [removable]="false">
-                    {{ tag.trim() }}
-                  </mat-chip>
+                  @for (tag of attachment.tags.split(','); track tag) {
+                  <mat-chip [removable]="false"> {{ tag.trim() }} </mat-chip>
+                  }
                 </mat-chip-listbox>
               </div>
+              }
             </td>
           </ng-container>
 
           <!-- Created Date Column -->
           <ng-container matColumnDef="created_at">
             <th mat-header-cell *matHeaderCellDef>Uploaded</th>
-            <td mat-cell *matCellDef="let attachment">
-              {{ formatDate(attachment.created_at) }}
-            </td>
+            <td mat-cell *matCellDef="let attachment">{{ formatDate(attachment.created_at) }}</td>
           </ng-container>
 
           <!-- Actions Column -->
@@ -109,14 +110,17 @@
                   <mat-icon>download</mat-icon>
                   <span>Download</span>
                 </button>
-                <button mat-menu-item (click)="editAttachment(attachment)" *ngIf="canEdit()">
+                @if (canEdit()) {
+                <button mat-menu-item (click)="editAttachment(attachment)">
                   <mat-icon>edit</mat-icon>
                   <span>Edit</span>
                 </button>
-                <button mat-menu-item (click)="deleteAttachment(attachment)" *ngIf="canDelete()" class="delete-action">
+                } @if (canDelete()) {
+                <button mat-menu-item (click)="deleteAttachment(attachment)" class="delete-action">
                   <mat-icon>delete</mat-icon>
                   <span>Delete</span>
                 </button>
+                }
               </mat-menu>
             </td>
           </ng-container>
@@ -125,24 +129,26 @@
           <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
         </table>
 
-        <div *ngIf="loading" class="loading-container">
+        @if (loading) {
+        <div class="loading-container">
           <p>Loading attachments...</p>
         </div>
-
-        <div *ngIf="!loading && filteredAttachments.length === 0" class="empty-state">
+        } @if (!loading && filteredAttachments.length === 0) {
+        <div class="empty-state">
           <mat-icon>attach_file</mat-icon>
           <h3>No attachments found</h3>
-          <p *ngIf="searchQuery || selectedType !== 'ALL'">
-            Try adjusting your filters or search terms.
-          </p>
-          <p *ngIf="!searchQuery && selectedType === 'ALL'">
-            Start by uploading your first file.
-          </p>
-          <button mat-raised-button color="primary" (click)="uploadAttachment()" *ngIf="canUpload()">
+          @if (searchQuery || selectedType !== 'ALL') {
+          <p>Try adjusting your filters or search terms.</p>
+          } @if (!searchQuery && selectedType === 'ALL') {
+          <p>Start by uploading your first file.</p>
+          } @if (canUpload()) {
+          <button mat-raised-button color="primary" (click)="uploadAttachment()">
             <mat-icon>cloud_upload</mat-icon>
             Upload File
           </button>
+          }
         </div>
+        }
       </div>
     </mat-card-content>
   </mat-card>

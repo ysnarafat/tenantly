@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -16,7 +16,6 @@ import { AuthService, LoginRequest } from '../../../core/services/auth.service';
   selector: 'app-login',
   standalone: true,
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatCardModule,
     MatFormFieldModule,
@@ -46,17 +45,15 @@ export class Login implements OnInit {
     // Subscribe to auth state and update signals
     this.authService.loading$
       .pipe(takeUntilDestroyed())
-      .subscribe(loading => this.loading.set(loading));
+      .subscribe((loading) => this.loading.set(loading));
 
-    this.authService.error$
-      .pipe(takeUntilDestroyed())
-      .subscribe(error => this.error.set(error));
+    this.authService.error$.pipe(takeUntilDestroyed()).subscribe((error) => this.error.set(error));
 
     // Listen for authentication success
     this.authService.isAuthenticated$
       .pipe(
         takeUntilDestroyed(),
-        filter(isAuth => isAuth)
+        filter((isAuth) => isAuth)
       )
       .subscribe(() => {
         this.snackBar.open('Login successful!', 'Close', { duration: 3000 });
@@ -67,9 +64,9 @@ export class Login implements OnInit {
     this.authService.error$
       .pipe(
         takeUntilDestroyed(),
-        filter(error => !!error)
+        filter((error) => !!error)
       )
-      .subscribe(error => {
+      .subscribe((error: any) => {
         console.error('Login error:', error);
         this.snackBar.open(
           error.error?.error || 'Login failed. Please check your credentials.',

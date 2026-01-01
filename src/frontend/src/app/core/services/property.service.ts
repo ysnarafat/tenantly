@@ -6,12 +6,12 @@ import {
   PropertyWithStats,
   CreatePropertyRequest,
   UpdatePropertyRequest,
-  PropertyListResponse
+  PropertyListResponse,
 } from '../models';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class PropertyService {
   private http = inject(HttpClient);

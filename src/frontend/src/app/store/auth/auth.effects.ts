@@ -18,13 +18,17 @@ export class AuthEffects {
       ofType(AuthActions.login),
       exhaustMap(({ credentials }) => {
         // Handle demo mode
-        if (this.isDemoMode() && credentials.username === 'demo' && credentials.password === 'demo123') {
+        if (
+          this.isDemoMode() &&
+          credentials.username === 'demo' &&
+          credentials.password === 'demo123'
+        ) {
           const demoResponse = this.createDemoResponse();
           return of(AuthActions.loginSuccess({ response: demoResponse }));
         } else if (this.isDemoMode()) {
           return of(AuthActions.loginFailure({ error: { error: 'Invalid demo credentials' } }));
         }
-        
+
         // Production API call
         return this.http.post<any>(`${environment.apiUrl}/auth/login`, credentials).pipe(
           map((response) => AuthActions.loginSuccess({ response })),
@@ -43,8 +47,13 @@ export class AuthEffects {
           localStorage.setItem('tenantly_token', response.token);
           localStorage.setItem('tenantly_refresh_token', response.refresh_token);
           localStorage.setItem('tenantly_user', JSON.stringify(response.user));
-          localStorage.setItem('tenantly_expires_at', typeof response.expires_at === 'string' ? response.expires_at : new Date(response.expires_at).toISOString());
-          
+          localStorage.setItem(
+            'tenantly_expires_at',
+            typeof response.expires_at === 'string'
+              ? response.expires_at
+              : new Date(response.expires_at).toISOString()
+          );
+
           // Navigate to dashboard
           this.router.navigate(['/dashboard']);
         })
@@ -60,7 +69,7 @@ export class AuthEffects {
         if (this.isDemoMode()) {
           return of(AuthActions.logoutSuccess());
         }
-        
+
         // Production API call
         return this.http.post(`${environment.apiUrl}/auth/logout`, {}).pipe(
           map(() => AuthActions.logoutSuccess()),
@@ -80,7 +89,7 @@ export class AuthEffects {
           localStorage.removeItem('tenantly_refresh_token');
           localStorage.removeItem('tenantly_user');
           localStorage.removeItem('tenantly_expires_at');
-          
+
           // Navigate to login
           this.router.navigate(['/login']);
         })
@@ -102,7 +111,7 @@ export class AuthEffects {
           const demoResponse = this.createDemoResponse('refreshed');
           return of(AuthActions.refreshTokenSuccess({ response: demoResponse }));
         }
-        
+
         // Production API call
         const request = { refresh_token: refreshToken };
         return this.http.post<any>(`${environment.apiUrl}/auth/refresh`, request).pipe(
@@ -122,7 +131,12 @@ export class AuthEffects {
           localStorage.setItem('tenantly_token', response.token);
           localStorage.setItem('tenantly_refresh_token', response.refresh_token);
           localStorage.setItem('tenantly_user', JSON.stringify(response.user));
-          localStorage.setItem('tenantly_expires_at', typeof response.expires_at === 'string' ? response.expires_at : new Date(response.expires_at).toISOString());
+          localStorage.setItem(
+            'tenantly_expires_at',
+            typeof response.expires_at === 'string'
+              ? response.expires_at
+              : new Date(response.expires_at).toISOString()
+          );
         })
       ),
     { dispatch: false }
@@ -138,7 +152,7 @@ export class AuthEffects {
           localStorage.removeItem('tenantly_refresh_token');
           localStorage.removeItem('tenantly_user');
           localStorage.removeItem('tenantly_expires_at');
-          
+
           this.router.navigate(['/login']);
         })
       ),
@@ -151,9 +165,11 @@ export class AuthEffects {
       exhaustMap(({ request }) => {
         // Handle demo mode
         if (this.isDemoMode()) {
-          return of(AuthActions.changePasswordSuccess({ message: 'Password changed successfully' }));
+          return of(
+            AuthActions.changePasswordSuccess({ message: 'Password changed successfully' })
+          );
         }
-        
+
         // Production API call
         return this.http.post<any>(`${environment.apiUrl}/auth/change-password`, request).pipe(
           map((response) => AuthActions.changePasswordSuccess({ message: response.message })),
@@ -169,9 +185,13 @@ export class AuthEffects {
       exhaustMap(({ request }) => {
         // Handle demo mode
         if (this.isDemoMode()) {
-          return of(AuthActions.resetPasswordSuccess({ message: 'If the email exists, a password reset link has been sent' }));
+          return of(
+            AuthActions.resetPasswordSuccess({
+              message: 'If the email exists, a password reset link has been sent',
+            })
+          );
         }
-        
+
         // Production API call
         return this.http.post<any>(`${environment.apiUrl}/auth/reset-password`, request).pipe(
           map((response) => AuthActions.resetPasswordSuccess({ message: response.message })),
@@ -186,10 +206,10 @@ export class AuthEffects {
     return false; // Set to false for production
   }
 
-  private createDemoResponse(suffix: string = ''): any {
+  private createDemoResponse(suffix = ''): any {
     const user = localStorage.getItem('tenantly_user');
     const existingUser = user ? JSON.parse(user) : null;
-    
+
     return {
       token: `demo-token${suffix ? '-' + suffix : ''}`,
       refresh_token: `demo-refresh-token${suffix ? '-' + suffix : ''}`,

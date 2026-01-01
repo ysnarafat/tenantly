@@ -12,33 +12,44 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const store = inject(Store<AppState>);
   const router = inject(Router);
-  
+
   // Skip auth for login and refresh endpoints
-  if (req.url.includes('/auth/login') || req.url.includes('/auth/refresh') || req.url.includes('/auth/reset-password') || req.url.includes('/auth/confirm-reset-password')) {
+  if (
+    req.url.includes('/auth/login') ||
+    req.url.includes('/auth/refresh') ||
+    req.url.includes('/auth/reset-password') ||
+    req.url.includes('/auth/confirm-reset-password')
+  ) {
     return next(req);
   }
 
   // Get token from NgRx store
   let token: string | null = null;
   let isTokenExpired = false;
-  
-  store.select(AuthSelectors.selectToken).pipe(take(1)).subscribe(t => token = t);
-  store.select(AuthSelectors.selectIsTokenExpired).pipe(take(1)).subscribe(expired => isTokenExpired = expired);
+
+  store
+    .select(AuthSelectors.selectToken)
+    .pipe(take(1))
+    .subscribe((t) => (token = t));
+  store
+    .select(AuthSelectors.selectIsTokenExpired)
+    .pipe(take(1))
+    .subscribe((expired) => (isTokenExpired = expired));
 
   if (token && !isTokenExpired) {
     const authReq = req.clone({
       headers: req.headers.set('Authorization', `Bearer ${token}`),
     });
-    
+
     return next(authReq).pipe(
       catchError((error: HttpErrorResponse) => {
         if (error.status === 401) {
           // Token might be expired, try to refresh
           authService.refreshToken();
-          
+
           // Wait for refresh to complete and retry
           return store.select(AuthSelectors.selectToken).pipe(
-            filter(newToken => !!newToken && newToken !== token),
+            filter((newToken) => !!newToken && newToken !== token),
             take(1),
             switchMap((newToken) => {
               const retryReq = req.clone({
@@ -60,9 +71,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   } else if (localStorage.getItem('tenantly_refresh_token') && isTokenExpired) {
     // Token is expired but we have a refresh token
     authService.refreshToken();
-    
+
     return store.select(AuthSelectors.selectToken).pipe(
-      filter(newToken => !!newToken),
+      filter((newToken) => !!newToken),
       take(1),
       switchMap((newToken) => {
         const authReq = req.clone({
