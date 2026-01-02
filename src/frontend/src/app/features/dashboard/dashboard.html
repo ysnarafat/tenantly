@@ -92,7 +92,8 @@
   <!-- Recent Activity -->
   <div class="activity-section">
     <!-- Expiring Leases -->
-    <mat-card class="activity-card" *ngIf="(canViewLeases$ | async) && expiringLeases.length > 0">
+    @if ((canViewLeases$ | async) && expiringLeases.length > 0) {
+    <mat-card class="activity-card">
       <mat-card-header>
         <mat-card-title>
           <mat-icon>event</mat-icon>
@@ -102,23 +103,25 @@
       </mat-card-header>
       <mat-card-content>
         <div class="lease-list">
-          <div class="lease-item" *ngFor="let lease of expiringLeases">
+          @for (lease of expiringLeases; track lease) {
+          <div class="lease-item">
             <div class="lease-info">
               <div class="shop-name">{{ lease.shop_name }} ({{ lease.shop_number }})</div>
               <div class="tenant-name">{{ lease.tenant_name }}</div>
             </div>
             <div class="lease-status">
-              <mat-chip color="warn" selected>
-                {{ lease.days_remaining }} days left
-              </mat-chip>
+              <mat-chip color="warn" selected> {{ lease.days_remaining }} days left </mat-chip>
             </div>
           </div>
+          }
         </div>
       </mat-card-content>
     </mat-card>
+    }
 
     <!-- Recent Leases -->
-    <mat-card class="activity-card" *ngIf="canViewLeases$ | async">
+    @if (canViewLeases$ | async) {
+    <mat-card class="activity-card">
       <mat-card-header>
         <mat-card-title>
           <mat-icon>assignment</mat-icon>
@@ -128,24 +131,26 @@
       </mat-card-header>
       <mat-card-content>
         <div class="lease-list">
-          <div class="lease-item" *ngFor="let lease of recentLeases">
+          @for (lease of recentLeases; track lease) {
+          <div class="lease-item">
             <div class="lease-info">
               <div class="shop-name">{{ lease.shop_name }} ({{ lease.shop_number }})</div>
               <div class="tenant-name">{{ lease.tenant_name }}</div>
             </div>
-            <div class="lease-rent">
-              {{ formatCurrency(lease.monthly_rent) }}/month
-            </div>
+            <div class="lease-rent">{{ formatCurrency(lease.monthly_rent) }}/month</div>
           </div>
+          }
         </div>
-        <div *ngIf="recentLeases.length === 0" class="empty-message">
-          No recent leases found.
-        </div>
+        @if (recentLeases.length === 0) {
+        <div class="empty-message">No recent leases found.</div>
+        }
       </mat-card-content>
     </mat-card>
+    }
 
     <!-- Recent Attachments -->
-    <mat-card class="activity-card" *ngIf="canViewAttachments$ | async">
+    @if (canViewAttachments$ | async) {
+    <mat-card class="activity-card">
       <mat-card-header>
         <mat-card-title>
           <mat-icon>attach_file</mat-icon>
@@ -155,7 +160,8 @@
       </mat-card-header>
       <mat-card-content>
         <div class="attachment-list">
-          <div class="attachment-item" *ngFor="let attachment of recentAttachments">
+          @for (attachment of recentAttachments; track attachment) {
+          <div class="attachment-item">
             <mat-icon class="file-icon">{{ getFileIcon(attachment.content_type) }}</mat-icon>
             <div class="attachment-info">
               <div class="file-name">{{ attachment.file_name }}</div>
@@ -165,16 +171,20 @@
               {{ attachment.attachment_type }}
             </mat-chip>
           </div>
+          }
         </div>
-        <div *ngIf="recentAttachments.length === 0" class="empty-message">
-          No recent attachments found.
-        </div>
+        @if (recentAttachments.length === 0) {
+        <div class="empty-message">No recent attachments found.</div>
+        }
       </mat-card-content>
     </mat-card>
+    }
   </div>
 
   <!-- Loading State -->
-  <div *ngIf="loading" class="loading-container">
+  @if (loading) {
+  <div class="loading-container">
     <p>Loading dashboard data...</p>
   </div>
+  }
 </div>

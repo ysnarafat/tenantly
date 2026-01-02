@@ -39,13 +39,13 @@ export interface StorageMetadata {
   security_level?: string;
 }
 
-export type UnitMetadata = 
-  | ShopMetadata 
-  | ApartmentMetadata 
-  | OfficeMetadata 
-  | ParkingMetadata 
-  | StorageMetadata 
-  | { [key: string]: any };
+export type UnitMetadata =
+  | ShopMetadata
+  | ApartmentMetadata
+  | OfficeMetadata
+  | ParkingMetadata
+  | StorageMetadata
+  | Record<string, any>;
 
 export interface Unit {
   id: number;

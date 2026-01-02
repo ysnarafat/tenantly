@@ -7,12 +7,12 @@ import {
   UnitType,
   CreateUnitRequest,
   UpdateUnitRequest,
-  UnitListResponse
+  UnitListResponse,
 } from '../models';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class UnitService {
   private http = inject(HttpClient);

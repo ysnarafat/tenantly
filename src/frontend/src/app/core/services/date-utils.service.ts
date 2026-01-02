@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class DateUtilsService {
   /**
@@ -33,16 +33,19 @@ export class DateUtilsService {
   /**
    * Format UTC timestamp to local date string
    */
-  formatToLocal(timestamp: string, format: 'short' | 'medium' | 'long' | 'full' = 'medium'): string {
+  formatToLocal(
+    timestamp: string,
+    format: 'short' | 'medium' | 'long' | 'full' = 'medium'
+  ): string {
     const date = this.parseUTCTimestamp(timestamp);
-    
+
     const optionsMap: Record<string, Intl.DateTimeFormatOptions> = {
       short: { dateStyle: 'short' as const, timeStyle: 'short' as const },
       medium: { dateStyle: 'medium' as const, timeStyle: 'short' as const },
       long: { dateStyle: 'long' as const, timeStyle: 'medium' as const },
-      full: { dateStyle: 'full' as const, timeStyle: 'long' as const }
+      full: { dateStyle: 'full' as const, timeStyle: 'long' as const },
     };
-    
+
     const options = optionsMap[format];
 
     return new Intl.DateTimeFormat('default', options).format(date);
@@ -80,7 +83,7 @@ export class DateUtilsService {
     if (diffMin < 60) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
     if (diffHour < 24) return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
     if (diffDay < 30) return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
-    
+
     return this.formatDateOnly(timestamp);
   }
 

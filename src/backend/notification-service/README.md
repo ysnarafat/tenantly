@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Tenantly Notification Service is a C# background service responsible for handling automated notifications, reminders, and background processing tasks for the Tenantly shop rental management system. This service uses Entity Framework Core for data access while the database schema is managed by the Go API project.
+The Tenantly Notification Service is a C# background service responsible for handling automated notifications, reminders, and background processing tasks for the Tenantly property rental management system. This service uses Entity Framework Core for data access while the database schema is managed by the Go API project.
 
 ## Architecture
 

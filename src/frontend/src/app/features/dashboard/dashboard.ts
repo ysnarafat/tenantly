@@ -29,9 +29,9 @@ interface DashboardStats {
   selector: 'app-dashboard',
   standalone: true,
   imports: [
-    CommonModule, 
+    CommonModule,
     RouterModule,
-    MatCardModule, 
+    MatCardModule,
     MatGridListModule,
     MatIconModule,
     MatButtonModule,
@@ -114,12 +114,12 @@ export class Dashboard implements OnInit {
   }
 
   processLeaseData(leases: LeaseWithDetails[]) {
-    this.stats.activeLeases = leases.filter(l => l.active).length;
-    this.stats.overdueShops = leases.filter(l => l.is_expired).length;
-    
+    this.stats.activeLeases = leases.filter((l) => l.active).length;
+    this.stats.overdueShops = leases.filter((l) => l.is_expired).length;
+
     // Calculate total rent due (sum of all active leases' monthly rent)
     this.stats.totalRentDue = leases
-      .filter(l => l.active)
+      .filter((l) => l.active)
       .reduce((sum, lease) => sum + lease.monthly_rent, 0);
 
     // Demo data for collected and pending payments
@@ -129,13 +129,13 @@ export class Dashboard implements OnInit {
 
   processAttachmentData(attachments: Attachment[]) {
     this.stats.totalAttachments = attachments.length;
-    
+
     // Count recent attachments (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    
-    this.stats.recentAttachments = attachments.filter(a => 
-      new Date(a.created_at) >= sevenDaysAgo
+
+    this.stats.recentAttachments = attachments.filter(
+      (a) => new Date(a.created_at) >= sevenDaysAgo
     ).length;
   }
 
@@ -179,12 +179,18 @@ export class Dashboard implements OnInit {
 
   getTypeColor(type: string): string {
     switch (type) {
-      case 'CONTRACT': return 'primary';
-      case 'RECEIPT': return 'accent';
-      case 'INVOICE': return 'warn';
-      case 'PHOTO': return 'primary';
-      case 'DOCUMENT': return 'accent';
-      default: return 'basic';
+      case 'CONTRACT':
+        return 'primary';
+      case 'RECEIPT':
+        return 'accent';
+      case 'INVOICE':
+        return 'warn';
+      case 'PHOTO':
+        return 'primary';
+      case 'DOCUMENT':
+        return 'accent';
+      default:
+        return 'basic';
     }
   }
 }

@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -11,7 +11,14 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { PropertyService } from '../../../core/services/property.service';
 import { BuildingService } from '../../../core/services/building.service';
 import { UnitService } from '../../../core/services/unit.service';
-import { Property, Building, Unit, PropertyListResponse, BuildingListResponse, UnitListResponse } from '../../../core/models';
+import {
+  Property,
+  Building,
+  Unit,
+  PropertyListResponse,
+  BuildingListResponse,
+  UnitListResponse,
+} from '../../../core/models';
 
 interface PropertyWithHierarchy extends Property {
   buildings?: BuildingWithUnits[];
@@ -27,7 +34,6 @@ interface BuildingWithUnits extends Building {
   selector: 'app-property-list',
   standalone: true,
   imports: [
-    CommonModule,
     RouterModule,
     MatCardModule,
     MatButtonModule,
@@ -35,10 +41,10 @@ interface BuildingWithUnits extends Building {
     MatChipsModule,
     MatProgressSpinnerModule,
     MatExpansionModule,
-    MatTooltipModule
+    MatTooltipModule,
   ],
   templateUrl: './property-list.component.html',
-  styleUrls: ['./property-list.component.scss']
+  styleUrls: ['./property-list.component.scss'],
 })
 export class PropertyListComponent implements OnInit {
   private propertyService = inject(PropertyService);
@@ -66,7 +72,7 @@ export class PropertyListComponent implements OnInit {
         this.error.set('Failed to load properties');
         this.loading.set(false);
         console.error('Error loading properties:', err);
-      }
+      },
     });
   }
 
@@ -85,7 +91,7 @@ export class PropertyListComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Error loading buildings:', err);
-      }
+      },
     });
   }
 
@@ -104,27 +110,37 @@ export class PropertyListComponent implements OnInit {
       },
       error: (err: any) => {
         console.error('Error loading units:', err);
-      }
+      },
     });
   }
 
   getPropertyTypeColor(type: string): string {
     switch (type) {
-      case 'Residential': return 'primary';
-      case 'Commercial': return 'accent';
-      case 'Mixed': return 'warn';
-      default: return '';
+      case 'Residential':
+        return 'primary';
+      case 'Commercial':
+        return 'accent';
+      case 'Mixed':
+        return 'warn';
+      default:
+        return '';
     }
   }
 
   getUnitTypeIcon(type: string): string {
     switch (type) {
-      case 'Shop': return 'store';
-      case 'Apartment': return 'home';
-      case 'Office': return 'business';
-      case 'Parking': return 'local_parking';
-      case 'Storage': return 'inventory_2';
-      default: return 'meeting_room';
+      case 'Shop':
+        return 'store';
+      case 'Apartment':
+        return 'home';
+      case 'Office':
+        return 'business';
+      case 'Parking':
+        return 'local_parking';
+      case 'Storage':
+        return 'inventory_2';
+      default:
+        return 'meeting_room';
     }
   }
 

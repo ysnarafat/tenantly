@@ -7,18 +7,21 @@ import {
   BuildingWithStats,
   CreateBuildingRequest,
   UpdateBuildingRequest,
-  BuildingListResponse
+  BuildingListResponse,
 } from '../models';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class BuildingService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/buildings`;
 
-  getBuildings(params?: { property_id?: number; active?: boolean }): Observable<BuildingListResponse> {
+  getBuildings(params?: {
+    property_id?: number;
+    active?: boolean;
+  }): Observable<BuildingListResponse> {
     let httpParams = new HttpParams();
     if (params?.property_id) {
       httpParams = httpParams.set('property_id', params.property_id.toString());
@@ -30,7 +33,9 @@ export class BuildingService {
   }
 
   getBuildingsByProperty(propertyId: number): Observable<BuildingListResponse> {
-    return this.http.get<BuildingListResponse>(`${environment.apiUrl}/properties/${propertyId}/buildings`);
+    return this.http.get<BuildingListResponse>(
+      `${environment.apiUrl}/properties/${propertyId}/buildings`
+    );
   }
 
   getBuilding(id: number): Observable<Building> {

@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, Input } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -12,14 +12,17 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
-import { AttachmentService, Attachment, AttachmentType } from '../../../core/services/attachment.service';
+import {
+  AttachmentService,
+  Attachment,
+  AttachmentType,
+} from '../../../core/services/attachment.service';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-attachment-list',
   standalone: true,
   imports: [
-    CommonModule,
     MatTableModule,
     MatButtonModule,
     MatIconModule,
@@ -55,7 +58,7 @@ export class AttachmentList implements OnInit {
     'actions',
   ];
   loading = false;
-  
+
   // Filters
   selectedType: AttachmentType | 'ALL' = 'ALL';
   searchQuery = '';
@@ -67,7 +70,7 @@ export class AttachmentList implements OnInit {
 
   loadAttachments() {
     this.loading = true;
-    
+
     let observable;
     if (this.entityType && this.entityId) {
       observable = this.attachmentService.getAttachmentsByEntity(this.entityType, this.entityId);
@@ -90,13 +93,15 @@ export class AttachmentList implements OnInit {
   }
 
   applyFilters() {
-    this.filteredAttachments = this.attachments.filter(attachment => {
-      const matchesType = this.selectedType === 'ALL' || attachment.attachment_type === this.selectedType;
-      const matchesSearch = !this.searchQuery || 
+    this.filteredAttachments = this.attachments.filter((attachment) => {
+      const matchesType =
+        this.selectedType === 'ALL' || attachment.attachment_type === this.selectedType;
+      const matchesSearch =
+        !this.searchQuery ||
         attachment.file_name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
         attachment.description?.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
         attachment.tags?.toLowerCase().includes(this.searchQuery.toLowerCase());
-      
+
       return matchesType && matchesSearch;
     });
   }
@@ -111,12 +116,18 @@ export class AttachmentList implements OnInit {
 
   getTypeColor(type: AttachmentType): string {
     switch (type) {
-      case AttachmentType.CONTRACT: return 'primary';
-      case AttachmentType.RECEIPT: return 'accent';
-      case AttachmentType.INVOICE: return 'warn';
-      case AttachmentType.PHOTO: return 'primary';
-      case AttachmentType.DOCUMENT: return 'accent';
-      default: return 'basic';
+      case AttachmentType.CONTRACT:
+        return 'primary';
+      case AttachmentType.RECEIPT:
+        return 'accent';
+      case AttachmentType.INVOICE:
+        return 'warn';
+      case AttachmentType.PHOTO:
+        return 'primary';
+      case AttachmentType.DOCUMENT:
+        return 'accent';
+      default:
+        return 'basic';
     }
   }
 

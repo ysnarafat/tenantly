@@ -3,15 +3,9 @@ import { AuthState } from './auth.reducer';
 
 export const selectAuthState = createFeatureSelector<AuthState>('auth');
 
-export const selectUser = createSelector(
-  selectAuthState,
-  (state: AuthState) => state.user
-);
+export const selectUser = createSelector(selectAuthState, (state: AuthState) => state.user);
 
-export const selectToken = createSelector(
-  selectAuthState,
-  (state: AuthState) => state.token
-);
+export const selectToken = createSelector(selectAuthState, (state: AuthState) => state.token);
 
 export const selectRefreshToken = createSelector(
   selectAuthState,
@@ -28,48 +22,29 @@ export const selectAuthLoading = createSelector(
   (state: AuthState) => state.loading
 );
 
-export const selectAuthError = createSelector(
-  selectAuthState,
-  (state: AuthState) => state.error
-);
+export const selectAuthError = createSelector(selectAuthState, (state: AuthState) => state.error);
 
-export const selectUserRole = createSelector(
-  selectUser,
-  (user) => user?.role || ''
-);
+export const selectUserRole = createSelector(selectUser, (user) => user?.role || '');
 
-export const selectIsAdmin = createSelector(
-  selectUserRole,
-  (role) => role === 'Admin'
-);
+export const selectIsAdmin = createSelector(selectUserRole, (role) => role === 'Admin');
 
 export const selectIsPropertyManager = createSelector(
   selectUserRole,
   (role) => role === 'PropertyManager'
 );
 
-export const selectIsAccountant = createSelector(
-  selectUserRole,
-  (role) => role === 'Accountant'
-);
+export const selectIsAccountant = createSelector(selectUserRole, (role) => role === 'Accountant');
 
-export const selectHasRole = (role: string) => createSelector(
-  selectUserRole,
-  (userRole) => userRole === role
-);
+export const selectHasRole = (role: string) =>
+  createSelector(selectUserRole, (userRole) => userRole === role);
 
-export const selectHasAnyRole = (roles: string[]) => createSelector(
-  selectUserRole,
-  (userRole) => roles.includes(userRole)
-);
+export const selectHasAnyRole = (roles: string[]) =>
+  createSelector(selectUserRole, (userRole) => roles.includes(userRole));
 
-export const selectIsTokenExpired = createSelector(
-  selectAuthState,
-  (state: AuthState) => {
-    if (!state.expiresAt) return true;
-    return new Date() >= new Date(state.expiresAt);
-  }
-);
+export const selectIsTokenExpired = createSelector(selectAuthState, (state: AuthState) => {
+  if (!state.expiresAt) return true;
+  return new Date() >= new Date(state.expiresAt);
+});
 
 export const selectCanViewLeases = createSelector(
   selectUserRole,
@@ -81,7 +56,4 @@ export const selectCanViewAttachments = createSelector(
   (role) => role === 'Admin' || role === 'PropertyManager'
 );
 
-export const selectCanManageUsers = createSelector(
-  selectUserRole,
-  (role) => role === 'Admin'
-);
+export const selectCanManageUsers = createSelector(selectUserRole, (role) => role === 'Admin');

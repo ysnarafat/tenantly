@@ -2,7 +2,12 @@ import { Injectable, inject } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { AppState } from '../index';
-import { LoginRequest, User, ChangePasswordRequest, ResetPasswordRequest } from '../../core/services/auth.service';
+import {
+  LoginRequest,
+  User,
+  ChangePasswordRequest,
+  ResetPasswordRequest,
+} from '../../core/services/auth.service';
 import * as AuthActions from './auth.actions';
 import * as AuthSelectors from './auth.selectors';
 

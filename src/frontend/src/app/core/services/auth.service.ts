@@ -110,28 +110,37 @@ export class AuthService {
   getUser(): User | null {
     // Synchronous access to user from NgRx store
     let user: User | null = null;
-    this.store.select(AuthSelectors.selectUser).pipe(take(1)).subscribe(u => user = u);
+    this.store
+      .select(AuthSelectors.selectUser)
+      .pipe(take(1))
+      .subscribe((u) => (user = u));
     return user;
   }
 
   getUserRole(): string {
     // Synchronous access to user role from NgRx store
     let role = '';
-    this.store.select(AuthSelectors.selectUserRole).pipe(take(1)).subscribe(r => role = r);
+    this.store
+      .select(AuthSelectors.selectUserRole)
+      .pipe(take(1))
+      .subscribe((r) => (role = r));
     return role;
   }
 
   isAuthenticated(): boolean {
     // Synchronous access to authentication status from NgRx store
     let isAuth = false;
-    this.store.select(AuthSelectors.selectIsAuthenticated).pipe(take(1)).subscribe(auth => isAuth = auth);
+    this.store
+      .select(AuthSelectors.selectIsAuthenticated)
+      .pipe(take(1))
+      .subscribe((auth) => (isAuth = auth));
     return isAuth;
   }
 
   isTokenExpired(): boolean {
     const expiresAt = localStorage.getItem(this.EXPIRES_AT_KEY);
     if (!expiresAt) return true;
-    
+
     return new Date() >= new Date(expiresAt);
   }
 
@@ -146,19 +155,28 @@ export class AuthService {
 
   isAdmin(): boolean {
     let isAdmin = false;
-    this.store.select(AuthSelectors.selectIsAdmin).pipe(take(1)).subscribe(admin => isAdmin = admin);
+    this.store
+      .select(AuthSelectors.selectIsAdmin)
+      .pipe(take(1))
+      .subscribe((admin) => (isAdmin = admin));
     return isAdmin;
   }
 
   isPropertyManager(): boolean {
     let isPM = false;
-    this.store.select(AuthSelectors.selectIsPropertyManager).pipe(take(1)).subscribe(pm => isPM = pm);
+    this.store
+      .select(AuthSelectors.selectIsPropertyManager)
+      .pipe(take(1))
+      .subscribe((pm) => (isPM = pm));
     return isPM;
   }
 
   isAccountant(): boolean {
     let isAccountant = false;
-    this.store.select(AuthSelectors.selectIsAccountant).pipe(take(1)).subscribe(acc => isAccountant = acc);
+    this.store
+      .select(AuthSelectors.selectIsAccountant)
+      .pipe(take(1))
+      .subscribe((acc) => (isAccountant = acc));
     return isAccountant;
   }
 
@@ -191,7 +209,12 @@ export class AuthService {
     localStorage.setItem(this.TOKEN_KEY, response.token);
     localStorage.setItem(this.REFRESH_TOKEN_KEY, response.refresh_token);
     localStorage.setItem(this.USER_KEY, JSON.stringify(response.user));
-    localStorage.setItem(this.EXPIRES_AT_KEY, typeof response.expires_at === 'string' ? response.expires_at : new Date(response.expires_at).toISOString());
+    localStorage.setItem(
+      this.EXPIRES_AT_KEY,
+      typeof response.expires_at === 'string'
+        ? response.expires_at
+        : new Date(response.expires_at).toISOString()
+    );
     // Note: NgRx effects will handle state updates
   }
 

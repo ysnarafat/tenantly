@@ -31,11 +31,7 @@ describe('Login Component', () => {
     const snackBarSpy = jasmine.createSpyObj('MatSnackBar', ['open']);
 
     await TestBed.configureTestingModule({
-      imports: [
-        Login,
-        ReactiveFormsModule,
-        NoopAnimationsModule,
-      ],
+      imports: [Login, ReactiveFormsModule, NoopAnimationsModule],
       providers: [
         { provide: AuthService, useValue: mockAuthService },
         { provide: Store, useValue: storeSpy },
@@ -113,11 +109,7 @@ describe('Login Component', () => {
     const error = { error: { error: 'Invalid credentials' } };
     errorSubject.next(error);
 
-    expect(snackBar.open).toHaveBeenCalledWith(
-      'Invalid credentials',
-      'Close',
-      { duration: 5000 }
-    );
+    expect(snackBar.open).toHaveBeenCalledWith('Invalid credentials', 'Close', { duration: 5000 });
   });
 
   it('should show default error message when error has no specific message', () => {

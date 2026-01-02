@@ -6,29 +6,29 @@ export enum Permission {
   // User Management
   MANAGE_USERS = 'manage_users',
   VIEW_USERS = 'view_users',
-  
+
   // Property Management
   MANAGE_PROPERTIES = 'manage_properties',
   VIEW_PROPERTIES = 'view_properties',
   MANAGE_BUILDINGS = 'manage_buildings',
   MANAGE_UNITS = 'manage_units',
-  
+
   // Tenant Management
   MANAGE_TENANTS = 'manage_tenants',
   VIEW_TENANTS = 'view_tenants',
   MANAGE_LEASES = 'manage_leases',
   VIEW_LEASES = 'view_leases',
-  
+
   // Financial
   RECORD_PAYMENTS = 'record_payments',
   VIEW_PAYMENTS = 'view_payments',
   VIEW_REPORTS = 'view_reports',
   EXPORT_REPORTS = 'export_reports',
-  
+
   // Documents
   MANAGE_DOCUMENTS = 'manage_documents',
   VIEW_DOCUMENTS = 'view_documents',
-  
+
   // System
   VIEW_DASHBOARD = 'view_dashboard',
   MANAGE_SETTINGS = 'manage_settings',
@@ -36,7 +36,7 @@ export enum Permission {
 
 // Role-Permission mapping
 export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
-  'Admin': [
+  Admin: [
     Permission.MANAGE_USERS,
     Permission.VIEW_USERS,
     Permission.MANAGE_PROPERTIES,
@@ -56,7 +56,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     Permission.VIEW_DASHBOARD,
     Permission.MANAGE_SETTINGS,
   ],
-  'PropertyManager': [
+  PropertyManager: [
     Permission.VIEW_PROPERTIES,
     Permission.MANAGE_PROPERTIES,
     Permission.MANAGE_BUILDINGS,
@@ -72,7 +72,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     Permission.VIEW_DOCUMENTS,
     Permission.VIEW_DASHBOARD,
   ],
-  'Accountant': [
+  Accountant: [
     Permission.VIEW_PROPERTIES,
     Permission.VIEW_TENANTS,
     Permission.VIEW_LEASES,
@@ -92,10 +92,10 @@ export function hasPermission(role: UserRole, permission: Permission): boolean {
 
 // Helper function to check if role has any of the permissions
 export function hasAnyPermission(role: UserRole, permissions: Permission[]): boolean {
-  return permissions.some(permission => hasPermission(role, permission));
+  return permissions.some((permission) => hasPermission(role, permission));
 }
 
 // Helper function to check if role has all permissions
 export function hasAllPermissions(role: UserRole, permissions: Permission[]): boolean {
-  return permissions.every(permission => hasPermission(role, permission));
+  return permissions.every((permission) => hasPermission(role, permission));
 }

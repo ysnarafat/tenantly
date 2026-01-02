@@ -6,12 +6,12 @@ export interface BuildingMetadata {
   loading_docks?: number;
   security_system?: string;
   business_hours?: string;
-  
+
   // Residential building attributes
   amenities?: string[];
   security_type?: string;
   maintenance_staff_count?: number;
-  
+
   // Other attributes
   [key: string]: any;
 }

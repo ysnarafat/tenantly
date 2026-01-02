@@ -12,7 +12,7 @@
 .sidenav {
   width: 260px;
   border-right: 1px solid rgba(0, 0, 0, 0.12);
-  
+
   @media (max-width: 768px) {
     width: 280px; // Slightly wider on mobile for better touch targets
   }
@@ -21,11 +21,11 @@
 .main-content {
   padding: 20px;
   overflow-y: auto;
-  
+
   @media (max-width: 768px) {
     padding: 16px;
   }
-  
+
   @media (max-width: 480px) {
     padding: 12px;
   }
@@ -44,7 +44,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  
+
   @media (max-width: 768px) {
     gap: 0;
   }
@@ -55,11 +55,11 @@
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.5px;
-  
+
   @media (max-width: 768px) {
     font-size: 1.25rem;
   }
-  
+
   @media (max-width: 480px) {
     font-size: 1.1rem;
   }
@@ -70,11 +70,11 @@
   font-weight: 400;
   opacity: 0.85;
   line-height: 1;
-  
+
   @media (max-width: 768px) {
     font-size: 0.7rem;
   }
-  
+
   @media (max-width: 480px) {
     display: none;
   }
@@ -84,23 +84,23 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  
+
   .user-details {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     gap: 2px;
-    
+
     @media (max-width: 768px) {
       display: none;
     }
-    
+
     .user-name {
       font-size: 0.875rem;
       font-weight: 500;
       line-height: 1;
     }
-    
+
     .user-role {
       font-size: 0.75rem;
       opacity: 0.8;
@@ -116,7 +116,7 @@
 // Navigation list styling
 mat-nav-list {
   padding: 0;
-  
+
   h3[matSubheader] {
     font-size: 0.6875rem;
     font-weight: 600;
@@ -129,17 +129,17 @@ mat-nav-list {
     height: auto;
     min-height: auto;
   }
-  
+
   mat-divider {
     margin: 8px 0;
   }
-  
+
   a[mat-list-item] {
     height: 48px !important;
     padding: 0 16px !important;
     transition: all 0.2s ease;
     position: relative;
-    
+
     // Force inline layout
     &::ng-deep,
     & {
@@ -151,7 +151,7 @@ mat-nav-list {
         padding: 0 !important;
         height: 48px !important;
       }
-      
+
       .mat-mdc-list-item-unscoped-content {
         display: flex !important;
         flex-direction: row !important;
@@ -160,7 +160,7 @@ mat-nav-list {
         width: 100% !important;
       }
     }
-    
+
     mat-icon {
       width: 24px !important;
       height: 24px !important;
@@ -174,7 +174,7 @@ mat-nav-list {
       justify-content: center;
       margin: 0 !important;
     }
-    
+
     span {
       font-size: 0.875rem;
       font-weight: 400;
@@ -185,10 +185,10 @@ mat-nav-list {
       display: inline-block;
       vertical-align: middle;
     }
-    
+
     &.active {
       background-color: rgba(25, 118, 210, 0.08);
-      
+
       &::before {
         content: '';
         position: absolute;
@@ -198,20 +198,20 @@ mat-nav-list {
         width: 3px;
         background-color: var(--mdc-theme-primary, #1976d2);
       }
-      
+
       mat-icon {
         color: var(--mdc-theme-primary, #1976d2);
       }
-      
+
       span {
         color: var(--mdc-theme-primary, #1976d2);
         font-weight: 500;
       }
     }
-    
+
     &:hover:not(.active) {
       background-color: rgba(0, 0, 0, 0.04);
-      
+
       mat-icon {
         color: rgba(0, 0, 0, 0.87);
       }
@@ -224,7 +224,7 @@ mat-nav-list {
   .sidenav-container {
     height: calc(100vh - 56px); // Smaller toolbar on mobile
   }
-  
+
   mat-toolbar {
     height: 56px;
     padding: 0 16px;
@@ -241,7 +241,7 @@ mat-nav-list {
   &.mat-mdc-list-item-interactive {
     cursor: pointer;
   }
-  
+
   .mat-mdc-list-item-unscoped-content {
     display: flex !important;
     flex-direction: row !important;
@@ -272,7 +272,7 @@ mat-list-item {
 mat-nav-list {
   .mat-mdc-list-item {
     height: 48px !important;
-    
+
     .mdc-list-item__primary-text {
       display: flex !important;
       flex-direction: row !important;

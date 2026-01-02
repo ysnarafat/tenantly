@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, ViewChild, signal, computed, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterOutlet, RouterModule } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
@@ -19,7 +19,6 @@ import { Permission } from './core/models/role.model';
   selector: 'app-root',
   standalone: true,
   imports: [
-    CommonModule,
     RouterOutlet,
     RouterModule,
     MatToolbarModule,
@@ -46,37 +45,38 @@ export class App implements OnInit {
   userRole = signal('');
   user = signal<any>(null);
   isMobile = signal(false);
-  
+
   // Computed permission signals
-  canManageProperties = computed(() => this.permissions.hasPermission(Permission.MANAGE_PROPERTIES));
+  canManageProperties = computed(() =>
+    this.permissions.hasPermission(Permission.MANAGE_PROPERTIES)
+  );
   canManageTenants = computed(() => this.permissions.hasPermission(Permission.MANAGE_TENANTS));
   canManageDocuments = computed(() => this.permissions.hasPermission(Permission.MANAGE_DOCUMENTS));
   canManageUsers = computed(() => this.permissions.hasPermission(Permission.MANAGE_USERS));
 
   // Computed signals for derived state
-  sidenavMode = computed(() => this.isMobile() ? 'over' as const : 'side' as const);
+  sidenavMode = computed(() => (this.isMobile() ? ('over' as const) : ('side' as const)));
   sidenavOpened = computed(() => !this.isMobile());
-  fixedTopGap = computed(() => this.isMobile() ? 64 : 0);
+  fixedTopGap = computed(() => (this.isMobile() ? 64 : 0));
 
   constructor() {
     // Subscribe to observables and update signals
     this.authFacade.isAuthenticated$
       .pipe(takeUntilDestroyed())
-      .subscribe(isAuth => this.isAuthenticated.set(isAuth));
+      .subscribe((isAuth) => this.isAuthenticated.set(isAuth));
 
     this.authFacade.userRole$
       .pipe(takeUntilDestroyed())
-      .subscribe(role => this.userRole.set(role));
+      .subscribe((role) => this.userRole.set(role));
 
     // Permission-based signals are handled by PermissionService
 
-    this.authFacade.user$
-      .pipe(takeUntilDestroyed())
-      .subscribe(user => this.user.set(user));
+    this.authFacade.user$.pipe(takeUntilDestroyed()).subscribe((user) => this.user.set(user));
 
-    this.breakpointObserver.observe([Breakpoints.Handset])
+    this.breakpointObserver
+      .observe([Breakpoints.Handset])
       .pipe(takeUntilDestroyed())
-      .subscribe(result => this.isMobile.set(result.matches));
+      .subscribe((result) => this.isMobile.set(result.matches));
   }
 
   ngOnInit() {

@@ -37,11 +37,14 @@ export class Profile implements OnInit {
   isChangingPassword = false;
 
   constructor() {
-    this.changePasswordForm = this.fb.group({
-      currentPassword: ['', Validators.required],
-      newPassword: ['', [Validators.required, Validators.minLength(8)]],
-      confirmPassword: ['', Validators.required],
-    }, { validators: this.passwordMatchValidator });
+    this.changePasswordForm = this.fb.group(
+      {
+        currentPassword: ['', Validators.required],
+        newPassword: ['', [Validators.required, Validators.minLength(8)]],
+        confirmPassword: ['', Validators.required],
+      },
+      { validators: this.passwordMatchValidator }
+    );
   }
 
   ngOnInit() {
@@ -51,12 +54,12 @@ export class Profile implements OnInit {
   passwordMatchValidator(form: FormGroup) {
     const newPassword = form.get('newPassword');
     const confirmPassword = form.get('confirmPassword');
-    
+
     if (newPassword && confirmPassword && newPassword.value !== confirmPassword.value) {
       confirmPassword.setErrors({ passwordMismatch: true });
       return { passwordMismatch: true };
     }
-    
+
     return null;
   }
 
@@ -70,7 +73,7 @@ export class Profile implements OnInit {
   onChangePassword() {
     if (this.changePasswordForm.valid) {
       this.isChangingPassword = true;
-      
+
       const request: ChangePasswordRequest = {
         current_password: this.changePasswordForm.value.currentPassword,
         new_password: this.changePasswordForm.value.newPassword,
@@ -98,10 +101,14 @@ export class Profile implements OnInit {
 
   getRoleColor(role: string): string {
     switch (role) {
-      case 'Admin': return 'primary';
-      case 'PropertyManager': return 'accent';
-      case 'Accountant': return 'warn';
-      default: return 'basic';
+      case 'Admin':
+        return 'primary';
+      case 'PropertyManager':
+        return 'accent';
+      case 'Accountant':
+        return 'warn';
+      default:
+        return 'basic';
     }
   }
 

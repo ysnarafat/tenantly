@@ -18,7 +18,10 @@ export const routes: Routes = [
   },
   {
     path: 'properties',
-    loadComponent: () => import('./features/properties/property-list/property-list.component').then((m) => m.PropertyListComponent),
+    loadComponent: () =>
+      import('./features/properties/property-list/property-list.component').then(
+        (m) => m.PropertyListComponent
+      ),
     canActivate: [AuthGuard],
   },
   {
@@ -46,7 +49,10 @@ export const routes: Routes = [
   },
   {
     path: 'documents',
-    loadComponent: () => import('./features/attachments/attachment-list/attachment-list').then((m) => m.AttachmentList),
+    loadComponent: () =>
+      import('./features/attachments/attachment-list/attachment-list').then(
+        (m) => m.AttachmentList
+      ),
     canActivate: [AuthGuard],
   },
   {

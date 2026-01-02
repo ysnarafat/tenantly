@@ -115,7 +115,8 @@
       align-items: center;
       margin-bottom: 12px;
 
-      h3, h4 {
+      h3,
+      h4 {
         font-size: 1rem;
         font-weight: 500;
         margin: 0;
@@ -128,7 +129,7 @@
 
       button {
         transform: scale(0.8);
-        
+
         &.small-fab {
           transform: scale(0.7);
         }
@@ -224,11 +225,21 @@
             width: 24px;
             height: 24px;
 
-            &.shop { color: #ff9800; }
-            &.apartment { color: #2196f3; }
-            &.office { color: #4caf50; }
-            &.parking { color: #9c27b0; }
-            &.storage { color: #795548; }
+            &.shop {
+              color: #ff9800;
+            }
+            &.apartment {
+              color: #2196f3;
+            }
+            &.office {
+              color: #4caf50;
+            }
+            &.parking {
+              color: #9c27b0;
+            }
+            &.storage {
+              color: #795548;
+            }
           }
 
           .unit-details {

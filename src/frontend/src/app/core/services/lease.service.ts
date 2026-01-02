@@ -127,7 +127,7 @@ export class LeaseService {
   getLeaseById(id: number): Observable<LeaseWithDetails> {
     if (this.DEMO_MODE) {
       return new Observable((observer) => {
-        const lease = this.demoLeases.find(l => l.id === id);
+        const lease = this.demoLeases.find((l) => l.id === id);
         if (lease) {
           observer.next(lease);
         } else {
@@ -144,7 +144,7 @@ export class LeaseService {
     if (this.DEMO_MODE) {
       return new Observable((observer) => {
         const newLease: Lease = {
-          id: Math.max(...this.demoLeases.map(l => l.id)) + 1,
+          id: Math.max(...this.demoLeases.map((l) => l.id)) + 1,
           ...request,
           active: true,
           created_at: new Date().toISOString(),
@@ -183,7 +183,7 @@ export class LeaseService {
   getActiveLeases(): Observable<LeaseWithDetails[]> {
     if (this.DEMO_MODE) {
       return new Observable((observer) => {
-        const activeLeases = this.demoLeases.filter(l => l.active);
+        const activeLeases = this.demoLeases.filter((l) => l.active);
         observer.next(activeLeases);
         observer.complete();
       });
@@ -192,11 +192,11 @@ export class LeaseService {
     return this.http.get<LeaseWithDetails[]>(`${this.apiUrl}?active=true`);
   }
 
-  getExpiringLeases(days: number = 30): Observable<LeaseWithDetails[]> {
+  getExpiringLeases(days = 30): Observable<LeaseWithDetails[]> {
     if (this.DEMO_MODE) {
       return new Observable((observer) => {
-        const expiringLeases = this.demoLeases.filter(l => 
-          l.active && l.days_remaining <= days && l.days_remaining > 0
+        const expiringLeases = this.demoLeases.filter(
+          (l) => l.active && l.days_remaining <= days && l.days_remaining > 0
         );
         observer.next(expiringLeases);
         observer.complete();
@@ -209,7 +209,7 @@ export class LeaseService {
   getExpiredLeases(): Observable<LeaseWithDetails[]> {
     if (this.DEMO_MODE) {
       return new Observable((observer) => {
-        const expiredLeases = this.demoLeases.filter(l => l.is_expired);
+        const expiredLeases = this.demoLeases.filter((l) => l.is_expired);
         observer.next(expiredLeases);
         observer.complete();
       });

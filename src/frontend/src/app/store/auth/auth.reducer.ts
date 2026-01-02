@@ -9,7 +9,7 @@ export interface AuthState {
   expiresAt: string | null;
   isAuthenticated: boolean;
   loading: boolean;
-  error: any;
+  error: unknown;
 }
 
 // Initialize state from localStorage if available
@@ -22,7 +22,7 @@ const initializeFromStorage = (): AuthState => {
   if (token && userStr && expiresAt) {
     const user = JSON.parse(userStr);
     const isExpired = new Date() >= new Date(expiresAt);
-    
+
     if (!isExpired) {
       return {
         user,
@@ -64,7 +64,10 @@ export const authReducer = createReducer(
     user: response.user,
     token: response.token,
     refreshToken: response.refresh_token,
-    expiresAt: typeof response.expires_at === 'string' ? response.expires_at : new Date(response.expires_at).toISOString(),
+    expiresAt:
+      typeof response.expires_at === 'string'
+        ? response.expires_at
+        : new Date(response.expires_at).toISOString(),
     isAuthenticated: true,
     loading: false,
     error: null,
@@ -116,7 +119,10 @@ export const authReducer = createReducer(
     user: response.user,
     token: response.token,
     refreshToken: response.refresh_token,
-    expiresAt: typeof response.expires_at === 'string' ? response.expires_at : new Date(response.expires_at).toISOString(),
+    expiresAt:
+      typeof response.expires_at === 'string'
+        ? response.expires_at
+        : new Date(response.expires_at).toISOString(),
     isAuthenticated: true,
     loading: false,
     error: null,
@@ -190,7 +196,7 @@ export const authReducer = createReducer(
     if (token && userStr && expiresAt) {
       const user = JSON.parse(userStr);
       const isExpired = new Date() >= new Date(expiresAt);
-      
+
       if (!isExpired) {
         return {
           ...state,
