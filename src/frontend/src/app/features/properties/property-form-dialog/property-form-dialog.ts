@@ -16,6 +16,7 @@ export interface PropertyFormDialogData {
 
 @Component({
   selector: 'app-property-form-dialog',
+  standalone: true,
   imports: [
     CommonModule,
     ReactiveFormsModule,
@@ -24,10 +25,10 @@ export interface PropertyFormDialogData {
     MatInputModule,
     MatButtonModule,
     MatSelectModule,
-    MatIconModule
+    MatIconModule,
   ],
   templateUrl: './property-form-dialog.html',
-  styleUrls: ['./property-form-dialog.scss']
+  styleUrls: ['./property-form-dialog.scss'],
 })
 export class PropertyFormDialogComponent implements OnInit {
   private fb = inject(FormBuilder);
@@ -47,28 +48,16 @@ export class PropertyFormDialogComponent implements OnInit {
     this.propertyForm = this.fb.group({
       property_name: [
         property?.property_name || '',
-        [Validators.required, Validators.minLength(3), Validators.maxLength(100)]
+        [Validators.required, Validators.minLength(3), Validators.maxLength(100)],
       ],
       property_code: [
         property?.property_code || this.generatePropertyCode(),
-        [Validators.required, Validators.pattern(/^[A-Z0-9-]+$/)]
+        [Validators.required, Validators.pattern(/^[A-Z0-9-]+$/)],
       ],
-      address: [
-        property?.address || '',
-        [Validators.required, Validators.minLength(5)]
-      ],
-      city: [
-        property?.city || '',
-        [Validators.maxLength(50)]
-      ],
-      postal_code: [
-        property?.postal_code || '',
-        [Validators.pattern(/^\d{4}$/)]
-      ],
-      property_type: [
-        property?.property_type || 'Residential',
-        [Validators.required]
-      ]
+      address: [property?.address || '', [Validators.required, Validators.minLength(5)]],
+      city: [property?.city || '', [Validators.maxLength(50)]],
+      postal_code: [property?.postal_code || '', [Validators.pattern(/^\d{4}$/)]],
+      property_type: [property?.property_type || 'Residential', [Validators.required]],
     });
 
     // Disable property_code in edit mode
@@ -95,7 +84,7 @@ export class PropertyFormDialogComponent implements OnInit {
       }
     } else {
       // Mark all fields as touched to show validation errors
-      Object.keys(this.propertyForm.controls).forEach(key => {
+      Object.keys(this.propertyForm.controls).forEach((key) => {
         this.propertyForm.get(key)?.markAsTouched();
       });
     }
@@ -138,7 +127,7 @@ export class PropertyFormDialogComponent implements OnInit {
       address: 'Address',
       city: 'City',
       postal_code: 'Postal Code',
-      property_type: 'Property Type'
+      property_type: 'Property Type',
     };
     return labels[fieldName] || fieldName;
   }

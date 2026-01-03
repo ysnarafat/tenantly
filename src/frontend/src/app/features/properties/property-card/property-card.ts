@@ -28,10 +28,10 @@ export interface BuildingWithUnits extends Building {
     MatButtonModule,
     MatChipsModule,
     MatTooltipModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
   ],
   templateUrl: './property-card.html',
-  styleUrls: ['./property-card.scss']
+  styleUrls: ['./property-card.scss'],
 })
 export class PropertyCardComponent {
   @Input() property!: DisplayedProperty;
@@ -41,8 +41,15 @@ export class PropertyCardComponent {
   @Output() deleteProperty = new EventEmitter<DisplayedProperty>();
   @Output() addBuilding = new EventEmitter<DisplayedProperty>();
   @Output() toggleBuilding = new EventEmitter<BuildingWithUnits>();
-  @Output() addUnit = new EventEmitter<{ building: BuildingWithUnits; property: DisplayedProperty }>();
-  @Output() editUnit = new EventEmitter<{ unit: Unit; building: BuildingWithUnits; property: DisplayedProperty }>();
+  @Output() addUnit = new EventEmitter<{
+    building: BuildingWithUnits;
+    property: DisplayedProperty;
+  }>();
+  @Output() editUnit = new EventEmitter<{
+    unit: Unit;
+    building: BuildingWithUnits;
+    property: DisplayedProperty;
+  }>();
   @Output() deleteUnit = new EventEmitter<{ unit: Unit; building: BuildingWithUnits }>();
 
   onToggleProperty() {
@@ -79,21 +86,31 @@ export class PropertyCardComponent {
 
   getPropertyTypeColor(type: string): string {
     switch (type) {
-      case 'Residential': return 'primary';
-      case 'Commercial': return 'accent';
-      case 'Mixed': return 'warn';
-      default: return '';
+      case 'Residential':
+        return 'primary';
+      case 'Commercial':
+        return 'accent';
+      case 'Mixed':
+        return 'warn';
+      default:
+        return '';
     }
   }
 
   getUnitTypeIcon(type: UnitType): string {
     switch (type) {
-      case 'Shop': return 'store';
-      case 'Apartment': return 'home';
-      case 'Office': return 'business';
-      case 'Parking': return 'local_parking';
-      case 'Storage': return 'inventory_2';
-      default: return 'meeting_room';
+      case 'Shop':
+        return 'store';
+      case 'Apartment':
+        return 'home';
+      case 'Office':
+        return 'business';
+      case 'Parking':
+        return 'local_parking';
+      case 'Storage':
+        return 'inventory_2';
+      default:
+        return 'meeting_room';
     }
   }
 }

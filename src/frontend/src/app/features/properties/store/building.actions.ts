@@ -1,29 +1,33 @@
 import { createActionGroup, emptyProps, props } from '@ngrx/store';
-import { Building, CreateBuildingRequest, UpdateBuildingRequest } from '../../../core/models/building.model';
+import {
+  Building,
+  CreateBuildingRequest,
+  UpdateBuildingRequest,
+} from '../../../core/models/building.model';
 
 export const BuildingActions = createActionGroup({
-    source: 'Building',
-    events: {
-        'Load Buildings': props<{ propertyId?: number; active?: boolean }>(),
-        'Load Buildings Success': props<{ buildings: Building[] }>(),
-        'Load Buildings Failure': props<{ error: any }>(),
+  source: 'Building',
+  events: {
+    'Load Buildings': props<{ propertyId?: number; active?: boolean }>(),
+    'Load Buildings Success': props<{ buildings: Building[] }>(),
+    'Load Buildings Failure': props<{ error: any }>(),
 
-        'Load Building': props<{ id: number }>(),
-        'Load Building Success': props<{ building: Building }>(),
-        'Load Building Failure': props<{ error: any }>(),
+    'Load Building': props<{ id: number }>(),
+    'Load Building Success': props<{ building: Building }>(),
+    'Load Building Failure': props<{ error: any }>(),
 
-        'Create Building': props<{ request: CreateBuildingRequest }>(),
-        'Create Building Success': props<{ building: Building }>(),
-        'Create Building Failure': props<{ error: any }>(),
+    'Create Building': props<{ request: CreateBuildingRequest }>(),
+    'Create Building Success': props<{ building: Building }>(),
+    'Create Building Failure': props<{ error: any }>(),
 
-        'Update Building': props<{ id: number; request: UpdateBuildingRequest }>(),
-        'Update Building Success': props<{ building: Building }>(),
-        'Update Building Failure': props<{ error: any }>(),
+    'Update Building': props<{ id: number; request: UpdateBuildingRequest }>(),
+    'Update Building Success': props<{ building: Building }>(),
+    'Update Building Failure': props<{ error: any }>(),
 
-        'Delete Building': props<{ id: number }>(),
-        'Delete Building Success': props<{ id: number }>(),
-        'Delete Building Failure': props<{ error: any }>(),
+    'Delete Building': props<{ id: number }>(),
+    'Delete Building Success': props<{ id: number }>(),
+    'Delete Building Failure': props<{ error: any }>(),
 
-        'Select Building': props<{ id: number | null }>(),
-    }
+    'Select Building': props<{ id: number | null }>(),
+  },
 });

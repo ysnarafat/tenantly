@@ -7,28 +7,50 @@
     </button>
   </div>
 
-  @if (!loading() && !error()) {
-  <div class="properties-grid">
-    @for (property of displayedProperties(); track property.id) {
-    <app-property-card [property]="property" (toggleProperty)="toggleProperty($event)"
-      (editProperty)="editProperty($event)" (deleteProperty)="deleteProperty($event)"
-      (addBuilding)="addBuilding($event)" (toggleBuilding)="toggleBuilding($event)"
-      (addUnit)="addUnit($event.building, $event.property)"
-      (editUnit)="editUnit($event.unit, $event.building, $event.property)"
-      (deleteUnit)="deleteUnit($event.unit, $event.building)" />
-    }
-  </div>
-
-  @if (properties().length === 0) {
-  <mat-card class="empty-state">
-    <mat-icon>domain</mat-icon>
-    <h2>No Properties Yet</h2>
-    <p>Get started by adding your first property</p>
-    <button mat-raised-button color="primary" (click)="addProperty()">
-      <mat-icon>add</mat-icon>
-      Add Property
-    </button>
-  </mat-card>
+  @if (loading()) {
+    <div class="loading-container">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Loading properties...</p>
+    </div>
   }
+
+  @if (error()) {
+    <mat-card class="error-card">
+      <mat-card-content>
+        <mat-icon color="warn">error</mat-icon>
+        <p>{{ error() }}</p>
+        <button mat-button (click)="ngOnInit()">Retry</button>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  @if (!loading() && !error()) {
+    <div class="properties-grid">
+      @for (property of displayedProperties(); track property.id) {
+        <app-property-card
+          [property]="property"
+          (toggleProperty)="toggleProperty($event)"
+          (editProperty)="editProperty($event)"
+          (deleteProperty)="deleteProperty($event)"
+          (addBuilding)="addBuilding($event)"
+          (toggleBuilding)="toggleBuilding($event)"
+          (addUnit)="addUnit($event.building, $event.property)"
+          (editUnit)="editUnit($event.unit, $event.building, $event.property)"
+          (deleteUnit)="deleteUnit($event.unit, $event.building)"
+        />
+      }
+    </div>
+
+    @if (properties().length === 0) {
+      <mat-card class="empty-state">
+        <mat-icon>domain</mat-icon>
+        <h2>No Properties Yet</h2>
+        <p>Get started by adding your first property</p>
+        <button mat-raised-button color="primary" (click)="addProperty()">
+          <mat-icon>add</mat-icon>
+          Add Property
+        </button>
+      </mat-card>
+    }
   }
 </div>

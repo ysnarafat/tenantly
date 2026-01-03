@@ -1,78 +1,84 @@
 <p>unit-form-dialog works!</p>
 <h2 mat-dialog-title>
-    <mat-icon>{{ isEditMode ? 'edit' : 'add' }}</mat-icon>
-    {{ dialogTitle }}
+  <mat-icon>{{ isEditMode ? 'edit' : 'add' }}</mat-icon>
+  {{ dialogTitle }}
 </h2>
 
 <mat-dialog-content>
-    <div class="context-breadcrumb">
-        <mat-icon>business</mat-icon>
-        <span>{{ buildingContext }}</span>
+  <div class="context-breadcrumb">
+    <mat-icon>business</mat-icon>
+    <span>{{ buildingContext }}</span>
+  </div>
+
+  <form [formGroup]="unitForm" class="unit-form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Unit Number</mat-label>
+      <input matInput formControlName="unit_number" placeholder="e.g., 101, A-1, Shop-5" required />
+      <mat-icon matPrefix>tag</mat-icon>
+      <mat-hint *ngIf="!isEditMode">Unique identifier for this unit</mat-hint>
+      <mat-error>{{ getErrorMessage('unit_number') }}</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Unit Name (Optional)</mat-label>
+      <input matInput formControlName="unit_name" placeholder="e.g., Corner Office, Master Suite" />
+      <mat-icon matPrefix>label</mat-icon>
+      <mat-error>{{ getErrorMessage('unit_name') }}</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Unit Type</mat-label>
+      <mat-select formControlName="unit_type" required>
+        <mat-option *ngFor="let type of unitTypes" [value]="type">
+          <mat-icon>{{ getUnitTypeIcon(type) }}</mat-icon>
+          {{ type }}
+        </mat-option>
+      </mat-select>
+      <mat-icon matPrefix>category</mat-icon>
+      <mat-error>{{ getErrorMessage('unit_type') }}</mat-error>
+    </mat-form-field>
+
+    <div class="form-row">
+      <mat-form-field appearance="outline" class="half-width">
+        <mat-label>Floor</mat-label>
+        <input matInput type="number" formControlName="floor" placeholder="e.g., 3" />
+        <mat-icon matPrefix>layers</mat-icon>
+        <mat-hint>Optional</mat-hint>
+        <mat-error>{{ getErrorMessage('floor') }}</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="half-width">
+        <mat-label>Section</mat-label>
+        <input matInput formControlName="section" placeholder="e.g., A, North Wing" />
+        <mat-icon matPrefix>view_module</mat-icon>
+        <mat-hint>Optional</mat-hint>
+        <mat-error>{{ getErrorMessage('section') }}</mat-error>
+      </mat-form-field>
     </div>
 
-    <form [formGroup]="unitForm" class="unit-form">
-        <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Unit Number</mat-label>
-            <input matInput formControlName="unit_number" placeholder="e.g., 101, A-1, Shop-5" required>
-            <mat-icon matPrefix>tag</mat-icon>
-            <mat-hint *ngIf="!isEditMode">Unique identifier for this unit</mat-hint>
-            <mat-error>{{ getErrorMessage('unit_number') }}</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Unit Name (Optional)</mat-label>
-            <input matInput formControlName="unit_name" placeholder="e.g., Corner Office, Master Suite">
-            <mat-icon matPrefix>label</mat-icon>
-            <mat-error>{{ getErrorMessage('unit_name') }}</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Unit Type</mat-label>
-            <mat-select formControlName="unit_type" required>
-                <mat-option *ngFor="let type of unitTypes" [value]="type">
-                    <mat-icon>{{ getUnitTypeIcon(type) }}</mat-icon>
-                    {{ type }}
-                </mat-option>
-            </mat-select>
-            <mat-icon matPrefix>category</mat-icon>
-            <mat-error>{{ getErrorMessage('unit_type') }}</mat-error>
-        </mat-form-field>
-
-        <div class="form-row">
-            <mat-form-field appearance="outline" class="half-width">
-                <mat-label>Floor</mat-label>
-                <input matInput type="number" formControlName="floor" placeholder="e.g., 3">
-                <mat-icon matPrefix>layers</mat-icon>
-                <mat-hint>Optional</mat-hint>
-                <mat-error>{{ getErrorMessage('floor') }}</mat-error>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline" class="half-width">
-                <mat-label>Section</mat-label>
-                <input matInput formControlName="section" placeholder="e.g., A, North Wing">
-                <mat-icon matPrefix>view_module</mat-icon>
-                <mat-hint>Optional</mat-hint>
-                <mat-error>{{ getErrorMessage('section') }}</mat-error>
-            </mat-form-field>
-        </div>
-
-        <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Monthly Rent</mat-label>
-            <input matInput type="number" formControlName="monthly_rent" placeholder="e.g., 15000" required>
-            <mat-icon matPrefix>attach_money</mat-icon>
-            <span matTextPrefix>৳&nbsp;</span>
-            <mat-error>{{ getErrorMessage('monthly_rent') }}</mat-error>
-        </mat-form-field>
-    </form>
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Monthly Rent</mat-label>
+      <input
+        matInput
+        type="number"
+        formControlName="monthly_rent"
+        placeholder="e.g., 15000"
+        required
+      />
+      <mat-icon matPrefix>attach_money</mat-icon>
+      <span matTextPrefix>৳&nbsp;</span>
+      <mat-error>{{ getErrorMessage('monthly_rent') }}</mat-error>
+    </mat-form-field>
+  </form>
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-    <button mat-button (click)="onCancel()">
-        <mat-icon>close</mat-icon>
-        Cancel
-    </button>
-    <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="unitForm.invalid">
-        <mat-icon>{{ isEditMode ? 'save' : 'add' }}</mat-icon>
-        {{ isEditMode ? 'Update' : 'Create' }} Unit
-    </button>
+  <button mat-button (click)="onCancel()">
+    <mat-icon>close</mat-icon>
+    Cancel
+  </button>
+  <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="unitForm.invalid">
+    <mat-icon>{{ isEditMode ? 'save' : 'add' }}</mat-icon>
+    {{ isEditMode ? 'Update' : 'Create' }} Unit
+  </button>
 </mat-dialog-actions>

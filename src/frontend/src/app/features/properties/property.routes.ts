@@ -10,15 +10,15 @@ import { UnitEffects } from './store/unit.effects';
 import { PropertyListComponent } from './property-list/property-list.component';
 
 export const PROPERTY_ROUTES: Routes = [
-    {
-        path: '',
-        component: PropertyListComponent,
-        providers: [
-            provideState('properties', propertyReducer),
-            provideState('buildings', buildingReducer),
-            provideState('units', unitReducer),
-            provideEffects(PropertyEffects, BuildingEffects, UnitEffects)
-        ]
-    },
-    // Child routes for details, buildings, etc. will be added here
+  {
+    path: '',
+    component: PropertyListComponent,
+    providers: [
+      provideState('properties', propertyReducer),
+      provideState('buildings', buildingReducer),
+      provideState('units', unitReducer),
+      provideEffects(PropertyEffects, BuildingEffects, UnitEffects),
+    ],
+  },
+  // Child routes for details, buildings, etc. will be added here
 ];

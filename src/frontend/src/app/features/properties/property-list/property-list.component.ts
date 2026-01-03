@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
 import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -13,17 +13,24 @@ import { Store } from '@ngrx/store';
 import { PropertyActions } from '../store/property.actions';
 import { BuildingActions } from '../store/building.actions';
 import { UnitActions } from '../store/unit.actions';
-import { selectAllProperties, selectPropertyLoading, selectPropertyError } from '../store/property.selectors';
+import {
+  selectAllProperties,
+  selectPropertyLoading,
+  selectPropertyError,
+} from '../store/property.selectors';
 import { BuildingService } from '../../../core/services/building.service';
 import { UnitService } from '../../../core/services/unit.service';
 import {
   Property,
   Building,
   Unit,
-  PropertyListResponse,
   BuildingListResponse,
   UnitListResponse,
 } from '../../../core/models';
+import { DisplayedProperty, PropertyCardComponent } from '../property-card/property-card';
+import { PropertyFormDialogComponent } from '../property-form-dialog/property-form-dialog';
+import { BuildingFormDialogComponent } from '../building-form-dialog/building-form-dialog';
+import { UnitFormDialogComponent } from '../unit-form-dialog/unit-form-dialog';
 
 interface PropertyWithHierarchy extends Property {
   buildings?: BuildingWithUnits[];
@@ -47,6 +54,7 @@ interface BuildingWithUnits extends Building {
     MatProgressSpinnerModule,
     MatExpansionModule,
     MatTooltipModule,
+    PropertyCardComponent,
   ],
   templateUrl: './property-list.component.html',
   styleUrls: ['./property-list.component.scss'],
@@ -72,10 +80,10 @@ export class PropertyListComponent implements OnInit {
     const expandedProps = this.expandedProperties();
     const buildingsMap = this.loadedBuildings();
 
-    return props.map(p => ({
+    return props.map((p) => ({
       ...p,
       expanded: expandedProps.has(p.id),
-      buildings: buildingsMap.get(p.id)
+      buildings: buildingsMap.get(p.id),
     })) as DisplayedProperty[];
   });
 
@@ -83,37 +91,27 @@ export class PropertyListComponent implements OnInit {
     this.store.dispatch(PropertyActions.loadProperties({ active: true }));
   }
 
-  toggleProperty(property: Property) {
-    const expanded = this.expandedProperties();
-    const newExpanded = new Set(expanded);
-
-    this.propertyService.getProperties({ active: true }).subscribe({
-      next: (response: PropertyListResponse) => {
-        this.properties.set(response.properties.map((p: Property) => ({ ...p, expanded: false })));
-        this.loading.set(false);
-      },
-      error: (err: any) => {
-        this.error.set('Failed to load properties');
-        this.loading.set(false);
-        console.error('Error loading properties:', err);
-      },
-    });
-  }
-
   toggleProperty(property: PropertyWithHierarchy) {
-    property.expanded = !property.expanded;
+    this.expandedProperties.update((expanded) => {
+      const newExpanded = new Set(expanded);
+      if (newExpanded.has(property.id)) {
+        newExpanded.delete(property.id);
+      } else {
+        newExpanded.add(property.id);
+      }
+      return newExpanded;
+    });
 
-    if (property.expanded && !property.buildings) {
-      this.loadBuildings(property);
+    if (!property.buildings) {
+      this.loadBuildings(property.id);
     }
-    this.expandedProperties.set(newExpanded);
   }
 
   loadBuildings(propertyId: number) {
     this.buildingService.getBuildingsByProperty(propertyId).subscribe({
       next: (response: BuildingListResponse) => {
         const buildings = response.buildings.map((b: Building) => ({ ...b, expanded: false }));
-        this.loadedBuildings.update(map => {
+        this.loadedBuildings.update((map) => {
           const newMap = new Map(map);
           newMap.set(propertyId, buildings);
           return newMap;
@@ -178,10 +176,10 @@ export class PropertyListComponent implements OnInit {
   addProperty() {
     const dialogRef = this.dialog.open(PropertyFormDialogComponent, {
       width: '600px',
-      data: { mode: 'create' }
+      data: { mode: 'create' },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.store.dispatch(PropertyActions.createProperty({ property: result }));
       }
@@ -191,15 +189,17 @@ export class PropertyListComponent implements OnInit {
   editProperty(property: DisplayedProperty) {
     const dialogRef = this.dialog.open(PropertyFormDialogComponent, {
       width: '600px',
-      data: { mode: 'edit', property }
+      data: { mode: 'edit', property },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.store.dispatch(PropertyActions.updateProperty({
-          id: property.id,
-          property: result
-        }));
+        this.store.dispatch(
+          PropertyActions.updateProperty({
+            id: property.id,
+            property: result,
+          })
+        );
       }
     });
   }
@@ -214,10 +214,10 @@ export class PropertyListComponent implements OnInit {
   addBuilding(property: DisplayedProperty) {
     const dialogRef = this.dialog.open(BuildingFormDialogComponent, {
       width: '600px',
-      data: { mode: 'create', property }
+      data: { mode: 'create', property },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.store.dispatch(BuildingActions.createBuilding({ request: result }));
         // Reload buildings after creation
@@ -231,15 +231,17 @@ export class PropertyListComponent implements OnInit {
   editBuilding(building: BuildingWithUnits, property: DisplayedProperty) {
     const dialogRef = this.dialog.open(BuildingFormDialogComponent, {
       width: '600px',
-      data: { mode: 'edit', building, property }
+      data: { mode: 'edit', building, property },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.store.dispatch(BuildingActions.updateBuilding({
-          id: building.id,
-          request: result
-        }));
+        this.store.dispatch(
+          BuildingActions.updateBuilding({
+            id: building.id,
+            request: result,
+          })
+        );
       }
     });
   }
@@ -256,10 +258,10 @@ export class PropertyListComponent implements OnInit {
   addUnit(building: BuildingWithUnits, property: DisplayedProperty) {
     const dialogRef = this.dialog.open(UnitFormDialogComponent, {
       width: '600px',
-      data: { mode: 'create', building, property }
+      data: { mode: 'create', building, property },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         this.store.dispatch(UnitActions.createUnit({ request: result }));
         // Reload units for this building after creation
@@ -271,15 +273,17 @@ export class PropertyListComponent implements OnInit {
   editUnit(unit: Unit, building: BuildingWithUnits, property: DisplayedProperty) {
     const dialogRef = this.dialog.open(UnitFormDialogComponent, {
       width: '600px',
-      data: { mode: 'edit', unit, building, property }
+      data: { mode: 'edit', unit, building, property },
     });
 
-    dialogRef.afterClosed().subscribe(result => {
+    dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.store.dispatch(UnitActions.updateUnit({
-          id: unit.id,
-          request: result
-        }));
+        this.store.dispatch(
+          UnitActions.updateUnit({
+            id: unit.id,
+            request: result,
+          })
+        );
       }
     });
   }
