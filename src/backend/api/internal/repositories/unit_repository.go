@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ysnarafat/tenantly/internal/models"
+	"github.com/ysnarafat/tenantly/internal/models/columns"
 )
 
 // UnitRepository implements the UnitRepositoryInterface
@@ -21,12 +22,16 @@ func NewUnitRepository(db *sql.DB) *UnitRepository {
 
 // Create creates a new unit
 func (r *UnitRepository) Create(req *models.CreateUnitRequest) (*models.Unit, error) {
-	query := `
-		INSERT INTO units (
-			building_id, property_id, unit_number, unit_name, 
-			floor, section, unit_type, monthly_rent, metadata, active
+	query := fmt.Sprintf(`
+		INSERT INTO %s (
+			%s, %s, %s, %s, 
+			%s, %s, %s, %s, %s, %s
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
-		RETURNING id, created_at, updated_at`
+		RETURNING %s, %s, %s`,
+		columns.UnitTable,
+		columns.UnitBuildingID, columns.UnitPropertyID, columns.UnitNumber, columns.UnitName,
+		columns.UnitFloor, columns.UnitSection, columns.UnitType, columns.UnitMonthlyRent, columns.UnitMetadata, columns.UnitActive,
+		columns.UnitID, columns.UnitCreatedAt, columns.UnitUpdatedAt)
 
 	unit := &models.Unit{
 		BuildingID:  req.BuildingID,
@@ -63,12 +68,13 @@ func (r *UnitRepository) Create(req *models.CreateUnitRequest) (*models.Unit, er
 
 // GetByID retrieves a unit by ID
 func (r *UnitRepository) GetByID(id int) (*models.Unit, error) {
-	query := `
-		SELECT id, building_id, property_id, unit_number, unit_name, 
-			   floor, section, unit_type, monthly_rent, metadata, active, 
-			   created_at, updated_at
-		FROM units
-		WHERE id = $1 AND active = true`
+	query := fmt.Sprintf(`
+		SELECT %s
+		FROM %s
+		WHERE %s = $1 AND %s = true`,
+		columns.UnitAllColumns(),
+		columns.UnitTable,
+		columns.UnitID, columns.UnitActive)
 
 	unit := &models.Unit{}
 	err := r.db.QueryRow(query, id).Scan(
@@ -225,7 +231,8 @@ func (r *UnitRepository) Update(id int, req *models.UpdateUnitRequest) (*models.
 
 // Delete soft deletes a unit
 func (r *UnitRepository) Delete(id int) error {
-	query := "UPDATE units SET active = false, updated_at = NOW() WHERE id = $1"
+	query := fmt.Sprintf("UPDATE %s SET %s = false, %s = NOW() WHERE %s = $1",
+		columns.UnitTable, columns.UnitActive, columns.UnitUpdatedAt, columns.UnitID)
 	result, err := r.db.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete unit: %w", err)
@@ -250,7 +257,7 @@ func (r *UnitRepository) CheckUnitNumberExists(buildingID int, unitNumber string
 			SELECT 1 FROM units 
 			WHERE building_id = $1 AND unit_number = $2 AND id != $3 AND active = true
 		)`
-	
+
 	var exists bool
 	err := r.db.QueryRow(query, buildingID, unitNumber, excludeID).Scan(&exists)
 	if err != nil {
@@ -267,7 +274,7 @@ func (r *UnitRepository) HasActiveLeases(unitID int) (bool, error) {
 			SELECT 1 FROM leases 
 			WHERE unit_id = $1 AND status = 'Active'
 		)`
-	
+
 	var exists bool
 	err := r.db.QueryRow(query, unitID).Scan(&exists)
 	if err != nil {
@@ -413,7 +420,7 @@ func (r *UnitRepository) GetByPropertyWithDetails(propertyID int, limit, offset 
 func (r *UnitRepository) GetBuildingOccupancyStats(buildingID int, startDate, endDate time.Time) (interface{}, error) {
 	// Placeholder implementation - to be fully implemented with analytics module
 	return map[string]interface{}{
-		"building_id": buildingID,
+		"building_id":    buildingID,
 		"occupancy_rate": 0.0,
 	}, nil
 }
@@ -422,7 +429,7 @@ func (r *UnitRepository) GetBuildingOccupancyStats(buildingID int, startDate, en
 func (r *UnitRepository) GetPropertyOccupancyStats(propertyID int, startDate, endDate time.Time) (interface{}, error) {
 	// Placeholder implementation - to be fully implemented with analytics module
 	return map[string]interface{}{
-		"property_id": propertyID,
+		"property_id":    propertyID,
 		"occupancy_rate": 0.0,
 	}, nil
 }
@@ -442,7 +449,7 @@ func (r *UnitRepository) GetBuildingUnitTypeDistribution(buildingID int) (interf
 		FROM units
 		WHERE building_id = $1 AND active = true
 		GROUP BY unit_type`
-	
+
 	rows, err := r.db.Query(query, buildingID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get unit type distribution: %w", err)
