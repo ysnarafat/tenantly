@@ -141,7 +141,10 @@ export class AuthService {
     const expiresAt = localStorage.getItem(this.EXPIRES_AT_KEY);
     if (!expiresAt) return true;
 
-    return new Date() >= new Date(expiresAt);
+    const expiryDate = new Date(expiresAt);
+    if (isNaN(expiryDate.getTime())) return true;
+
+    return new Date() >= expiryDate;
   }
 
   hasRole(role: string): boolean {

@@ -254,8 +254,16 @@ type NotificationServiceInterface interface {
 
 // TenantRepositoryInterface defines the interface for tenant repository operations
 type TenantRepositoryInterface interface {
+	Create(req *models.CreateTenantRequest) (*models.Tenant, error)
+	CheckEmailExists(email string, excludeID int) (bool, error)
+	CheckNIDExists(nid string, excludeID int) (bool, error)
 	GetByID(id int) (*models.Tenant, error)
 	GetByUnitID(unitID int) (*models.Tenant, error)
+}
+
+// TenantServiceInterface defines the interface for tenant service operations
+type TenantServiceInterface interface {
+	CreateTenant(req *models.CreateTenantRequest, userID int) (*models.TenantResponse, error)
 }
 
 // PropertyRepositoryInterface defines the interface for property repository operations

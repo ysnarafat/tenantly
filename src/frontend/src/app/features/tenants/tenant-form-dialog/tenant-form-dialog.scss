@@ -1,0 +1,36 @@
+.form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+  min-width: 500px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.row {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+
+  mat-form-field {
+    flex: 1;
+  }
+}
+
+mat-dialog-content {
+  overflow-x: hidden;
+}
+
+@media (max-width: 600px) {
+  .form-grid {
+    min-width: auto;
+  }
+
+  .row {
+    flex-direction: column;
+    gap: 0;
+  }
+}

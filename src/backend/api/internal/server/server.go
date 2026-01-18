@@ -64,6 +64,7 @@ func (s *Server) setupRoutes() {
 	propertyRepo := repositories.NewPropertyRepository(s.db)
 	buildingRepo := repositories.NewBuildingRepository(s.db)
 	unitRepo := repositories.NewUnitRepository(s.db)
+	tenantRepo := repositories.NewTenantRepository(s.db)
 
 	// Initialize metadata validator
 	metadataValidator := services.NewBuildingMetadataValidator()
@@ -73,12 +74,14 @@ func (s *Server) setupRoutes() {
 	propertyService := services.NewPropertyService(propertyRepo, auditService)
 	buildingService := services.NewBuildingService(buildingRepo, propertyRepo, auditService, metadataValidator)
 	unitService := services.NewUnitService(unitRepo, buildingRepo, propertyRepo, auditService)
+	tenantService := services.NewTenantService(tenantRepo, auditService)
 
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService)
 	propertyHandler := handlers.NewPropertyHandler(propertyService)
 	buildingHandler := handlers.NewBuildingHandler(buildingService)
 	unitHandler := handlers.NewUnitHandler(unitService)
+	tenantHandler := handlers.NewTenantHandler(tenantService)
 
 	// Health check endpoint
 	s.router.GET("/health", func(c *gin.Context) {
@@ -137,7 +140,7 @@ func (s *Server) setupRoutes() {
 				// Property-building relationship endpoints with property validation middleware
 				properties.GET("/:id/buildings", middleware.RequireAnyRole(), middleware.PropertyValidationMiddleware(propertyRepo), buildingHandler.GetPropertyBuildings)
 				properties.POST("/:id/buildings/bulk", middleware.RequireAdminOrPropertyManager(), middleware.PropertyValidationMiddleware(propertyRepo), buildingHandler.BulkCreateBuildings)
-				
+
 				// Property-unit relationship endpoints
 				properties.GET("/:id/units", middleware.RequireAnyRole(), middleware.PropertyValidationMiddleware(propertyRepo), unitHandler.GetUnitsByProperty)
 			}
@@ -156,7 +159,7 @@ func (s *Server) setupRoutes() {
 				buildings.GET("/:id/analytics", middleware.RequireAnyRole(), buildingHandler.GetBuildingAnalytics)
 				buildings.GET("/:id/units", middleware.RequireAnyRole(), buildingHandler.GetBuildingUnits)
 				buildings.PUT("/:id/status", middleware.RequireAdminOrPropertyManager(), buildingHandler.UpdateBuildingStatus)
-				
+
 				// Building-unit relationship endpoints
 				buildings.GET("/:id/units/list", middleware.RequireAnyRole(), unitHandler.GetUnitsByBuilding)
 			}
@@ -184,7 +187,7 @@ func (s *Server) setupRoutes() {
 			tenants := protected.Group("/tenants")
 			{
 				tenants.GET("", s.handlePlaceholder("Get tenants"))
-				tenants.POST("", s.handlePlaceholder("Create tenant"))
+				tenants.POST("", middleware.RequireAdminOrPropertyManager(), tenantHandler.CreateTenant)
 				tenants.GET("/:id", s.handlePlaceholder("Get tenant"))
 				tenants.PUT("/:id", s.handlePlaceholder("Update tenant"))
 				tenants.DELETE("/:id", s.handlePlaceholder("Delete tenant"))
