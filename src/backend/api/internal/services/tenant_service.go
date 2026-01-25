@@ -61,3 +61,43 @@ func (s *TenantService) CreateTenant(req *models.CreateTenantRequest, userID int
 
 	return tenant.ToResponse(), nil
 }
+
+// GetAllTenants retrieves all active tenants with pagination
+func (s *TenantService) GetAllTenants(page, pageSize int) (*models.TenantListResponse, error) {
+	// Defaults if 0
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+
+	tenants, totalCount, err := s.tenantRepo.GetAll(page, pageSize)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenants: %w", err)
+	}
+
+	var responses []*models.TenantResponse
+	for _, tenant := range tenants {
+		responses = append(responses, tenant.ToResponse())
+	}
+
+	// Calculate pagination info
+	totalPages := (totalCount + pageSize - 1) / pageSize
+	hasNext := page < totalPages
+	hasPrev := page > 1
+
+	pagination := &models.PaginationInfo{
+		CurrentPage: page,
+		PageSize:    pageSize,
+		TotalItems:  totalCount,
+		TotalPages:  totalPages,
+		HasNext:     hasNext,
+		HasPrev:     hasPrev,
+	}
+
+	return &models.TenantListResponse{
+		Tenants:    responses,
+		Pagination: pagination,
+	}, nil
+}

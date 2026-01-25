@@ -53,6 +53,12 @@ func (t *Tenant) ToResponse() *TenantResponse {
 	}
 }
 
+// TenantListResponse represents a paginated list of tenants
+type TenantListResponse struct {
+	Tenants    []*TenantResponse `json:"tenants"`
+	Pagination *PaginationInfo   `json:"pagination"`
+}
+
 type CreateTenantRequest struct {
 	Name        string     `json:"name" binding:"required,max=100"`
 	TenantType  TenantType `json:"tenant_type" binding:"required,oneof=Individual Business"`

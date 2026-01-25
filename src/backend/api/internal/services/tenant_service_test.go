@@ -89,3 +89,37 @@ func TestTenantService_CreateTenant(t *testing.T) {
 		mockRepo.AssertExpectations(t)
 	})
 }
+
+func TestTenantService_GetAllTenants(t *testing.T) {
+	mockRepo := new(mocks.TenantRepositoryInterface)
+	mockAudit := new(mocks.AuditServiceInterface)
+	service := NewTenantService(mockRepo, mockAudit)
+
+	t.Run("success", func(t *testing.T) {
+		tenants := []*models.Tenant{
+			{ID: 1, Name: "Tenant 1", Active: true},
+			{ID: 2, Name: "Tenant 2", Active: true},
+		}
+		totalCount := 2
+
+		mockRepo.On("GetAll", 1, 10).Return(tenants, totalCount, nil).Once()
+
+		resp, err := service.GetAllTenants(1, 10)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, resp)
+		assert.Equal(t, 2, len(resp.Tenants))
+		assert.Equal(t, totalCount, resp.Pagination.TotalItems)
+		mockRepo.AssertExpectations(t)
+	})
+
+	t.Run("repo error", func(t *testing.T) {
+		mockRepo.On("GetAll", 1, 10).Return([]*models.Tenant{}, 0, fmt.Errorf("db error")).Once()
+
+		resp, err := service.GetAllTenants(1, 10)
+
+		assert.Error(t, err)
+		assert.Nil(t, resp)
+		mockRepo.AssertExpectations(t)
+	})
+}

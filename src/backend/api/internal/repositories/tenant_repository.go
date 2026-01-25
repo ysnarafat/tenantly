@@ -141,3 +141,66 @@ func (r *TenantRepository) GetByID(id int) (*models.Tenant, error) {
 func (r *TenantRepository) GetByUnitID(unitID int) (*models.Tenant, error) {
 	return nil, fmt.Errorf("not implemented yet")
 }
+
+// GetAll retrieves all active tenants with pagination
+func (r *TenantRepository) GetAll(page, pageSize int) ([]*models.Tenant, int, error) {
+	// Set defaults
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = 10
+	}
+	offset := (page - 1) * pageSize
+
+	// Get total count
+	var totalCount int
+	err := r.db.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE %s = true", columns.TenantTable, columns.TenantActive)).Scan(&totalCount)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to count tenants: %w", err)
+	}
+
+	query := fmt.Sprintf(`
+		SELECT %s
+		FROM %s
+		WHERE %s = true
+		ORDER BY %s DESC
+		LIMIT $1 OFFSET $2`,
+		columns.TenantAllColumns(),
+		columns.TenantTable,
+		columns.TenantActive,
+		columns.TenantCreatedAt)
+
+	rows, err := r.db.Query(query, pageSize, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get all tenants: %w", err)
+	}
+	defer rows.Close()
+
+	var tenants []*models.Tenant
+	for rows.Next() {
+		tenant := &models.Tenant{}
+		err := rows.Scan(
+			&tenant.ID,
+			&tenant.Name,
+			&tenant.TenantType,
+			&tenant.PhoneNumber,
+			&tenant.Email,
+			&tenant.NIDNumber,
+			&tenant.Address,
+			&tenant.Active,
+			&tenant.CreatedAt,
+			&tenant.UpdatedAt,
+		)
+		if err != nil {
+			return nil, 0, fmt.Errorf("failed to scan tenant: %w", err)
+		}
+		tenants = append(tenants, tenant)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("error iterating tenants: %w", err)
+	}
+
+	return tenants, totalCount, nil
+}
