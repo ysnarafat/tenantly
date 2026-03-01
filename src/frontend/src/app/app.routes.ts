@@ -1,5 +1,13 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './core/guards/auth.guard';
+import { provideState } from '@ngrx/store';
+import { provideEffects } from '@ngrx/effects';
+import { propertyReducer } from './features/properties/store/property.reducer';
+import { buildingReducer } from './features/properties/store/building.reducer';
+import { unitReducer } from './features/properties/store/unit.reducer';
+import { PropertyEffects } from './features/properties/store/property.effects';
+import { BuildingEffects } from './features/properties/store/building.effects';
+import { UnitEffects } from './features/properties/store/unit.effects';
 
 export const routes: Routes = [
   {
@@ -23,6 +31,12 @@ export const routes: Routes = [
         (m) => m.PropertyListComponent
       ),
     canActivate: [AuthGuard],
+    providers: [
+      provideState('properties', propertyReducer),
+      provideState('buildings', buildingReducer),
+      provideState('units', unitReducer),
+      provideEffects([PropertyEffects, BuildingEffects, UnitEffects]),
+    ],
   },
   {
     path: 'tenants',

@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install && \
+RUN npm ci && \
     npm cache clean --force
 
 # Copy source code
@@ -20,7 +20,7 @@ RUN npm run build -- --configuration=production
 FROM nginx:alpine
 
 # Copy built application
-COPY --from=builder /app/dist/tenantly-frontend /usr/share/nginx/html
+COPY --from=builder /app/dist/tenantly-frontend/browser /usr/share/nginx/html
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf

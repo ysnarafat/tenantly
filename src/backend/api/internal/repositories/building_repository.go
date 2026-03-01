@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/ysnarafat/tenantly/internal/models"
+	"github.com/ysnarafat/tenantly/internal/models/columns"
 )
 
 // BuildingRepository implements the BuildingRepositoryInterface
@@ -20,11 +21,16 @@ func NewBuildingRepository(db *sql.DB) *BuildingRepository {
 
 // Create creates a new building with validation and constraint handling
 func (r *BuildingRepository) Create(building *models.Building) error {
-	query := `
-		INSERT INTO buildings (property_id, building_name, building_code, building_type, 
-		                      total_floors, has_elevator, construction_year, metadata, active_status)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (%s, %s, %s, %s, 
+		                      %s, %s, %s, %s, %s)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id, created_at, updated_at`
+		RETURNING %s, %s, %s`,
+		columns.BuildingTable,
+		columns.BuildingPropertyID, columns.BuildingName, columns.BuildingCode, columns.BuildingType,
+		columns.BuildingTotalFloors, columns.BuildingHasElevator, columns.BuildingConstructionYear,
+		columns.BuildingMetadata, columns.BuildingActiveStatus,
+		columns.BuildingID, columns.BuildingCreatedAt, columns.BuildingUpdatedAt)
 
 	err := r.db.QueryRow(
 		query,
@@ -48,12 +54,13 @@ func (r *BuildingRepository) Create(building *models.Building) error {
 
 // GetByID retrieves a building by its ID
 func (r *BuildingRepository) GetByID(id int) (*models.Building, error) {
-	query := `
-		SELECT id, property_id, building_name, building_code, building_type,
-		       total_floors, has_elevator, construction_year, metadata, active_status,
-		       created_at, updated_at
-		FROM buildings
-		WHERE id = $1`
+	query := fmt.Sprintf(`
+		SELECT %s
+		FROM %s
+		WHERE %s = $1`,
+		columns.BuildingAllColumns(),
+		columns.BuildingTable,
+		columns.BuildingID)
 
 	var building models.Building
 	err := r.db.QueryRow(query, id).Scan(
@@ -83,13 +90,15 @@ func (r *BuildingRepository) GetByID(id int) (*models.Building, error) {
 
 // GetByPropertyID retrieves all buildings for a specific property
 func (r *BuildingRepository) GetByPropertyID(propertyID int) ([]*models.Building, error) {
-	query := `
-		SELECT id, property_id, building_name, building_code, building_type,
-		       total_floors, has_elevator, construction_year, metadata, active_status,
-		       created_at, updated_at
-		FROM buildings
-		WHERE property_id = $1 AND active_status = true
-		ORDER BY building_name`
+	query := fmt.Sprintf(`
+		SELECT %s
+		FROM %s
+		WHERE %s = $1 AND %s = true
+		ORDER BY %s`,
+		columns.BuildingAllColumns(),
+		columns.BuildingTable,
+		columns.BuildingPropertyID, columns.BuildingActiveStatus,
+		columns.BuildingName)
 
 	rows, err := r.db.Query(query, propertyID)
 	if err != nil {
@@ -125,12 +134,13 @@ func (r *BuildingRepository) GetByPropertyID(propertyID int) ([]*models.Building
 
 // GetByPropertyAndCode retrieves a building by property ID and building code
 func (r *BuildingRepository) GetByPropertyAndCode(propertyID int, code string) (*models.Building, error) {
-	query := `
-		SELECT id, property_id, building_name, building_code, building_type,
-		       total_floors, has_elevator, construction_year, metadata, active_status,
-		       created_at, updated_at
-		FROM buildings
-		WHERE property_id = $1 AND building_code = $2`
+	query := fmt.Sprintf(`
+		SELECT %s
+		FROM %s
+		WHERE %s = $1 AND %s = $2`,
+		columns.BuildingAllColumns(),
+		columns.BuildingTable,
+		columns.BuildingPropertyID, columns.BuildingCode)
 
 	var building models.Building
 	err := r.db.QueryRow(query, propertyID, code).Scan(
@@ -170,8 +180,8 @@ func (r *BuildingRepository) Update(id int, updates map[string]interface{}) erro
 
 	for field, value := range updates {
 		switch field {
-		case "building_name", "building_type", "total_floors", "has_elevator",
-			"construction_year", "metadata", "active_status":
+		case columns.BuildingName, columns.BuildingType, columns.BuildingTotalFloors, columns.BuildingHasElevator,
+			columns.BuildingConstructionYear, columns.BuildingMetadata, columns.BuildingActiveStatus:
 			setParts = append(setParts, fmt.Sprintf("%s = $%d", field, argIndex))
 			args = append(args, value)
 			argIndex++
@@ -185,10 +195,12 @@ func (r *BuildingRepository) Update(id int, updates map[string]interface{}) erro
 	setParts = append(setParts, "updated_at = NOW() AT TIME ZONE 'UTC'")
 
 	query := fmt.Sprintf(`
-		UPDATE buildings 
+		UPDATE %s 
 		SET %s
-		WHERE id = $%d`,
-		strings.Join(setParts, ", "), argIndex)
+		WHERE %s = $%d`,
+		columns.BuildingTable,
+		strings.Join(setParts, ", "),
+		columns.BuildingID, argIndex)
 
 	args = append(args, id)
 
@@ -221,7 +233,8 @@ func (r *BuildingRepository) SoftDelete(id int) error {
 		return fmt.Errorf("cannot delete building with active units")
 	}
 
-	query := `UPDATE buildings SET active_status = false, updated_at = NOW() AT TIME ZONE 'UTC' WHERE id = $1`
+	query := fmt.Sprintf(`UPDATE %s SET %s = false, %s = NOW() AT TIME ZONE 'UTC' WHERE %s = $1`,
+		columns.BuildingTable, columns.BuildingActiveStatus, columns.BuildingUpdatedAt, columns.BuildingID)
 	result, err := r.db.Exec(query, id)
 	if err != nil {
 		return fmt.Errorf("failed to soft delete building: %w", err)
@@ -251,11 +264,16 @@ func (r *BuildingRepository) BulkCreate(buildings []*models.Building) error {
 	}
 	defer tx.Rollback()
 
-	query := `
-		INSERT INTO buildings (property_id, building_name, building_code, building_type, 
-		                      total_floors, has_elevator, construction_year, metadata, active_status)
+	query := fmt.Sprintf(`
+		INSERT INTO %s (%s, %s, %s, %s, 
+		                      %s, %s, %s, %s, %s)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		RETURNING id, created_at, updated_at`
+		RETURNING %s, %s, %s`,
+		columns.BuildingTable,
+		columns.BuildingPropertyID, columns.BuildingName, columns.BuildingCode, columns.BuildingType,
+		columns.BuildingTotalFloors, columns.BuildingHasElevator, columns.BuildingConstructionYear,
+		columns.BuildingMetadata, columns.BuildingActiveStatus,
+		columns.BuildingID, columns.BuildingCreatedAt, columns.BuildingUpdatedAt)
 
 	for _, building := range buildings {
 		err := tx.QueryRow(
@@ -290,37 +308,37 @@ func (r *BuildingRepository) Search(filters *models.BuildingSearchFilters) ([]*m
 	argIndex := 1
 
 	if filters.PropertyID != nil {
-		whereConditions = append(whereConditions, fmt.Sprintf("property_id = $%d", argIndex))
+		whereConditions = append(whereConditions, fmt.Sprintf("%s = $%d", columns.BuildingPropertyID, argIndex))
 		args = append(args, *filters.PropertyID)
 		argIndex++
 	}
 
 	if filters.BuildingType != nil {
-		whereConditions = append(whereConditions, fmt.Sprintf("building_type = $%d", argIndex))
+		whereConditions = append(whereConditions, fmt.Sprintf("%s = $%d", columns.BuildingType, argIndex))
 		args = append(args, *filters.BuildingType)
 		argIndex++
 	}
 
 	if filters.ActiveStatus != nil {
-		whereConditions = append(whereConditions, fmt.Sprintf("active_status = $%d", argIndex))
+		whereConditions = append(whereConditions, fmt.Sprintf("%s = $%d", columns.BuildingActiveStatus, argIndex))
 		args = append(args, *filters.ActiveStatus)
 		argIndex++
 	}
 
 	if filters.HasElevator != nil {
-		whereConditions = append(whereConditions, fmt.Sprintf("has_elevator = $%d", argIndex))
+		whereConditions = append(whereConditions, fmt.Sprintf("%s = $%d", columns.BuildingHasElevator, argIndex))
 		args = append(args, *filters.HasElevator)
 		argIndex++
 	}
 
 	if filters.MinFloors != nil {
-		whereConditions = append(whereConditions, fmt.Sprintf("total_floors >= $%d", argIndex))
+		whereConditions = append(whereConditions, fmt.Sprintf("%s >= $%d", columns.BuildingTotalFloors, argIndex))
 		args = append(args, *filters.MinFloors)
 		argIndex++
 	}
 
 	if filters.MaxFloors != nil {
-		whereConditions = append(whereConditions, fmt.Sprintf("total_floors <= $%d", argIndex))
+		whereConditions = append(whereConditions, fmt.Sprintf("%s <= $%d", columns.BuildingTotalFloors, argIndex))
 		args = append(args, *filters.MaxFloors)
 		argIndex++
 	}
@@ -328,13 +346,16 @@ func (r *BuildingRepository) Search(filters *models.BuildingSearchFilters) ([]*m
 	whereClause := strings.Join(whereConditions, " AND ")
 
 	query := fmt.Sprintf(`
-		SELECT id, property_id, building_name, building_code, building_type,
-		       total_floors, has_elevator, construction_year, metadata, active_status,
-		       created_at, updated_at
-		FROM buildings
+		SELECT %s
+		FROM %s
 		WHERE %s
-		ORDER BY building_name
-		LIMIT $%d OFFSET $%d`, whereClause, argIndex, argIndex+1)
+		ORDER BY %s
+		LIMIT $%d OFFSET $%d`,
+		columns.BuildingAllColumns(),
+		columns.BuildingTable,
+		whereClause,
+		columns.BuildingName,
+		argIndex, argIndex+1)
 
 	limit := filters.Limit
 	if limit <= 0 {
@@ -377,7 +398,7 @@ func (r *BuildingRepository) Search(filters *models.BuildingSearchFilters) ([]*m
 
 // CountByProperty counts buildings for a property with optional filters
 func (r *BuildingRepository) CountByProperty(propertyID int, filters *models.BuildingSearchFilters) (int, error) {
-	whereConditions := []string{"property_id = $1"}
+	whereConditions := []string{fmt.Sprintf("%s = $1", columns.BuildingPropertyID)}
 	args := []interface{}{propertyID}
 	argIndex := 2
 
@@ -389,28 +410,28 @@ func (r *BuildingRepository) CountByProperty(propertyID int, filters *models.Bui
 		}
 
 		if filters.ActiveStatus != nil {
-			whereConditions = append(whereConditions, fmt.Sprintf("active_status = $%d", argIndex))
+			whereConditions = append(whereConditions, fmt.Sprintf("%s = $%d", columns.BuildingActiveStatus, argIndex))
 			args = append(args, *filters.ActiveStatus)
 			argIndex++
 		} else {
 			// Default to active buildings only
-			whereConditions = append(whereConditions, "active_status = true")
+			whereConditions = append(whereConditions, fmt.Sprintf("%s = true", columns.BuildingActiveStatus))
 		}
 
 		if filters.HasElevator != nil {
-			whereConditions = append(whereConditions, fmt.Sprintf("has_elevator = $%d", argIndex))
+			whereConditions = append(whereConditions, fmt.Sprintf("%s = $%d", columns.BuildingHasElevator, argIndex))
 			args = append(args, *filters.HasElevator)
 			argIndex++
 		}
 
 		if filters.MinFloors != nil {
-			whereConditions = append(whereConditions, fmt.Sprintf("total_floors >= $%d", argIndex))
+			whereConditions = append(whereConditions, fmt.Sprintf("%s >= $%d", columns.BuildingTotalFloors, argIndex))
 			args = append(args, *filters.MinFloors)
 			argIndex++
 		}
 
 		if filters.MaxFloors != nil {
-			whereConditions = append(whereConditions, fmt.Sprintf("total_floors <= $%d", argIndex))
+			whereConditions = append(whereConditions, fmt.Sprintf("%s <= $%d", columns.BuildingTotalFloors, argIndex))
 			args = append(args, *filters.MaxFloors)
 			argIndex++
 		}
@@ -419,7 +440,7 @@ func (r *BuildingRepository) CountByProperty(propertyID int, filters *models.Bui
 	}
 
 	whereClause := strings.Join(whereConditions, " AND ")
-	query := fmt.Sprintf("SELECT COUNT(*) FROM buildings WHERE %s", whereClause)
+	query := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE %s", columns.BuildingTable, whereClause)
 
 	var count int
 	err := r.db.QueryRow(query, args...).Scan(&count)
@@ -432,59 +453,59 @@ func (r *BuildingRepository) CountByProperty(propertyID int, filters *models.Bui
 
 // GetByPropertyWithSorting retrieves buildings for a property with sorting and filtering
 func (r *BuildingRepository) GetByPropertyWithSorting(propertyID int, filters *models.BuildingSearchFilters, sortBy, sortOrder string) ([]*models.Building, error) {
-	whereConditions := []string{"property_id = $1"}
+	whereConditions := []string{fmt.Sprintf("%s = $1", columns.BuildingPropertyID)}
 	args := []interface{}{propertyID}
 	argIndex := 2
 
 	if filters != nil {
 		if filters.BuildingType != nil {
-			whereConditions = append(whereConditions, fmt.Sprintf("building_type = $%d", argIndex))
+			whereConditions = append(whereConditions, fmt.Sprintf("%s = $%d", columns.BuildingType, argIndex))
 			args = append(args, *filters.BuildingType)
 			argIndex++
 		}
 
 		if filters.ActiveStatus != nil {
-			whereConditions = append(whereConditions, fmt.Sprintf("active_status = $%d", argIndex))
+			whereConditions = append(whereConditions, fmt.Sprintf("%s = $%d", columns.BuildingActiveStatus, argIndex))
 			args = append(args, *filters.ActiveStatus)
 			argIndex++
 		} else {
 			// Default to active buildings only
-			whereConditions = append(whereConditions, "active_status = true")
+			whereConditions = append(whereConditions, fmt.Sprintf("%s = true", columns.BuildingActiveStatus))
 		}
 
 		if filters.HasElevator != nil {
-			whereConditions = append(whereConditions, fmt.Sprintf("has_elevator = $%d", argIndex))
+			whereConditions = append(whereConditions, fmt.Sprintf("%s = $%d", columns.BuildingHasElevator, argIndex))
 			args = append(args, *filters.HasElevator)
 			argIndex++
 		}
 
 		if filters.MinFloors != nil {
-			whereConditions = append(whereConditions, fmt.Sprintf("total_floors >= $%d", argIndex))
+			whereConditions = append(whereConditions, fmt.Sprintf("%s >= $%d", columns.BuildingTotalFloors, argIndex))
 			args = append(args, *filters.MinFloors)
 			argIndex++
 		}
 
 		if filters.MaxFloors != nil {
-			whereConditions = append(whereConditions, fmt.Sprintf("total_floors <= $%d", argIndex))
+			whereConditions = append(whereConditions, fmt.Sprintf("%s <= $%d", columns.BuildingTotalFloors, argIndex))
 			args = append(args, *filters.MaxFloors)
 			argIndex++
 		}
 	} else {
-		whereConditions = append(whereConditions, "active_status = true")
+		whereConditions = append(whereConditions, fmt.Sprintf("%s = true", columns.BuildingActiveStatus))
 	}
 
 	// Validate and set sort parameters
 	validSortFields := map[string]bool{
-		"building_name":     true,
-		"building_code":     true,
-		"building_type":     true,
-		"total_floors":      true,
-		"construction_year": true,
-		"created_at":        true,
+		columns.BuildingName:             true,
+		columns.BuildingCode:             true,
+		columns.BuildingType:             true,
+		columns.BuildingTotalFloors:      true,
+		columns.BuildingConstructionYear: true,
+		columns.BuildingCreatedAt:        true,
 	}
 
 	if !validSortFields[sortBy] {
-		sortBy = "building_name" // Default sort field
+		sortBy = columns.BuildingName // Default sort field
 	}
 
 	if sortOrder != "asc" && sortOrder != "desc" {
@@ -494,13 +515,15 @@ func (r *BuildingRepository) GetByPropertyWithSorting(propertyID int, filters *m
 	whereClause := strings.Join(whereConditions, " AND ")
 
 	query := fmt.Sprintf(`
-		SELECT id, property_id, building_name, building_code, building_type,
-		       total_floors, has_elevator, construction_year, metadata, active_status,
-		       created_at, updated_at
-		FROM buildings
+		SELECT %s
+		FROM %s
 		WHERE %s
 		ORDER BY %s %s
-		LIMIT $%d OFFSET $%d`, whereClause, sortBy, strings.ToUpper(sortOrder), argIndex, argIndex+1)
+		LIMIT $%d OFFSET $%d`,
+		columns.BuildingAllColumns(),
+		columns.BuildingTable,
+		whereClause,
+		sortBy, strings.ToUpper(sortOrder), argIndex, argIndex+1)
 
 	limit := 20 // Default limit
 	offset := 0 // Default offset
@@ -548,7 +571,8 @@ func (r *BuildingRepository) GetByPropertyWithSorting(propertyID int, filters *m
 
 // hasActiveUnits checks if building has active units (helper method)
 func (r *BuildingRepository) hasActiveUnits(buildingID int) (bool, error) {
-	query := `SELECT EXISTS(SELECT 1 FROM units WHERE building_id = $1 AND active = true)`
+	query := fmt.Sprintf(`SELECT EXISTS(SELECT 1 FROM %s WHERE %s = $1 AND %s = true)`,
+		columns.UnitTable, columns.UnitBuildingID, columns.UnitActive)
 	var exists bool
 	err := r.db.QueryRow(query, buildingID).Scan(&exists)
 	if err != nil {
@@ -565,55 +589,55 @@ func (r *BuildingRepository) AdvancedSearch(req *models.BuildingSearchRequest) (
 
 	// Property filter
 	if req.PropertyID != nil {
-		whereConditions = append(whereConditions, fmt.Sprintf("property_id = $%d", argIndex))
+		whereConditions = append(whereConditions, fmt.Sprintf("%s = $%d", columns.BuildingPropertyID, argIndex))
 		args = append(args, *req.PropertyID)
 		argIndex++
 	}
 
 	// Building type filter
 	if req.BuildingType != "" {
-		whereConditions = append(whereConditions, fmt.Sprintf("building_type = $%d", argIndex))
+		whereConditions = append(whereConditions, fmt.Sprintf("%s = $%d", columns.BuildingType, argIndex))
 		args = append(args, req.BuildingType)
 		argIndex++
 	}
 
 	// Active status filter
 	if req.ActiveStatus != nil {
-		whereConditions = append(whereConditions, fmt.Sprintf("active_status = $%d", argIndex))
+		whereConditions = append(whereConditions, fmt.Sprintf("%s = $%d", columns.BuildingActiveStatus, argIndex))
 		args = append(args, *req.ActiveStatus)
 		argIndex++
 	}
 
 	// Elevator filter
 	if req.HasElevator != nil {
-		whereConditions = append(whereConditions, fmt.Sprintf("has_elevator = $%d", argIndex))
+		whereConditions = append(whereConditions, fmt.Sprintf("%s = $%d", columns.BuildingHasElevator, argIndex))
 		args = append(args, *req.HasElevator)
 		argIndex++
 	}
 
 	// Floor range filters
 	if req.MinFloors != nil {
-		whereConditions = append(whereConditions, fmt.Sprintf("total_floors >= $%d", argIndex))
+		whereConditions = append(whereConditions, fmt.Sprintf("%s >= $%d", columns.BuildingTotalFloors, argIndex))
 		args = append(args, *req.MinFloors)
 		argIndex++
 	}
 
 	if req.MaxFloors != nil {
-		whereConditions = append(whereConditions, fmt.Sprintf("total_floors <= $%d", argIndex))
+		whereConditions = append(whereConditions, fmt.Sprintf("%s <= $%d", columns.BuildingTotalFloors, argIndex))
 		args = append(args, *req.MaxFloors)
 		argIndex++
 	}
 
 	// Construction year filter
 	if req.ConstructionYear != nil {
-		whereConditions = append(whereConditions, fmt.Sprintf("construction_year = $%d", argIndex))
+		whereConditions = append(whereConditions, fmt.Sprintf("%s = $%d", columns.BuildingConstructionYear, argIndex))
 		args = append(args, *req.ConstructionYear)
 		argIndex++
 	}
 
 	// Search term filter (searches in building name and code)
 	if req.SearchTerm != "" {
-		whereConditions = append(whereConditions, fmt.Sprintf("(building_name ILIKE $%d OR building_code ILIKE $%d)", argIndex, argIndex))
+		whereConditions = append(whereConditions, fmt.Sprintf("(%s ILIKE $%d OR %s ILIKE $%d)", columns.BuildingName, argIndex, columns.BuildingCode, argIndex))
 		searchPattern := "%" + req.SearchTerm + "%"
 		args = append(args, searchPattern)
 		argIndex++
@@ -621,7 +645,7 @@ func (r *BuildingRepository) AdvancedSearch(req *models.BuildingSearchRequest) (
 
 	// Metadata query filter (basic JSONB query support)
 	if req.MetadataQuery != "" {
-		whereConditions = append(whereConditions, fmt.Sprintf("metadata::text ILIKE $%d", argIndex))
+		whereConditions = append(whereConditions, fmt.Sprintf("%s::text ILIKE $%d", columns.BuildingMetadata, argIndex))
 		metadataPattern := "%" + req.MetadataQuery + "%"
 		args = append(args, metadataPattern)
 		argIndex++
@@ -630,7 +654,7 @@ func (r *BuildingRepository) AdvancedSearch(req *models.BuildingSearchRequest) (
 	whereClause := strings.Join(whereConditions, " AND ")
 
 	// Get total count first
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM buildings WHERE %s", whereClause)
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE %s", columns.BuildingTable, whereClause)
 	var totalCount int
 	err := r.db.QueryRow(countQuery, args...).Scan(&totalCount)
 	if err != nil {
@@ -639,18 +663,18 @@ func (r *BuildingRepository) AdvancedSearch(req *models.BuildingSearchRequest) (
 
 	// Validate and set sort parameters
 	validSortFields := map[string]bool{
-		"building_name":     true,
-		"building_code":     true,
-		"building_type":     true,
-		"total_floors":      true,
-		"construction_year": true,
-		"created_at":        true,
-		"updated_at":        true,
+		columns.BuildingName:             true,
+		columns.BuildingCode:             true,
+		columns.BuildingType:             true,
+		columns.BuildingTotalFloors:      true,
+		columns.BuildingConstructionYear: true,
+		columns.BuildingCreatedAt:        true,
+		columns.BuildingUpdatedAt:        true,
 	}
 
 	sortBy := req.SortBy
 	if !validSortFields[sortBy] {
-		sortBy = "created_at"
+		sortBy = columns.BuildingCreatedAt
 	}
 
 	sortOrder := req.SortOrder
@@ -663,13 +687,14 @@ func (r *BuildingRepository) AdvancedSearch(req *models.BuildingSearchRequest) (
 
 	// Build main query
 	query := fmt.Sprintf(`
-		SELECT id, property_id, building_name, building_code, building_type,
-		       total_floors, has_elevator, construction_year, metadata, active_status,
-		       created_at, updated_at
-		FROM buildings
+		SELECT %s
+		FROM %s
 		WHERE %s
 		ORDER BY %s %s
-		LIMIT $%d OFFSET $%d`, whereClause, sortBy, strings.ToUpper(sortOrder), argIndex, argIndex+1)
+		LIMIT $%d OFFSET $%d`,
+		columns.BuildingAllColumns(),
+		columns.BuildingTable,
+		whereClause, sortBy, strings.ToUpper(sortOrder), argIndex, argIndex+1)
 
 	args = append(args, req.PageSize, offset)
 
@@ -708,7 +733,7 @@ func (r *BuildingRepository) AdvancedSearch(req *models.BuildingSearchRequest) (
 // GetBuildingUnits retrieves units for a specific building with pagination
 func (r *BuildingRepository) GetBuildingUnits(buildingID int, offset, limit int) ([]*models.BuildingUnitSummary, int, error) {
 	// Get total count first
-	countQuery := `SELECT COUNT(*) FROM units WHERE building_id = $1`
+	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM %s WHERE %s = $1`, columns.UnitTable, columns.UnitBuildingID)
 	var totalCount int
 	err := r.db.QueryRow(countQuery, buildingID).Scan(&totalCount)
 	if err != nil {
@@ -716,17 +741,23 @@ func (r *BuildingRepository) GetBuildingUnits(buildingID int, offset, limit int)
 	}
 
 	// Get units with lease information
-	query := `
+	query := fmt.Sprintf(`
 		SELECT 
-			u.id, u.unit_number, u.unit_name, u.floor, u.section, u.unit_type, u.monthly_rent, u.active,
+			u.%s, u.%s, u.%s, u.%s, u.%s, u.%s, u.%s, u.%s,
 			COALESCE(t.name, '') as tenant_name,
 			COALESCE(l.active, false) as lease_active
-		FROM units u
-		LEFT JOIN leases l ON u.id = l.unit_id AND l.active = true
+		FROM %s u
+		LEFT JOIN leases l ON u.%s = l.unit_id AND l.active = true
 		LEFT JOIN tenants t ON l.tenant_id = t.id
-		WHERE u.building_id = $1
-		ORDER BY u.floor, u.section, u.unit_number
-		LIMIT $2 OFFSET $3`
+		WHERE u.%s = $1
+		ORDER BY u.%s, u.%s, u.%s
+		LIMIT $2 OFFSET $3`,
+		columns.UnitID, columns.UnitNumber, columns.UnitName, columns.UnitFloor, columns.UnitSection,
+		columns.UnitType, columns.UnitMonthlyRent, columns.UnitActive,
+		columns.UnitTable,
+		columns.UnitID,
+		columns.UnitBuildingID,
+		columns.UnitFloor, columns.UnitSection, columns.UnitNumber)
 
 	rows, err := r.db.Query(query, buildingID, limit, offset)
 	if err != nil {

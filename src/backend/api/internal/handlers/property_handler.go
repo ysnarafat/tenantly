@@ -50,10 +50,7 @@ func (h *PropertyHandler) CreateProperty(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"message":  "Property created successfully",
-		"property": property,
-	})
+	c.JSON(http.StatusCreated, property)
 }
 
 // GetProperties retrieves properties with filtering and pagination
@@ -218,10 +215,7 @@ func (h *PropertyHandler) UpdateProperty(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"message":  "Property updated successfully",
-		"property": property,
-	})
+	c.JSON(http.StatusOK, property)
 }
 
 // DeleteProperty soft deletes a property

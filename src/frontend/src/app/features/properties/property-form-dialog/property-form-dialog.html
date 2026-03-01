@@ -1,0 +1,72 @@
+<h2 mat-dialog-title>
+  <mat-icon>{{ isEditMode ? 'edit' : 'add_business' }}</mat-icon>
+  {{ dialogTitle }}
+</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="propertyForm" class="property-form">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Property Name</mat-label>
+      <input
+        matInput
+        formControlName="property_name"
+        placeholder="e.g., Sunset Apartments"
+        required
+      />
+      <mat-icon matPrefix>business</mat-icon>
+      <mat-error>{{ getErrorMessage('property_name') }}</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Property Code</mat-label>
+      <input matInput formControlName="property_code" placeholder="e.g., PROP-001" required />
+      <mat-icon matPrefix>tag</mat-icon>
+      <mat-hint *ngIf="!isEditMode">Unique identifier for this property</mat-hint>
+      <mat-error>{{ getErrorMessage('property_code') }}</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Property Type</mat-label>
+      <mat-select formControlName="property_type" required>
+        <mat-option *ngFor="let type of propertyTypes" [value]="type"> {{ type }} </mat-option>
+      </mat-select>
+      <mat-icon matPrefix>category</mat-icon>
+      <mat-error>{{ getErrorMessage('property_type') }}</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Address</mat-label>
+      <input matInput formControlName="address" placeholder="e.g., 123 Main Street" required />
+      <mat-icon matPrefix>location_on</mat-icon>
+      <mat-error>{{ getErrorMessage('address') }}</mat-error>
+    </mat-form-field>
+
+    <div class="form-row">
+      <mat-form-field appearance="outline" class="half-width">
+        <mat-label>City</mat-label>
+        <input matInput formControlName="city" placeholder="e.g., Dhaka" />
+        <mat-icon matPrefix>location_city</mat-icon>
+        <mat-error>{{ getErrorMessage('city') }}</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="half-width">
+        <mat-label>Postal Code</mat-label>
+        <input matInput formControlName="postal_code" placeholder="e.g., 1212" />
+        <mat-icon matPrefix>markunread_mailbox</mat-icon>
+        <mat-hint>4-digit code</mat-hint>
+        <mat-error>{{ getErrorMessage('postal_code') }}</mat-error>
+      </mat-form-field>
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">
+    <mat-icon>close</mat-icon>
+    Cancel
+  </button>
+  <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="propertyForm.invalid">
+    <mat-icon>{{ isEditMode ? 'save' : 'add' }}</mat-icon>
+    {{ isEditMode ? 'Update' : 'Create' }} Property
+  </button>
+</mat-dialog-actions>

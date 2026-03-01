@@ -20,7 +20,7 @@ CREATE TABLE properties (
     city VARCHAR(100),
     postal_code VARCHAR(20),
     property_type VARCHAR(50) NOT NULL CHECK (property_type IN ('Residential', 'Commercial', 'Mixed')),
-    total_buildings INTEGER DEFAULT 1,
+    total_buildings INTEGER DEFAULT 0,
     metadata JSONB, -- Property-specific attributes
     active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC'),
