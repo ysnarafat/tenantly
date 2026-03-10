@@ -16,9 +16,10 @@ type Payment struct {
 	ID            int           `json:"id" db:"id"`
 	UnitID        int           `json:"unit_id" db:"unit_id"`
 	TenantID      int           `json:"tenant_id" db:"tenant_id"`
-	BuildingID    int           `json:"building_id" db:"building_id"` // Denormalized for reporting
-	PropertyID    int           `json:"property_id" db:"property_id"` // Denormalized for reporting
-	Month         int           `json:"month" db:"month"`
+	BuildingID     int           `json:"building_id" db:"building_id"` // Denormalized for reporting
+	PropertyID     int           `json:"property_id" db:"property_id"` // Denormalized for reporting
+	OrganizationID int           `json:"organization_id" db:"organization_id"`
+	Month          int           `json:"month" db:"month"`
 	Year          int           `json:"year" db:"year"`
 	AmountDue     float64       `json:"amount_due" db:"amount_due"`
 	AmountPaid    float64       `json:"amount_paid" db:"amount_paid"`

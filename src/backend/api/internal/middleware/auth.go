@@ -14,6 +14,8 @@ import (
 
 // Role constants for authorization
 const (
+	RoleSuperAdmin      = "SUPER_ADMIN"
+	RoleOrgAdmin        = "ORG_ADMIN"
 	RoleAdmin           = "Admin"
 	RolePropertyManager = "PropertyManager"
 	RoleAccountant      = "Accountant"

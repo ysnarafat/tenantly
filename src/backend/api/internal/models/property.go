@@ -48,6 +48,7 @@ type Property struct {
 	TotalBuildings int              `json:"total_buildings" db:"total_buildings"`
 	Metadata       PropertyMetadata `json:"metadata" db:"metadata"`
 	Active         bool             `json:"active" db:"active"`
+	OrganizationID int              `json:"organization_id" db:"organization_id"`
 	CreatedAt      time.Time        `json:"created_at" db:"created_at"`
 	UpdatedAt      time.Time        `json:"updated_at" db:"updated_at"`
 }

@@ -21,6 +21,7 @@ type Lease struct {
 	MonthlyRent     float64   `json:"monthly_rent" db:"monthly_rent"`
 	SecurityDeposit float64   `json:"security_deposit" db:"security_deposit"`
 	Active          bool      `json:"active" db:"active"`
+	OrganizationID  int       `json:"organization_id" db:"organization_id"`
 	CreatedAt       time.Time `json:"created_at" db:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at" db:"updated_at"`
 }
