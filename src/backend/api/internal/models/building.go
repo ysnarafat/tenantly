@@ -41,6 +41,7 @@ func (m *BuildingMetadata) Scan(value interface{}) error {
 type Building struct {
 	ID               int              `json:"id" db:"id"`
 	PropertyID       int              `json:"property_id" db:"property_id"`
+	OrganizationID   int              `json:"organization_id" db:"organization_id"`
 	BuildingName     string           `json:"building_name" db:"building_name"`
 	BuildingCode     string           `json:"building_code" db:"building_code"`
 	BuildingType     BuildingType     `json:"building_type" db:"building_type"`

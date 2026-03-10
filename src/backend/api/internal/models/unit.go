@@ -42,9 +42,10 @@ func (m *UnitMetadata) Scan(value interface{}) error {
 // Unit represents a rentable space (shop, apartment, office, etc.)
 type Unit struct {
 	ID          int          `json:"id" db:"id"`
-	BuildingID  int          `json:"building_id" db:"building_id"`
-	PropertyID  int          `json:"property_id" db:"property_id"` // Denormalized for performance
-	UnitNumber  string       `json:"unit_number" db:"unit_number"`
+	BuildingID     int          `json:"building_id" db:"building_id"`
+	PropertyID     int          `json:"property_id" db:"property_id"` // Denormalized for performance
+	OrganizationID int          `json:"organization_id" db:"organization_id"`
+	UnitNumber     string       `json:"unit_number" db:"unit_number"`
 	UnitName    string       `json:"unit_name" db:"unit_name"`
 	Floor       int          `json:"floor" db:"floor"`
 	Section     string       `json:"section" db:"section"`

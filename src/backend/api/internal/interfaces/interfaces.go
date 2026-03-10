@@ -27,6 +27,42 @@ type AuditServiceInterface interface {
 	LogSystemAction(action, tableName string, recordID *int, oldValues, newValues interface{}) error
 }
 
+// OrganizationRepositoryInterface defines the interface for organization repository operations
+type OrganizationRepositoryInterface interface {
+	Create(org *models.Organization) error
+	GetByID(id int) (*models.Organization, error)
+	GetBySlug(slug string) (*models.Organization, error)
+	GetAll(activeOnly bool) ([]*models.Organization, error)
+	Update(id int, updates map[string]interface{}) error
+	Delete(id int) error
+}
+
+// UserInvitationRepositoryInterface defines the interface for user invitation repository operations
+type UserInvitationRepositoryInterface interface {
+	Create(invitation *models.UserInvitation) error
+	GetByID(id int) (*models.UserInvitation, error)
+	GetByToken(token string) (*models.UserInvitation, error)
+	GetByEmailAndOrg(email string, orgID int) (*models.UserInvitation, error)
+	GetPendingByOrganization(orgID int) ([]*models.UserInvitation, error)
+	GetByOrganization(orgID int) ([]*models.UserInvitation, error)
+	AcceptInvitation(invitationID int, userID int) error
+	Delete(id int) error
+	CleanupExpiredInvitations() error
+}
+
+// OrganizationServiceInterface defines the interface for organization service operations
+type OrganizationServiceInterface interface {
+	CreateOrganization(req *models.CreateOrganizationRequest, userID int) (*models.Organization, error)
+	GetOrganization(id int) (*models.Organization, error)
+	GetOrganizationBySlug(slug string) (*models.Organization, error)
+	ListOrganizations(activeOnly bool) ([]*models.Organization, error)
+	UpdateOrganization(id int, req *models.UpdateOrganizationRequest, userID int) error
+	DeleteOrganization(id int, userID int) error
+	InviteUserToOrganization(orgID int, req *models.InviteUserRequest, invitedByUserID int) (*models.UserInvitation, error)
+	GetPendingInvitations(orgID int) ([]*models.UserInvitation, error)
+	RevokeInvitation(invitationID int, revokedByUserID int) error
+}
+
 // BuildingRepositoryInterface defines the interface for building repository operations
 type BuildingRepositoryInterface interface {
 	Create(building *models.Building) error

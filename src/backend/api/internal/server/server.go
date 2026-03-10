@@ -64,6 +64,8 @@ func (s *Server) setupRoutes() {
 	propertyRepo := repositories.NewPropertyRepository(s.db)
 	buildingRepo := repositories.NewBuildingRepository(s.db)
 	unitRepo := repositories.NewUnitRepository(s.db)
+	organizationRepo := repositories.NewOrganizationRepository(s.db)
+	userInvitationRepo := repositories.NewUserInvitationRepository(s.db)
 
 	// Initialize metadata validator
 	metadataValidator := services.NewBuildingMetadataValidator()
@@ -73,12 +75,14 @@ func (s *Server) setupRoutes() {
 	propertyService := services.NewPropertyService(propertyRepo, auditService)
 	buildingService := services.NewBuildingService(buildingRepo, propertyRepo, auditService, metadataValidator)
 	unitService := services.NewUnitService(unitRepo, buildingRepo, propertyRepo, auditService)
+	organizationService := services.NewOrganizationService(organizationRepo, userInvitationRepo, auditService)
 
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService)
 	propertyHandler := handlers.NewPropertyHandler(propertyService)
 	buildingHandler := handlers.NewBuildingHandler(buildingService)
 	unitHandler := handlers.NewUnitHandler(unitService)
+	organizationHandler := handlers.NewOrganizationHandler(organizationService)
 
 	// Health check endpoint
 	s.router.GET("/health", func(c *gin.Context) {
@@ -121,6 +125,22 @@ func (s *Server) setupRoutes() {
 				users.GET("/:id", middleware.RequireAnyRole(), userHandler.GetUser)
 				users.PUT("/:id", middleware.RequireAdmin(), userHandler.UpdateUser)
 				users.DELETE("/:id", middleware.RequireAdmin(), userHandler.DeleteUser)
+			}
+
+			// Organization management routes (SUPER_ADMIN only)
+			organizations := protected.Group("/organizations")
+			organizations.Use(middleware.RequireSuperAdmin())
+			{
+				organizations.POST("", organizationHandler.CreateOrganization)
+				organizations.GET("", organizationHandler.ListOrganizations)
+				organizations.GET("/:id", organizationHandler.GetOrganization)
+				organizations.PUT("/:id", organizationHandler.UpdateOrganization)
+				organizations.DELETE("/:id", organizationHandler.DeleteOrganization)
+
+				// User invitation routes within organization
+				organizations.POST("/:org_id/invitations", middleware.OrganizationValidationMiddleware(organizationRepo), middleware.RequireOrgAdmin(organizationRepo), organizationHandler.InviteUser)
+				organizations.GET("/:org_id/invitations", middleware.OrganizationValidationMiddleware(organizationRepo), middleware.RequireOrgAdmin(organizationRepo), organizationHandler.GetPendingInvitations)
+				organizations.DELETE("/:org_id/invitations/:invitation_id", middleware.RequireOrgAdmin(organizationRepo), organizationHandler.RevokeInvitation)
 			}
 
 			// Property management routes
