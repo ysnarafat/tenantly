@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: "📖 Documentation"
+    url: https://github.com/ysnarafat/tenantly/blob/develop/README.md
+    about: "Read the project overview and setup guide"
+  - name: "💬 Discussions"
+    url: https://github.com/ysnarafat/tenantly/discussions
+    about: "Ask questions or discuss ideas"
+  - name: "🐛 Report Security Issue"
+    url: https://github.com/ysnarafat/tenantly/security
+    about: "Report security vulnerabilities responsibly"
