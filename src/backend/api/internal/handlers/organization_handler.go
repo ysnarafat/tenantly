@@ -271,3 +271,73 @@ func (h *OrganizationHandler) RevokeInvitation(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Invitation revoked successfully"})
 }
+
+// ValidateInvitationToken validates an invitation token (public endpoint)
+func (h *OrganizationHandler) ValidateInvitationToken(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invitation token is required"})
+		return
+	}
+
+	invitation, err := h.organizationService.ValidateInvitationToken(token)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"invitation": gin.H{
+			"id":              invitation.ID,
+			"organization_id": invitation.OrganizationID,
+			"email":           invitation.Email,
+			"role":            invitation.Role,
+			"expires_at":      invitation.ExpiresAt,
+			"token":           invitation.InvitationToken,
+		},
+	})
+}
+
+// AcceptInvitation accepts an invitation for an authenticated user
+func (h *OrganizationHandler) AcceptInvitation(c *gin.Context) {
+	token := c.Query("token")
+	if token == "" {
+		var req struct {
+			Token string `json:"token" binding:"required"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invitation token is required"})
+			return
+		}
+		token = req.Token
+	}
+
+	// Get user ID from context (requires authentication)
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	invitation, err := h.organizationService.AcceptInvitation(token, userID.(int))
+	if err != nil {
+		if err.Error() == "invalid or expired invitation token" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		if err.Error() == "invitation has already been accepted" || err.Error() == "invitation has expired" {
+			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to accept invitation",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":    "Invitation accepted successfully",
+		"invitation": invitation,
+	})
+}

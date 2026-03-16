@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -787,4 +788,57 @@ func (r *BuildingRepository) GetBuildingUnits(buildingID int, offset, limit int)
 	}
 
 	return units, totalCount, nil
+}
+
+// GetByOrganizationID retrieves all buildings for a specific organization
+func (r *BuildingRepository) GetByOrganizationID(orgID int) ([]*models.Building, error) {
+	query := `
+		SELECT id, property_id, building_code, building_name, building_type, total_floors,
+		       has_elevator, construction_year, metadata, active_status, created_at, updated_at
+		FROM buildings
+		WHERE organization_id = $1 AND active_status = true
+		ORDER BY created_at DESC`
+
+	rows, err := r.db.Query(query, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get buildings by organization: %w", err)
+	}
+	defer rows.Close()
+
+	var buildings []*models.Building
+	for rows.Next() {
+		var building models.Building
+		var metadata sql.NullString
+		err := rows.Scan(
+			&building.ID,
+			&building.PropertyID,
+			&building.BuildingCode,
+			&building.BuildingName,
+			&building.BuildingType,
+			&building.TotalFloors,
+			&building.HasElevator,
+			&building.ConstructionYear,
+			&metadata,
+			&building.ActiveStatus,
+			&building.CreatedAt,
+			&building.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan building: %w", err)
+		}
+
+		if metadata.Valid {
+			if err := json.Unmarshal([]byte(metadata.String), &building.Metadata); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal metadata: %w", err)
+			}
+		}
+
+		buildings = append(buildings, &building)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating buildings: %w", err)
+	}
+
+	return buildings, nil
 }

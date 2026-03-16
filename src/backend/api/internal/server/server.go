@@ -71,11 +71,12 @@ func (s *Server) setupRoutes() {
 	metadataValidator := services.NewBuildingMetadataValidator()
 
 	// Initialize services
-	userService := services.NewUserService(userRepo, auditService, s.config.JWTSecret, s.config.JWTExpiration)
+	// Note: organizationService is initialized first so it can be passed to userService
+	organizationService := services.NewOrganizationService(organizationRepo, userInvitationRepo, auditService)
+	userService := services.NewUserServiceWithOrganization(userRepo, auditService, organizationService, s.config.JWTSecret, s.config.JWTExpiration)
 	propertyService := services.NewPropertyService(propertyRepo, auditService)
 	buildingService := services.NewBuildingService(buildingRepo, propertyRepo, auditService, metadataValidator)
 	unitService := services.NewUnitService(unitRepo, buildingRepo, propertyRepo, auditService)
-	organizationService := services.NewOrganizationService(organizationRepo, userInvitationRepo, auditService)
 
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService)
@@ -102,6 +103,13 @@ func (s *Server) setupRoutes() {
 			auth.POST("/refresh", userHandler.RefreshToken)
 			auth.POST("/reset-password", userHandler.ResetPassword)
 			auth.POST("/confirm-reset-password", userHandler.ConfirmPasswordReset)
+			auth.POST("/register-with-invitation", userHandler.RegisterWithInvitation)
+		}
+
+		// Public invitation routes
+		invitations := v1.Group("/invitations")
+		{
+			invitations.GET("/validate", organizationHandler.ValidateInvitationToken)
 		}
 
 		// Protected routes
@@ -117,6 +125,13 @@ func (s *Server) setupRoutes() {
 				authProtected.POST("/logout", userHandler.Logout)
 				authProtected.POST("/change-password", userHandler.ChangePassword)
 			}
+
+			// Invitation acceptance routes (protected)
+			invitationsProtected := protected.Group("/invitations")
+			{
+				invitationsProtected.POST("/accept", organizationHandler.AcceptInvitation)
+			}
+
 			// User management routes (role-based access)
 			users := protected.Group("/users")
 			{

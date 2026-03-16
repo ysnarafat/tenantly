@@ -15,10 +15,11 @@ import (
 )
 
 type UserService struct {
-	userRepo      interfaces.UserRepositoryInterface
-	auditService  interfaces.AuditServiceInterface
-	jwtSecret     string
-	jwtExpiration time.Duration
+	userRepo            interfaces.UserRepositoryInterface
+	auditService        interfaces.AuditServiceInterface
+	organizationService *OrganizationService
+	jwtSecret           string
+	jwtExpiration       time.Duration
 }
 
 func NewUserService(userRepo interfaces.UserRepositoryInterface, auditService interfaces.AuditServiceInterface, jwtSecret string, jwtExpiration time.Duration) *UserService {
@@ -27,6 +28,16 @@ func NewUserService(userRepo interfaces.UserRepositoryInterface, auditService in
 		auditService:  auditService,
 		jwtSecret:     jwtSecret,
 		jwtExpiration: jwtExpiration,
+	}
+}
+
+func NewUserServiceWithOrganization(userRepo interfaces.UserRepositoryInterface, auditService interfaces.AuditServiceInterface, organizationService *OrganizationService, jwtSecret string, jwtExpiration time.Duration) *UserService {
+	return &UserService{
+		userRepo:            userRepo,
+		auditService:        auditService,
+		organizationService: organizationService,
+		jwtSecret:           jwtSecret,
+		jwtExpiration:       jwtExpiration,
 	}
 }
 
@@ -264,6 +275,33 @@ func (s *UserService) GetAllUsers() ([]*models.User, error) {
 	return s.userRepo.GetAll()
 }
 
+// GetUsersByOrganization retrieves all users in a specific organization
+func (s *UserService) GetUsersByOrganization(orgID int) ([]*models.User, error) {
+	if orgID <= 0 {
+		return nil, fmt.Errorf("invalid organization ID")
+	}
+	return s.userRepo.GetByOrganizationID(orgID)
+}
+
+// GetUserByIDInOrganization retrieves a user by ID if they belong to the specified organization
+func (s *UserService) GetUserByIDInOrganization(userID int, orgID int) (*models.User, error) {
+	if orgID <= 0 {
+		return nil, fmt.Errorf("invalid organization ID")
+	}
+
+	user, err := s.userRepo.GetByID(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Verify user belongs to the organization
+	if user.OrganizationID == nil || *user.OrganizationID != orgID {
+		return nil, fmt.Errorf("user does not belong to this organization")
+	}
+
+	return user, nil
+}
+
 func (s *UserService) UpdateUser(id int, req *models.UpdateUserRequest) error {
 	// Check if user exists
 	existingUser, err := s.userRepo.GetByID(id)
@@ -411,6 +449,11 @@ func (s *UserService) generateTokens(user *models.User) (string, string, error) 
 		"type":     "access",
 		"iat":      time.Now().Unix(),
 		"exp":      time.Now().Add(s.jwtExpiration).Unix(),
+	}
+
+	// Include organization_id if user belongs to an organization
+	if user.OrganizationID != nil {
+		accessClaims["organization_id"] = *user.OrganizationID
 	}
 
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
@@ -729,4 +772,144 @@ func (s *UserService) generateSecureToken() (string, error) {
 
 	// Encode as base64 URL-safe string
 	return base64.URLEncoding.EncodeToString(bytes), nil
+}
+
+// RegisterWithInvitation registers a new user using an invitation token
+func (s *UserService) RegisterWithInvitation(req *models.RegisterWithInvitationRequest) (*models.LoginResponse, error) {
+	if s.organizationService == nil {
+		return nil, fmt.Errorf("organization service is not configured")
+	}
+
+	// Validate the invitation token
+	invitation, err := s.organizationService.ValidateInvitationToken(req.InvitationToken)
+	if err != nil {
+		return nil, fmt.Errorf("invalid invitation: %w", err)
+	}
+
+	// Validate password strength
+	if err := s.ValidatePassword(req.Password); err != nil {
+		return nil, fmt.Errorf("password validation failed: %w", err)
+	}
+
+	// Normalize email
+	email := strings.ToLower(strings.TrimSpace(req.Email))
+
+	// Verify email matches invitation email
+	if email != strings.ToLower(invitation.Email) {
+		return nil, fmt.Errorf("email does not match invitation email")
+	}
+
+	// Check if email already exists
+	existingUser, _ := s.userRepo.GetByEmail(email)
+	if existingUser != nil {
+		return nil, fmt.Errorf("email '%s' already exists", email)
+	}
+
+	// Generate username if not provided
+	username := strings.TrimSpace(req.Username)
+	if username == "" {
+		// Generate username from email (take part before @)
+		username = strings.Split(email, "@")[0]
+		// Check if generated username is valid and unique
+		if len(username) < 3 {
+			username = email[:min(len(email), 50)]
+		}
+
+		// Ensure uniqueness
+		counter := 1
+		originalUsername := username
+		for {
+			existing, _ := s.userRepo.GetByUsername(username)
+			if existing == nil {
+				break
+			}
+			username = fmt.Sprintf("%s%d", originalUsername, counter)
+			counter++
+			if counter > 100 {
+				return nil, fmt.Errorf("failed to generate unique username")
+			}
+		}
+	} else {
+		// Validate provided username
+		if err := s.ValidateUserInput(&models.CreateUserRequest{
+			Username: username,
+			Email:    email,
+			Password: req.Password,
+			Role:     invitation.Role,
+		}); err != nil {
+			return nil, fmt.Errorf("username validation failed: %w", err)
+		}
+
+		// Check if username already exists
+		existingUserByUsername, _ := s.userRepo.GetByUsername(username)
+		if existingUserByUsername != nil {
+			return nil, fmt.Errorf("username '%s' already exists", username)
+		}
+	}
+
+	// Hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), 12)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	// Create user
+	user := &models.User{
+		Username:       username,
+		Email:          email,
+		PasswordHash:   string(hashedPassword),
+		Role:           invitation.Role,
+		FirstName:      req.FirstName,
+		LastName:       req.LastName,
+		OrganizationID: &invitation.OrganizationID,
+		Status:         "active",
+		Active:         true,
+	}
+
+	if err := s.userRepo.Create(user); err != nil {
+		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	// Accept the invitation
+	if _, err := s.organizationService.AcceptInvitation(req.InvitationToken, user.ID); err != nil {
+		return nil, fmt.Errorf("failed to accept invitation: %w", err)
+	}
+
+	// Generate tokens
+	token, refreshToken, err := s.generateTokens(user)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	// Log user creation
+	if s.auditService != nil {
+		s.auditService.LogSystemAction(
+			models.AuditActionCreate,
+			models.TableUsers,
+			&user.ID,
+			nil,
+			map[string]interface{}{
+				"username":           user.Username,
+				"email":              user.Email,
+				"role":               user.Role,
+				"organization_id":    user.OrganizationID,
+				"invitation_token":   req.InvitationToken,
+			},
+		)
+	}
+
+	return &models.LoginResponse{
+		Token:        token,
+		RefreshToken: refreshToken,
+		User:         *user,
+		ExpiresAt:    time.Now().Add(s.jwtExpiration),
+	}, nil
+}
+
+// min returns the minimum of two integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

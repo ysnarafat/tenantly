@@ -501,3 +501,45 @@ func (r *PropertyRepository) GetBuildingTypeDistribution(propertyID int) (interf
 
 	return distribution, nil
 }
+
+// GetByOrganizationID retrieves all properties for a specific organization
+func (r *PropertyRepository) GetByOrganizationID(orgID int) ([]*models.Property, error) {
+	query := `
+		SELECT id, property_name, property_code, address, city, postal_code, property_type,
+		       (SELECT COUNT(*) FROM buildings b WHERE b.property_id = properties.id AND b.active_status = true) as total_buildings,
+		       metadata, active, created_at, updated_at
+		FROM properties
+		WHERE organization_id = $1 AND active = true
+		ORDER BY created_at DESC`
+
+	rows, err := r.db.Query(query, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get properties by organization: %w", err)
+	}
+	defer rows.Close()
+
+	var properties []*models.Property
+	for rows.Next() {
+		var property models.Property
+		err := rows.Scan(
+			&property.ID,
+			&property.PropertyName,
+			&property.PropertyCode,
+			&property.Address,
+			&property.City,
+			&property.PostalCode,
+			&property.PropertyType,
+			&property.TotalBuildings,
+			&property.Metadata,
+			&property.Active,
+			&property.CreatedAt,
+			&property.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan property: %w", err)
+		}
+		properties = append(properties, &property)
+	}
+
+	return properties, nil
+}
