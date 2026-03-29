@@ -186,7 +186,7 @@ func (s *Server) setupRoutes() {
 
 			tenants := protected.Group("/tenants")
 			{
-				tenants.GET("", s.handlePlaceholder("Get tenants"))
+				tenants.GET("", middleware.RequireAnyRole(), tenantHandler.GetAllTenants)
 				tenants.POST("", middleware.RequireAdminOrPropertyManager(), tenantHandler.CreateTenant)
 				tenants.GET("/:id", s.handlePlaceholder("Get tenant"))
 				tenants.PUT("/:id", s.handlePlaceholder("Update tenant"))

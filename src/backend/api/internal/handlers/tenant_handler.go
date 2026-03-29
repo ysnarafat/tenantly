@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ysnarafat/tenantly/internal/interfaces"
@@ -39,4 +40,18 @@ func (h *TenantHandler) CreateTenant(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, tenant)
+}
+
+// GetAllTenants handles fetching all tenants
+func (h *TenantHandler) GetAllTenants(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+
+	response, err := h.tenantService.GetAllTenants(page, pageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
 }

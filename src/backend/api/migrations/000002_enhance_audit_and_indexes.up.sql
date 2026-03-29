@@ -6,7 +6,7 @@ CREATE INDEX IF NOT EXISTS idx_users_active ON users(active);
 
 -- Add composite indexes for properties and buildings
 CREATE INDEX IF NOT EXISTS idx_properties_code ON properties(property_code);
-CREATE INDEX IF NOT EXISTS idx_buildings_property_active ON buildings(property_id, COALESCE(active_status, active));
+CREATE INDEX IF NOT EXISTS idx_buildings_property_active ON buildings(property_id, active);
 CREATE INDEX IF NOT EXISTS idx_buildings_code ON buildings(property_id, building_code);
 
 -- Add composite indexes for units

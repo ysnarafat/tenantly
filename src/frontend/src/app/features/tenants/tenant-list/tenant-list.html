@@ -9,7 +9,65 @@
 
   <mat-card>
     <mat-card-content>
-      <p>Tenant management functionality will be implemented in later tasks</p>
+      <div class="table-container">
+        <table mat-table [dataSource]="tenants" class="mat-elevation-z0">
+          <!-- Name Column -->
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef>Name</th>
+            <td mat-cell *matCellDef="let tenant">{{tenant.name}}</td>
+          </ng-container>
+
+          <!-- Type Column -->
+          <ng-container matColumnDef="type">
+            <th mat-header-cell *matHeaderCellDef>Type</th>
+            <td mat-cell *matCellDef="let tenant">{{tenant.tenant_type}}</td>
+          </ng-container>
+
+          <!-- Email Column -->
+          <ng-container matColumnDef="email">
+            <th mat-header-cell *matHeaderCellDef>Email</th>
+            <td mat-cell *matCellDef="let tenant">{{tenant.email || '-'}}</td>
+          </ng-container>
+
+          <!-- Phone Column -->
+          <ng-container matColumnDef="phone">
+            <th mat-header-cell *matHeaderCellDef>Phone</th>
+            <td mat-cell *matCellDef="let tenant">{{tenant.phone_number || '-'}}</td>
+          </ng-container>
+
+          <!-- Status Column -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let tenant">
+              <span [class.active-status]="tenant.active" [class.inactive-status]="!tenant.active">
+                {{tenant.active ? 'Active' : 'Inactive'}}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Created Column -->
+          <ng-container matColumnDef="created">
+            <th mat-header-cell *matHeaderCellDef>Joined</th>
+            <td mat-cell *matCellDef="let tenant">{{tenant.created_at | date:'mediumDate'}}</td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+          <tr class="mat-row" *matNoDataRow>
+            <td class="mat-cell" colspan="6">No tenants found</td>
+          </tr>
+        </table>
+      </div>
+      <mat-paginator
+        [length]="pagination.total_items"
+        [pageSize]="pagination.page_size"
+        [pageSizeOptions]="[5, 10, 25, 100]"
+        [pageIndex]="pagination.current_page - 1"
+        (page)="onPageChange($event)"
+        aria-label="Select page of tenants"
+      >
+      </mat-paginator>
     </mat-card-content>
   </mat-card>
 </div>

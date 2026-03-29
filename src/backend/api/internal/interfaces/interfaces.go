@@ -259,11 +259,13 @@ type TenantRepositoryInterface interface {
 	CheckNIDExists(nid string, excludeID int) (bool, error)
 	GetByID(id int) (*models.Tenant, error)
 	GetByUnitID(unitID int) (*models.Tenant, error)
+	GetAll(page, pageSize int) ([]*models.Tenant, int, error)
 }
 
 // TenantServiceInterface defines the interface for tenant service operations
 type TenantServiceInterface interface {
 	CreateTenant(req *models.CreateTenantRequest, userID int) (*models.TenantResponse, error)
+	GetAllTenants(page, pageSize int) (*models.TenantListResponse, error)
 }
 
 // PropertyRepositoryInterface defines the interface for property repository operations
