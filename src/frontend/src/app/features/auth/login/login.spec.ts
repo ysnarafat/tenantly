@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Store } from '@ngrx/store';
-import { of, Subject } from 'rxjs';
+import { of, BehaviorSubject } from 'rxjs';
 import { Login } from './login';
 import { AuthService } from '../../../core/services/auth.service';
 import { AppState } from '../../../store';
@@ -17,15 +17,20 @@ describe('Login Component', () => {
   let router: jasmine.SpyObj<Router>;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
 
-  const mockAuthService = {
-    login: jasmine.createSpy('login'),
-    clearError: jasmine.createSpy('clearError'),
-    loading$: of(false),
-    error$: of(null),
-    isAuthenticated$: of(false),
-  };
+  let loadingSubject: BehaviorSubject<boolean>;
+  let errorSubject: BehaviorSubject<any>;
+  let isAuthenticatedSubject: BehaviorSubject<boolean>;
 
   beforeEach(async () => {
+    loadingSubject = new BehaviorSubject<boolean>(false);
+    errorSubject = new BehaviorSubject<any>(null);
+    isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+
+    const authServiceSpy = jasmine.createSpyObj('AuthService', ['login', 'clearError']);
+    authServiceSpy.loading$ = loadingSubject.asObservable();
+    authServiceSpy.error$ = errorSubject.asObservable();
+    authServiceSpy.isAuthenticated$ = isAuthenticatedSubject.asObservable();
+
     const storeSpy = jasmine.createSpyObj('Store', ['select', 'dispatch']);
     const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
     const snackBarSpy = jasmine.createSpyObj('MatSnackBar', ['open']);
@@ -33,7 +38,7 @@ describe('Login Component', () => {
     await TestBed.configureTestingModule({
       imports: [Login, ReactiveFormsModule, NoopAnimationsModule],
       providers: [
-        { provide: AuthService, useValue: mockAuthService },
+        { provide: AuthService, useValue: authServiceSpy },
         { provide: Store, useValue: storeSpy },
         { provide: Router, useValue: routerSpy },
         { provide: MatSnackBar, useValue: snackBarSpy },
@@ -89,11 +94,6 @@ describe('Login Component', () => {
   });
 
   it('should navigate to dashboard and show success message on successful authentication', () => {
-    const isAuthenticatedSubject = new Subject<boolean>();
-    authService.isAuthenticated$ = isAuthenticatedSubject.asObservable();
-
-    component.ngOnInit();
-
     isAuthenticatedSubject.next(true);
 
     expect(snackBar.open).toHaveBeenCalledWith('Login successful!', 'Close', { duration: 3000 });
@@ -101,11 +101,6 @@ describe('Login Component', () => {
   });
 
   it('should show error message when authentication fails', () => {
-    const errorSubject = new Subject<any>();
-    authService.error$ = errorSubject.asObservable();
-
-    component.ngOnInit();
-
     const error = { error: { error: 'Invalid credentials' } };
     errorSubject.next(error);
 
@@ -113,11 +108,6 @@ describe('Login Component', () => {
   });
 
   it('should show default error message when error has no specific message', () => {
-    const errorSubject = new Subject<any>();
-    authService.error$ = errorSubject.asObservable();
-
-    component.ngOnInit();
-
     const error = {};
     errorSubject.next(error);
 
@@ -128,21 +118,17 @@ describe('Login Component', () => {
     );
   });
 
-  it('should have loading$ observable from authService', () => {
-    expect(component.loading$).toBe(authService.loading$);
+  it('should have loading signal updated from authService', () => {
+    loadingSubject.next(true);
+    expect(component.loading()).toBe(true);
+
+    loadingSubject.next(false);
+    expect(component.loading()).toBe(false);
   });
 
-  it('should have error$ observable from authService', () => {
-    expect(component.error$).toBe(authService.error$);
-  });
-
-  it('should unsubscribe on destroy', () => {
-    spyOn(component['destroy$'], 'next');
-    spyOn(component['destroy$'], 'complete');
-
-    component.ngOnDestroy();
-
-    expect(component['destroy$'].next).toHaveBeenCalled();
-    expect(component['destroy$'].complete).toHaveBeenCalled();
+  it('should have error signal updated from authService', () => {
+    const error = { message: 'Test error' };
+    errorSubject.next(error);
+    expect(component.error()).toBe(error);
   });
 });
