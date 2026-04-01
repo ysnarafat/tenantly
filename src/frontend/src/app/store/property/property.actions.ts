@@ -19,7 +19,7 @@ export const loadPropertiesSuccess = createAction(
 
 export const loadPropertiesFailure = createAction(
   '[Property] Load Properties Failure',
-  props<{ error: any }>()
+  props<{ error: unknown }>()
 );
 
 // Load Single Property
@@ -32,7 +32,7 @@ export const loadPropertySuccess = createAction(
 
 export const loadPropertyFailure = createAction(
   '[Property] Load Property Failure',
-  props<{ error: any }>()
+  props<{ error: unknown }>()
 );
 
 // Load Property with Stats
@@ -48,7 +48,7 @@ export const loadPropertyWithStatsSuccess = createAction(
 
 export const loadPropertyWithStatsFailure = createAction(
   '[Property] Load Property With Stats Failure',
-  props<{ error: any }>()
+  props<{ error: unknown }>()
 );
 
 // Create Property
@@ -64,7 +64,7 @@ export const createPropertySuccess = createAction(
 
 export const createPropertyFailure = createAction(
   '[Property] Create Property Failure',
-  props<{ error: any }>()
+  props<{ error: unknown }>()
 );
 
 // Update Property
@@ -80,7 +80,7 @@ export const updatePropertySuccess = createAction(
 
 export const updatePropertyFailure = createAction(
   '[Property] Update Property Failure',
-  props<{ error: any }>()
+  props<{ error: unknown }>()
 );
 
 // Delete Property
@@ -93,7 +93,7 @@ export const deletePropertySuccess = createAction(
 
 export const deletePropertyFailure = createAction(
   '[Property] Delete Property Failure',
-  props<{ error: any }>()
+  props<{ error: unknown }>()
 );
 
 // Select Property

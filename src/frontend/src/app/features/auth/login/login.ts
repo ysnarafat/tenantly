@@ -34,7 +34,7 @@ export class Login implements OnInit {
 
   loginForm: FormGroup;
   loading = signal(false);
-  error = signal<any>(null);
+  error = signal<unknown>(null);
 
   constructor() {
     this.loginForm = this.fb.group({
@@ -66,13 +66,12 @@ export class Login implements OnInit {
         takeUntilDestroyed(),
         filter((error) => !!error)
       )
-      .subscribe((error: any) => {
+      .subscribe((error: unknown) => {
         console.error('Login error:', error);
-        this.snackBar.open(
-          error.error?.error || 'Login failed. Please check your credentials.',
-          'Close',
-          { duration: 5000 }
-        );
+        const errorMessage =
+          (error as { error?: { error?: string } }).error?.error ||
+          'Login failed. Please check your credentials.';
+        this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
       });
   }
 

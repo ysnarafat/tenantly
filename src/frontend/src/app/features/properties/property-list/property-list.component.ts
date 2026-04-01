@@ -117,7 +117,7 @@ export class PropertyListComponent implements OnInit {
           return newMap;
         });
       },
-      error: (err: any) => {
+      error: (err: unknown) => {
         console.error('Error loading buildings:', err);
       },
     });
@@ -136,7 +136,7 @@ export class PropertyListComponent implements OnInit {
       next: (response: UnitListResponse) => {
         building.units = response.units;
       },
-      error: (err: any) => {
+      error: (err: unknown) => {
         console.error('Error loading units:', err);
       },
     });

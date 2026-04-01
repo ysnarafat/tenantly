@@ -99,8 +99,9 @@ export class LeaseList implements OnInit {
     return this.authService.isAdmin();
   }
 
-  editLease(lease: LeaseWithDetails) {
+  editLease(lease: LeaseWithDetails): void {
     // TODO: Implement edit lease dialog
+    void lease; // Suppress unused variable warning
     this.snackBar.open('Edit lease functionality will be implemented', 'Close', {
       duration: 3000,
     });
@@ -121,7 +122,8 @@ export class LeaseList implements OnInit {
     }
   }
 
-  viewDetails(lease: LeaseWithDetails) {
+  viewDetails(lease: LeaseWithDetails): void {
+    void lease; // Suppress unused variable warning
     // TODO: Navigate to lease details page
     this.snackBar.open('Lease details page will be implemented', 'Close', {
       duration: 3000,

@@ -6,7 +6,7 @@ import { UnitActions } from './unit.actions';
 export interface UnitState extends EntityState<Unit> {
   selectedId: number | null;
   loading: boolean;
-  error: any;
+  error: unknown;
 }
 
 export const unitAdapter: EntityAdapter<Unit> = createEntityAdapter<Unit>();

@@ -5,6 +5,9 @@ import {
   hasPermission,
   hasAnyPermission,
   hasAllPermissions,
+  ROLE_HIERARCHY,
+  ROLE_PERMISSIONS,
+  UserRole,
 } from '../models/role.model';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
@@ -28,28 +31,42 @@ export class PermissionService {
    * Check if current user has a specific permission
    */
   hasPermission(permission: Permission): boolean {
-    return hasPermission(this.userRole(), permission);
+    return hasPermission(this.userRole() as UserRole, permission);
   }
 
   /**
    * Check if current user has any of the specified permissions
    */
   hasAnyPermission(permissions: Permission[]): boolean {
-    return hasAnyPermission(this.userRole(), permissions);
+    return hasAnyPermission(this.userRole() as UserRole, permissions);
   }
 
   /**
    * Check if current user has all of the specified permissions
    */
   hasAllPermissions(permissions: Permission[]): boolean {
-    return hasAllPermissions(this.userRole(), permissions);
+    return hasAllPermissions(this.userRole() as UserRole, permissions);
   }
 
   /**
    * Computed signal for checking permission
    */
   canAccess(permission: Permission) {
-    return computed(() => hasPermission(this.userRole(), permission));
+    return computed(() => hasPermission(this.userRole() as UserRole, permission));
+  }
+
+  /**
+   * Check if user is SUPER_ADMIN
+   */
+  isSuperAdmin(): boolean {
+    return this.userRole() === 'SUPER_ADMIN';
+  }
+
+  /**
+   * Check if user is ORG_ADMIN
+   */
+  isOrgAdmin(): boolean {
+    return this.userRole() === 'ORG_ADMIN';
   }
 
   /**
@@ -106,6 +123,44 @@ export class PermissionService {
    */
   canManageDocuments(): boolean {
     return this.hasPermission(Permission.MANAGE_DOCUMENTS);
+  }
+
+  /**
+   * Check if user can manage organizations (SUPER_ADMIN only)
+   */
+  canManageOrganizations(): boolean {
+    return this.hasPermission(Permission.MANAGE_ORGANIZATIONS);
+  }
+
+  /**
+   * Check if user can manage org admins
+   */
+  canManageOrgAdmins(): boolean {
+    return this.hasPermission(Permission.MANAGE_ORG_ADMINS);
+  }
+
+  /**
+   * Check if user can invite users
+   */
+  canInviteUsers(): boolean {
+    return this.hasPermission(Permission.INVITE_USERS);
+  }
+
+  /**
+   * Check if one role is higher than another in the hierarchy
+   * (lower number = higher privilege)
+   */
+  isRoleHigherThan(role1: UserRole, role2: UserRole): boolean {
+    const rank1 = ROLE_HIERARCHY[role1];
+    const rank2 = ROLE_HIERARCHY[role2];
+    return rank1 < rank2;
+  }
+
+  /**
+   * Get all permissions for a role
+   */
+  getRolePermissions(role: UserRole): Permission[] {
+    return ROLE_PERMISSIONS[role] || [];
   }
 
   /**

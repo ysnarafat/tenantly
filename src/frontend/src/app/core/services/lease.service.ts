@@ -158,7 +158,7 @@ export class LeaseService {
     return this.http.post<Lease>(this.apiUrl, request);
   }
 
-  updateLease(id: number, request: UpdateLeaseRequest): Observable<any> {
+  updateLease(id: number, request: UpdateLeaseRequest): Observable<{ message: string }> {
     if (this.DEMO_MODE) {
       return new Observable((observer) => {
         observer.next({ message: 'Lease updated successfully' });
@@ -166,10 +166,10 @@ export class LeaseService {
       });
     }
 
-    return this.http.put(`${this.apiUrl}/${id}`, request);
+    return this.http.put<{ message: string }>(`${this.apiUrl}/${id}`, request);
   }
 
-  deleteLease(id: number): Observable<any> {
+  deleteLease(id: number): Observable<{ message: string }> {
     if (this.DEMO_MODE) {
       return new Observable((observer) => {
         observer.next({ message: 'Lease deleted successfully' });
@@ -177,7 +177,7 @@ export class LeaseService {
       });
     }
 
-    return this.http.delete(`${this.apiUrl}/${id}`);
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/${id}`);
   }
 
   getActiveLeases(): Observable<LeaseWithDetails[]> {

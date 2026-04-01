@@ -103,7 +103,7 @@ func (suite *BuildingIntegrationTestSuite) SetupTest() {
 func (suite *BuildingIntegrationTestSuite) setupTestRoutes(userHandler *UserHandler, propertyHandler *PropertyHandler, auditService *database.AuditService) {
 	// Add middleware
 	suite.router.Use(middleware.SecurityHeadersMiddleware())
-	suite.router.Use(middleware.CORS("test"))
+	suite.router.Use(middleware.CORS(suite.config.Environment))
 	suite.router.Use(gin.Logger())
 	suite.router.Use(gin.Recovery())
 

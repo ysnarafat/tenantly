@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './core/guards/auth.guard';
+import { superAdminGuard } from './core/guards/super-admin.guard';
+import { orgAdminGuard } from './core/guards/org-admin.guard';
 import { provideState } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
 import { propertyReducer } from './features/properties/store/property.reducer';
@@ -73,6 +75,75 @@ export const routes: Routes = [
     path: 'users',
     loadComponent: () => import('./features/users/user-list/user-list').then((m) => m.UserList),
     canActivate: [AuthGuard],
+  },
+  {
+    path: 'admin',
+    canActivate: [AuthGuard, orgAdminGuard],
+    children: [
+      {
+        path: 'organizations',
+        loadComponent: () =>
+          import('./features/admin/organization-management/organization-list').then(
+            (m) => m.OrganizationListComponent
+          ),
+        canActivate: [superAdminGuard],
+      },
+      {
+        path: 'organizations/new',
+        loadComponent: () =>
+          import('./features/admin/organization-management/organization-create').then(
+            (m) => m.OrganizationCreateComponent
+          ),
+        canActivate: [superAdminGuard],
+      },
+      {
+        path: 'organizations/:id',
+        loadComponent: () =>
+          import('./features/admin/organization-management/organization-detail').then(
+            (m) => m.OrganizationDetailComponent
+          ),
+        canActivate: [superAdminGuard],
+      },
+      {
+        path: 'organizations/:id/edit',
+        loadComponent: () =>
+          import('./features/admin/organization-management/organization-edit').then(
+            (m) => m.OrganizationEditComponent
+          ),
+        canActivate: [superAdminGuard],
+      },
+      {
+        path: 'invitations',
+        loadComponent: () =>
+          import('./features/admin/user-onboarding/pending-invitations').then(
+            (m) => m.PendingInvitationsComponent
+          ),
+      },
+      {
+        path: 'invitations/new',
+        loadComponent: () =>
+          import('./features/admin/user-onboarding/invite-user').then((m) => m.InviteUserComponent),
+      },
+      {
+        path: 'invitations/bulk',
+        loadComponent: () =>
+          import('./features/admin/user-onboarding/bulk-import').then((m) => m.BulkImportComponent),
+      },
+      {
+        path: 'audit-logs',
+        loadComponent: () =>
+          import('./features/admin/audit-logs/audit-log-viewer').then(
+            (m) => m.AuditLogViewerComponent
+          ),
+      },
+      {
+        path: 'users/promote',
+        loadComponent: () =>
+          import('./features/admin/user-management/admin-promotion').then(
+            (m) => m.AdminPromotionComponent
+          ),
+      },
+    ],
   },
   // Legacy routes for backward compatibility
   {

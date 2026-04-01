@@ -4,16 +4,14 @@ import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Store } from '@ngrx/store';
-import { of, BehaviorSubject } from 'rxjs';
+import { of, BehaviorSubject, Subject } from 'rxjs';
 import { Login } from './login';
 import { AuthService } from '../../../core/services/auth.service';
-import { AppState } from '../../../store';
 
 describe('Login Component', () => {
   let component: Login;
   let fixture: ComponentFixture<Login>;
-  let authService: jasmine.SpyObj<AuthService>;
-  let store: jasmine.SpyObj<Store<AppState>>;
+  let authService: AuthService;
   let router: jasmine.SpyObj<Router>;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
 
@@ -47,8 +45,7 @@ describe('Login Component', () => {
 
     fixture = TestBed.createComponent(Login);
     component = fixture.componentInstance;
-    authService = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
-    store = TestBed.inject(Store) as jasmine.SpyObj<Store<AppState>>;
+    authService = TestBed.inject(AuthService);
     router = TestBed.inject(Router) as jasmine.SpyObj<Router>;
     snackBar = TestBed.inject(MatSnackBar) as jasmine.SpyObj<MatSnackBar>;
 
@@ -101,6 +98,11 @@ describe('Login Component', () => {
   });
 
   it('should show error message when authentication fails', () => {
+    const errorSubject = new Subject<unknown>();
+    authService.error$ = errorSubject.asObservable();
+
+    component.ngOnInit();
+
     const error = { error: { error: 'Invalid credentials' } };
     errorSubject.next(error);
 
@@ -108,6 +110,11 @@ describe('Login Component', () => {
   });
 
   it('should show default error message when error has no specific message', () => {
+    const errorSubject = new Subject<unknown>();
+    authService.error$ = errorSubject.asObservable();
+
+    component.ngOnInit();
+
     const error = {};
     errorSubject.next(error);
 

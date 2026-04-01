@@ -130,7 +130,7 @@ migrations/         # SQL migration files (versioned)
 
 **Module Refactoring:** The Building module is split to separate core CRUD (`building_repository.go`) from analytics (`building_repository_analytics.go`) to prevent code bloat.
 
-### Frontend (Angular) - Standalone Components
+### Frontend (Angular) - Standalone Components with Feature-Level State
 
 ```
 src/app/
@@ -141,18 +141,28 @@ src/app/
 │   └── models/      # Shared TypeScript interfaces
 ├── features/        # Feature modules by domain
 │   ├── [feature]/
-│   │   ├── [name].ts    # Standalone component (no .component suffix)
-│   │   ├── [name].html  # Template
-│   │   └── [name].scss  # Styles
+│   │   ├── [name].ts              # Standalone component (no .component suffix)
+│   │   ├── [name].html            # Template
+│   │   ├── [name].scss            # Styles with theme support
+│   │   ├── store/                 # Optional: Feature-specific NgRx store
+│   │   │   ├── [name].actions.ts
+│   │   │   ├── [name].reducer.ts
+│   │   │   ├── [name].selectors.ts
+│   │   │   └── [name].effects.ts
+│   │   └── ...
 │   └── ...
 ├── shared/          # Shared UI components, pipes
-├── store/           # NgRx store, effects, actions (global state)
+├── store/           # Global NgRx store, effects, actions
+│   ├── auth/        # Authentication state
+│   ├── app/         # Global app state
+│   └── ...
 └── app.routes.ts    # Route definitions
 ```
 
 **Key Patterns:**
 - Uses standalone components (no NgModule)
-- NgRx for global state management
+- Global state managed via NgRx in `src/app/store/`
+- Features can have their own NgRx stores (e.g., `features/properties/store/`) for feature-specific state
 - Services use RxJS observables
 - Material Design for UI components
 - Environment files for configuration
@@ -198,10 +208,100 @@ src/backend/notification-service/
 - HTTP interceptor attaches token to requests
 - Auth guard protects routes
 
-**Current Roles** (3-level system):
-- `Admin` - Full access
-- `PropertyManager` - Property-level operations
+**Current Roles & Multi-Tenancy** (3-level system):
+- `Admin` - Full access, organization-wide administration
+- `PropertyManager` - Property-level operations, building/unit management
 - `Accountant` - Read-only financial access
+- Multi-tenancy fully implemented with organization management and admin hierarchy
+
+---
+
+## 🎨 Frontend Styling & Theming
+
+### Theme System
+
+The frontend supports light and dark themes using **CSS variables**. This enables:
+- Runtime theme switching without reloads
+- Consistent color palettes across components
+- Easy maintenance of theme colors in one place
+
+**Theme Structure:**
+```scss
+// In component SCSS files:
+:root,
+[data-theme='light'] {
+  --bg-primary: #ffffff;
+  --text-primary: #1a1a1a;
+  --color-primary: #1e88e5;
+  // ... more variables
+}
+
+[data-theme='dark'] {
+  --bg-primary: #121212;
+  --text-primary: #ffffff;
+  --color-primary: #64b5f6;
+  // ... more variables
+}
+```
+
+**Using Theme Variables:**
+```scss
+.component {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s, color 0.3s; // Smooth theme transitions
+}
+```
+
+**Theme Switching (TypeScript):**
+```typescript
+toggleTheme(): void {
+  this.isDarkMode = !this.isDarkMode;
+  localStorage.setItem('theme', this.isDarkMode ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', this.isDarkMode ? 'dark' : 'light');
+}
+```
+
+**Examples**: See `dashboard.scss` and `property-card.scss` for comprehensive theme implementation.
+
+### Component Styling Guidelines
+
+When developing new Angular components:
+
+1. **Organize SCSS**:
+   - Group theme variables at the top
+   - Use mixins for reusable patterns
+   - Order: variables → mixins → base styles → responsive media queries
+
+2. **Use CSS Mixins for DRY Code**:
+   ```scss
+   @mixin card-style {
+     background-color: var(--bg-primary);
+     border: 1px solid var(--border-color);
+     border-radius: 12px;
+     box-shadow: var(--shadow-sm);
+   }
+   
+   .card { @include card-style; }
+   ```
+
+3. **Responsive Breakpoints**:
+   ```scss
+   @media (max-width: 768px) { /* Tablet */ }
+   @media (max-width: 480px) { /* Mobile */ }
+   ```
+
+4. **Animations**:
+   - Prefer CSS-only animations for performance
+   - Use `transition` for state changes (hover, focus)
+   - Use `@keyframes` for complex animations
+   - Example: See dashboard sparkline animations
+
+5. **Accessibility**:
+   - All interactive elements must have `:hover`, `:focus`, `:active` states
+   - Use `tabindex="0"` for custom interactive elements
+   - Provide `aria-label` for icon-only buttons
+   - Ensure color contrast meets WCAG AA standards (4.5:1 for text)
 
 ---
 
@@ -232,8 +332,12 @@ src/backend/notification-service/
 - `angular.json`, `tsconfig.json` - Frontend build config
 - `docker-compose.yml`, `docker-compose.dev.yml` - Container orchestration
 
+**Build Budgets** (Angular):
+- Component style budget: 18kB max error (updated from 6.5kB to accommodate feature-rich components)
+- Adjust in `angular.json` under `projects → tenantly-frontend → architect → build → configurations → production → budgets`
+
 ### Git Conventions (from CONTRIBUTING.md)
-- **Branch naming**: `feat/`, `fix/`, `chore/`, `docs/`, `test/` prefixes
+- **Branch naming**: `feat/`, `fix/`, `chore/`, `docs/`, `test/`, `topic/` prefixes
 - **Commits**: Conventional Commits format
   - Example: `feat(auth): add JWT middleware`
   - Types: `feat`, `fix`, `chore`, `docs`, `test`, `refactor`, `style`, `perf`
@@ -241,13 +345,16 @@ src/backend/notification-service/
 ### Code Style
 - **Go**: Follow [Effective Go](https://go.dev/doc/effective_go), use `gofmt`
 - **Angular**: Follow [Angular Style Guide](https://angular.io/guide/styleguide), use Prettier + ESLint
+  - Component naming: No `.component` suffix for standalone components
+  - Use `[data-theme]` for theme-aware styling
+  - Prefer `signal()` and `computed()` over traditional change detection when possible
 - **C#**: Follow [Microsoft C# Conventions](https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions)
 
 ---
 
 ## 🔄 Development Workflow
 
-1. Create feature branch: `git checkout -b feat/feature-name`
+1. Create feature branch: `git checkout -b feat/feature-name` or `git checkout -b topic/##/feature-name`
 2. Make changes following conventions
 3. Run quality checks:
    - Backend: `go test ./internal/...`
@@ -265,7 +372,7 @@ src/backend/notification-service/
 - `src/backend/api/README.md` - Backend architecture details
 - `src/backend/api/AUTHENTICATION.md` - Auth implementation details
 - `src/frontend/README.md` - Frontend setup & conventions
-- `ADMIN_HIERARCHY_PLAN.md` - Upcoming multi-tenancy & role hierarchy implementation plan
+- `ADMIN_HIERARCHY_PLAN.md` - Multi-tenancy & role hierarchy implementation status
 
 ---
 
@@ -278,13 +385,29 @@ Available helper scripts in `scripts/` directory:
 
 ---
 
+## 🎯 Recent Enhancements (Reference Examples)
+
+### Dashboard Redesign
+- **Location**: `src/frontend/src/app/features/dashboard/`
+- **Features**: Financial metrics, collection rate progress ring, 6-month trend sparklines, light/dark theme support
+- **Reference for**: Theme implementation, SVG charts, progress indicators, staggered animations
+
+### Property Card Redesign
+- **Location**: `src/frontend/src/app/features/properties/property-card/`
+- **Features**: Visual hero section, quick stats bar, color-coded property types, responsive grid
+- **Reference for**: Component styling, color-coding patterns, responsive design, nested hierarchies
+
+---
+
 ## ⚠️ Common Issues & Notes
 
-- **Frontend**: Uses Angular 21 with standalone components (no NgModule)
+- **Frontend**: Uses Angular 21 with standalone components (no NgModule), signals for state management
 - **Backend**: Environment variables required (see `.env.example`)
 - **Database**: PostgreSQL must be running before API starts
 - **Node version**: Node 25+ required for frontend
 - **Go version**: Go 1.25+ required for backend
+- **SCSS Build Size**: Feature-rich components may exceed default style budgets; update `angular.json` if needed
+- **Theme Persistence**: Theme preference is stored in localStorage under key `dashboard-theme` or `theme`
 
 ---
 
@@ -294,3 +417,5 @@ Available helper scripts in `scripts/` directory:
 - **Gin Web Framework**: https://github.com/gin-gonic/gin
 - **PostgreSQL**: https://www.postgresql.org/docs/
 - **Docker Compose**: https://docs.docker.com/compose/
+- **Material Design**: https://material.angular.io/
+- **NgRx**: https://ngrx.io/docs

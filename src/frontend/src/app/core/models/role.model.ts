@@ -1,11 +1,25 @@
 // Role types
-export type UserRole = 'Admin' | 'PropertyManager' | 'Accountant' | string; // string allows future roles
+export type UserRole = 'SUPER_ADMIN' | 'ORG_ADMIN' | 'Admin' | 'PropertyManager' | 'Accountant';
+
+// Role hierarchy (lower number = higher privilege)
+export const ROLE_HIERARCHY: Record<UserRole, number> = {
+  SUPER_ADMIN: 0,
+  ORG_ADMIN: 1,
+  Admin: 2,
+  PropertyManager: 3,
+  Accountant: 4,
+};
 
 // Permission types
 export enum Permission {
+  // Organization Management
+  MANAGE_ORGANIZATIONS = 'manage_organizations',
+  MANAGE_ORG_ADMINS = 'manage_org_admins',
+
   // User Management
   MANAGE_USERS = 'manage_users',
   VIEW_USERS = 'view_users',
+  INVITE_USERS = 'invite_users',
 
   // Property Management
   MANAGE_PROPERTIES = 'manage_properties',
@@ -36,9 +50,68 @@ export enum Permission {
 
 // Role-Permission mapping
 export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
+  SUPER_ADMIN: [
+    // Organization
+    Permission.MANAGE_ORGANIZATIONS,
+    Permission.MANAGE_ORG_ADMINS,
+    // Users
+    Permission.MANAGE_USERS,
+    Permission.VIEW_USERS,
+    Permission.INVITE_USERS,
+    // Properties
+    Permission.MANAGE_PROPERTIES,
+    Permission.VIEW_PROPERTIES,
+    Permission.MANAGE_BUILDINGS,
+    Permission.MANAGE_UNITS,
+    // Tenants
+    Permission.MANAGE_TENANTS,
+    Permission.VIEW_TENANTS,
+    Permission.MANAGE_LEASES,
+    Permission.VIEW_LEASES,
+    // Financial
+    Permission.RECORD_PAYMENTS,
+    Permission.VIEW_PAYMENTS,
+    Permission.VIEW_REPORTS,
+    Permission.EXPORT_REPORTS,
+    // Documents
+    Permission.MANAGE_DOCUMENTS,
+    Permission.VIEW_DOCUMENTS,
+    // System
+    Permission.VIEW_DASHBOARD,
+    Permission.MANAGE_SETTINGS,
+  ],
+  ORG_ADMIN: [
+    // Users (no organization management)
+    Permission.MANAGE_USERS,
+    Permission.VIEW_USERS,
+    Permission.INVITE_USERS,
+    Permission.MANAGE_ORG_ADMINS,
+    // Properties
+    Permission.MANAGE_PROPERTIES,
+    Permission.VIEW_PROPERTIES,
+    Permission.MANAGE_BUILDINGS,
+    Permission.MANAGE_UNITS,
+    // Tenants
+    Permission.MANAGE_TENANTS,
+    Permission.VIEW_TENANTS,
+    Permission.MANAGE_LEASES,
+    Permission.VIEW_LEASES,
+    // Financial
+    Permission.RECORD_PAYMENTS,
+    Permission.VIEW_PAYMENTS,
+    Permission.VIEW_REPORTS,
+    Permission.EXPORT_REPORTS,
+    // Documents
+    Permission.MANAGE_DOCUMENTS,
+    Permission.VIEW_DOCUMENTS,
+    // System
+    Permission.VIEW_DASHBOARD,
+    Permission.MANAGE_SETTINGS,
+  ],
   Admin: [
     Permission.MANAGE_USERS,
     Permission.VIEW_USERS,
+    Permission.INVITE_USERS,
     Permission.MANAGE_PROPERTIES,
     Permission.VIEW_PROPERTIES,
     Permission.MANAGE_BUILDINGS,
@@ -57,6 +130,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     Permission.MANAGE_SETTINGS,
   ],
   PropertyManager: [
+    Permission.VIEW_USERS,
     Permission.VIEW_PROPERTIES,
     Permission.MANAGE_PROPERTIES,
     Permission.MANAGE_BUILDINGS,
@@ -73,6 +147,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     Permission.VIEW_DASHBOARD,
   ],
   Accountant: [
+    Permission.VIEW_USERS,
     Permission.VIEW_PROPERTIES,
     Permission.VIEW_TENANTS,
     Permission.VIEW_LEASES,

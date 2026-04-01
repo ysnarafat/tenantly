@@ -1,6 +1,6 @@
 export type PropertyType = 'Residential' | 'Commercial' | 'Mixed';
 
-export type PropertyMetadata = Record<string, any>;
+export type PropertyMetadata = Record<string, unknown>;
 
 export interface Property {
   id: number;
