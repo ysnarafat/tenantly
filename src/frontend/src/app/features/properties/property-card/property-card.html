@@ -33,7 +33,14 @@
 
       @if (property.buildings) { @for (building of property.buildings; track building.id) {
       <mat-card class="building-card">
-        <div class="building-header" (click)="onToggleBuilding(building)">
+        <div
+          class="building-header"
+          (click)="onToggleBuilding(building)"
+          (keyup.enter)="onToggleBuilding(building)"
+          (keyup.space)="onToggleBuilding(building)"
+          tabindex="0"
+          role="button"
+        >
           <mat-icon>apartment</mat-icon>
           <div class="building-info">
             <strong>{{ building.building_name }}</strong>

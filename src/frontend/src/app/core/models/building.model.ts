@@ -13,7 +13,7 @@ export interface BuildingMetadata {
   maintenance_staff_count?: number;
 
   // Other attributes
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface Building {

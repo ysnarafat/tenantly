@@ -6,7 +6,7 @@ import { BuildingActions } from './building.actions';
 export interface BuildingState extends EntityState<Building> {
   selectedId: number | null;
   loading: boolean;
-  error: any;
+  error: unknown;
 }
 
 export const buildingAdapter: EntityAdapter<Building> = createEntityAdapter<Building>();

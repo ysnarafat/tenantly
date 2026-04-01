@@ -2,7 +2,6 @@ import { createAction, props } from '@ngrx/store';
 import {
   LoginRequest,
   LoginResponse,
-  User,
   ChangePasswordRequest,
   ResetPasswordRequest,
 } from '../../core/services/auth.service';
@@ -15,14 +14,14 @@ export const loginSuccess = createAction(
   props<{ response: LoginResponse }>()
 );
 
-export const loginFailure = createAction('[Auth] Login Failure', props<{ error: any }>());
+export const loginFailure = createAction('[Auth] Login Failure', props<{ error: unknown }>());
 
 // Logout Actions
 export const logout = createAction('[Auth] Logout');
 
 export const logoutSuccess = createAction('[Auth] Logout Success');
 
-export const logoutFailure = createAction('[Auth] Logout Failure', props<{ error: any }>());
+export const logoutFailure = createAction('[Auth] Logout Failure', props<{ error: unknown }>());
 
 // Token Refresh Actions
 export const refreshToken = createAction('[Auth] Refresh Token');
@@ -34,7 +33,7 @@ export const refreshTokenSuccess = createAction(
 
 export const refreshTokenFailure = createAction(
   '[Auth] Refresh Token Failure',
-  props<{ error: any }>()
+  props<{ error: unknown }>()
 );
 
 // Password Management Actions
@@ -50,7 +49,7 @@ export const changePasswordSuccess = createAction(
 
 export const changePasswordFailure = createAction(
   '[Auth] Change Password Failure',
-  props<{ error: any }>()
+  props<{ error: unknown }>()
 );
 
 export const resetPassword = createAction(
@@ -65,7 +64,7 @@ export const resetPasswordSuccess = createAction(
 
 export const resetPasswordFailure = createAction(
   '[Auth] Reset Password Failure',
-  props<{ error: any }>()
+  props<{ error: unknown }>()
 );
 
 // Initialization Actions

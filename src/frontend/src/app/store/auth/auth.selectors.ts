@@ -26,6 +26,15 @@ export const selectAuthError = createSelector(selectAuthState, (state: AuthState
 
 export const selectUserRole = createSelector(selectUser, (user) => user?.role || '');
 
+export const selectUserOrganizationId = createSelector(
+  selectUser,
+  (user) => user?.organization_id || null
+);
+
+export const selectIsSuperAdmin = createSelector(selectUserRole, (role) => role === 'SUPER_ADMIN');
+
+export const selectIsOrgAdmin = createSelector(selectUserRole, (role) => role === 'ORG_ADMIN');
+
 export const selectIsAdmin = createSelector(selectUserRole, (role) => role === 'Admin');
 
 export const selectIsPropertyManager = createSelector(
@@ -56,4 +65,17 @@ export const selectCanViewAttachments = createSelector(
   (role) => role === 'Admin' || role === 'PropertyManager'
 );
 
-export const selectCanManageUsers = createSelector(selectUserRole, (role) => role === 'Admin');
+export const selectCanManageUsers = createSelector(
+  selectUserRole,
+  (role) => role === 'SUPER_ADMIN' || role === 'ORG_ADMIN' || role === 'Admin'
+);
+
+export const selectCanManageOrganizations = createSelector(
+  selectUserRole,
+  (role) => role === 'SUPER_ADMIN'
+);
+
+export const selectCanInviteUsers = createSelector(
+  selectUserRole,
+  (role) => role === 'SUPER_ADMIN' || role === 'ORG_ADMIN' || role === 'Admin'
+);

@@ -218,7 +218,7 @@ export class AttachmentService {
     return this.http.post<Attachment>(this.apiUrl, formData);
   }
 
-  updateAttachment(id: number, request: UpdateAttachmentRequest): Observable<any> {
+  updateAttachment(id: number, request: UpdateAttachmentRequest): Observable<{ message: string }> {
     if (this.DEMO_MODE) {
       return new Observable((observer) => {
         const attachmentIndex = this.demoAttachments.findIndex((a) => a.id === id);
@@ -239,7 +239,7 @@ export class AttachmentService {
     return this.http.put(`${this.apiUrl}/${id}`, request);
   }
 
-  deleteAttachment(id: number): Observable<any> {
+  deleteAttachment(id: number): Observable<{ message: string }> {
     if (this.DEMO_MODE) {
       return new Observable((observer) => {
         const attachmentIndex = this.demoAttachments.findIndex((a) => a.id === id);

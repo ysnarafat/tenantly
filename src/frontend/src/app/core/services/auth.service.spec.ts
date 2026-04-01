@@ -36,7 +36,7 @@ describe('AuthService', () => {
     store = TestBed.inject(Store) as jasmine.SpyObj<Store<AppState>>;
 
     // Setup default store selectors
-    store.select.and.callFake((selector: any) => {
+    store.select.and.callFake((selector: unknown) => {
       if (selector === AuthSelectors.selectUser) return of(mockUser);
       if (selector === AuthSelectors.selectUserRole) return of('Admin');
       if (selector === AuthSelectors.selectIsAuthenticated) return of(true);
@@ -150,7 +150,7 @@ describe('AuthService', () => {
     });
 
     it('should return false when user does not have the specified role', () => {
-      store.select.and.callFake((selector: any) => {
+      store.select.and.callFake((selector: unknown) => {
         if (selector === AuthSelectors.selectUserRole) return of('PropertyManager');
         return of(null);
       });
@@ -169,7 +169,7 @@ describe('AuthService', () => {
     });
 
     it('should return false when user does not have any of the specified roles', () => {
-      store.select.and.callFake((selector: any) => {
+      store.select.and.callFake((selector: unknown) => {
         if (selector === AuthSelectors.selectUserRole) return of('Accountant');
         return of(null);
       });

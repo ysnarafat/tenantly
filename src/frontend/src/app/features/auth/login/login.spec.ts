@@ -7,13 +7,11 @@ import { Store } from '@ngrx/store';
 import { of, Subject } from 'rxjs';
 import { Login } from './login';
 import { AuthService } from '../../../core/services/auth.service';
-import { AppState } from '../../../store';
 
 describe('Login Component', () => {
   let component: Login;
   let fixture: ComponentFixture<Login>;
-  let authService: jasmine.SpyObj<AuthService>;
-  let store: jasmine.SpyObj<Store<AppState>>;
+  let authService: AuthService;
   let router: jasmine.SpyObj<Router>;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
 
@@ -42,8 +40,7 @@ describe('Login Component', () => {
 
     fixture = TestBed.createComponent(Login);
     component = fixture.componentInstance;
-    authService = TestBed.inject(AuthService) as jasmine.SpyObj<AuthService>;
-    store = TestBed.inject(Store) as jasmine.SpyObj<Store<AppState>>;
+    authService = TestBed.inject(AuthService);
     router = TestBed.inject(Router) as jasmine.SpyObj<Router>;
     snackBar = TestBed.inject(MatSnackBar) as jasmine.SpyObj<MatSnackBar>;
 
@@ -101,7 +98,7 @@ describe('Login Component', () => {
   });
 
   it('should show error message when authentication fails', () => {
-    const errorSubject = new Subject<any>();
+    const errorSubject = new Subject<unknown>();
     authService.error$ = errorSubject.asObservable();
 
     component.ngOnInit();
@@ -113,7 +110,7 @@ describe('Login Component', () => {
   });
 
   it('should show default error message when error has no specific message', () => {
-    const errorSubject = new Subject<any>();
+    const errorSubject = new Subject<unknown>();
     authService.error$ = errorSubject.asObservable();
 
     component.ngOnInit();

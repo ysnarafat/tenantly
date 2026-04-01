@@ -6,7 +6,6 @@ import { Action } from '@ngrx/store';
 import { Observable, of } from 'rxjs';
 import { AuthEffects } from './auth.effects';
 import * as AuthActions from './auth.actions';
-import { environment } from '../../../environments/environment';
 
 describe('AuthEffects', () => {
   let effects: AuthEffects;
@@ -63,7 +62,9 @@ describe('AuthEffects', () => {
 
       effects.login$.subscribe((result) => {
         expect(result.type).toBe(AuthActions.loginSuccess.type);
-        expect((result as any).response.user.username).toBe('demo');
+        expect(
+          (result as unknown as { response: { user: { username: string } } }).response.user.username
+        ).toBe('demo');
         done();
       });
     });
@@ -76,7 +77,9 @@ describe('AuthEffects', () => {
 
       effects.login$.subscribe((result) => {
         expect(result.type).toBe(AuthActions.loginFailure.type);
-        expect((result as any).error.error).toBe('Invalid demo credentials');
+        expect((result as unknown as { error: { error: string } }).error.error).toBe(
+          'Invalid demo credentials'
+        );
         done();
       });
     });
@@ -144,7 +147,9 @@ describe('AuthEffects', () => {
 
       effects.refreshToken$.subscribe((result) => {
         expect(result.type).toBe(AuthActions.refreshTokenSuccess.type);
-        expect((result as any).response.user).toEqual(mockLoginResponse.user);
+        expect(
+          (result as unknown as { response: { user: typeof mockLoginResponse.user } }).response.user
+        ).toEqual(mockLoginResponse.user);
         done();
       });
     });
@@ -155,7 +160,7 @@ describe('AuthEffects', () => {
 
       effects.refreshToken$.subscribe((result) => {
         expect(result.type).toBe(AuthActions.refreshTokenFailure.type);
-        expect((result as any).error).toBe('No refresh token available');
+        expect((result as unknown as { error: string }).error).toBe('No refresh token available');
         done();
       });
     });
@@ -208,7 +213,9 @@ describe('AuthEffects', () => {
 
       effects.changePassword$.subscribe((result) => {
         expect(result.type).toBe(AuthActions.changePasswordSuccess.type);
-        expect((result as any).message).toBe('Password changed successfully');
+        expect((result as unknown as { message: string }).message).toBe(
+          'Password changed successfully'
+        );
         done();
       });
     });
@@ -222,7 +229,7 @@ describe('AuthEffects', () => {
 
       effects.resetPassword$.subscribe((result) => {
         expect(result.type).toBe(AuthActions.resetPasswordSuccess.type);
-        expect((result as any).message).toBe(
+        expect((result as unknown as { message: string }).message).toBe(
           'If the email exists, a password reset link has been sent'
         );
         done();

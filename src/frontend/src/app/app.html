@@ -82,9 +82,39 @@
           <mat-icon>folder</mat-icon>
           <span>Documents</span>
         </a>
-        } @if (canManageUsers()) {
+        } @if (canManageUsers() || isSuperAdmin() || isOrgAdmin()) {
         <mat-divider></mat-divider>
-
+        } @if (canManageOrganizations()) {
+        <a
+          mat-list-item
+          routerLink="/admin/organizations"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+        >
+          <mat-icon>apartment</mat-icon>
+          <span>Organizations</span>
+        </a>
+        } @if (canInviteUsers()) {
+        <a
+          mat-list-item
+          routerLink="/admin/invitations"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+        >
+          <mat-icon>mail_outline</mat-icon>
+          <span>Invitations</span>
+        </a>
+        } @if (isOrgAdmin() || isSuperAdmin()) {
+        <a
+          mat-list-item
+          routerLink="/admin/audit-logs"
+          routerLinkActive="active"
+          (click)="onNavigate()"
+        >
+          <mat-icon>history</mat-icon>
+          <span>Audit Logs</span>
+        </a>
+        } @if (canManageUsers()) {
         <a mat-list-item routerLink="/users" routerLinkActive="active" (click)="onNavigate()">
           <mat-icon>admin_panel_settings</mat-icon>
           <span>Users</span>

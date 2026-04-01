@@ -77,6 +77,7 @@ export class PropertyFormDialogComponent implements OnInit {
 
       // Remove property_code from updates (it's immutable)
       if (this.data.mode === 'edit') {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { property_code, ...updateData } = formValue;
         this.dialogRef.close(updateData);
       } else {
@@ -121,7 +122,7 @@ export class PropertyFormDialogComponent implements OnInit {
   }
 
   private getFieldLabel(fieldName: string): string {
-    const labels: { [key: string]: string } = {
+    const labels: Record<string, string> = {
       property_name: 'Property Name',
       property_code: 'Property Code',
       address: 'Address',

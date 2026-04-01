@@ -3,7 +3,7 @@ import { UnitState, unitAdapter } from './unit.reducer';
 
 export const selectUnitState = createFeatureSelector<UnitState>('units');
 
-const { selectAll, selectEntities, selectIds, selectTotal } = unitAdapter.getSelectors();
+const { selectAll, selectEntities } = unitAdapter.getSelectors();
 
 export const selectAllUnits = createSelector(selectUnitState, selectAll);
 

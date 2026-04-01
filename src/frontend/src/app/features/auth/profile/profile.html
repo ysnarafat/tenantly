@@ -1,7 +1,8 @@
 <div class="profile-container">
   <h1>User Profile</h1>
 
-  <div class="profile-content" *ngIf="user">
+  @if (user) {
+  <div class="profile-content">
     <!-- User Information Card -->
     <mat-card class="user-info-card">
       <mat-card-header>
@@ -13,30 +14,32 @@
       <mat-card-content>
         <div class="user-details">
           <div class="detail-row">
-            <label>Username:</label>
-            <span>{{ user.username }}</span>
+            <label for="username">Username:</label>
+            <span id="username">{{ user.username }}</span>
           </div>
           <div class="detail-row">
-            <label>Email:</label>
-            <span>{{ user.email }}</span>
+            <label for="email">Email:</label>
+            <span id="email">{{ user.email }}</span>
           </div>
           <div class="detail-row">
-            <label>Role:</label>
-            <mat-chip [color]="getRoleColor(user.role)" selected> {{ user.role }} </mat-chip>
+            <label for="role">Role:</label>
+            <mat-chip id="role" [color]="getRoleColor(user.role)" selected>
+              {{ user.role }}
+            </mat-chip>
           </div>
           <div class="detail-row">
-            <label>Status:</label>
-            <mat-chip [color]="user.active ? 'primary' : 'warn'" selected>
+            <label for="status">Status:</label>
+            <mat-chip id="status" [color]="user.active ? 'primary' : 'warn'" selected>
               {{ user.active ? 'Active' : 'Inactive' }}
             </mat-chip>
           </div>
           <div class="detail-row">
-            <label>Member Since:</label>
-            <span>{{ formatDate(user.created_at) }}</span>
+            <label for="memberSince">Member Since:</label>
+            <span id="memberSince">{{ formatDate(user.created_at) }}</span>
           </div>
           <div class="detail-row">
-            <label>Last Updated:</label>
-            <span>{{ formatDate(user.updated_at) }}</span>
+            <label for="lastUpdated">Last Updated:</label>
+            <span id="lastUpdated">{{ formatDate(user.updated_at) }}</span>
           </div>
         </div>
       </mat-card-content>
@@ -64,7 +67,8 @@
         </div>
 
         <!-- Change Password Form -->
-        <div class="change-password-section" *ngIf="showChangePassword">
+        @if (showChangePassword) {
+        <div class="change-password-section">
           <form [formGroup]="changePasswordForm" (ngSubmit)="onChangePassword()">
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Current Password</mat-label>
@@ -75,9 +79,9 @@
                 formControlName="currentPassword"
                 placeholder="Enter your current password"
               />
-              <mat-error *ngIf="changePasswordForm.get('currentPassword')?.hasError('required')">
-                Current password is required
-              </mat-error>
+              @if (changePasswordForm.get('currentPassword')?.hasError('required')) {
+              <mat-error>Current password is required</mat-error>
+              }
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="full-width">
@@ -89,12 +93,11 @@
                 formControlName="newPassword"
                 placeholder="Enter your new password"
               />
-              <mat-error *ngIf="changePasswordForm.get('newPassword')?.hasError('required')">
-                New password is required
-              </mat-error>
-              <mat-error *ngIf="changePasswordForm.get('newPassword')?.hasError('minlength')">
-                Password must be at least 8 characters long
-              </mat-error>
+              @if (changePasswordForm.get('newPassword')?.hasError('required')) {
+              <mat-error>New password is required</mat-error>
+              } @if (changePasswordForm.get('newPassword')?.hasError('minlength')) {
+              <mat-error>Password must be at least 8 characters long</mat-error>
+              }
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="full-width">
@@ -106,14 +109,11 @@
                 formControlName="confirmPassword"
                 placeholder="Confirm your new password"
               />
-              <mat-error *ngIf="changePasswordForm.get('confirmPassword')?.hasError('required')">
-                Please confirm your new password
-              </mat-error>
-              <mat-error
-                *ngIf="changePasswordForm.get('confirmPassword')?.hasError('passwordMismatch')"
-              >
-                Passwords do not match
-              </mat-error>
+              @if (changePasswordForm.get('confirmPassword')?.hasError('required')) {
+              <mat-error>Please confirm your new password</mat-error>
+              } @if (changePasswordForm.get('confirmPassword')?.hasError('passwordMismatch')) {
+              <mat-error>Passwords do not match</mat-error>
+              }
             </mat-form-field>
 
             <div class="form-actions">
@@ -137,11 +137,13 @@
             </div>
           </form>
         </div>
+        }
       </mat-card-content>
     </mat-card>
   </div>
-
-  <div *ngIf="!user" class="loading-container">
+  } @if (!user) {
+  <div class="loading-container">
     <p>Loading user information...</p>
   </div>
+  }
 </div>
