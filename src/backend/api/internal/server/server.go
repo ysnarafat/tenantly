@@ -105,6 +105,13 @@ func (s *Server) setupRoutes() {
 			auth.POST("/refresh", userHandler.RefreshToken)
 			auth.POST("/reset-password", userHandler.ResetPassword)
 			auth.POST("/confirm-reset-password", userHandler.ConfirmPasswordReset)
+			auth.POST("/register-with-invitation", userHandler.RegisterWithInvitation)
+		}
+
+		// Public invitation routes
+		invitations := v1.Group("/invitations")
+		{
+			invitations.GET("/validate", organizationHandler.ValidateInvitationToken)
 		}
 
 		// Protected routes
@@ -119,6 +126,12 @@ func (s *Server) setupRoutes() {
 			{
 				authProtected.POST("/logout", userHandler.Logout)
 				authProtected.POST("/change-password", userHandler.ChangePassword)
+			}
+
+			// Invitation acceptance routes (protected)
+			invitationsProtected := protected.Group("/invitations")
+			{
+				invitationsProtected.POST("/accept", organizationHandler.AcceptInvitation)
 			}
 
 			// User management routes (role-based access)

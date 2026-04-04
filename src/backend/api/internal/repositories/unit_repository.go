@@ -468,3 +468,50 @@ func (r *UnitRepository) GetBuildingUnitTypeDistribution(buildingID int) (interf
 
 	return distribution, nil
 }
+
+// GetByOrganizationID retrieves all units for a specific organization
+func (r *UnitRepository) GetByOrganizationID(orgID int) ([]*models.Unit, error) {
+	query := `
+		SELECT id, property_id, building_id, unit_number, unit_name, floor, section,
+		       unit_type, monthly_rent, metadata, active, created_at, updated_at
+		FROM units
+		WHERE organization_id = $1 AND active = true
+		ORDER BY created_at DESC`
+
+	rows, err := r.db.Query(query, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get units by organization: %w", err)
+	}
+	defer rows.Close()
+
+	var units []*models.Unit
+	for rows.Next() {
+		var unit models.Unit
+		var metadataStr string
+		err := rows.Scan(
+			&unit.ID,
+			&unit.PropertyID,
+			&unit.BuildingID,
+			&unit.UnitNumber,
+			&unit.UnitName,
+			&unit.Floor,
+			&unit.Section,
+			&unit.UnitType,
+			&unit.MonthlyRent,
+			&metadataStr,
+			&unit.Active,
+			&unit.CreatedAt,
+			&unit.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan unit: %w", err)
+		}
+		units = append(units, &unit)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating units: %w", err)
+	}
+
+	return units, nil
+}

@@ -229,6 +229,63 @@ func (s *OrganizationService) RevokeInvitation(invitationID int, revokedByUserID
 	return nil
 }
 
+// AcceptInvitation accepts an invitation using its token (public endpoint)
+func (s *OrganizationService) AcceptInvitation(token string, userID int) (*models.UserInvitation, error) {
+	// Get invitation by token
+	invitation, err := s.userInvitationRepo.GetByToken(token)
+	if err != nil {
+		return nil, fmt.Errorf("invalid or expired invitation token")
+	}
+
+	// Check if invitation is already accepted
+	if invitation.AcceptedAt != nil {
+		return nil, fmt.Errorf("invitation has already been accepted")
+	}
+
+	// Check if invitation is expired
+	if time.Now().After(invitation.ExpiresAt) {
+		return nil, fmt.Errorf("invitation has expired")
+	}
+
+	// Accept the invitation
+	err = s.userInvitationRepo.AcceptInvitation(invitation.ID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to accept invitation: %w", err)
+	}
+
+	// Refresh the invitation to get updated data
+	invitation, err = s.userInvitationRepo.GetByID(invitation.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve accepted invitation: %w", err)
+	}
+
+	// Log audit
+	s.auditService.LogUserAction(userID, "ACCEPT_INVITATION", "user_invitations", &invitation.ID, nil, invitation)
+
+	return invitation, nil
+}
+
+// ValidateInvitationToken validates an invitation token without accepting it
+func (s *OrganizationService) ValidateInvitationToken(token string) (*models.UserInvitation, error) {
+	// Get invitation by token
+	invitation, err := s.userInvitationRepo.GetByToken(token)
+	if err != nil {
+		return nil, fmt.Errorf("invalid or expired invitation token")
+	}
+
+	// Check if invitation is already accepted
+	if invitation.AcceptedAt != nil {
+		return nil, fmt.Errorf("invitation has already been accepted")
+	}
+
+	// Check if invitation is expired
+	if time.Now().After(invitation.ExpiresAt) {
+		return nil, fmt.Errorf("invitation has expired")
+	}
+
+	return invitation, nil
+}
+
 // Helper methods
 
 func (s *OrganizationService) validateOrganizationRequest(req *models.CreateOrganizationRequest) error {

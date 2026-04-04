@@ -248,3 +248,36 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
 }
+
+func (h *UserHandler) RegisterWithInvitation(c *gin.Context) {
+	var req models.RegisterWithInvitationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid request format",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	response, err := h.userService.RegisterWithInvitation(&req)
+	if err != nil {
+		// Determine appropriate status code based on error message
+		statusCode := http.StatusInternalServerError
+		if err.Error() == "invalid invitation: invalid or expired invitation token" ||
+			err.Error() == "invalid invitation: invitation has already been accepted" ||
+			err.Error() == "invalid invitation: invitation has expired" ||
+			err.Error() == "email does not match invitation email" {
+			statusCode = http.StatusBadRequest
+		} else if err.Error() == "password validation failed" || err.Error() == "username validation failed" {
+			statusCode = http.StatusBadRequest
+		}
+
+		c.JSON(statusCode, gin.H{
+			"error": err.Error(),
+			"code":  "REGISTRATION_FAILED",
+		})
+		return
+	}
+
+	c.JSON(http.StatusCreated, response)
+}

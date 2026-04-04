@@ -124,6 +124,16 @@ func AuthRequired(jwtSecret string, auditService *database.AuditService) gin.Han
 		c.Set("role", role)
 		c.Set("username", username)
 
+		// Extract organization_id if present (optional for SUPER_ADMIN)
+		var organizationID *int
+		if orgIDClaim, ok := claims["organization_id"]; ok {
+			if orgIDFloat, ok := orgIDClaim.(float64); ok {
+				orgID := int(orgIDFloat)
+				organizationID = &orgID
+			}
+		}
+		c.Set("organization_id", organizationID)
+
 		// Log successful authentication
 		if auditService != nil {
 			auditService.LogUserAction(
