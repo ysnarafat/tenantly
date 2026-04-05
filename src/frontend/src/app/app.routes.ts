@@ -147,7 +147,8 @@ export const routes: Routes = [
       },
       {
         path: 'users',
-        loadComponent: () => import('./features/users/user-list/user-list').then((m) => m.UserList),
+        loadComponent: () =>
+          import('./features/users/user-list/user-list').then((m) => m.UserList),
         canActivate: [userManagementGuard],
       },
       {

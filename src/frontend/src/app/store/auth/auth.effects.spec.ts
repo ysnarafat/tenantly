@@ -118,9 +118,7 @@ describe('AuthEffects', () => {
 
       effects.loginSuccess$.subscribe(() => {
         expect(localStorage.getItem('tenantly_token')).toBe(mockLoginResponse.token);
-        expect(localStorage.getItem('tenantly_refresh_token')).toBe(
-          mockLoginResponse.refresh_token
-        );
+        expect(localStorage.getItem('tenantly_refresh_token')).toBe(mockLoginResponse.refresh_token);
         expect(localStorage.getItem('tenantly_user')).toBe(JSON.stringify(mockLoginResponse.user));
         expect(localStorage.getItem('tenantly_expires_at')).toBe(mockLoginResponse.expires_at);
         expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
