@@ -6,6 +6,7 @@ import { Store } from '@ngrx/store';
 import { AppState } from '../../store';
 import * as AuthSelectors from '../../store/auth/auth.selectors';
 import * as AuthActions from '../../store/auth/auth.actions';
+import { UserOrganization } from '../models/organization.model';
 
 export interface LoginRequest {
   username: string;
@@ -30,6 +31,8 @@ export interface LoginResponse {
   refresh_token: string;
   user: User;
   expires_at: string | Date;
+  organizations?: UserOrganization[];
+  default_organization_id?: number;
 }
 
 export interface RefreshTokenRequest {

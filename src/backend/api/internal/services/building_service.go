@@ -62,6 +62,7 @@ func (s *BuildingService) CreateBuilding(req *models.CreateBuildingRequest) (*mo
 	// Create building entity
 	building := &models.Building{
 		PropertyID:       req.PropertyID,
+		OrganizationID:   req.OrganizationID,
 		BuildingName:     req.BuildingName,
 		BuildingCode:     req.BuildingCode,
 		BuildingType:     req.BuildingType,
@@ -292,6 +293,7 @@ func (s *BuildingService) BulkCreateBuildings(req *models.BulkCreateBuildingsReq
 	for _, buildingReq := range req.Buildings {
 		building := &models.Building{
 			PropertyID:       buildingReq.PropertyID,
+			OrganizationID:   req.OrganizationID,
 			BuildingName:     buildingReq.BuildingName,
 			BuildingCode:     buildingReq.BuildingCode,
 			BuildingType:     buildingReq.BuildingType,

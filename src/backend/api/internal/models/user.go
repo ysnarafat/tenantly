@@ -43,10 +43,12 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	Token        string    `json:"token"`
-	RefreshToken string    `json:"refresh_token"`
-	User         User      `json:"user"`
-	ExpiresAt    time.Time `json:"expires_at"`
+	Token                 string                 `json:"token"`
+	RefreshToken          string                 `json:"refresh_token"`
+	User                  User                   `json:"user"`
+	Organizations         []UserOrganizationRole `json:"organizations"`
+	DefaultOrganizationID int                    `json:"default_organization_id"`
+	ExpiresAt             time.Time              `json:"expires_at"`
 }
 
 type RefreshTokenRequest struct {

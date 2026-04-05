@@ -15,7 +15,7 @@ export class TenantService {
     return this.http.post<Tenant>(this.apiUrl, tenant);
   }
 
-  getAllTenants(page: number = 1, pageSize: number = 10): Observable<TenantListResponse> {
+  getAllTenants(page = 1, pageSize = 10): Observable<TenantListResponse> {
     return this.http.get<TenantListResponse>(this.apiUrl, {
       params: {
         page: page.toString(),

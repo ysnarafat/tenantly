@@ -12,8 +12,8 @@ type UserRepositoryInterface interface {
 	GetByID(id int) (*models.User, error)
 	GetByUsername(username string) (*models.User, error)
 	GetByEmail(email string) (*models.User, error)
-	GetAll() ([]*models.User, error)
-	GetByOrganizationID(orgID int) ([]*models.User, error)
+	GetAll(activeOnly bool) ([]*models.User, error)
+	GetByOrganizationID(orgID int, activeOnly bool) ([]*models.User, error)
 	Update(id int, updates map[string]interface{}) error
 	Delete(id int) error
 	CreateResetToken(token *models.ResetPasswordToken) error
@@ -49,6 +49,14 @@ type UserInvitationRepositoryInterface interface {
 	AcceptInvitation(invitationID int, userID int) error
 	Delete(id int) error
 	CleanupExpiredInvitations() error
+}
+
+// UserOrganizationRoleRepositoryInterface defines operations for multi-org membership
+type UserOrganizationRoleRepositoryInterface interface {
+	GetByUserID(userID int) ([]models.UserOrganizationRole, error)
+	GetByUserAndOrg(userID, orgID int) (*models.UserOrganizationRole, error)
+	Upsert(userID, orgID int, role string) error
+	Delete(userID, orgID int) error
 }
 
 // OrganizationServiceInterface defines the interface for organization service operations
@@ -97,11 +105,12 @@ type UserServiceInterface interface {
 	ResetPassword(email string) error
 	ConfirmPasswordReset(token, newPassword string) error
 	GetUserByID(id int) (*models.User, error)
-	GetAllUsers() ([]*models.User, error)
-	GetUsersByOrganization(orgID int) ([]*models.User, error)
+	GetAllUsers(activeOnly bool) ([]*models.User, error)
+	GetUsersByOrganization(orgID int, activeOnly bool) ([]*models.User, error)
 	GetUserByIDInOrganization(userID int, orgID int) (*models.User, error)
 	UpdateUser(id int, req *models.UpdateUserRequest) error
 	DeleteUser(id int) error
+	SetOrganization(userID int, req *models.SetOrganizationRequest) (*models.SetOrganizationResponse, error)
 }
 
 // MetadataValidatorInterface defines the interface for building metadata validation
@@ -216,8 +225,8 @@ type UnitRepositoryInterface interface {
 	Delete(id int) error
 	CheckUnitNumberExists(buildingID int, unitNumber string, excludeID int) (bool, error)
 	HasActiveLeases(unitID int) (bool, error)
-	GetByBuildingWithDetails(buildingID int, limit, offset int) ([]*models.UnitWithDetails, int, error)
-	GetByPropertyWithDetails(propertyID int, limit, offset int) ([]*models.UnitWithDetails, int, error)
+	GetByBuildingWithDetails(buildingID int, limit, offset, orgID int) ([]*models.UnitWithDetails, int, error)
+	GetByPropertyWithDetails(propertyID int, limit, offset, orgID int) ([]*models.UnitWithDetails, int, error)
 	GetBuildingOccupancyStats(buildingID int, startDate, endDate time.Time) (interface{}, error)
 	GetPropertyOccupancyStats(propertyID int, startDate, endDate time.Time) (interface{}, error)
 	GetSystemOccupancyStats(startDate, endDate time.Time) (interface{}, error)
@@ -232,8 +241,8 @@ type UnitServiceInterface interface {
 	DeleteUnit(id int, userID int) error
 	ValidateBuildingUnitRelationship(buildingID, propertyID int) error
 	ValidateUnitTypeForBuilding(buildingID int, unitType models.UnitType) error
-	GetUnitsByBuilding(buildingID int, page, pageSize int) ([]*models.UnitWithDetails, int, error)
-	GetUnitsByProperty(propertyID int, page, pageSize int) ([]*models.UnitWithDetails, int, error)
+	GetUnitsByBuilding(buildingID int, page, pageSize, orgID int) ([]*models.UnitWithDetails, int, error)
+	GetUnitsByProperty(propertyID int, page, pageSize, orgID int) ([]*models.UnitWithDetails, int, error)
 	ValidateHierarchyIntegrity(unitID int) error
 	GetUnitHierarchyContext(unitID int) (map[string]interface{}, error)
 }
@@ -299,13 +308,13 @@ type TenantRepositoryInterface interface {
 	CheckNIDExists(nid string, excludeID int) (bool, error)
 	GetByID(id int) (*models.Tenant, error)
 	GetByUnitID(unitID int) (*models.Tenant, error)
-	GetAll(page, pageSize int) ([]*models.Tenant, int, error)
+	GetAll(page, pageSize, orgID int) ([]*models.Tenant, int, error)
 }
 
 // TenantServiceInterface defines the interface for tenant service operations
 type TenantServiceInterface interface {
 	CreateTenant(req *models.CreateTenantRequest, userID int) (*models.TenantResponse, error)
-	GetAllTenants(page, pageSize int) (*models.TenantListResponse, error)
+	GetAllTenants(page, pageSize, orgID int) (*models.TenantListResponse, error)
 }
 
 // PropertyRepositoryInterface defines the interface for property repository operations

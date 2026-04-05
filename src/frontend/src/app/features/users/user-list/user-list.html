@@ -1,6 +1,16 @@
 <div class="user-list-container">
   <div class="header">
     <h1>User Management</h1>
+    <div class="header-actions">
+      <button mat-raised-button color="primary" (click)="createUser()">
+        <mat-icon>person_add</mat-icon>
+        Create User
+      </button>
+      <button mat-button (click)="inviteUser()">
+        <mat-icon>mail</mat-icon>
+        Invite User
+      </button>
+    </div>
   </div>
 
   <div class="filters">
@@ -26,6 +36,13 @@
         }
       </mat-select>
     </mat-form-field>
+
+    <mat-slide-toggle
+      [checked]="showInactive()"
+      (change)="toggleShowInactive($event.checked)"
+    >
+      Show inactive
+    </mat-slide-toggle>
   </div>
 
   @if (loading()) {
@@ -81,9 +98,15 @@
             <mat-icon>trending_up</mat-icon>
           </button>
           }
+          @if (user.active) {
           <button mat-icon-button matTooltip="Deactivate" (click)="deactivateUser(user)">
             <mat-icon>block</mat-icon>
           </button>
+          } @else {
+          <button mat-icon-button matTooltip="Activate" color="accent" (click)="activateUser(user)">
+            <mat-icon>check_circle</mat-icon>
+          </button>
+          }
           <button mat-icon-button matTooltip="Delete" color="warn" (click)="deleteUser(user)">
             <mat-icon>delete</mat-icon>
           </button>

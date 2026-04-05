@@ -113,6 +113,21 @@
   margin-right: 8px;
 }
 
+// Organization selector styling
+app-organization-selector {
+  margin: 0 16px;
+  display: flex;
+  align-items: center;
+
+  @media (max-width: 768px) {
+    margin: 0 8px;
+
+    .org-name {
+      display: none !important;
+    }
+  }
+}
+
 // Navigation list styling
 mat-nav-list {
   padding: 0;

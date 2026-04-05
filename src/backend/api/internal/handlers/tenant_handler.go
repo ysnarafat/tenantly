@@ -28,6 +28,8 @@ func (h *TenantHandler) CreateTenant(c *gin.Context) {
 	}
 
 	userID := c.GetInt("userID")
+	orgID := c.GetInt("org_id")
+	req.OrganizationID = orgID
 	tenant, err := h.tenantService.CreateTenant(&req, userID)
 	if err != nil {
 		// Check for uniqueness errors
@@ -44,10 +46,11 @@ func (h *TenantHandler) CreateTenant(c *gin.Context) {
 
 // GetAllTenants handles fetching all tenants
 func (h *TenantHandler) GetAllTenants(c *gin.Context) {
+	orgID := c.GetInt("org_id")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 
-	response, err := h.tenantService.GetAllTenants(page, pageSize)
+	response, err := h.tenantService.GetAllTenants(page, pageSize, orgID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

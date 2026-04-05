@@ -385,14 +385,14 @@ func (suite *BuildingAPIIntegrationTestSuite) TestBulkCreateBuildings_SuccessAnd
 
 // Test Building Search and Filtering
 func (suite *BuildingAPIIntegrationTestSuite) TestAdvancedSearchBuildings() {
-	searchReq := &models.BuildingSearchRequest{
-		BuildingType: "Residential",
-		Page:         1,
-		PageSize:     10,
-		SortBy:       "building_name",
-		SortOrder:    "asc",
-		IncludeStats: true,
-	}
+	searchReq := mock.MatchedBy(func(req *models.BuildingSearchRequest) bool {
+		return req.BuildingType == "Residential" &&
+			req.Page == 1 &&
+			req.PageSize == 10 &&
+			req.SortBy == "building_name" &&
+			req.SortOrder == "asc" &&
+			req.IncludeStats == true
+	})
 
 	buildings := []*models.BuildingWithStats{
 		{
@@ -699,11 +699,9 @@ func (suite *BuildingAPIIntegrationTestSuite) TestErrorHandling_MetadataValidati
 // Test Complex Metadata Queries
 func (suite *BuildingAPIIntegrationTestSuite) TestComplexMetadataQueries() {
 	// Test search with metadata filters
-	searchReq := &models.BuildingSearchRequest{
-		BuildingType: "Residential",
-		Page:         1,
-		PageSize:     10,
-	}
+	searchReq := mock.MatchedBy(func(req *models.BuildingSearchRequest) bool {
+		return req.BuildingType == "Residential" && req.Page == 1 && req.PageSize == 10
+	})
 
 	buildings := []*models.Building{
 		{

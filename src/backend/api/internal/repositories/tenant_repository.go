@@ -22,8 +22,8 @@ func NewTenantRepository(db *sql.DB) *TenantRepository {
 func (r *TenantRepository) Create(req *models.CreateTenantRequest) (*models.Tenant, error) {
 	query := fmt.Sprintf(`
 		INSERT INTO %s (
-			%s, %s, %s, %s, %s, %s, %s
-		) VALUES ($1, $2, $3, $4, $5, $6, true)
+			%s, %s, %s, %s, %s, %s, %s, organization_id
+		) VALUES ($1, $2, $3, $4, $5, $6, true, $7)
 		RETURNING %s, %s, %s`,
 		columns.TenantTable,
 		columns.TenantName, columns.TenantType, columns.TenantPhoneNumber,
@@ -48,6 +48,7 @@ func (r *TenantRepository) Create(req *models.CreateTenantRequest) (*models.Tena
 		tenant.Email,
 		tenant.NIDNumber,
 		tenant.Address,
+		req.OrganizationID,
 	).Scan(&tenant.ID, &tenant.CreatedAt, &tenant.UpdatedAt)
 
 	if err != nil {
@@ -143,7 +144,7 @@ func (r *TenantRepository) GetByUnitID(unitID int) (*models.Tenant, error) {
 }
 
 // GetAll retrieves all active tenants with pagination
-func (r *TenantRepository) GetAll(page, pageSize int) ([]*models.Tenant, int, error) {
+func (r *TenantRepository) GetAll(page, pageSize, orgID int) ([]*models.Tenant, int, error) {
 	// Set defaults
 	if page < 1 {
 		page = 1
@@ -153,9 +154,12 @@ func (r *TenantRepository) GetAll(page, pageSize int) ([]*models.Tenant, int, er
 	}
 	offset := (page - 1) * pageSize
 
-	// Get total count
+	// Get total count scoped to org
 	var totalCount int
-	err := r.db.QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE %s = true", columns.TenantTable, columns.TenantActive)).Scan(&totalCount)
+	err := r.db.QueryRow(
+		fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE %s = true AND organization_id = $1", columns.TenantTable, columns.TenantActive),
+		orgID,
+	).Scan(&totalCount)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count tenants: %w", err)
 	}
@@ -163,15 +167,15 @@ func (r *TenantRepository) GetAll(page, pageSize int) ([]*models.Tenant, int, er
 	query := fmt.Sprintf(`
 		SELECT %s
 		FROM %s
-		WHERE %s = true
+		WHERE %s = true AND organization_id = $1
 		ORDER BY %s DESC
-		LIMIT $1 OFFSET $2`,
+		LIMIT $2 OFFSET $3`,
 		columns.TenantAllColumns(),
 		columns.TenantTable,
 		columns.TenantActive,
 		columns.TenantCreatedAt)
 
-	rows, err := r.db.Query(query, pageSize, offset)
+	rows, err := r.db.Query(query, orgID, pageSize, offset)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get all tenants: %w", err)
 	}

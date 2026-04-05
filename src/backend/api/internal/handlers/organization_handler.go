@@ -168,7 +168,7 @@ func (h *OrganizationHandler) DeleteOrganization(c *gin.Context) {
 
 // InviteUser invites a user to an organization
 func (h *OrganizationHandler) InviteUser(c *gin.Context) {
-	orgID, err := strconv.Atoi(c.Param("org_id"))
+	orgID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid organization ID"})
 		return
@@ -212,7 +212,7 @@ func (h *OrganizationHandler) InviteUser(c *gin.Context) {
 
 // GetPendingInvitations gets all pending invitations for an organization
 func (h *OrganizationHandler) GetPendingInvitations(c *gin.Context) {
-	orgID, err := strconv.Atoi(c.Param("org_id"))
+	orgID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid organization ID"})
 		return

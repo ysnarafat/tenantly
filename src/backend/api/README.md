@@ -88,3 +88,32 @@ go test -v ./internal/services/ -run TestLogin
 ```
 
 Tests are table-driven. Mocks for all interfaces live in `internal/testutil/` — use those rather than creating per-test fakes.
+
+## Development Seed Users
+
+Migration `000009_test_seed_users` inserts test accounts for every role. Run it (or apply the SQL via `psql`) after initial setup.
+
+**Password for all accounts: `Test@1234`**
+
+### Default Organization (id = 1)
+
+| Username | Email | Role |
+|----------|-------|------|
+| `orgadmin` | orgadmin@test.com | `ORG_ADMIN` |
+| `adminuser` | admin@test.com | `Admin` |
+| `propmanager` | propmanager@test.com | `PropertyManager` |
+| `accountant` | accountant@test.com | `Accountant` |
+
+### Acme Properties (id = 2)
+
+| Username | Email | Role |
+|----------|-------|------|
+| `acmeadmin` | acmeadmin@test.com | `ORG_ADMIN` |
+
+### No Organization (global)
+
+| Username | Email | Role |
+|----------|-------|------|
+| `superadmin` | superadmin@test.com | `SUPER_ADMIN` |
+
+> These accounts are for local development only. Remove or disable before deploying to any shared environment.

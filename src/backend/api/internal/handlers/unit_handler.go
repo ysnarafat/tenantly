@@ -105,8 +105,9 @@ func (h *UnitHandler) GetUnitsByBuilding(c *gin.Context) {
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	orgID := c.GetInt("org_id")
 
-	units, total, err := h.unitService.GetUnitsByBuilding(buildingID, page, pageSize)
+	units, total, err := h.unitService.GetUnitsByBuilding(buildingID, page, pageSize, orgID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -132,8 +133,9 @@ func (h *UnitHandler) GetUnitsByProperty(c *gin.Context) {
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
+	orgID := c.GetInt("org_id")
 
-	units, total, err := h.unitService.GetUnitsByProperty(propertyID, page, pageSize)
+	units, total, err := h.unitService.GetUnitsByProperty(propertyID, page, pageSize, orgID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

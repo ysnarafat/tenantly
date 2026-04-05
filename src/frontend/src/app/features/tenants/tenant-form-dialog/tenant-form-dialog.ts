@@ -7,7 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
-import { CreateTenantRequest, Tenant, TenantType } from '../../../core/models/tenant.model';
+import { Tenant, TenantType } from '../../../core/models/tenant.model';
 
 export interface TenantFormDialogData {
   tenant?: Tenant;
@@ -88,7 +88,8 @@ export class TenantFormDialogComponent implements OnInit {
   }
 
   private getFieldLabel(fieldName: string): string {
-    const labels: { [key: string]: string } = {
+    type Labels = Record<string, string>;
+    const labels: Labels = {
       name: 'Full Name',
       tenant_type: 'Tenant Type',
       email: 'Email',

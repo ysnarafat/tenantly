@@ -55,13 +55,14 @@ type Property struct {
 
 // CreatePropertyRequest represents the request to create a property
 type CreatePropertyRequest struct {
-	PropertyName string           `json:"property_name" binding:"required,max=200"`
-	PropertyCode string           `json:"property_code" binding:"required,max=50"`
-	Address      string           `json:"address" binding:"required"`
-	City         string           `json:"city" binding:"omitempty,max=100"`
-	PostalCode   string           `json:"postal_code" binding:"omitempty,max=20"`
-	PropertyType PropertyType     `json:"property_type" binding:"required,oneof=Residential Commercial Mixed"`
-	Metadata     PropertyMetadata `json:"metadata" binding:"omitempty"`
+	PropertyName   string           `json:"property_name" binding:"required,max=200"`
+	PropertyCode   string           `json:"property_code" binding:"required,max=50"`
+	Address        string           `json:"address" binding:"required"`
+	City           string           `json:"city" binding:"omitempty,max=100"`
+	PostalCode     string           `json:"postal_code" binding:"omitempty,max=20"`
+	PropertyType   PropertyType     `json:"property_type" binding:"required,oneof=Residential Commercial Mixed"`
+	Metadata       PropertyMetadata `json:"metadata" binding:"omitempty"`
+	OrganizationID int              `json:"-"`
 }
 
 // UpdatePropertyRequest represents the request to update a property

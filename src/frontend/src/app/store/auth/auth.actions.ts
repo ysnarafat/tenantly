@@ -5,6 +5,7 @@ import {
   ChangePasswordRequest,
   ResetPasswordRequest,
 } from '../../core/services/auth.service';
+import { UserOrganization, SetOrganizationResponse } from '../../core/models/organization.model';
 
 // Login Actions
 export const login = createAction('[Auth] Login', props<{ credentials: LoginRequest }>());
@@ -64,6 +65,32 @@ export const resetPasswordSuccess = createAction(
 
 export const resetPasswordFailure = createAction(
   '[Auth] Reset Password Failure',
+  props<{ error: unknown }>()
+);
+
+// Organization Actions
+export const setUserOrganizations = createAction(
+  '[Auth] Set User Organizations',
+  props<{ organizations: UserOrganization[]; defaultOrganizationId?: number }>()
+);
+
+export const setCurrentOrganization = createAction(
+  '[Auth] Set Current Organization',
+  props<{ organizationId: number }>()
+);
+
+export const switchOrganization = createAction(
+  '[Auth] Switch Organization',
+  props<{ organizationId: number }>()
+);
+
+export const switchOrganizationSuccess = createAction(
+  '[Auth] Switch Organization Success',
+  props<{ response: SetOrganizationResponse }>()
+);
+
+export const switchOrganizationFailure = createAction(
+  '[Auth] Switch Organization Failure',
   props<{ error: unknown }>()
 );
 

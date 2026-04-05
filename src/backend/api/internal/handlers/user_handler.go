@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -147,6 +148,38 @@ func (h *UserHandler) ResetPassword(c *gin.Context) {
 	})
 }
 
+func (h *UserHandler) SetOrganization(c *gin.Context) {
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "User not authenticated",
+			"code":  "NOT_AUTHENTICATED",
+		})
+		return
+	}
+
+	var req models.SetOrganizationRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid request format",
+			"code":    "INVALID_REQUEST",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	response, err := h.userService.SetOrganization(userID.(int), &req)
+	if err != nil {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": err.Error(),
+			"code":  "ORGANIZATION_SWITCH_FAILED",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
 func (h *UserHandler) ConfirmPasswordReset(c *gin.Context) {
 	var req models.ConfirmPasswordResetRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -178,17 +211,77 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
+	callerRoleRaw, exists := c.Get("role")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Not authenticated"})
+		return
+	}
+	callerRole := callerRoleRaw.(string)
+
+	if !canCreateRole(callerRole, req.Role) {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": fmt.Sprintf("role %s cannot create users with role %s", callerRole, req.Role),
+			"code":  "INSUFFICIENT_PERMISSIONS",
+		})
+		return
+	}
+
+	// Non-SUPER_ADMIN callers must create users within their own organization
+	if callerRole != "SUPER_ADMIN" {
+		callerOrgID, _ := c.Get("organization_id")
+		orgIDPtr, ok := callerOrgID.(*int)
+		if !ok || orgIDPtr == nil {
+			c.JSON(http.StatusForbidden, gin.H{"error": "no organization context"})
+			return
+		}
+		req.OrganizationID = orgIDPtr
+	}
+
 	user, err := h.userService.CreateUser(&req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusCreated, user)
 }
 
+// canCreateRole enforces role hierarchy: callerRole determines what targetRole can be created
+func canCreateRole(callerRole, targetRole string) bool {
+	switch callerRole {
+	case "SUPER_ADMIN":
+		return true
+	case "ORG_ADMIN":
+		return targetRole == "Admin" || targetRole == "PropertyManager" || targetRole == "Accountant"
+	case "Admin":
+		return targetRole == "PropertyManager" || targetRole == "Accountant"
+	default:
+		return false
+	}
+}
+
 func (h *UserHandler) GetUsers(c *gin.Context) {
-	users, err := h.userService.GetAllUsers()
+	callerRole, _ := c.Get("role")
+	callerOrgID, _ := c.Get("organization_id")
+
+	// Default: active users only. Pass ?active=false to include inactive.
+	activeOnly := c.DefaultQuery("active", "true") != "false"
+
+	var users []*models.User
+	var err error
+
+	switch callerRole {
+	case "SUPER_ADMIN":
+		users, err = h.userService.GetAllUsers(activeOnly)
+	default:
+		orgIDPtr, ok := callerOrgID.(*int)
+		if !ok || orgIDPtr == nil {
+			c.JSON(http.StatusForbidden, gin.H{"error": "no organization context"})
+			return
+		}
+		users, err = h.userService.GetUsersByOrganization(*orgIDPtr, activeOnly)
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

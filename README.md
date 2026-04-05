@@ -24,6 +24,8 @@ docker-compose up -d
 
 For local development without Docker, see the component READMEs below.
 
+Seed test users (one per role) are documented in [src/backend/api/README.md](./src/backend/api/README.md#development-seed-users). Password for all: `Test@1234`.
+
 ## Features
 
 - **Multi-Organisation** — Users belong to one or more organisations; login routes to an organisation picker when multiple are available, issuing organisation-scoped JWTs

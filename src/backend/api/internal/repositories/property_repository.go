@@ -19,9 +19,9 @@ func NewPropertyRepository(db *sql.DB) *PropertyRepository {
 // Create creates a new property
 func (r *PropertyRepository) Create(property *models.CreatePropertyRequest) (*models.Property, error) {
 	query := `
-		INSERT INTO properties (property_name, property_code, address, city, postal_code, property_type, metadata)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id, property_name, property_code, address, city, postal_code, property_type, 
+		INSERT INTO properties (property_name, property_code, address, city, postal_code, property_type, metadata, organization_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id, property_name, property_code, address, city, postal_code, property_type,
 		          total_buildings, metadata, active, created_at, updated_at`
 
 	var result models.Property
@@ -34,6 +34,7 @@ func (r *PropertyRepository) Create(property *models.CreatePropertyRequest) (*mo
 		property.PostalCode,
 		property.PropertyType,
 		property.Metadata,
+		property.OrganizationID,
 	).Scan(
 		&result.ID,
 		&result.PropertyName,
@@ -146,6 +147,12 @@ func (r *PropertyRepository) List(filters map[string]interface{}, limit, offset 
 	whereConditions := []string{"1=1"}
 	args := []interface{}{}
 	argIndex := 1
+
+	if orgID, ok := filters["organization_id"]; ok {
+		whereConditions = append(whereConditions, fmt.Sprintf("organization_id = $%d", argIndex))
+		args = append(args, orgID)
+		argIndex++
+	}
 
 	if propertyType, ok := filters["property_type"]; ok && propertyType != "" {
 		whereConditions = append(whereConditions, fmt.Sprintf("property_type = $%d", argIndex))

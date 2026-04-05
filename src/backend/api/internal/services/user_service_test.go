@@ -44,8 +44,8 @@ func (m *MockUserRepository) GetByEmail(email string) (*models.User, error) {
 	return args.Get(0).(*models.User), args.Error(1)
 }
 
-func (m *MockUserRepository) GetAll() ([]*models.User, error) {
-	args := m.Called()
+func (m *MockUserRepository) GetAll(activeOnly bool) ([]*models.User, error) {
+	args := m.Called(activeOnly)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}

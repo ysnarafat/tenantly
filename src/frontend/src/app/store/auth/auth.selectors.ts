@@ -79,3 +79,13 @@ export const selectCanInviteUsers = createSelector(
   selectUserRole,
   (role) => role === 'SUPER_ADMIN' || role === 'ORG_ADMIN' || role === 'Admin'
 );
+
+export const selectUserOrganizations = createSelector(
+  selectAuthState,
+  (state: AuthState) => state.userOrganizations
+);
+
+export const selectCurrentOrganizationId = createSelector(
+  selectAuthState,
+  (state: AuthState) => state.currentOrganizationId
+);

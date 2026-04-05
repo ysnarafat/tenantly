@@ -37,6 +37,9 @@ func (h *PropertyHandler) CreateProperty(c *gin.Context) {
 		return
 	}
 
+	orgID := c.GetInt("org_id")
+	req.OrganizationID = orgID
+
 	property, err := h.propertyService.CreateProperty(&req, userID.(int))
 	if err != nil {
 		if err.Error() == "property name already exists" || err.Error() == "property code already exists" {
@@ -55,6 +58,8 @@ func (h *PropertyHandler) CreateProperty(c *gin.Context) {
 
 // GetProperties retrieves properties with filtering and pagination
 func (h *PropertyHandler) GetProperties(c *gin.Context) {
+	orgID := c.GetInt("org_id")
+
 	// Parse query parameters
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
@@ -64,6 +69,7 @@ func (h *PropertyHandler) GetProperties(c *gin.Context) {
 
 	// Build filters
 	filters := make(map[string]interface{})
+	filters["organization_id"] = orgID
 
 	if propertyType != "" {
 		filters["property_type"] = propertyType

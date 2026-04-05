@@ -284,10 +284,16 @@ func (r *UnitRepository) HasActiveLeases(unitID int) (bool, error) {
 	return exists, nil
 }
 
-// GetByBuildingWithDetails retrieves units for a building with details
-func (r *UnitRepository) GetByBuildingWithDetails(buildingID int, limit, offset int) ([]*models.UnitWithDetails, int, error) {
+// GetByBuildingWithDetails retrieves units for a building with details.
+// Pass orgID=0 to skip organization filtering (internal use only).
+func (r *UnitRepository) GetByBuildingWithDetails(buildingID int, limit, offset, orgID int) ([]*models.UnitWithDetails, int, error) {
+	orgFilter := ""
+	if orgID > 0 {
+		orgFilter = fmt.Sprintf(" AND b.organization_id = %d", orgID)
+	}
+
 	// Get total count
-	countQuery := `SELECT COUNT(*) FROM units WHERE building_id = $1 AND active = true`
+	countQuery := fmt.Sprintf(`SELECT COUNT(*) FROM units u JOIN buildings b ON u.building_id = b.id WHERE u.building_id = $1 AND u.active = true%s`, orgFilter)
 	var total int
 	err := r.db.QueryRow(countQuery, buildingID).Scan(&total)
 	if err != nil {
@@ -295,9 +301,9 @@ func (r *UnitRepository) GetByBuildingWithDetails(buildingID int, limit, offset 
 	}
 
 	// Get units
-	query := `
-		SELECT u.id, u.building_id, u.property_id, u.unit_number, u.unit_name, 
-			   u.floor, u.section, u.unit_type, u.monthly_rent, u.metadata, u.active, 
+	query := fmt.Sprintf(`
+		SELECT u.id, u.building_id, u.property_id, u.unit_number, u.unit_name,
+			   u.floor, u.section, u.unit_type, u.monthly_rent, u.metadata, u.active,
 			   u.created_at, u.updated_at,
 			   p.name as property_name,
 			   b.building_name, b.building_code,
@@ -308,9 +314,9 @@ func (r *UnitRepository) GetByBuildingWithDetails(buildingID int, limit, offset 
 		JOIN buildings b ON u.building_id = b.id
 		LEFT JOIN leases l ON u.id = l.unit_id AND l.status = 'Active'
 		LEFT JOIN tenants t ON l.tenant_id = t.id
-		WHERE u.building_id = $1 AND u.active = true
+		WHERE u.building_id = $1 AND u.active = true%s
 		ORDER BY u.floor, u.unit_number
-		LIMIT $2 OFFSET $3`
+		LIMIT $2 OFFSET $3`, orgFilter)
 
 	rows, err := r.db.Query(query, buildingID, limit, offset)
 	if err != nil {
@@ -351,19 +357,19 @@ func (r *UnitRepository) GetByBuildingWithDetails(buildingID int, limit, offset 
 }
 
 // GetByPropertyWithDetails retrieves units for a property with details
-func (r *UnitRepository) GetByPropertyWithDetails(propertyID int, limit, offset int) ([]*models.UnitWithDetails, int, error) {
+func (r *UnitRepository) GetByPropertyWithDetails(propertyID int, limit, offset, orgID int) ([]*models.UnitWithDetails, int, error) {
 	// Get total count
-	countQuery := `SELECT COUNT(*) FROM units WHERE property_id = $1 AND active = true`
+	countQuery := `SELECT COUNT(*) FROM units u JOIN properties p ON u.property_id = p.id WHERE u.property_id = $1 AND u.active = true AND p.organization_id = $2`
 	var total int
-	err := r.db.QueryRow(countQuery, propertyID).Scan(&total)
+	err := r.db.QueryRow(countQuery, propertyID, orgID).Scan(&total)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get unit count: %w", err)
 	}
 
 	// Get units
 	query := `
-		SELECT u.id, u.building_id, u.property_id, u.unit_number, u.unit_name, 
-			   u.floor, u.section, u.unit_type, u.monthly_rent, u.metadata, u.active, 
+		SELECT u.id, u.building_id, u.property_id, u.unit_number, u.unit_name,
+			   u.floor, u.section, u.unit_type, u.monthly_rent, u.metadata, u.active,
 			   u.created_at, u.updated_at,
 			   p.name as property_name,
 			   b.building_name, b.building_code,
@@ -374,11 +380,11 @@ func (r *UnitRepository) GetByPropertyWithDetails(propertyID int, limit, offset 
 		JOIN buildings b ON u.building_id = b.id
 		LEFT JOIN leases l ON u.id = l.unit_id AND l.status = 'Active'
 		LEFT JOIN tenants t ON l.tenant_id = t.id
-		WHERE u.property_id = $1 AND u.active = true
+		WHERE u.property_id = $1 AND u.active = true AND p.organization_id = $2
 		ORDER BY b.building_name, u.floor, u.unit_number
-		LIMIT $2 OFFSET $3`
+		LIMIT $3 OFFSET $4`
 
-	rows, err := r.db.Query(query, propertyID, limit, offset)
+	rows, err := r.db.Query(query, propertyID, orgID, limit, offset)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get units: %w", err)
 	}

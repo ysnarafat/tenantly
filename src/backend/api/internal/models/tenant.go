@@ -61,12 +61,13 @@ type TenantListResponse struct {
 }
 
 type CreateTenantRequest struct {
-	Name        string     `json:"name" binding:"required,max=100"`
-	TenantType  TenantType `json:"tenant_type" binding:"required,oneof=Individual Business"`
-	PhoneNumber string     `json:"phone_number" binding:"required,max=20"`
-	Email       string     `json:"email" binding:"omitempty,email"`
-	NIDNumber   string     `json:"nid_number" binding:"required,max=20"`
-	Address     string     `json:"address" binding:"omitempty"`
+	Name           string     `json:"name" binding:"required,max=100"`
+	TenantType     TenantType `json:"tenant_type" binding:"required,oneof=Individual Business"`
+	PhoneNumber    string     `json:"phone_number" binding:"required,max=20"`
+	Email          string     `json:"email" binding:"omitempty,email"`
+	NIDNumber      string     `json:"nid_number" binding:"required,max=20"`
+	Address        string     `json:"address" binding:"omitempty"`
+	OrganizationID int        `json:"-"`
 }
 
 type UpdateTenantRequest struct {

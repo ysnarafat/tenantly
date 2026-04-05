@@ -23,12 +23,12 @@ func NewBuildingRepository(db *sql.DB) *BuildingRepository {
 // Create creates a new building with validation and constraint handling
 func (r *BuildingRepository) Create(building *models.Building) error {
 	query := fmt.Sprintf(`
-		INSERT INTO %s (%s, %s, %s, %s, 
+		INSERT INTO %s (%s, %s, %s, %s, %s,
 		                      %s, %s, %s, %s, %s)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING %s, %s, %s`,
 		columns.BuildingTable,
-		columns.BuildingPropertyID, columns.BuildingName, columns.BuildingCode, columns.BuildingType,
+		columns.BuildingPropertyID, columns.BuildingOrganizationID, columns.BuildingName, columns.BuildingCode, columns.BuildingType,
 		columns.BuildingTotalFloors, columns.BuildingHasElevator, columns.BuildingConstructionYear,
 		columns.BuildingMetadata, columns.BuildingActiveStatus,
 		columns.BuildingID, columns.BuildingCreatedAt, columns.BuildingUpdatedAt)
@@ -36,6 +36,7 @@ func (r *BuildingRepository) Create(building *models.Building) error {
 	err := r.db.QueryRow(
 		query,
 		building.PropertyID,
+		building.OrganizationID,
 		building.BuildingName,
 		building.BuildingCode,
 		building.BuildingType,
@@ -266,12 +267,12 @@ func (r *BuildingRepository) BulkCreate(buildings []*models.Building) error {
 	defer tx.Rollback()
 
 	query := fmt.Sprintf(`
-		INSERT INTO %s (%s, %s, %s, %s, 
+		INSERT INTO %s (%s, %s, %s, %s, %s,
 		                      %s, %s, %s, %s, %s)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING %s, %s, %s`,
 		columns.BuildingTable,
-		columns.BuildingPropertyID, columns.BuildingName, columns.BuildingCode, columns.BuildingType,
+		columns.BuildingPropertyID, columns.BuildingOrganizationID, columns.BuildingName, columns.BuildingCode, columns.BuildingType,
 		columns.BuildingTotalFloors, columns.BuildingHasElevator, columns.BuildingConstructionYear,
 		columns.BuildingMetadata, columns.BuildingActiveStatus,
 		columns.BuildingID, columns.BuildingCreatedAt, columns.BuildingUpdatedAt)
@@ -280,6 +281,7 @@ func (r *BuildingRepository) BulkCreate(buildings []*models.Building) error {
 		err := tx.QueryRow(
 			query,
 			building.PropertyID,
+			building.OrganizationID,
 			building.BuildingName,
 			building.BuildingCode,
 			building.BuildingType,
@@ -307,6 +309,12 @@ func (r *BuildingRepository) Search(filters *models.BuildingSearchFilters) ([]*m
 	whereConditions := []string{"1=1"}
 	args := []interface{}{}
 	argIndex := 1
+
+	if filters.OrganizationID != nil {
+		whereConditions = append(whereConditions, fmt.Sprintf("%s = $%d", columns.BuildingOrganizationID, argIndex))
+		args = append(args, *filters.OrganizationID)
+		argIndex++
+	}
 
 	if filters.PropertyID != nil {
 		whereConditions = append(whereConditions, fmt.Sprintf("%s = $%d", columns.BuildingPropertyID, argIndex))
@@ -587,6 +595,13 @@ func (r *BuildingRepository) AdvancedSearch(req *models.BuildingSearchRequest) (
 	whereConditions := []string{"1=1"}
 	args := []interface{}{}
 	argIndex := 1
+
+	// Organization filter (mandatory for org-scoped callers)
+	if req.OrganizationID != nil {
+		whereConditions = append(whereConditions, fmt.Sprintf("%s = $%d", columns.BuildingOrganizationID, argIndex))
+		args = append(args, *req.OrganizationID)
+		argIndex++
+	}
 
 	// Property filter
 	if req.PropertyID != nil {

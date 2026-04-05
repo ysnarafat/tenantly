@@ -8,6 +8,7 @@
       <span class="app-title">Tenantly</span>
       <span class="app-subtitle">Tenant Management System</span>
     </div>
+    <app-organization-selector></app-organization-selector>
     <span class="spacer"></span>
     <div class="user-info">
       <div class="user-details">
@@ -67,15 +68,17 @@
         </a>
         }
 
+        @if (canViewPayments()) {
         <a mat-list-item routerLink="/payments" routerLinkActive="active" (click)="onNavigate()">
           <mat-icon>payment</mat-icon>
           <span>Payments</span>
         </a>
-
+        } @if (canViewReports()) {
         <a mat-list-item routerLink="/reports" routerLinkActive="active" (click)="onNavigate()">
           <mat-icon>assessment</mat-icon>
           <span>Reports</span>
         </a>
+        }
 
         @if (canManageDocuments()) {
         <a mat-list-item routerLink="/documents" routerLinkActive="active" (click)="onNavigate()">

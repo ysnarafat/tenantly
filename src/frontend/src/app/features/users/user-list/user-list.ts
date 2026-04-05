@@ -20,8 +20,10 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { Router } from '@angular/router';
 import { User } from '../../../core/services/auth.service';
-import { OrganizationService } from '../../../core/services/organization.service';
+import { UserService } from '../../../core/services/user.service';
 import { PermissionService } from '../../../core/services/permission.service';
 
 @Component({
@@ -41,6 +43,7 @@ import { PermissionService } from '../../../core/services/permission.service';
     MatSelectModule,
     MatSnackBarModule,
     MatTooltipModule,
+    MatSlideToggleModule,
   ],
   templateUrl: './user-list.html',
   styleUrls: ['./user-list.scss'],
@@ -49,13 +52,16 @@ export class UserList implements OnInit, AfterViewInit {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
-  private organizationService = inject(OrganizationService);
+  private userService = inject(UserService);
   private permissionService = inject(PermissionService);
   private snackBar = inject(MatSnackBar);
+  private router = inject(Router);
 
   loading = signal(false);
   searchTerm = signal('');
   selectedRole = signal<string | null>(null);
+  showInactive = signal(false);
+  allUsers = signal<User[]>([]);
   dataSource = new MatTableDataSource<User>();
   displayedColumns: string[] = ['username', 'email', 'role', 'active', 'created_at', 'actions'];
 
@@ -65,7 +71,7 @@ export class UserList implements OnInit, AfterViewInit {
     const search = this.searchTerm().toLowerCase();
     const role = this.selectedRole();
 
-    return this.dataSource.data.filter((user) => {
+    return this.allUsers().filter((user) => {
       const matchesSearch =
         user.username.toLowerCase().includes(search) || user.email.toLowerCase().includes(search);
       const matchesRole = !role || user.role === role;
@@ -89,15 +95,10 @@ export class UserList implements OnInit, AfterViewInit {
   }
 
   loadUsers(): void {
-    const currentOrg = this.organizationService.getCurrentOrganization();
-    if (!currentOrg) {
-      this.snackBar.open('No organization selected', 'Close', { duration: 3000 });
-      return;
-    }
-
     this.loading.set(true);
-    this.organizationService.getOrganizationUsers(currentOrg.id).subscribe({
+    this.userService.getUsers(!this.showInactive()).subscribe({
       next: (response) => {
+        this.allUsers.set(response.users);
         this.dataSource.data = response.users;
         this.loading.set(false);
       },
@@ -109,6 +110,11 @@ export class UserList implements OnInit, AfterViewInit {
     });
   }
 
+  toggleShowInactive(checked: boolean): void {
+    this.showInactive.set(checked);
+    this.loadUsers();
+  }
+
   onSearchChange(value: string): void {
     this.searchTerm.set(value);
   }
@@ -118,22 +124,48 @@ export class UserList implements OnInit, AfterViewInit {
   }
 
   deactivateUser(user: User): void {
-    if (confirm(`Are you sure you want to deactivate ${user.username}?`)) {
-      this.snackBar.open('User deactivation would be implemented here', 'Close', {
-        duration: 3000,
-      });
-    }
+    if (!confirm(`Deactivate ${user.username}?`)) return;
+    this.userService.updateUser(user.id, { active: false }).subscribe({
+      next: () => {
+        this.snackBar.open('User deactivated', 'Close', { duration: 3000 });
+        this.loadUsers();
+      },
+      error: (err) => this.snackBar.open(err.error?.error || 'Failed to deactivate user', 'Close', { duration: 5000 }),
+    });
+  }
+
+  activateUser(user: User): void {
+    if (!confirm(`Activate ${user.username}?`)) return;
+    this.userService.updateUser(user.id, { active: true }).subscribe({
+      next: () => {
+        this.snackBar.open('User activated', 'Close', { duration: 3000 });
+        this.loadUsers();
+      },
+      error: (err) => this.snackBar.open(err.error?.error || 'Failed to activate user', 'Close', { duration: 5000 }),
+    });
   }
 
   deleteUser(user: User): void {
-    if (confirm(`Are you sure you want to delete ${user.username}?`)) {
-      this.snackBar.open('User deletion would be implemented here', 'Close', { duration: 3000 });
-    }
+    if (!confirm(`Permanently delete ${user.username}? This cannot be undone.`)) return;
+    this.userService.deleteUser(user.id).subscribe({
+      next: () => {
+        this.snackBar.open('User deleted', 'Close', { duration: 3000 });
+        this.loadUsers();
+      },
+      error: (err) => this.snackBar.open(err.error?.error || 'Failed to delete user', 'Close', { duration: 5000 }),
+    });
   }
 
   promoteUser(user: User): void {
-    void user; // Suppress unused variable warning
-    this.snackBar.open('User promotion dialog would open here', 'Close', { duration: 3000 });
+    this.router.navigate(['/admin/users/promote'], { queryParams: { userId: user.id } });
+  }
+
+  createUser(): void {
+    this.router.navigate(['/admin/users/new']);
+  }
+
+  inviteUser(): void {
+    this.router.navigate(['/admin/invitations/new']);
   }
 
   getRoleColor(role: string): string {

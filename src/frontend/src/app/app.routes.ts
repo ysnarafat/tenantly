@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { AuthGuard } from './core/guards/auth.guard';
 import { superAdminGuard } from './core/guards/super-admin.guard';
 import { orgAdminGuard } from './core/guards/org-admin.guard';
+import { userManagementGuard } from './core/guards/user-management.guard';
 import { provideState } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
 import { propertyReducer } from './features/properties/store/property.reducer';
@@ -20,6 +21,14 @@ export const routes: Routes = [
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
+  },
+  {
+    path: 'select-organization',
+    loadComponent: () =>
+      import('./features/auth/organization-picker/organization-picker').then(
+        (m) => m.OrganizationPicker
+      ),
+    canActivate: [AuthGuard],
   },
   {
     path: 'dashboard',
@@ -137,11 +146,24 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'users',
+        loadComponent: () =>
+          import('./features/users/user-list/user-list').then((m) => m.UserList),
+        canActivate: [userManagementGuard],
+      },
+      {
+        path: 'users/new',
+        loadComponent: () =>
+          import('./features/admin/user-management/create-user').then((m) => m.CreateUserComponent),
+        canActivate: [userManagementGuard],
+      },
+      {
         path: 'users/promote',
         loadComponent: () =>
           import('./features/admin/user-management/admin-promotion').then(
             (m) => m.AdminPromotionComponent
           ),
+        canActivate: [userManagementGuard],
       },
     ],
   },

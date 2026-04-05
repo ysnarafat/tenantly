@@ -71,8 +71,8 @@ func (m *MockUserService) GetUserByID(id int) (*models.User, error) {
 	return args.Get(0).(*models.User), args.Error(1)
 }
 
-func (m *MockUserService) GetAllUsers() ([]*models.User, error) {
-	args := m.Called()
+func (m *MockUserService) GetAllUsers(activeOnly bool) ([]*models.User, error) {
+	args := m.Called(activeOnly)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -97,20 +97,28 @@ func (m *MockUserService) GetUserByIDInOrganization(userID int, orgID int) (*mod
 	return args.Get(0).(*models.User), args.Error(1)
 }
 
+func (m *MockUserService) GetUsersByOrganization(orgID int, activeOnly bool) ([]*models.User, error) {
+	args := m.Called(orgID, activeOnly)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.User), args.Error(1)
+}
+
+func (m *MockUserService) SetOrganization(userID int, req *models.SetOrganizationRequest) (*models.SetOrganizationResponse, error) {
+	args := m.Called(userID, req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.SetOrganizationResponse), args.Error(1)
+}
+
 func (m *MockUserService) RegisterWithInvitation(req *models.RegisterWithInvitationRequest) (*models.LoginResponse, error) {
 	args := m.Called(req)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).(*models.LoginResponse), args.Error(1)
-}
-
-func (m *MockUserService) GetUsersByOrganization(orgID int) ([]*models.User, error) {
-	args := m.Called(orgID)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).([]*models.User), args.Error(1)
 }
 
 func setupTestRouter() *gin.Engine {
@@ -499,7 +507,7 @@ func TestUserHandler_GetUsers(t *testing.T) {
 			},
 		}
 
-		mockService.On("GetAllUsers").Return(users, nil)
+		mockService.On("GetAllUsers", true).Return(users, nil)
 
 		w := httptest.NewRecorder()
 		httpReq, _ := http.NewRequest("GET", "/users", nil)

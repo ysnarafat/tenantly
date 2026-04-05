@@ -203,7 +203,7 @@ func (s *UnitService) ValidateUnitTypeForBuilding(buildingID int, unitType model
 }
 
 // GetUnitsByBuilding retrieves units for a specific building with pagination
-func (s *UnitService) GetUnitsByBuilding(buildingID int, page, pageSize int) ([]*models.UnitWithDetails, int, error) {
+func (s *UnitService) GetUnitsByBuilding(buildingID int, page, pageSize, orgID int) ([]*models.UnitWithDetails, int, error) {
 	// Validate building exists
 	_, err := s.buildingRepo.GetByID(buildingID)
 	if err != nil {
@@ -219,7 +219,7 @@ func (s *UnitService) GetUnitsByBuilding(buildingID int, page, pageSize int) ([]
 	}
 	offset := (page - 1) * pageSize
 
-	units, total, err := s.unitRepo.GetByBuildingWithDetails(buildingID, pageSize, offset)
+	units, total, err := s.unitRepo.GetByBuildingWithDetails(buildingID, pageSize, offset, orgID)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get units by building: %w", err)
 	}
@@ -228,7 +228,7 @@ func (s *UnitService) GetUnitsByBuilding(buildingID int, page, pageSize int) ([]
 }
 
 // GetUnitsByProperty retrieves units for a specific property with building context
-func (s *UnitService) GetUnitsByProperty(propertyID int, page, pageSize int) ([]*models.UnitWithDetails, int, error) {
+func (s *UnitService) GetUnitsByProperty(propertyID int, page, pageSize, orgID int) ([]*models.UnitWithDetails, int, error) {
 	// Validate property exists
 	_, err := s.propertyRepo.GetByID(propertyID)
 	if err != nil {
@@ -244,7 +244,7 @@ func (s *UnitService) GetUnitsByProperty(propertyID int, page, pageSize int) ([]
 	}
 	offset := (page - 1) * pageSize
 
-	units, total, err := s.unitRepo.GetByPropertyWithDetails(propertyID, pageSize, offset)
+	units, total, err := s.unitRepo.GetByPropertyWithDetails(propertyID, pageSize, offset, orgID)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get units by property: %w", err)
 	}

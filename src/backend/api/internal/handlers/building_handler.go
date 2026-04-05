@@ -32,6 +32,8 @@ func (h *BuildingHandler) CreateBuilding(c *gin.Context) {
 		return
 	}
 
+	req.OrganizationID = c.GetInt("org_id")
+
 	building, err := h.buildingService.CreateBuilding(&req)
 	if err != nil {
 		// Handle specific error types
@@ -66,10 +68,13 @@ func (h *BuildingHandler) GetBuildings(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 
+	orgID := c.GetInt("org_id")
+
 	// Build search filters
 	filters := &models.BuildingSearchFilters{
-		Limit:  pageSize,
-		Offset: (page - 1) * pageSize,
+		Limit:          pageSize,
+		Offset:         (page - 1) * pageSize,
+		OrganizationID: &orgID,
 	}
 
 	// Parse property_id filter
@@ -357,8 +362,9 @@ func (h *BuildingHandler) BulkCreateBuildings(c *gin.Context) {
 		return
 	}
 
-	// Set property ID from context
+	// Set property ID and org ID from context
 	req.PropertyID = propertyObj.ID
+	req.OrganizationID = c.GetInt("org_id")
 
 	buildings, err := h.buildingService.BulkCreateBuildings(&req)
 	if err != nil {
@@ -412,10 +418,13 @@ func (h *BuildingHandler) SearchBuildings(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 
+	orgID := c.GetInt("org_id")
+
 	// Build search filters
 	filters := &models.BuildingSearchFilters{
-		Limit:  pageSize,
-		Offset: (page - 1) * pageSize,
+		Limit:          pageSize,
+		Offset:         (page - 1) * pageSize,
+		OrganizationID: &orgID,
 	}
 
 	// Parse all possible filters
@@ -526,6 +535,9 @@ func (h *BuildingHandler) AdvancedSearchBuildings(c *gin.Context) {
 	if req.PageSize <= 0 {
 		req.PageSize = 20
 	}
+
+	orgID := c.GetInt("org_id")
+	req.OrganizationID = &orgID
 
 	response, err := h.buildingService.AdvancedSearchBuildings(&req)
 	if err != nil {
