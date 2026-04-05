@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, ViewChild, signal, computed, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit, ViewChild, signal, computed } from '@angular/core';
 
 import { RouterOutlet, RouterModule } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -14,6 +14,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthFacade } from './store/auth/auth.facade';
 import { PermissionService } from './core/services/permission.service';
 import { Permission } from './core/models/role.model';
+import { User } from './core/services/auth.service';
 
 @Component({
   selector: 'app-root',
@@ -43,16 +44,20 @@ export class App implements OnInit {
   // Signals for reactive state
   isAuthenticated = signal(false);
   userRole = signal('');
-  user = signal<any>(null);
+  user = signal<User | null>(null);
   isMobile = signal(false);
 
   // Computed permission signals
+  isSuperAdmin = computed(() => this.permissions.isSuperAdmin());
+  isOrgAdmin = computed(() => this.permissions.isOrgAdmin());
   canManageProperties = computed(() =>
     this.permissions.hasPermission(Permission.MANAGE_PROPERTIES)
   );
   canManageTenants = computed(() => this.permissions.hasPermission(Permission.MANAGE_TENANTS));
   canManageDocuments = computed(() => this.permissions.hasPermission(Permission.MANAGE_DOCUMENTS));
   canManageUsers = computed(() => this.permissions.hasPermission(Permission.MANAGE_USERS));
+  canManageOrganizations = computed(() => this.permissions.canManageOrganizations());
+  canInviteUsers = computed(() => this.permissions.canInviteUsers());
 
   // Computed signals for derived state
   sidenavMode = computed(() => (this.isMobile() ? ('over' as const) : ('side' as const)));

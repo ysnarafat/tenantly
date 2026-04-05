@@ -1,9 +1,8 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { tap, map, take } from 'rxjs/operators';
+import { take } from 'rxjs/operators';
 import { Store } from '@ngrx/store';
-import { environment } from '../../../environments/environment';
 import { AppState } from '../../store';
 import * as AuthSelectors from '../../store/auth/auth.selectors';
 import * as AuthActions from '../../store/auth/auth.actions';
@@ -18,6 +17,9 @@ export interface User {
   username: string;
   email: string;
   role: string;
+  organization_id?: number;
+  first_name?: string;
+  last_name?: string;
   active: boolean;
   created_at: string;
   updated_at: string;

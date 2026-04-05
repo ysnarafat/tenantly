@@ -85,13 +85,17 @@ export const authReducer = createReducer(
   })),
 
   // Logout
-  on(AuthActions.logout, (state) => ({
-    ...state,
+  on(AuthActions.logout, () => ({
+    user: null,
+    token: null,
+    refreshToken: null,
+    expiresAt: null,
+    isAuthenticated: false,
     loading: true,
     error: null,
   })),
 
-  on(AuthActions.logoutSuccess, (state) => ({
+  on(AuthActions.logoutSuccess, () => ({
     user: null,
     token: null,
     refreshToken: null,

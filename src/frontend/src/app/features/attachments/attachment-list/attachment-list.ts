@@ -196,8 +196,9 @@ export class AttachmentList implements OnInit {
     }
   }
 
-  editAttachment(attachment: Attachment) {
+  editAttachment(attachment: Attachment): void {
     // TODO: Implement edit attachment dialog
+    void attachment; // Suppress unused variable warning
     this.snackBar.open('Edit attachment functionality will be implemented', 'Close', {
       duration: 3000,
     });
@@ -207,6 +208,7 @@ export class AttachmentList implements OnInit {
     if (confirm(`Are you sure you want to delete "${attachment.file_name}"?`)) {
       this.attachmentService.deleteAttachment(attachment.id).subscribe({
         next: () => {
+          this.loadAttachments();
           this.snackBar.open('Attachment deleted successfully', 'Close', { duration: 3000 });
           this.loadAttachments();
         },

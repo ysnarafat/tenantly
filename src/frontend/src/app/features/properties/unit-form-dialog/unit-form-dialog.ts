@@ -68,6 +68,7 @@ export class UnitFormDialogComponent implements OnInit {
 
       // Remove unit_number from updates (it's immutable)
       if (this.data.mode === 'edit') {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { unit_number, ...updateData } = formValue;
         this.dialogRef.close(updateData);
       } else {
@@ -112,7 +113,7 @@ export class UnitFormDialogComponent implements OnInit {
   }
 
   private getFieldLabel(fieldName: string): string {
-    const labels: { [key: string]: string } = {
+    const labels: Record<string, string> = {
       unit_number: 'Unit Number',
       unit_name: 'Unit Name',
       unit_type: 'Unit Type',

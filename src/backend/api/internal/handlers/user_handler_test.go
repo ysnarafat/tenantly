@@ -89,6 +89,30 @@ func (m *MockUserService) DeleteUser(id int) error {
 	return args.Error(0)
 }
 
+func (m *MockUserService) GetUserByIDInOrganization(userID int, orgID int) (*models.User, error) {
+	args := m.Called(userID, orgID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.User), args.Error(1)
+}
+
+func (m *MockUserService) RegisterWithInvitation(req *models.RegisterWithInvitationRequest) (*models.LoginResponse, error) {
+	args := m.Called(req)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.LoginResponse), args.Error(1)
+}
+
+func (m *MockUserService) GetUsersByOrganization(orgID int) ([]*models.User, error) {
+	args := m.Called(orgID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.User), args.Error(1)
+}
+
 func setupTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	return gin.New()
@@ -251,8 +275,113 @@ func TestUserHandler_RefreshToken(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.Equal(t, loginResponse.Token, response.Token)
+		assert.Equal(t, loginResponse.RefreshToken, response.RefreshToken)
+		assert.NotEqual(t, req.RefreshToken, response.RefreshToken)
 
 		mockService.AssertExpectations(t)
+	})
+
+	t.Run("Invalid refresh token", func(t *testing.T) {
+		req := &models.RefreshTokenRequest{
+			RefreshToken: "invalid-refresh-token",
+		}
+
+		mockService.On("RefreshToken", "invalid-refresh-token").Return(nil, assert.AnError)
+
+		reqBody, _ := json.Marshal(req)
+		w := httptest.NewRecorder()
+		httpReq, _ := http.NewRequest("POST", "/auth/refresh", bytes.NewBuffer(reqBody))
+		httpReq.Header.Set("Content-Type", "application/json")
+
+		router.ServeHTTP(w, httpReq)
+
+		assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+		var response map[string]string
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, "TOKEN_REFRESH_FAILED", response["code"])
+
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("Missing refresh token", func(t *testing.T) {
+		req := &models.RefreshTokenRequest{
+			RefreshToken: "",
+		}
+
+		reqBody, _ := json.Marshal(req)
+		w := httptest.NewRecorder()
+		httpReq, _ := http.NewRequest("POST", "/auth/refresh", bytes.NewBuffer(reqBody))
+		httpReq.Header.Set("Content-Type", "application/json")
+
+		router.ServeHTTP(w, httpReq)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+
+		var response map[string]string
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, "INVALID_REQUEST", response["code"])
+	})
+
+	t.Run("Malformed JSON", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		httpReq, _ := http.NewRequest("POST", "/auth/refresh", bytes.NewBuffer([]byte("invalid json")))
+		httpReq.Header.Set("Content-Type", "application/json")
+
+		router.ServeHTTP(w, httpReq)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+	})
+}
+
+func TestUserHandler_Logout(t *testing.T) {
+	mockService := new(MockUserService)
+	handler := NewUserHandler(mockService)
+	router := setupTestRouter()
+
+	// Middleware to set user context
+	router.Use(func(c *gin.Context) {
+		c.Set("user_id", 1)
+		c.Next()
+	})
+
+	router.POST("/auth/logout", handler.Logout)
+
+	t.Run("Success", func(t *testing.T) {
+		mockService.On("Logout", 1, "", "").Return(nil)
+
+		w := httptest.NewRecorder()
+		httpReq, _ := http.NewRequest("POST", "/auth/logout", nil)
+
+		router.ServeHTTP(w, httpReq)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var response map[string]string
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, "Successfully logged out", response["message"])
+
+		mockService.AssertExpectations(t)
+	})
+
+	t.Run("Logout without authentication", func(t *testing.T) {
+		router2 := setupTestRouter()
+		router2.POST("/auth/logout", handler.Logout)
+
+		w := httptest.NewRecorder()
+		httpReq, _ := http.NewRequest("POST", "/auth/logout", nil)
+
+		router2.ServeHTTP(w, httpReq)
+
+		assert.Equal(t, http.StatusUnauthorized, w.Code)
+
+		var response map[string]string
+		err := json.Unmarshal(w.Body.Bytes(), &response)
+		assert.NoError(t, err)
+		assert.Equal(t, "NOT_AUTHENTICATED", response["code"])
 	})
 }
 

@@ -59,13 +59,18 @@ describe('AuthService', () => {
     service = TestBed.inject(AuthService);
     store = TestBed.inject(Store) as jasmine.SpyObj<Store<AppState>>;
 
-    // Clear localStorage before each test
-    localStorage.clear();
-  });
-
-  afterEach(() => {
-    // Clean up localStorage after each test
-    localStorage.clear();
+    // Setup default store selectors
+    store.select.and.callFake((selector: unknown) => {
+      if (selector === AuthSelectors.selectUser) return of(mockUser);
+      if (selector === AuthSelectors.selectUserRole) return of('Admin');
+      if (selector === AuthSelectors.selectIsAuthenticated) return of(true);
+      if (selector === AuthSelectors.selectIsAdmin) return of(true);
+      if (selector === AuthSelectors.selectIsPropertyManager) return of(false);
+      if (selector === AuthSelectors.selectIsAccountant) return of(false);
+      if (selector === AuthSelectors.selectAuthLoading) return of(false);
+      if (selector === AuthSelectors.selectAuthError) return of(null);
+      return of(null);
+    });
   });
 
   it('should be created', () => {
@@ -347,7 +352,10 @@ describe('AuthService', () => {
     });
 
     it('should return false when user does not have the specified role', () => {
-      store.select.and.returnValue(of('PropertyManager'));
+      store.select.and.callFake((selector: unknown) => {
+        if (selector === AuthSelectors.selectUserRole) return of('PropertyManager');
+        return of(null);
+      });
 
       const result = service.hasRole('Admin');
 
@@ -379,7 +387,10 @@ describe('AuthService', () => {
     });
 
     it('should return false when user does not have any of the specified roles', () => {
-      store.select.and.returnValue(of('Accountant'));
+      store.select.and.callFake((selector: unknown) => {
+        if (selector === AuthSelectors.selectUserRole) return of('Accountant');
+        return of(null);
+      });
 
       const result = service.hasAnyRole(['Admin', 'PropertyManager']);
 

@@ -1,65 +1,54 @@
-# 🏠 Tenantly - Property Rental Management System
+# Tenantly — Property Rental Management System
 
-A comprehensive tenant management system designed for the Bangladesh market, focusing on property rental management.
+A multi-tenant property management platform built for the Bangladesh market. Handles tenant onboarding, lease management, payment tracking, and automated billing across multiple organisations.
 
-## 📋 Overview
+## Services
 
-Tenantly is a robust, multi-service platform built to streamline property management. It handles everything from tenant onboarding and lease management to automated billing and notifications.
+| Service | Stack | Port |
+|---------|-------|------|
+| Backend API | Go (Gin) + PostgreSQL | 8080 |
+| Frontend | Angular + Material Design | 4200 |
+| Notification Service | .NET background worker | — |
 
-- **Backend API**: High-performance Go (Gin) service for core logic.
-- **Frontend**: Modern Angular application with a responsive dashboard.
-- **Notification Service**: Background worker built with .NET for SMS/Email alerts.
+## Quick Start
 
-## 🚀 Quick Start
+**Prerequisites:** Docker Desktop, Docker Compose
 
-The fastest way to get started is using Docker Compose.
+```bash
+cp .env.example .env
+docker-compose up -d
+```
 
-### 🛠️ Prerequisites
+- Frontend: http://localhost:4200
+- API: http://localhost:8080/api/v1
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-- [Docker Compose](https://docs.docker.com/compose/install/)
+For local development without Docker, see the component READMEs below.
 
-### ⚙️ Setup
+## Features
 
-1. **Clone the repository**
-2. **Setup environment variables**:
-   ```bash
-   cp .env.example .env
-   ```
-3. **Start the platform**:
-   ```bash
-   docker-compose up -d
-   ```
+- **Multi-Organisation** — Users belong to one or more organisations; login routes to an organisation picker when multiple are available, issuing organisation-scoped JWTs
+- **Role-Based Access** — Five roles: `SUPER_ADMIN`, `ORG_ADMIN`, `Admin`, `PropertyManager`, `Accountant`
+- **Property Management** — Buildings, units, occupancy tracking
+- **Tenant & Lease Management** — Profiles, lease terms, automated renewals
+- **Payment Tracking** — Multi-channel payment recording and reporting
+- **User Onboarding** — Token-based invitation workflow for new organisation members
+- **Admin Panel** — Organisation management, invitation management, and audit logs (SUPER_ADMIN / ORG_ADMIN)
+- **Notifications** — SMS and email reminders for rent due and lease renewals
+- **Localisation** — Bengali language support, BDT (৳) currency
 
-The applications will be available at:
-- **Frontend**: `http://localhost:4200`
-- **Backend API**: `http://localhost:8080/api/v1`
-- **PostgreSQL**: `localhost:5432`
+## Documentation
 
-## 📂 Project Structure
+| Component | README |
+|-----------|--------|
+| Backend API | [src/backend/api/README.md](./src/backend/api/README.md) |
+| Frontend | [src/frontend/README.md](./src/frontend/README.md) |
+| Notification Service | [src/backend/notification-service/README.md](./src/backend/notification-service/README.md) |
+| Authentication | [src/backend/api/AUTHENTICATION.md](./src/backend/api/AUTHENTICATION.md) |
 
-For detailed documentation, please refer to the specific component directories:
+## Contributing
 
-| Component | Description | Documentation |
-|-----------|-------------|---------------|
-| **Backend API** | Go REST API | [backend/api](./src/backend/api/README.md) |
-| **Notification Service** | .NET Background Service | [backend/notification-service](./src/backend/notification-service/README.md) |
-| **Frontend** | Angular Application | [frontend](./src/frontend/README.md) |
+See [CONTRIBUTING.md](CONTRIBUTING.md) for branch naming, commit conventions, and the development workflow.
 
-## ✨ Features
+## License
 
-- **Property Management**: Track properties, buildings, units, and occupancy.
-- **Tenant Management**: Profiles, contact info, and history.
-- **Lease Processing**: Terms, deposits, and automated renewals.
-- **Payments**: Multi-channel payment tracking and invoicing.
-- **Automated Alerts**: SMS and Email reminders for rent and renewals.
-- **Localization**: Native support for Bengali and BDT (৳).
-- **CI/CD**: Automated linting, formatting, and deployment via GitHub Actions.
-
-## 🤝 Contributing
-
-Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for details on how to get started with development.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE).

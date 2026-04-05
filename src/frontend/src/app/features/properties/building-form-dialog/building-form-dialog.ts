@@ -84,6 +84,7 @@ export class BuildingFormDialogComponent implements OnInit {
 
       // Remove building_code from updates (it's immutable)
       if (this.data.mode === 'edit') {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { building_code, ...updateData } = formValue;
         this.dialogRef.close(updateData);
       } else {
@@ -135,7 +136,7 @@ export class BuildingFormDialogComponent implements OnInit {
   }
 
   private getFieldLabel(fieldName: string): string {
-    const labels: { [key: string]: string } = {
+    const labels: Record<string, string> = {
       building_name: 'Building Name',
       building_code: 'Building Code',
       building_type: 'Building Type',

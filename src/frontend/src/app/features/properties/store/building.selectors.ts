@@ -3,7 +3,7 @@ import { BuildingState, buildingAdapter } from './building.reducer';
 
 export const selectBuildingState = createFeatureSelector<BuildingState>('buildings');
 
-const { selectAll, selectEntities, selectIds, selectTotal } = buildingAdapter.getSelectors();
+const { selectAll, selectEntities } = buildingAdapter.getSelectors();
 
 export const selectAllBuildings = createSelector(selectBuildingState, selectAll);
 

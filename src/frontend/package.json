@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "ng": "ng",
+    "start": "ng serve",
     "start:network": "ng serve --host 0.0.0.0 --port 4200",
     "start:local": "ng serve",
     "build": "ng build",

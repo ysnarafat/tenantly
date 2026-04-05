@@ -21,14 +21,18 @@
       <mat-label>Property Code</mat-label>
       <input matInput formControlName="property_code" placeholder="e.g., PROP-001" required />
       <mat-icon matPrefix>tag</mat-icon>
-      <mat-hint *ngIf="!isEditMode">Unique identifier for this property</mat-hint>
+      @if (!isEditMode) {
+      <mat-hint>Unique identifier for this property</mat-hint>
+      }
       <mat-error>{{ getErrorMessage('property_code') }}</mat-error>
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Property Type</mat-label>
       <mat-select formControlName="property_type" required>
-        <mat-option *ngFor="let type of propertyTypes" [value]="type"> {{ type }} </mat-option>
+        @for (type of propertyTypes; track type) {
+        <mat-option [value]="type"> {{ type }} </mat-option>
+        }
       </mat-select>
       <mat-icon matPrefix>category</mat-icon>
       <mat-error>{{ getErrorMessage('property_type') }}</mat-error>

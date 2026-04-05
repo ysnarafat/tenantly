@@ -11,12 +11,12 @@ export const createCrudActions = <T>(feature: string) => ({
   // Load actions
   load: createAction(`[${feature}] Load`),
   loadSuccess: createAction(`[${feature}] Load Success`, props<{ items: T[] }>()),
-  loadFailure: createAction(`[${feature}] Load Failure`, props<{ error: any }>()),
+  loadFailure: createAction(`[${feature}] Load Failure`, props<{ error: unknown }>()),
 
   // Create actions
   create: createAction(`[${feature}] Create`, props<{ item: Partial<T> }>()),
   createSuccess: createAction(`[${feature}] Create Success`, props<{ item: T }>()),
-  createFailure: createAction(`[${feature}] Create Failure`, props<{ error: any }>()),
+  createFailure: createAction(`[${feature}] Create Failure`, props<{ error: unknown }>()),
 
   // Update actions
   update: createAction(
@@ -24,12 +24,12 @@ export const createCrudActions = <T>(feature: string) => ({
     props<{ id: string | number; changes: Partial<T> }>()
   ),
   updateSuccess: createAction(`[${feature}] Update Success`, props<{ item: T }>()),
-  updateFailure: createAction(`[${feature}] Update Failure`, props<{ error: any }>()),
+  updateFailure: createAction(`[${feature}] Update Failure`, props<{ error: unknown }>()),
 
   // Delete actions
   delete: createAction(`[${feature}] Delete`, props<{ id: string | number }>()),
   deleteSuccess: createAction(`[${feature}] Delete Success`, props<{ id: string | number }>()),
-  deleteFailure: createAction(`[${feature}] Delete Failure`, props<{ error: any }>()),
+  deleteFailure: createAction(`[${feature}] Delete Failure`, props<{ error: unknown }>()),
 
   // Select actions
   select: createAction(`[${feature}] Select`, props<{ id: string | number | null }>()),

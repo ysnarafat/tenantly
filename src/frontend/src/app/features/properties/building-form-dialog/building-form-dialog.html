@@ -21,14 +21,18 @@
       <mat-label>Building Code</mat-label>
       <input matInput formControlName="building_code" placeholder="e.g., BLD-001" required />
       <mat-icon matPrefix>tag</mat-icon>
-      <mat-hint *ngIf="!isEditMode">Unique identifier for this building</mat-hint>
+      @if (!isEditMode) {
+      <mat-hint>Unique identifier for this building</mat-hint>
+      }
       <mat-error>{{ getErrorMessage('building_code') }}</mat-error>
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>Building Type</mat-label>
       <mat-select formControlName="building_type" required>
-        <mat-option *ngFor="let type of buildingTypes" [value]="type"> {{ type }} </mat-option>
+        @for (type of buildingTypes; track type) {
+        <mat-option [value]="type"> {{ type }} </mat-option>
+        }
       </mat-select>
       <mat-icon matPrefix>category</mat-icon>
       <mat-error>{{ getErrorMessage('building_type') }}</mat-error>

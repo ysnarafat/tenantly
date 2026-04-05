@@ -45,7 +45,7 @@ export type UnitMetadata =
   | OfficeMetadata
   | ParkingMetadata
   | StorageMetadata
-  | Record<string, any>;
+  | Record<string, unknown>;
 
 export interface Unit {
   id: number;

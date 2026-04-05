@@ -6,7 +6,6 @@ import { catchError, switchMap, throwError, take, filter } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { AppState } from '../../store';
 import * as AuthSelectors from '../../store/auth/auth.selectors';
-import * as AuthActions from '../../store/auth/auth.actions';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);

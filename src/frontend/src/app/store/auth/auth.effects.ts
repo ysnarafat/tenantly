@@ -6,6 +6,7 @@ import { of } from 'rxjs';
 import { map, exhaustMap, catchError, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import * as AuthActions from './auth.actions';
+import { LoginResponse } from '../../core/services/auth.service';
 
 @Injectable()
 export class AuthEffects {
@@ -30,6 +31,7 @@ export class AuthEffects {
         }
 
         // Production API call
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return this.http.post<any>(`${environment.apiUrl}/auth/login`, credentials).pipe(
           map((response) => AuthActions.loginSuccess({ response })),
           catchError((error) => of(AuthActions.loginFailure({ error })))
@@ -114,6 +116,7 @@ export class AuthEffects {
 
         // Production API call
         const request = { refresh_token: refreshToken };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return this.http.post<any>(`${environment.apiUrl}/auth/refresh`, request).pipe(
           map((response) => AuthActions.refreshTokenSuccess({ response })),
           catchError((error) => of(AuthActions.refreshTokenFailure({ error })))
@@ -171,6 +174,7 @@ export class AuthEffects {
         }
 
         // Production API call
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return this.http.post<any>(`${environment.apiUrl}/auth/change-password`, request).pipe(
           map((response) => AuthActions.changePasswordSuccess({ message: response.message })),
           catchError((error) => of(AuthActions.changePasswordFailure({ error })))
@@ -193,6 +197,7 @@ export class AuthEffects {
         }
 
         // Production API call
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return this.http.post<any>(`${environment.apiUrl}/auth/reset-password`, request).pipe(
           map((response) => AuthActions.resetPasswordSuccess({ message: response.message })),
           catchError((error) => of(AuthActions.resetPasswordFailure({ error })))
@@ -206,7 +211,7 @@ export class AuthEffects {
     return false; // Set to false for production
   }
 
-  private createDemoResponse(suffix = ''): any {
+  private createDemoResponse(suffix = ''): LoginResponse {
     const user = localStorage.getItem('tenantly_user');
     const existingUser = user ? JSON.parse(user) : null;
 
