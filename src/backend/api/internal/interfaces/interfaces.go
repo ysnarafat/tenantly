@@ -336,3 +336,15 @@ type ReportingServiceInterface interface {
 	GenerateComprehensiveReport(propertyID *int, buildingID *int, startDate, endDate time.Time, userID int) (*models.ComprehensiveReport, error)
 	GenerateDashboardReport(filters map[string]interface{}, groupBy string, userID int) (*models.DashboardReport, error)
 }
+
+// LeaseRepositoryInterface defines the interface for lease repository operations
+type LeaseRepositoryInterface interface {
+	GetLeasesDueForMonth(orgID int) ([]models.LeaseDue, error)
+	GetDueSummary(orgID int) (*models.DueSummary, error)
+}
+
+// LeaseServiceInterface defines the interface for lease service operations
+type LeaseServiceInterface interface {
+	GetLeasesDue(orgID int) ([]models.LeaseDue, error)
+	GetDueSummary(orgID int) (*models.DueSummary, error)
+}

@@ -10,9 +10,6 @@ import (
 )
 
 // LeaseRepository handles lease data operations
-type LeaseRepository struct {
-	db *sql.DB
-}
 
 // NewLeaseRepository creates a new lease repository
 func NewLeaseRepository(db *sql.DB) *LeaseRepository {

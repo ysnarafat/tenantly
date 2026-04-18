@@ -95,6 +95,11 @@
           <mat-icon>assignment</mat-icon>
           <span>Leases</span>
         </a>
+
+        <a mat-list-item routerLink="/leases/due" routerLinkActive="active" (click)="onNavigate()">
+          <mat-icon>account_balance_wallet</mat-icon>
+          <span>Due List</span>
+        </a>
         }
 
         @if (canViewPayments()) {

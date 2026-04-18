@@ -397,4 +397,12 @@ export class LeaseService {
     end.setMonth(end.getMonth() + durationMonths);
     return end.toISOString().split('T')[0];
   }
+
+  getLeasesDue(): Observable<LeaseDue[]> {
+    return this.http.get<LeaseDue[]>(`${this.apiUrl}/due`);
+  }
+
+  getDueSummary(): Observable<DueSummary> {
+    return this.http.get<DueSummary>(`${this.apiUrl}/due/summary`);
+  }
 }
