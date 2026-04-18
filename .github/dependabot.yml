@@ -1,0 +1,76 @@
+version: 2
+updates:
+  # Frontend (Angular)
+  - package-ecosystem: npm
+    directory: /src/frontend
+    schedule:
+      interval: weekly
+      day: saturday
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - ysnarafat
+    labels:
+      - dependencies
+      - frontend
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    allow:
+      - dependency-type: production
+      - dependency-type: development
+
+  # Backend API (Go)
+  - package-ecosystem: gomod
+    directory: /src/backend/api
+    schedule:
+      interval: weekly
+      day: saturday
+      time: "09:30"
+    open-pull-requests-limit: 5
+    reviewers:
+      - ysnarafat
+    labels:
+      - dependencies
+      - api
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    allow:
+      - dependency-type: production
+      - dependency-type: development
+
+  # Notification Service (.NET)
+  - package-ecosystem: nuget
+    directory: /src/backend/notification-service
+    schedule:
+      interval: weekly
+      day: saturday
+      time: "10:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - ysnarafat
+    labels:
+      - dependencies
+      - notification-service
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    allow:
+      - dependency-type: production
+      - dependency-type: development
