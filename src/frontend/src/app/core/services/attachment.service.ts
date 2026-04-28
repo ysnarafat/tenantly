@@ -62,7 +62,7 @@ export interface UpdateAttachmentRequest {
 })
 export class AttachmentService {
   private http = inject(HttpClient);
-  private readonly apiUrl = `${environment.apiUrl}/api/v1/attachments`;
+  private readonly apiUrl = `${environment.apiUrl}/attachments`;
 
   // DEMO MODE: Set to true to enable demo data (disable for production)
   private readonly DEMO_MODE = true;

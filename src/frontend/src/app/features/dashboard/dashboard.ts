@@ -79,9 +79,9 @@ export class Dashboard implements OnInit {
 
     // Load leases data
     this.leaseService.getAllLeases().subscribe({
-      next: (leases) => {
-        this.processLeaseData(leases);
-        this.recentLeases = leases
+      next: (response) => {
+        this.processLeaseData(response.leases);
+        this.recentLeases = response.leases
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
           .slice(0, 5);
       },
@@ -91,8 +91,9 @@ export class Dashboard implements OnInit {
     // Load expiring leases
     this.leaseService.getExpiringLeases(30).subscribe({
       next: (leases) => {
-        this.expiringLeases = leases.slice(0, 5);
-        this.stats.expiringLeases = leases.length;
+        const leaseArray = Array.isArray(leases) ? leases : [];
+        this.expiringLeases = leaseArray.slice(0, 5);
+        this.stats.expiringLeases = leaseArray.length;
       },
       error: (error) => console.error('Error loading expiring leases:', error),
     });

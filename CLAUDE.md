@@ -41,8 +41,10 @@ air  # Auto-rebuilds on file changes (configured in .air.toml)
 # Run manually
 go run cmd/server/main.go
 
-# Database migrations
-go run cmd/server/main.go migrate
+# Database migrations (auto-run on server startup; manual control via dedicated CLI)
+go run cmd/migrate/main.go up      # Apply pending migrations
+go run cmd/migrate/main.go down    # Rollback last migration
+go run cmd/migrate/main.go version # Show current version
 
 # Testing
 go test -v ./internal/...  # All tests
@@ -123,12 +125,12 @@ migrations/         # SQL migration files (versioned)
 ```
 
 **Key Patterns:**
-- Services receive interfaces (repositories, dependencies) via dependency injection
-- Handlers use services to handle HTTP requests
+- All cross-layer dependencies are interfaces defined centrally in `internal/interfaces/interfaces.go` (15+ interfaces: repositories, services, audit). Concrete implementations wired in `cmd/server/main.go`.
+- Services receive repository interfaces via DI; handlers receive service interfaces via DI
 - All database access goes through repositories
-- Tests use table-driven patterns and mocks from `testutil`
+- Tests use table-driven patterns; integration tests use `testutil.SetupTestDB()` which spins up a test DB with migrations applied; mocks live in `internal/interfaces/mocks/`
+- Building module split pattern: `building_repository.go` (CRUD) + `building_repository_analytics.go` (analytics) + `building_validation_service.go` (validation) — follow this for large modules
 
-**Module Refactoring:** The Building module is split to separate core CRUD (`building_repository.go`) from analytics (`building_repository_analytics.go`) to prevent code bloat.
 
 ### Frontend (Angular) - Standalone Components with Feature-Level State
 
@@ -188,8 +190,9 @@ src/backend/notification-service/
 - **Migration Commands**:
   ```bash
   cd src/backend/api
-  go run cmd/server/main.go migrate  # Run pending migrations
+  go run cmd/migrate/main.go up   # Apply pending migrations
   ```
+  Migrations also run automatically on server startup.
 
 ---
 

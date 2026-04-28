@@ -65,6 +65,7 @@ func (s *Server) setupRoutes() {
 	buildingRepo := repositories.NewBuildingRepository(s.db)
 	unitRepo := repositories.NewUnitRepository(s.db)
 	tenantRepo := repositories.NewTenantRepository(s.db)
+	leaseRepo := repositories.NewLeaseRepository(s.db)
 	organizationRepo := repositories.NewOrganizationRepository(s.db)
 	userInvitationRepo := repositories.NewUserInvitationRepository(s.db)
 	userOrgRoleRepo := repositories.NewUserOrganizationRoleRepository(s.db)
@@ -78,13 +79,16 @@ func (s *Server) setupRoutes() {
 	propertyService := services.NewPropertyService(propertyRepo, auditService)
 	buildingService := services.NewBuildingService(buildingRepo, propertyRepo, auditService, metadataValidator)
 	unitService := services.NewUnitService(unitRepo, buildingRepo, propertyRepo, auditService)
-	tenantService := services.NewTenantService(tenantRepo, auditService)
+	tenantService := services.NewTenantService(tenantRepo, leaseRepo, auditService)
+	leaseService := services.NewLeaseService(leaseRepo, tenantRepo, unitRepo, auditService)
+	
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService)
 	propertyHandler := handlers.NewPropertyHandler(propertyService)
 	buildingHandler := handlers.NewBuildingHandler(buildingService)
 	unitHandler := handlers.NewUnitHandler(unitService)
 	tenantHandler := handlers.NewTenantHandler(tenantService)
+	leaseHandler := handlers.NewLeaseHandler(leaseService)
 	organizationHandler := handlers.NewOrganizationHandler(organizationService)
 
 	// Health check endpoint
@@ -229,9 +233,24 @@ func (s *Server) setupRoutes() {
 			{
 				tenants.GET("", middleware.RequireAnyRole(), tenantHandler.GetAllTenants)
 				tenants.POST("", middleware.RequireAdminOrPropertyManager(), tenantHandler.CreateTenant)
-				tenants.GET("/:id", s.handlePlaceholder("Get tenant"))
-				tenants.PUT("/:id", s.handlePlaceholder("Update tenant"))
-				tenants.DELETE("/:id", s.handlePlaceholder("Delete tenant"))
+				tenants.GET("/:id", middleware.RequireAnyRole(), tenantHandler.GetTenantByID)
+				tenants.PUT("/:id", middleware.RequireAdminOrPropertyManager(), tenantHandler.UpdateTenant)
+				tenants.DELETE("/:id", middleware.RequireAdmin(), tenantHandler.DeleteTenant)
+			}
+
+			leases := protected.Group("/leases")
+			leases.Use(middleware.RequireOrgContext())
+			{
+				leases.GET("", middleware.RequireAnyRole(), leaseHandler.GetAllLeases)
+				leases.POST("", middleware.RequireAdminOrPropertyManager(), leaseHandler.CreateLease)
+				leases.GET("/:id", middleware.RequireAnyRole(), leaseHandler.GetLeaseByID)
+				leases.PUT("/:id", middleware.RequireAdminOrPropertyManager(), leaseHandler.UpdateLease)
+				leases.DELETE("/:id", middleware.RequireAdmin(), leaseHandler.DeleteLease)
+				leases.POST("/:id/terminate", middleware.RequireAdminOrPropertyManager(), leaseHandler.TerminateLease)
+				
+				// Lease relationships
+				leases.GET("/unit/:unit_id", middleware.RequireAnyRole(), leaseHandler.GetLeasesByUnit)
+				leases.GET("/tenant/:tenant_id", middleware.RequireAnyRole(), leaseHandler.GetLeasesByTenant)
 			}
 
 			payments := protected.Group("/payments")

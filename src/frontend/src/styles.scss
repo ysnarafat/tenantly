@@ -107,3 +107,40 @@ body {
   margin: 0.5rem 0 0 0;
   color: rgba(0, 0, 0, 0.6);
 }
+
+/* Dialog/Modal styles for better visibility */
+.cdk-overlay-backdrop {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.cdk-overlay-dark-backdrop {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.mat-mdc-dialog-container {
+  background-color: #ffffff !important;
+  color: rgba(0, 0, 0, 0.87) !important;
+}
+
+.mat-mdc-dialog-surface {
+  background-color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+.mat-dialog-title {
+  color: rgba(0, 0, 0, 0.87) !important;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+mat-dialog-content {
+  color: rgba(0, 0, 0, 0.87) !important;
+}
+
+.mat-mdc-form-field {
+  color: rgba(0, 0, 0, 0.87) !important;
+}
+
+.mat-mdc-input-element {
+  color: rgba(0, 0, 0, 0.87) !important;
+}
