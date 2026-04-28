@@ -42,7 +42,9 @@ import * as AuthSelectors from '../../../store/auth/auth.selectors';
             Invite User to Organization
           </mat-card-title>
           @if (!isSuperAdmin() && callerOrgName()) {
-            <mat-card-subtitle>Inviting to <strong>{{ callerOrgName() }}</strong></mat-card-subtitle>
+            <mat-card-subtitle
+              >Inviting to <strong>{{ callerOrgName() }}</strong></mat-card-subtitle
+            >
           }
         </mat-card-header>
         <mat-card-content>
@@ -104,40 +106,44 @@ import * as AuthSelectors from '../../../store/auth/auth.selectors';
       </mat-card>
     </div>
   `,
-  styles: [`
-    .invite-container {
-      max-width: 600px;
-      margin: 24px auto;
-      padding: 0 16px;
-    }
-    mat-card-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      padding-top: 16px;
-    }
-    .name-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-    mat-form-field {
-      width: 100%;
-    }
-    .actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
-    @media (max-width: 480px) {
-      .name-row { grid-template-columns: 1fr; }
-    }
-  `],
+  styles: [
+    `
+      .invite-container {
+        max-width: 600px;
+        margin: 24px auto;
+        padding: 0 16px;
+      }
+      mat-card-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding-top: 16px;
+      }
+      .name-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      mat-form-field {
+        width: 100%;
+      }
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+      @media (max-width: 480px) {
+        .name-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    `,
+  ],
 })
 export class InviteUserComponent implements OnInit {
   private fb = inject(FormBuilder);
@@ -174,13 +180,15 @@ export class InviteUserComponent implements OnInit {
       if (user.role === 'SUPER_ADMIN') {
         this.organizationService.getOrganizations().subscribe({
           next: (res) => this.organizations.set(res.organizations),
-          error: () => this.snackBar.open('Failed to load organizations', 'Close', { duration: 3000 }),
+          error: () =>
+            this.snackBar.open('Failed to load organizations', 'Close', { duration: 3000 }),
         });
       } else if (user.organization_id) {
         this.form.patchValue({ organizationId: user.organization_id });
         this.organizationService.getOrganization(user.organization_id).subscribe({
           next: (org) => this.callerOrgName.set(org.name),
-          error: () => this.snackBar.open('Failed to load organization', 'Close', { duration: 3000 }),
+          error: () =>
+            this.snackBar.open('Failed to load organization', 'Close', { duration: 3000 }),
         });
       }
     });
@@ -195,16 +203,20 @@ export class InviteUserComponent implements OnInit {
     const { organizationId, email, firstName, lastName, role } = this.form.value;
     this.submitting.set(true);
 
-    this.invitationService.sendInvitation(organizationId, { email, firstName, lastName, role }).subscribe({
-      next: () => {
-        this.snackBar.open('Invitation sent successfully', 'Close', { duration: 3000 });
-        this.router.navigate(['/admin/invitations']);
-      },
-      error: (err) => {
-        this.snackBar.open(err.error?.error || 'Failed to send invitation', 'Close', { duration: 5000 });
-        this.submitting.set(false);
-      },
-    });
+    this.invitationService
+      .sendInvitation(organizationId, { email, firstName, lastName, role })
+      .subscribe({
+        next: () => {
+          this.snackBar.open('Invitation sent successfully', 'Close', { duration: 3000 });
+          this.router.navigate(['/admin/invitations']);
+        },
+        error: (err) => {
+          this.snackBar.open(err.error?.error || 'Failed to send invitation', 'Close', {
+            duration: 5000,
+          });
+          this.submitting.set(false);
+        },
+      });
   }
 
   cancel(): void {

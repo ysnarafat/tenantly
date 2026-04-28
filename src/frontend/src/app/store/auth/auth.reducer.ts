@@ -82,7 +82,9 @@ export const authReducer = createReducer(
     loading: false,
     error: null,
     userOrganizations: response.organizations || [],
-    currentOrganizationId: response.default_organization_id ?? (response.organizations?.length === 1 ? response.organizations[0].organization_id : null),
+    currentOrganizationId:
+      response.default_organization_id ??
+      (response.organizations?.length === 1 ? response.organizations[0].organization_id : null),
   })),
 
   on(AuthActions.loginFailure, (state, { error }) => ({

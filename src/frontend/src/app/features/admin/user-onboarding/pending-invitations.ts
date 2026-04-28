@@ -42,7 +42,11 @@ import { UserInvitation, Organization } from '../../../core/models';
       </div>
 
       <div class="filters">
-        <mat-select placeholder="Filter by organization" [(ngModel)]="selectedOrgId" (ngModelChange)="onOrgChange($event)">
+        <mat-select
+          placeholder="Filter by organization"
+          [(ngModel)]="selectedOrgId"
+          (ngModelChange)="onOrgChange($event)"
+        >
           <mat-option [value]="null">All Organizations</mat-option>
           @for (org of organizations(); track org.id) {
             <mat-option [value]="org.id">{{ org.name }}</mat-option>
@@ -76,65 +80,79 @@ import { UserInvitation, Organization } from '../../../core/models';
 
           <ng-container matColumnDef="expires">
             <th mat-header-cell *matHeaderCellDef>Expires</th>
-            <td mat-cell *matCellDef="let inv">{{ inv.expires_at | date:'mediumDate' }}</td>
+            <td mat-cell *matCellDef="let inv">{{ inv.expires_at | date: 'mediumDate' }}</td>
           </ng-container>
 
           <ng-container matColumnDef="created">
             <th mat-header-cell *matHeaderCellDef>Sent</th>
-            <td mat-cell *matCellDef="let inv">{{ inv.created_at | date:'mediumDate' }}</td>
+            <td mat-cell *matCellDef="let inv">{{ inv.created_at | date: 'mediumDate' }}</td>
           </ng-container>
 
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef>Actions</th>
             <td mat-cell *matCellDef="let inv">
-              <button mat-icon-button color="warn" matTooltip="Revoke invitation"
-                (click)="revokeInvitation(inv)">
+              <button
+                mat-icon-button
+                color="warn"
+                matTooltip="Revoke invitation"
+                (click)="revokeInvitation(inv)"
+              >
                 <mat-icon>cancel</mat-icon>
               </button>
             </td>
           </ng-container>
 
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
         </table>
       }
     </div>
   `,
-  styles: [`
-    .invitations-container {
-      padding: 24px;
-      max-width: 1000px;
-      margin: 0 auto;
-    }
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-    h2 { margin: 0; }
-    .filters {
-      margin-bottom: 16px;
-    }
-    mat-select {
-      min-width: 220px;
-    }
-    .spinner-wrap {
-      display: flex;
-      justify-content: center;
-      padding: 40px;
-    }
-    .empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 60px 0;
-      color: #666;
-      gap: 8px;
-    }
-    .empty-state mat-icon { font-size: 48px; width: 48px; height: 48px; }
-    table { width: 100%; }
-  `],
+  styles: [
+    `
+      .invitations-container {
+        padding: 24px;
+        max-width: 1000px;
+        margin: 0 auto;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      h2 {
+        margin: 0;
+      }
+      .filters {
+        margin-bottom: 16px;
+      }
+      mat-select {
+        min-width: 220px;
+      }
+      .spinner-wrap {
+        display: flex;
+        justify-content: center;
+        padding: 40px;
+      }
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 60px 0;
+        color: #666;
+        gap: 8px;
+      }
+      .empty-state mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+      }
+      table {
+        width: 100%;
+      }
+    `,
+  ],
 })
 export class PendingInvitationsComponent implements OnInit {
   private invitationService = inject(UserInvitationService);
@@ -194,7 +212,9 @@ export class PendingInvitationsComponent implements OnInit {
         if (this.selectedOrgId) this.loadInvitations(this.selectedOrgId);
       },
       error: (err) => {
-        this.snackBar.open(err.error?.error || 'Failed to revoke invitation', 'Close', { duration: 5000 });
+        this.snackBar.open(err.error?.error || 'Failed to revoke invitation', 'Close', {
+          duration: 5000,
+        });
       },
     });
   }

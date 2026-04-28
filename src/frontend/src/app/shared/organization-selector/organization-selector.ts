@@ -51,28 +51,28 @@ import { UserOrganization } from '../../core/models/organization.model';
         </div>
 
         @for (org of userOrganizations(); track org.id) {
-        <button
-          mat-menu-item
-          (click)="selectOrganization(org)"
-          class="org-menu-item"
-          [class.active]="isCurrentOrg(org.organization_id)"
-        >
-          <mat-icon class="org-icon-menu">
-            @if (isCurrentOrg(org.organization_id)) {
-            check_circle
-            } @else {
-            radio_button_unchecked
-            }
-          </mat-icon>
-          <div class="org-menu-content">
-            <span class="org-menu-name">{{ org.organization.name }}</span>
-            <span class="org-menu-role">{{ org.role }}</span>
-          </div>
-        </button>
+          <button
+            mat-menu-item
+            (click)="selectOrganization(org)"
+            class="org-menu-item"
+            [class.active]="isCurrentOrg(org.organization_id)"
+          >
+            <mat-icon class="org-icon-menu">
+              @if (isCurrentOrg(org.organization_id)) {
+                check_circle
+              } @else {
+                radio_button_unchecked
+              }
+            </mat-icon>
+            <div class="org-menu-content">
+              <span class="org-menu-name">{{ org.organization.name }}</span>
+              <span class="org-menu-role">{{ org.role }}</span>
+            </div>
+          </button>
         }
 
         @if (userOrganizations().length > 0) {
-        <mat-divider class="menu-divider"></mat-divider>
+          <mat-divider class="menu-divider"></mat-divider>
         }
 
         <!-- Manage Organizations -->
@@ -83,7 +83,7 @@ import { UserOrganization } from '../../core/models/organization.model';
       </mat-menu>
 
       @if (isLoading()) {
-      <mat-spinner diameter="20" class="loading-spinner"></mat-spinner>
+        <mat-spinner diameter="20" class="loading-spinner"></mat-spinner>
       }
     </div>
   `,
@@ -281,7 +281,9 @@ export class OrganizationSelector implements OnInit, OnDestroy {
     }
 
     this.isLoading.set(true);
-    this.store.dispatch(AuthActions.switchOrganization({ organizationId: organization.organization_id }));
+    this.store.dispatch(
+      AuthActions.switchOrganization({ organizationId: organization.organization_id })
+    );
   }
 
   isCurrentOrg(orgId: number): boolean {

@@ -71,7 +71,11 @@ import * as AuthSelectors from '../../../store/auth/auth.selectors';
             <h3 class="section-title">Account Details</h3>
             <mat-form-field appearance="outline">
               <mat-label>Username</mat-label>
-              <input matInput formControlName="username" placeholder="alphanumeric and underscore" />
+              <input
+                matInput
+                formControlName="username"
+                placeholder="alphanumeric and underscore"
+              />
               <mat-error>Username required (min 3 chars, alphanumeric + underscore)</mat-error>
             </mat-form-field>
 
@@ -126,47 +130,53 @@ import * as AuthSelectors from '../../../store/auth/auth.selectors';
       </mat-card>
     </div>
   `,
-  styles: [`
-    .create-user-container {
-      max-width: 640px;
-      margin: 24px auto;
-      padding: 0 16px;
-    }
-    mat-card-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      padding-top: 16px;
-    }
-    .section-title {
-      margin: 8px 0 0;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-secondary, #666);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .name-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-    mat-form-field { width: 100%; }
-    .actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      padding-top: 8px;
-    }
-    @media (max-width: 480px) {
-      .name-row { grid-template-columns: 1fr; }
-    }
-  `],
+  styles: [
+    `
+      .create-user-container {
+        max-width: 640px;
+        margin: 24px auto;
+        padding: 0 16px;
+      }
+      mat-card-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding-top: 16px;
+      }
+      .section-title {
+        margin: 8px 0 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-secondary, #666);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      .name-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      mat-form-field {
+        width: 100%;
+      }
+      .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding-top: 8px;
+      }
+      @media (max-width: 480px) {
+        .name-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    `,
+  ],
 })
 export class CreateUserComponent implements OnInit {
   private fb = inject(FormBuilder);
@@ -196,7 +206,10 @@ export class CreateUserComponent implements OnInit {
   form: FormGroup = this.fb.group({
     first_name: ['', Validators.required],
     last_name: ['', Validators.required],
-    username: ['', [Validators.required, Validators.minLength(3), Validators.pattern(/^[a-zA-Z0-9_]+$/)]],
+    username: [
+      '',
+      [Validators.required, Validators.minLength(3), Validators.pattern(/^[a-zA-Z0-9_]+$/)],
+    ],
     email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8)]],
     role: ['', Validators.required],
@@ -218,14 +231,16 @@ export class CreateUserComponent implements OnInit {
       if (isSA) {
         this.organizationService.getOrganizations().subscribe({
           next: (res) => this.organizations.set(res.organizations),
-          error: () => this.snackBar.open('Failed to load organizations', 'Close', { duration: 3000 }),
+          error: () =>
+            this.snackBar.open('Failed to load organizations', 'Close', { duration: 3000 }),
         });
       } else {
         this.store.select(AuthSelectors.selectUserOrganizationId).subscribe((orgId) => {
           if (orgId) {
             this.organizationService.getOrganization(orgId).subscribe({
               next: (org) => this.callerOrgName.set(org.name),
-              error: () => this.snackBar.open('Failed to load organization', 'Close', { duration: 3000 }),
+              error: () =>
+                this.snackBar.open('Failed to load organization', 'Close', { duration: 3000 }),
             });
           }
         });
@@ -235,7 +250,8 @@ export class CreateUserComponent implements OnInit {
 
   canAssignRole(callerRole: string, targetRole: string): boolean {
     if (callerRole === 'SUPER_ADMIN') return true;
-    if (callerRole === 'ORG_ADMIN') return ['Admin', 'PropertyManager', 'Accountant'].includes(targetRole);
+    if (callerRole === 'ORG_ADMIN')
+      return ['Admin', 'PropertyManager', 'Accountant'].includes(targetRole);
     if (callerRole === 'Admin') return ['PropertyManager', 'Accountant'].includes(targetRole);
     return false;
   }
@@ -253,7 +269,9 @@ export class CreateUserComponent implements OnInit {
         this.router.navigate(['/admin/users']);
       },
       error: (err) => {
-        this.snackBar.open(err.error?.error || 'Failed to create user', 'Close', { duration: 5000 });
+        this.snackBar.open(err.error?.error || 'Failed to create user', 'Close', {
+          duration: 5000,
+        });
         this.submitting.set(false);
       },
     });

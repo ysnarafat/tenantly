@@ -130,7 +130,10 @@ export class UserList implements OnInit, AfterViewInit {
         this.snackBar.open('User deactivated', 'Close', { duration: 3000 });
         this.loadUsers();
       },
-      error: (err) => this.snackBar.open(err.error?.error || 'Failed to deactivate user', 'Close', { duration: 5000 }),
+      error: (err) =>
+        this.snackBar.open(err.error?.error || 'Failed to deactivate user', 'Close', {
+          duration: 5000,
+        }),
     });
   }
 
@@ -141,7 +144,10 @@ export class UserList implements OnInit, AfterViewInit {
         this.snackBar.open('User activated', 'Close', { duration: 3000 });
         this.loadUsers();
       },
-      error: (err) => this.snackBar.open(err.error?.error || 'Failed to activate user', 'Close', { duration: 5000 }),
+      error: (err) =>
+        this.snackBar.open(err.error?.error || 'Failed to activate user', 'Close', {
+          duration: 5000,
+        }),
     });
   }
 
@@ -152,7 +158,10 @@ export class UserList implements OnInit, AfterViewInit {
         this.snackBar.open('User deleted', 'Close', { duration: 3000 });
         this.loadUsers();
       },
-      error: (err) => this.snackBar.open(err.error?.error || 'Failed to delete user', 'Close', { duration: 5000 }),
+      error: (err) =>
+        this.snackBar.open(err.error?.error || 'Failed to delete user', 'Close', {
+          duration: 5000,
+        }),
     });
   }
 

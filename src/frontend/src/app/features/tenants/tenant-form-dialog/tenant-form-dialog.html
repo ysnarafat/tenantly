@@ -9,7 +9,7 @@
         <input matInput formControlName="name" placeholder="Enter tenant name" />
         <mat-icon matPrefix>person</mat-icon>
         @if (tenantForm.get('name')?.invalid) {
-          <mat-error>{{ getErrorMessage('name') }}</mat-error>
+        <mat-error>{{ getErrorMessage('name') }}</mat-error>
         }
       </mat-form-field>
 
@@ -23,7 +23,7 @@
             }
           </mat-select>
           @if (tenantForm.get('tenant_type')?.invalid) {
-            <mat-error>{{ getErrorMessage('tenant_type') }}</mat-error>
+          <mat-error>{{ getErrorMessage('tenant_type') }}</mat-error>
           }
         </mat-form-field>
 
@@ -33,7 +33,7 @@
           <input matInput formControlName="nid_number" placeholder="Enter NID" />
           <mat-icon matPrefix>badge</mat-icon>
           @if (tenantForm.get('nid_number')?.invalid) {
-            <mat-error>{{ getErrorMessage('nid_number') }}</mat-error>
+          <mat-error>{{ getErrorMessage('nid_number') }}</mat-error>
           }
         </mat-form-field>
       </div>
@@ -45,7 +45,7 @@
           <input matInput formControlName="phone_number" placeholder="Enter phone" />
           <mat-icon matPrefix>phone</mat-icon>
           @if (tenantForm.get('phone_number')?.invalid) {
-            <mat-error>{{ getErrorMessage('phone_number') }}</mat-error>
+          <mat-error>{{ getErrorMessage('phone_number') }}</mat-error>
           }
         </mat-form-field>
       </div>
@@ -57,7 +57,7 @@
           <input matInput type="email" formControlName="email" placeholder="example@mail.com" />
           <mat-icon matPrefix>email</mat-icon>
           @if (tenantForm.get('email')?.invalid) {
-            <mat-error>{{ getErrorMessage('email') }}</mat-error>
+          <mat-error>{{ getErrorMessage('email') }}</mat-error>
           }
         </mat-form-field>
       </div>
@@ -73,7 +73,7 @@
         ></textarea>
         <mat-icon matPrefix>map</mat-icon>
         @if (tenantForm.get('address')?.invalid) {
-          <mat-error>{{ getErrorMessage('address') }}</mat-error>
+        <mat-error>{{ getErrorMessage('address') }}</mat-error>
         }
       </mat-form-field>
     </div>

@@ -110,7 +110,10 @@ describe('AuthReducer', () => {
     });
 
     it('should set userOrganizations to empty array when no organizations in response', () => {
-      const state = authReducer(initialState, AuthActions.loginSuccess({ response: mockLoginResponse }));
+      const state = authReducer(
+        initialState,
+        AuthActions.loginSuccess({ response: mockLoginResponse })
+      );
 
       expect(state.userOrganizations).toEqual([]);
     });

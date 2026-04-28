@@ -72,7 +72,10 @@ export class AuthEffects {
             if (orgs.length === 1) {
               localStorage.setItem('tenantly_current_org_id', orgs[0].organization_id.toString());
             } else if (hasDefault) {
-              localStorage.setItem('tenantly_current_org_id', response.default_organization_id!.toString());
+              localStorage.setItem(
+                'tenantly_current_org_id',
+                response.default_organization_id!.toString()
+              );
             }
             this.router.navigate(['/dashboard']);
           }

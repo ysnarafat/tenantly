@@ -66,9 +66,7 @@
           <mat-icon>assignment</mat-icon>
           <span>Leases</span>
         </a>
-        }
-
-        @if (canViewPayments()) {
+        } @if (canViewPayments()) {
         <a mat-list-item routerLink="/payments" routerLinkActive="active" (click)="onNavigate()">
           <mat-icon>payment</mat-icon>
           <span>Payments</span>
@@ -78,9 +76,7 @@
           <mat-icon>assessment</mat-icon>
           <span>Reports</span>
         </a>
-        }
-
-        @if (canManageDocuments()) {
+        } @if (canManageDocuments()) {
         <a mat-list-item routerLink="/documents" routerLinkActive="active" (click)="onNavigate()">
           <mat-icon>folder</mat-icon>
           <span>Documents</span>

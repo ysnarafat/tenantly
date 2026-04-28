@@ -37,10 +37,7 @@
       </mat-select>
     </mat-form-field>
 
-    <mat-slide-toggle
-      [checked]="showInactive()"
-      (change)="toggleShowInactive($event.checked)"
-    >
+    <mat-slide-toggle [checked]="showInactive()" (change)="toggleShowInactive($event.checked)">
       Show inactive
     </mat-slide-toggle>
   </div>
@@ -97,8 +94,7 @@
           <button mat-icon-button matTooltip="Promote/Demote" (click)="promoteUser(user)">
             <mat-icon>trending_up</mat-icon>
           </button>
-          }
-          @if (user.active) {
+          } @if (user.active) {
           <button mat-icon-button matTooltip="Deactivate" (click)="deactivateUser(user)">
             <mat-icon>block</mat-icon>
           </button>

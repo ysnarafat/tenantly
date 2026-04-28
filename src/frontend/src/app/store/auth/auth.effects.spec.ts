@@ -75,7 +75,9 @@ describe('AuthEffects', () => {
 
   describe('login$', () => {
     it('should return loginSuccess action on successful demo login', (done) => {
-      spyOn<AuthEffects>(effects, 'isDemoMode' as unknown as keyof AuthEffects).and.returnValue(true);
+      spyOn<AuthEffects>(effects, 'isDemoMode' as unknown as keyof AuthEffects).and.returnValue(
+        true
+      );
       const credentials = { username: 'demo', password: 'demo123' };
       const action = AuthActions.login({ credentials });
 
@@ -91,7 +93,9 @@ describe('AuthEffects', () => {
     });
 
     it('should return loginFailure action on invalid demo credentials', (done) => {
-      spyOn<AuthEffects>(effects, 'isDemoMode' as unknown as keyof AuthEffects).and.returnValue(true);
+      spyOn<AuthEffects>(effects, 'isDemoMode' as unknown as keyof AuthEffects).and.returnValue(
+        true
+      );
       const credentials = { username: 'invalid', password: 'invalid' };
       const action = AuthActions.login({ credentials });
 
@@ -114,7 +118,9 @@ describe('AuthEffects', () => {
 
       effects.loginSuccess$.subscribe(() => {
         expect(localStorage.getItem('tenantly_token')).toBe(mockLoginResponse.token);
-        expect(localStorage.getItem('tenantly_refresh_token')).toBe(mockLoginResponse.refresh_token);
+        expect(localStorage.getItem('tenantly_refresh_token')).toBe(
+          mockLoginResponse.refresh_token
+        );
         expect(localStorage.getItem('tenantly_user')).toBe(JSON.stringify(mockLoginResponse.user));
         expect(localStorage.getItem('tenantly_expires_at')).toBe(mockLoginResponse.expires_at);
         expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
@@ -204,7 +210,9 @@ describe('AuthEffects', () => {
 
       effects.switchOrganization$.subscribe((result) => {
         expect(result.type).toBe(AuthActions.switchOrganizationSuccess.type);
-        expect((result as unknown as { response: typeof mockSwitchResponse }).response).toEqual(mockSwitchResponse);
+        expect((result as unknown as { response: typeof mockSwitchResponse }).response).toEqual(
+          mockSwitchResponse
+        );
         done();
       });
 
@@ -250,7 +258,9 @@ describe('AuthEffects', () => {
 
   describe('logout$', () => {
     it('should return logoutSuccess action in demo mode', (done) => {
-      spyOn<AuthEffects>(effects, 'isDemoMode' as unknown as keyof AuthEffects).and.returnValue(true);
+      spyOn<AuthEffects>(effects, 'isDemoMode' as unknown as keyof AuthEffects).and.returnValue(
+        true
+      );
       const action = AuthActions.logout();
       actions$ = of(action);
 
@@ -289,7 +299,9 @@ describe('AuthEffects', () => {
 
   describe('refreshToken$', () => {
     it('should return refreshTokenSuccess action in demo mode', (done) => {
-      spyOn<AuthEffects>(effects, 'isDemoMode' as unknown as keyof AuthEffects).and.returnValue(true);
+      spyOn<AuthEffects>(effects, 'isDemoMode' as unknown as keyof AuthEffects).and.returnValue(
+        true
+      );
       localStorage.setItem('tenantly_refresh_token', 'test-refresh-token');
       localStorage.setItem('tenantly_user', JSON.stringify(mockLoginResponse.user));
 
@@ -358,7 +370,9 @@ describe('AuthEffects', () => {
 
   describe('changePassword$', () => {
     it('should return changePasswordSuccess action in demo mode', (done) => {
-      spyOn<AuthEffects>(effects, 'isDemoMode' as unknown as keyof AuthEffects).and.returnValue(true);
+      spyOn<AuthEffects>(effects, 'isDemoMode' as unknown as keyof AuthEffects).and.returnValue(
+        true
+      );
       const request = { current_password: 'old', new_password: 'new' };
       const action = AuthActions.changePassword({ request });
       actions$ = of(action);
@@ -375,7 +389,9 @@ describe('AuthEffects', () => {
 
   describe('resetPassword$', () => {
     it('should return resetPasswordSuccess action in demo mode', (done) => {
-      spyOn<AuthEffects>(effects, 'isDemoMode' as unknown as keyof AuthEffects).and.returnValue(true);
+      spyOn<AuthEffects>(effects, 'isDemoMode' as unknown as keyof AuthEffects).and.returnValue(
+        true
+      );
       const request = { email: 'test@example.com' };
       const action = AuthActions.resetPassword({ request });
       actions$ = of(action);
