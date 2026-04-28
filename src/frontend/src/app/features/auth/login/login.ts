@@ -1,7 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -29,7 +28,6 @@ import { AuthService, LoginRequest } from '../../../core/services/auth.service';
 export class Login implements OnInit {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
-  private router = inject(Router);
   private snackBar = inject(MatSnackBar);
 
   loginForm: FormGroup;
@@ -49,7 +47,7 @@ export class Login implements OnInit {
 
     this.authService.error$.pipe(takeUntilDestroyed()).subscribe((error) => this.error.set(error));
 
-    // Listen for authentication success
+    // Listen for authentication success — navigation is handled by auth effects
     this.authService.isAuthenticated$
       .pipe(
         takeUntilDestroyed(),
@@ -57,7 +55,6 @@ export class Login implements OnInit {
       )
       .subscribe(() => {
         this.snackBar.open('Login successful!', 'Close', { duration: 3000 });
-        this.router.navigate(['/dashboard']);
       });
 
     // Listen for errors

@@ -67,13 +67,14 @@ func (s *Server) setupRoutes() {
 	tenantRepo := repositories.NewTenantRepository(s.db)
 	organizationRepo := repositories.NewOrganizationRepository(s.db)
 	userInvitationRepo := repositories.NewUserInvitationRepository(s.db)
+	userOrgRoleRepo := repositories.NewUserOrganizationRoleRepository(s.db)
 
 	// Initialize metadata validator
 	metadataValidator := services.NewBuildingMetadataValidator()
 
 	// Initialize services
 	organizationService := services.NewOrganizationService(organizationRepo, userInvitationRepo, auditService)
-	userService := services.NewUserService(userRepo, auditService, s.config.JWTSecret, s.config.JWTExpiration)
+	userService := services.NewUserServiceWithOrganization(userRepo, auditService, organizationService, userOrgRoleRepo, s.config.JWTSecret, s.config.JWTExpiration)
 	propertyService := services.NewPropertyService(propertyRepo, auditService)
 	buildingService := services.NewBuildingService(buildingRepo, propertyRepo, auditService, metadataValidator)
 	unitService := services.NewUnitService(unitRepo, buildingRepo, propertyRepo, auditService)
@@ -125,6 +126,7 @@ func (s *Server) setupRoutes() {
 			{
 				authProtected.POST("/logout", userHandler.Logout)
 				authProtected.POST("/change-password", userHandler.ChangePassword)
+				authProtected.POST("/set-organization", userHandler.SetOrganization)
 			}
 
 			// Invitation acceptance routes (protected)
@@ -136,11 +138,11 @@ func (s *Server) setupRoutes() {
 			// User management routes (role-based access)
 			users := protected.Group("/users")
 			{
-				users.GET("", middleware.RequireAdminOrPropertyManager(), userHandler.GetUsers)
-				users.POST("", middleware.RequireAdmin(), userHandler.CreateUser)
+				users.GET("", middleware.RequireSuperAdminOrAdmin(), userHandler.GetUsers)
+				users.POST("", middleware.RequireSuperAdminOrAdmin(), userHandler.CreateUser)
 				users.GET("/:id", middleware.RequireAnyRole(), userHandler.GetUser)
-				users.PUT("/:id", middleware.RequireAdmin(), userHandler.UpdateUser)
-				users.DELETE("/:id", middleware.RequireAdmin(), userHandler.DeleteUser)
+				users.PUT("/:id", middleware.RequireSuperAdminOrAdmin(), userHandler.UpdateUser)
+				users.DELETE("/:id", middleware.RequireSuperAdminOrAdmin(), userHandler.DeleteUser)
 			}
 
 			// Organization management routes (SUPER_ADMIN only)
@@ -163,6 +165,7 @@ func (s *Server) setupRoutes() {
 
 			// Property management routes
 			properties := protected.Group("/properties")
+			properties.Use(middleware.RequireOrgContext())
 			{
 				properties.GET("", middleware.RequireAnyRole(), propertyHandler.GetProperties)
 				properties.POST("", middleware.RequireAdminOrPropertyManager(), propertyHandler.CreateProperty)
@@ -182,6 +185,7 @@ func (s *Server) setupRoutes() {
 
 			// Building management routes
 			buildings := protected.Group("/buildings")
+			buildings.Use(middleware.RequireOrgContext())
 			{
 				buildings.GET("", middleware.RequireAnyRole(), buildingHandler.GetBuildings)
 				buildings.POST("", middleware.RequireAdminOrPropertyManager(), buildingHandler.CreateBuilding)
@@ -201,6 +205,7 @@ func (s *Server) setupRoutes() {
 
 			// Unit management routes
 			units := protected.Group("/units")
+			units.Use(middleware.RequireOrgContext())
 			{
 				units.POST("", middleware.RequireAdminOrPropertyManager(), unitHandler.CreateUnit)
 				units.GET("/:id", middleware.RequireAnyRole(), unitHandler.GetUnit)
@@ -220,6 +225,7 @@ func (s *Server) setupRoutes() {
 			}
 
 			tenants := protected.Group("/tenants")
+			tenants.Use(middleware.RequireOrgContext())
 			{
 				tenants.GET("", middleware.RequireAnyRole(), tenantHandler.GetAllTenants)
 				tenants.POST("", middleware.RequireAdminOrPropertyManager(), tenantHandler.CreateTenant)

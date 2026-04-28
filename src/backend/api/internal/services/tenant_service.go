@@ -63,7 +63,7 @@ func (s *TenantService) CreateTenant(req *models.CreateTenantRequest, userID int
 }
 
 // GetAllTenants retrieves all active tenants with pagination
-func (s *TenantService) GetAllTenants(page, pageSize int) (*models.TenantListResponse, error) {
+func (s *TenantService) GetAllTenants(page, pageSize, orgID int) (*models.TenantListResponse, error) {
 	// Defaults if 0
 	if page < 1 {
 		page = 1
@@ -72,7 +72,7 @@ func (s *TenantService) GetAllTenants(page, pageSize int) (*models.TenantListRes
 		pageSize = 10
 	}
 
-	tenants, totalCount, err := s.tenantRepo.GetAll(page, pageSize)
+	tenants, totalCount, err := s.tenantRepo.GetAll(page, pageSize, orgID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get tenants: %w", err)
 	}

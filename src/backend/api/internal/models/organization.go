@@ -58,3 +58,27 @@ type InviteUserRequest struct {
 	Email string `json:"email" binding:"required,email"`
 	Role  string `json:"role" binding:"required,oneof=SUPER_ADMIN ORG_ADMIN Admin PropertyManager Accountant"`
 }
+
+// UserOrganizationRole represents a user's membership and role in an organization
+type UserOrganizationRole struct {
+	ID             int          `json:"id" db:"id"`
+	UserID         int          `json:"user_id" db:"user_id"`
+	OrganizationID int          `json:"organization_id" db:"organization_id"`
+	Organization   Organization `json:"organization"`
+	Role           string       `json:"role" db:"role"`
+	CreatedAt      time.Time    `json:"created_at" db:"created_at"`
+	UpdatedAt      time.Time    `json:"updated_at" db:"updated_at"`
+}
+
+// SetOrganizationRequest is the request payload for switching organizations
+type SetOrganizationRequest struct {
+	OrganizationID int `json:"organization_id" binding:"required"`
+}
+
+// SetOrganizationResponse is returned when a user switches organizations
+type SetOrganizationResponse struct {
+	Token        string               `json:"token"`
+	RefreshToken string               `json:"refresh_token"`
+	Organization UserOrganizationRole `json:"organization"`
+	ExpiresAt    time.Time            `json:"expires_at"`
+}

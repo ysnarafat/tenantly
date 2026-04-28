@@ -15,6 +15,7 @@ import { AuthFacade } from './store/auth/auth.facade';
 import { PermissionService } from './core/services/permission.service';
 import { Permission } from './core/models/role.model';
 import { User } from './core/services/auth.service';
+import { OrganizationSelector } from './shared/organization-selector/organization-selector';
 
 @Component({
   selector: 'app-root',
@@ -30,6 +31,7 @@ import { User } from './core/services/auth.service';
     MatTooltipModule,
     MatMenuModule,
     MatDividerModule,
+    OrganizationSelector,
   ],
   templateUrl: './app.html',
   styleUrls: ['./app.scss'],
@@ -58,6 +60,8 @@ export class App implements OnInit {
   canManageUsers = computed(() => this.permissions.hasPermission(Permission.MANAGE_USERS));
   canManageOrganizations = computed(() => this.permissions.canManageOrganizations());
   canInviteUsers = computed(() => this.permissions.canInviteUsers());
+  canViewPayments = computed(() => this.permissions.hasPermission(Permission.VIEW_PAYMENTS));
+  canViewReports = computed(() => this.permissions.hasPermission(Permission.VIEW_REPORTS));
 
   // Computed signals for derived state
   sidenavMode = computed(() => (this.isMobile() ? ('over' as const) : ('side' as const)));

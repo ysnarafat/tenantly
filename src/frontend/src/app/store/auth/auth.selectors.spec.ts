@@ -23,6 +23,114 @@ describe('Auth Selectors', () => {
     updated_at: '2026-04-01',
   };
 
+  const mockOrg1 = {
+    id: 10,
+    organization_id: 100,
+    organization: { id: 100, name: 'Acme Corp', created_at: '', updated_at: '' },
+    role: 'Admin',
+    created_at: '',
+    updated_at: '',
+  };
+
+  const mockOrg2 = {
+    id: 11,
+    organization_id: 101,
+    organization: { id: 101, name: 'Beta Ltd', created_at: '', updated_at: '' },
+    role: 'PropertyManager',
+    created_at: '',
+    updated_at: '',
+  };
+
+  const mockAuthState: AuthState = {
+    user: mockUser,
+    token: 'test-token',
+    refreshToken: 'test-refresh-token',
+    expiresAt: '2099-12-31T23:59:59Z',
+    isAuthenticated: true,
+    loading: false,
+    error: null,
+    userOrganizations: [mockOrg1, mockOrg2],
+    currentOrganizationId: 100,
+  };
+
+  const mockAppState: AppState = {
+    auth: mockAuthState,
+  };
+
+  describe('selectAuthState', () => {
+    it('should select the auth state', () => {
+      const result = AuthSelectors.selectAuthState(mockAppState);
+      expect(result).toEqual(mockAuthState);
+    });
+  });
+
+  describe('selectUser', () => {
+    it('should select the user', () => {
+      const result = AuthSelectors.selectUser.projector(mockAuthState);
+      expect(result).toEqual(mockUser);
+    });
+
+    it('should return null when user is null', () => {
+      const state = { ...mockAuthState, user: null };
+      const result = AuthSelectors.selectUser.projector(state);
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('selectToken', () => {
+    it('should select the token', () => {
+      const result = AuthSelectors.selectToken.projector(mockAuthState);
+      expect(result).toBe('test-token');
+    });
+  });
+
+  describe('selectRefreshToken', () => {
+    it('should select the refresh token', () => {
+      const result = AuthSelectors.selectRefreshToken.projector(mockAuthState);
+      expect(result).toBe('test-refresh-token');
+    });
+  });
+
+  describe('selectIsAuthenticated', () => {
+    it('should select the authentication status', () => {
+      const result = AuthSelectors.selectIsAuthenticated.projector(mockAuthState);
+      expect(result).toBe(true);
+    });
+
+    it('should return false when not authenticated', () => {
+      const state = { ...mockAuthState, isAuthenticated: false };
+      const result = AuthSelectors.selectIsAuthenticated.projector(state);
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('selectAuthLoading', () => {
+    it('should select the loading state', () => {
+      const result = AuthSelectors.selectAuthLoading.projector(mockAuthState);
+      expect(result).toBe(false);
+    });
+
+    it('should return true when loading', () => {
+      const state = { ...mockAuthState, loading: true };
+      const result = AuthSelectors.selectAuthLoading.projector(state);
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('selectAuthError', () => {
+    it('should select the error', () => {
+      const result = AuthSelectors.selectAuthError.projector(mockAuthState);
+      expect(result).toBeNull();
+    });
+
+    it('should return error when present', () => {
+      const error = { message: 'Test error' };
+      const state = { ...mockAuthState, error };
+      const result = AuthSelectors.selectAuthError.projector(state);
+      expect(result).toEqual(error);
+    });
+  });
+
   describe('selectUserRole', () => {
     it('should extract user role from state', () => {
       const result = selectUserRole.projector(mockUser);
@@ -154,6 +262,32 @@ describe('Auth Selectors', () => {
         expect(selectCanManageOrganizations.projector(role)).toBe(false);
         expect(selectCanInviteUsers.projector(role)).toBe(false);
       });
+    });
+  });
+
+  describe('selectUserOrganizations', () => {
+    it('should select the userOrganizations array', () => {
+      const result = AuthSelectors.selectUserOrganizations.projector(mockAuthState);
+      expect(result).toEqual([mockOrg1, mockOrg2]);
+    });
+
+    it('should return empty array when no organizations', () => {
+      const state = { ...mockAuthState, userOrganizations: [] };
+      const result = AuthSelectors.selectUserOrganizations.projector(state);
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('selectCurrentOrganizationId', () => {
+    it('should select the currentOrganizationId', () => {
+      const result = AuthSelectors.selectCurrentOrganizationId.projector(mockAuthState);
+      expect(result).toBe(100);
+    });
+
+    it('should return null when no organization is selected', () => {
+      const state = { ...mockAuthState, currentOrganizationId: null };
+      const result = AuthSelectors.selectCurrentOrganizationId.projector(state);
+      expect(result).toBeNull();
     });
   });
 });

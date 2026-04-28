@@ -37,8 +37,8 @@ export class UserInvitationService {
     });
   }
 
-  revokeInvitation(inviteId: number): Observable<void> {
-    return this.http.delete<void>(`${environment.apiUrl}/invitations/${inviteId}`);
+  revokeInvitation(inviteId: number, orgId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${orgId}/invitations/${inviteId}`);
   }
 
   acceptInvitation(token: string, password: string): Observable<User> {

@@ -65,6 +65,7 @@ type CreateBuildingRequest struct {
 	ConstructionYear *int             `json:"construction_year" binding:"omitempty,gte=1800"`
 	Metadata         BuildingMetadata `json:"metadata" binding:"omitempty"`
 	ActiveStatus     bool             `json:"active_status"`
+	OrganizationID   int              `json:"-"`
 }
 
 // UpdateBuildingRequest represents the request to update a building
@@ -90,20 +91,22 @@ type BuildingWithStats struct {
 
 // BulkCreateBuildingsRequest represents the request to create multiple buildings
 type BulkCreateBuildingsRequest struct {
-	PropertyID int                     `json:"property_id" binding:"required"`
-	Buildings  []CreateBuildingRequest `json:"buildings" binding:"required,min=1"`
+	PropertyID     int                     `json:"property_id" binding:"required"`
+	Buildings      []CreateBuildingRequest `json:"buildings" binding:"required,min=1"`
+	OrganizationID int                     `json:"-"`
 }
 
 // BuildingSearchFilters represents filters for building search
 type BuildingSearchFilters struct {
-	PropertyID   *int          `json:"property_id"`
-	BuildingType *BuildingType `json:"building_type"`
-	ActiveStatus *bool         `json:"active_status"`
-	HasElevator  *bool         `json:"has_elevator"`
-	MinFloors    *int          `json:"min_floors"`
-	MaxFloors    *int          `json:"max_floors"`
-	Limit        int           `json:"limit"`
-	Offset       int           `json:"offset"`
+	OrganizationID *int          `json:"organization_id"`
+	PropertyID     *int          `json:"property_id"`
+	BuildingType   *BuildingType `json:"building_type"`
+	ActiveStatus   *bool         `json:"active_status"`
+	HasElevator    *bool         `json:"has_elevator"`
+	MinFloors      *int          `json:"min_floors"`
+	MaxFloors      *int          `json:"max_floors"`
+	Limit          int           `json:"limit"`
+	Offset         int           `json:"offset"`
 }
 
 // Building validation error constants
@@ -167,6 +170,7 @@ type BuildingSearchRequest struct {
 	SortBy           string `form:"sort_by" binding:"omitempty,oneof=building_name building_code created_at updated_at total_floors construction_year"`
 	SortOrder        string `form:"sort_order" binding:"omitempty,oneof=asc desc"`
 	IncludeStats     bool   `form:"include_stats"`
+	OrganizationID   *int   `form:"-"`
 }
 
 // BuildingExportRequest represents request for building data export

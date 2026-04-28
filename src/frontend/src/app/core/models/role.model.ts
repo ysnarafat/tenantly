@@ -51,31 +51,13 @@ export enum Permission {
 // Role-Permission mapping
 export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
   SUPER_ADMIN: [
-    // Organization
+    // Organization management only — no org-scoped data access (BD DSA 2018 / DATA_ACCESS_POLICY)
     Permission.MANAGE_ORGANIZATIONS,
     Permission.MANAGE_ORG_ADMINS,
     // Users
     Permission.MANAGE_USERS,
     Permission.VIEW_USERS,
     Permission.INVITE_USERS,
-    // Properties
-    Permission.MANAGE_PROPERTIES,
-    Permission.VIEW_PROPERTIES,
-    Permission.MANAGE_BUILDINGS,
-    Permission.MANAGE_UNITS,
-    // Tenants
-    Permission.MANAGE_TENANTS,
-    Permission.VIEW_TENANTS,
-    Permission.MANAGE_LEASES,
-    Permission.VIEW_LEASES,
-    // Financial
-    Permission.RECORD_PAYMENTS,
-    Permission.VIEW_PAYMENTS,
-    Permission.VIEW_REPORTS,
-    Permission.EXPORT_REPORTS,
-    // Documents
-    Permission.MANAGE_DOCUMENTS,
-    Permission.VIEW_DOCUMENTS,
     // System
     Permission.VIEW_DASHBOARD,
     Permission.MANAGE_SETTINGS,

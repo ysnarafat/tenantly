@@ -152,7 +152,7 @@ func (s *NotificationService) SendBuildingWideNotification(
 	}
 
 	// Get all active units in the building
-	units, _, err := s.unitRepo.GetByBuildingWithDetails(buildingID, 1000, 0) // Get all units
+	units, _, err := s.unitRepo.GetByBuildingWithDetails(buildingID, 1000, 0, 0) // Get all units (internal, no org filter)
 	if err != nil {
 		return nil, []error{fmt.Errorf("failed to get building units: %w", err)}
 	}

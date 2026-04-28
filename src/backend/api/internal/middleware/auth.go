@@ -212,9 +212,14 @@ func RequireAdminOrPropertyManager() gin.HandlerFunc {
 	return RequireRole(RoleAdmin, RolePropertyManager)
 }
 
+// RequireSuperAdminOrAdmin allows SUPER_ADMIN, ORG_ADMIN, or Admin
+func RequireSuperAdminOrAdmin() gin.HandlerFunc {
+	return RequireRole(RoleSuperAdmin, RoleOrgAdmin, RoleAdmin)
+}
+
 // RequireAnyRole middleware that allows any authenticated user
 func RequireAnyRole() gin.HandlerFunc {
-	return RequireRole(RoleAdmin, RolePropertyManager, RoleAccountant)
+	return RequireRole(RoleSuperAdmin, RoleOrgAdmin, RoleAdmin, RolePropertyManager, RoleAccountant)
 }
 
 // GetUserID helper function to extract user ID from context
@@ -245,6 +250,33 @@ func GetUserRole(c *gin.Context) (string, error) {
 	}
 
 	return roleStr, nil
+}
+
+// RequireOrgContext blocks requests where the JWT has no organization_id.
+// Must run after AuthRequired. Injects "org_id" (int) into context for handlers.
+func RequireOrgContext() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		orgIDRaw, exists := c.Get("organization_id")
+		if !exists {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "organization context required",
+				"code":  "ORG_CONTEXT_REQUIRED",
+			})
+			c.Abort()
+			return
+		}
+		orgIDPtr, ok := orgIDRaw.(*int)
+		if !ok || orgIDPtr == nil {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "organization context required",
+				"code":  "ORG_CONTEXT_REQUIRED",
+			})
+			c.Abort()
+			return
+		}
+		c.Set("org_id", *orgIDPtr)
+		c.Next()
+	}
 }
 
 // GetUsername helper function to extract username from context

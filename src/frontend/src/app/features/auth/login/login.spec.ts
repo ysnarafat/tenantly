@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Store } from '@ngrx/store';
-import { of, BehaviorSubject, Subject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { Login } from './login';
 import { AuthService } from '../../../core/services/auth.service';
 
@@ -16,12 +16,12 @@ describe('Login Component', () => {
   let snackBar: jasmine.SpyObj<MatSnackBar>;
 
   let loadingSubject: BehaviorSubject<boolean>;
-  let errorSubject: BehaviorSubject<any>;
+  let errorSubject: BehaviorSubject<string | null>;
   let isAuthenticatedSubject: BehaviorSubject<boolean>;
 
   beforeEach(async () => {
     loadingSubject = new BehaviorSubject<boolean>(false);
-    errorSubject = new BehaviorSubject<any>(null);
+    errorSubject = new BehaviorSubject<string | null>(null);
     isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
 
     const authServiceSpy = jasmine.createSpyObj('AuthService', ['login', 'clearError']);

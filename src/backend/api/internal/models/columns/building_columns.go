@@ -5,6 +5,7 @@ const (
 	BuildingTable            = "buildings"
 	BuildingID               = "id"
 	BuildingPropertyID       = "property_id"
+	BuildingOrganizationID   = "organization_id"
 	BuildingName             = "building_name"
 	BuildingCode             = "building_code"
 	BuildingType             = "building_type"

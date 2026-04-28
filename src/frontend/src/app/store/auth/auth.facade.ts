@@ -31,6 +31,8 @@ export class AuthFacade {
   canViewAttachments$ = this.store.select(AuthSelectors.selectCanViewAttachments);
   canManageUsers$ = this.store.select(AuthSelectors.selectCanManageUsers);
   isTokenExpired$ = this.store.select(AuthSelectors.selectIsTokenExpired);
+  userOrganizations$ = this.store.select(AuthSelectors.selectUserOrganizations);
+  currentOrganizationId$ = this.store.select(AuthSelectors.selectCurrentOrganizationId);
 
   // Actions
   login(credentials: LoginRequest): void {
@@ -63,6 +65,14 @@ export class AuthFacade {
 
   setLoading(loading: boolean): void {
     this.store.dispatch(AuthActions.setLoading({ loading }));
+  }
+
+  switchOrganization(organizationId: number): void {
+    this.store.dispatch(AuthActions.switchOrganization({ organizationId }));
+  }
+
+  setCurrentOrganization(organizationId: number): void {
+    this.store.dispatch(AuthActions.setCurrentOrganization({ organizationId }));
   }
 
   // Synchronous getters for backward compatibility

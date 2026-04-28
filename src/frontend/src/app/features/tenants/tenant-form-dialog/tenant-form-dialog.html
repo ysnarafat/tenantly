@@ -8,7 +8,9 @@
         <mat-label>Full Name</mat-label>
         <input matInput formControlName="name" placeholder="Enter tenant name" />
         <mat-icon matPrefix>person</mat-icon>
-        <mat-error *ngIf="tenantForm.get('name')?.invalid">{{ getErrorMessage('name') }}</mat-error>
+        @if (tenantForm.get('name')?.invalid) {
+        <mat-error>{{ getErrorMessage('name') }}</mat-error>
+        }
       </mat-form-field>
 
       <div class="row">
@@ -20,9 +22,9 @@
             <mat-option [value]="type">{{ type }}</mat-option>
             }
           </mat-select>
-          <mat-error *ngIf="tenantForm.get('tenant_type')?.invalid"
-            >{{ getErrorMessage('tenant_type') }}</mat-error
-          >
+          @if (tenantForm.get('tenant_type')?.invalid) {
+          <mat-error>{{ getErrorMessage('tenant_type') }}</mat-error>
+          }
         </mat-form-field>
 
         <!-- NID Number -->
@@ -30,9 +32,9 @@
           <mat-label>NID / Registry No.</mat-label>
           <input matInput formControlName="nid_number" placeholder="Enter NID" />
           <mat-icon matPrefix>badge</mat-icon>
-          <mat-error *ngIf="tenantForm.get('nid_number')?.invalid"
-            >{{ getErrorMessage('nid_number') }}</mat-error
-          >
+          @if (tenantForm.get('nid_number')?.invalid) {
+          <mat-error>{{ getErrorMessage('nid_number') }}</mat-error>
+          }
         </mat-form-field>
       </div>
 
@@ -42,9 +44,9 @@
           <mat-label>Phone Number</mat-label>
           <input matInput formControlName="phone_number" placeholder="Enter phone" />
           <mat-icon matPrefix>phone</mat-icon>
-          <mat-error *ngIf="tenantForm.get('phone_number')?.invalid"
-            >{{ getErrorMessage('phone_number') }}</mat-error
-          >
+          @if (tenantForm.get('phone_number')?.invalid) {
+          <mat-error>{{ getErrorMessage('phone_number') }}</mat-error>
+          }
         </mat-form-field>
       </div>
 
@@ -54,9 +56,9 @@
           <mat-label>Email Address</mat-label>
           <input matInput type="email" formControlName="email" placeholder="example@mail.com" />
           <mat-icon matPrefix>email</mat-icon>
-          <mat-error *ngIf="tenantForm.get('email')?.invalid"
-            >{{ getErrorMessage('email') }}</mat-error
-          >
+          @if (tenantForm.get('email')?.invalid) {
+          <mat-error>{{ getErrorMessage('email') }}</mat-error>
+          }
         </mat-form-field>
       </div>
 
@@ -70,9 +72,9 @@
           placeholder="Enter full address"
         ></textarea>
         <mat-icon matPrefix>map</mat-icon>
-        <mat-error *ngIf="tenantForm.get('address')?.invalid"
-          >{{ getErrorMessage('address') }}</mat-error
-        >
+        @if (tenantForm.get('address')?.invalid) {
+        <mat-error>{{ getErrorMessage('address') }}</mat-error>
+        }
       </mat-form-field>
     </div>
   </mat-dialog-content>

@@ -7,6 +7,7 @@ import { map, exhaustMap, catchError, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import * as AuthActions from './auth.actions';
 import { LoginResponse } from '../../core/services/auth.service';
+import { SetOrganizationResponse } from '../../core/models/organization.model';
 
 @Injectable()
 export class AuthEffects {
@@ -56,7 +57,70 @@ export class AuthEffects {
               : new Date(response.expires_at).toISOString()
           );
 
-          // Navigate to dashboard
+          // Persist organizations array for post-refresh restoration
+          const orgs = response.organizations || [];
+          if (orgs.length > 0) {
+            localStorage.setItem('tenantly_organizations', JSON.stringify(orgs));
+          }
+
+          // If user belongs to multiple organizations without a default, show org picker
+          const hasDefault = !!response.default_organization_id;
+          if (orgs.length > 1 && !hasDefault) {
+            this.router.navigate(['/select-organization']);
+          } else {
+            // Store current org context using organization_id (actual org ID)
+            if (orgs.length === 1) {
+              localStorage.setItem('tenantly_current_org_id', orgs[0].organization_id.toString());
+            } else if (hasDefault) {
+              localStorage.setItem(
+                'tenantly_current_org_id',
+                response.default_organization_id!.toString()
+              );
+            }
+            this.router.navigate(['/dashboard']);
+          }
+        })
+      ),
+    { dispatch: false }
+  );
+
+  switchOrganization$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(AuthActions.switchOrganization),
+      exhaustMap(({ organizationId }) =>
+        this.http
+          .post<SetOrganizationResponse>(`${environment.apiUrl}/auth/set-organization`, {
+            organization_id: organizationId,
+          })
+          .pipe(
+            map((response) => AuthActions.switchOrganizationSuccess({ response })),
+            catchError((error) => of(AuthActions.switchOrganizationFailure({ error })))
+          )
+      )
+    )
+  );
+
+  switchOrganizationSuccess$ = createEffect(
+    () =>
+      this.actions$.pipe(
+        ofType(AuthActions.switchOrganizationSuccess),
+        tap(({ response }) => {
+          // Update tokens in localStorage
+          localStorage.setItem('tenantly_token', response.token);
+          localStorage.setItem('tenantly_refresh_token', response.refresh_token);
+          localStorage.setItem(
+            'tenantly_expires_at',
+            typeof response.expires_at === 'string'
+              ? response.expires_at
+              : new Date(response.expires_at).toISOString()
+          );
+          localStorage.setItem(
+            'tenantly_current_org_id',
+            response.organization.organization_id.toString()
+          );
+          localStorage.setItem('tenantly_current_org', JSON.stringify(response.organization));
+
+          // Navigate to dashboard after org switch
           this.router.navigate(['/dashboard']);
         })
       ),
@@ -91,6 +155,9 @@ export class AuthEffects {
           localStorage.removeItem('tenantly_refresh_token');
           localStorage.removeItem('tenantly_user');
           localStorage.removeItem('tenantly_expires_at');
+          localStorage.removeItem('tenantly_organizations');
+          localStorage.removeItem('tenantly_current_org_id');
+          localStorage.removeItem('tenantly_current_org');
 
           // Navigate to login
           this.router.navigate(['/login']);

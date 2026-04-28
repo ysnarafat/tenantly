@@ -1,8 +1,17 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { Organization, CreateOrgRequest, UpdateOrgRequest, OrgStats } from '../models';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
+import {
+  Organization,
+  CreateOrgRequest,
+  UpdateOrgRequest,
+  OrgStats,
+  UserOrganization,
+  SetOrganizationRequest,
+  SetOrganizationResponse,
+} from '../models/organization.model';
 import { User } from './auth.service';
 
 interface OrgListResponse {
@@ -21,9 +30,12 @@ interface OrgUsersResponse {
 export class OrganizationService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/organizations`;
+  private authApiUrl = `${environment.apiUrl}/auth`;
+  private readonly ORG_ID_KEY = 'tenantly_current_org_id';
 
-  // Current organization context
   public currentOrganization$ = new BehaviorSubject<Organization | null>(null);
+
+  // --- Organization CRUD ---
 
   getOrganizations(): Observable<OrgListResponse> {
     return this.http.get<OrgListResponse>(this.apiUrl);
@@ -65,11 +77,59 @@ export class OrganizationService {
     return this.http.get<OrgStats>(`${this.apiUrl}/${orgId}/stats`);
   }
 
+  // --- Current Organization Context ---
+
   getCurrentOrganization(): Organization | null {
     return this.currentOrganization$.value;
   }
 
   setCurrentOrganization(org: Organization | null): void {
     this.currentOrganization$.next(org);
+  }
+
+  // --- Organization Switching (multi-org support) ---
+
+  setOrganization(organizationId: number): Observable<SetOrganizationResponse> {
+    const request: SetOrganizationRequest = { organization_id: organizationId };
+    return this.http
+      .post<SetOrganizationResponse>(`${this.authApiUrl}/set-organization`, request)
+      .pipe(
+        tap((response) => {
+          localStorage.setItem(this.ORG_ID_KEY, organizationId.toString());
+          localStorage.setItem(
+            'tenantly_current_org',
+            JSON.stringify(response.organization.organization)
+          );
+          this.currentOrganization$.next(response.organization.organization);
+        })
+      );
+  }
+
+  getCurrentOrganizationId(): number | null {
+    const orgId = localStorage.getItem(this.ORG_ID_KEY);
+    return orgId ? parseInt(orgId, 10) : null;
+  }
+
+  storeOrganizationContext(orgId: number, organization: UserOrganization): void {
+    localStorage.setItem(this.ORG_ID_KEY, orgId.toString());
+    localStorage.setItem('tenantly_current_org', JSON.stringify(organization.organization));
+  }
+
+  restoreOrganizationContext(): void {
+    const orgData = localStorage.getItem('tenantly_current_org');
+    if (orgData) {
+      try {
+        const org: Organization = JSON.parse(orgData);
+        this.currentOrganization$.next(org);
+      } catch (e) {
+        console.error('Failed to restore organization context:', e);
+      }
+    }
+  }
+
+  clearOrganizationContext(): void {
+    localStorage.removeItem(this.ORG_ID_KEY);
+    localStorage.removeItem('tenantly_current_org');
+    this.currentOrganization$.next(null);
   }
 }

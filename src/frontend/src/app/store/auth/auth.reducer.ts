@@ -1,5 +1,6 @@
 import { createReducer, on } from '@ngrx/store';
 import { User } from '../../core/services/auth.service';
+import { UserOrganization } from '../../core/models/organization.model';
 import * as AuthActions from './auth.actions';
 
 export interface AuthState {
@@ -10,6 +11,8 @@ export interface AuthState {
   isAuthenticated: boolean;
   loading: boolean;
   error: unknown;
+  userOrganizations: UserOrganization[];
+  currentOrganizationId: number | null;
 }
 
 // Initialize state from localStorage if available
@@ -24,6 +27,9 @@ const initializeFromStorage = (): AuthState => {
     const isExpired = new Date() >= new Date(expiresAt);
 
     if (!isExpired) {
+      const orgId = localStorage.getItem('tenantly_current_org_id');
+      const orgsStr = localStorage.getItem('tenantly_organizations');
+      const userOrganizations = orgsStr ? JSON.parse(orgsStr) : [];
       return {
         user,
         token,
@@ -32,6 +38,8 @@ const initializeFromStorage = (): AuthState => {
         isAuthenticated: true,
         loading: false,
         error: null,
+        userOrganizations,
+        currentOrganizationId: orgId ? parseInt(orgId, 10) : null,
       };
     }
   }
@@ -44,6 +52,8 @@ const initializeFromStorage = (): AuthState => {
     isAuthenticated: false,
     loading: false,
     error: null,
+    userOrganizations: [],
+    currentOrganizationId: null,
   };
 };
 
@@ -71,6 +81,10 @@ export const authReducer = createReducer(
     isAuthenticated: true,
     loading: false,
     error: null,
+    userOrganizations: response.organizations || [],
+    currentOrganizationId:
+      response.default_organization_id ??
+      (response.organizations?.length === 1 ? response.organizations[0].organization_id : null),
   })),
 
   on(AuthActions.loginFailure, (state, { error }) => ({
@@ -93,6 +107,8 @@ export const authReducer = createReducer(
     isAuthenticated: false,
     loading: true,
     error: null,
+    userOrganizations: [],
+    currentOrganizationId: null,
   })),
 
   on(AuthActions.logoutSuccess, () => ({
@@ -103,6 +119,8 @@ export const authReducer = createReducer(
     isAuthenticated: false,
     loading: false,
     error: null,
+    userOrganizations: [],
+    currentOrganizationId: null,
   })),
 
   on(AuthActions.logoutFailure, (state, { error }) => ({
@@ -179,6 +197,43 @@ export const authReducer = createReducer(
     error,
   })),
 
+  // Organization Actions
+  on(AuthActions.setUserOrganizations, (state, { organizations, defaultOrganizationId }) => ({
+    ...state,
+    userOrganizations: organizations,
+    currentOrganizationId: defaultOrganizationId ?? state.currentOrganizationId,
+  })),
+
+  on(AuthActions.setCurrentOrganization, (state, { organizationId }) => ({
+    ...state,
+    currentOrganizationId: organizationId,
+  })),
+
+  on(AuthActions.switchOrganization, (state) => ({
+    ...state,
+    loading: true,
+    error: null,
+  })),
+
+  on(AuthActions.switchOrganizationSuccess, (state, { response }) => ({
+    ...state,
+    token: response.token,
+    refreshToken: response.refresh_token,
+    expiresAt:
+      typeof response.expires_at === 'string'
+        ? response.expires_at
+        : new Date(response.expires_at).toISOString(),
+    currentOrganizationId: response.organization.organization_id,
+    loading: false,
+    error: null,
+  })),
+
+  on(AuthActions.switchOrganizationFailure, (state, { error }) => ({
+    ...state,
+    loading: false,
+    error,
+  })),
+
   // Utility Actions
   on(AuthActions.clearError, (state) => ({
     ...state,
@@ -202,6 +257,9 @@ export const authReducer = createReducer(
       const isExpired = new Date() >= new Date(expiresAt);
 
       if (!isExpired) {
+        const orgId = localStorage.getItem('tenantly_current_org_id');
+        const orgsStr = localStorage.getItem('tenantly_organizations');
+        const userOrganizations = orgsStr ? JSON.parse(orgsStr) : state.userOrganizations;
         return {
           ...state,
           user,
@@ -209,6 +267,8 @@ export const authReducer = createReducer(
           refreshToken,
           expiresAt,
           isAuthenticated: true,
+          userOrganizations,
+          currentOrganizationId: orgId ? parseInt(orgId, 10) : state.currentOrganizationId,
         };
       }
     }

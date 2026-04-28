@@ -8,8 +8,6 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { TenantService } from '../../../core/services/tenant.service';
 import { TenantFormDialogComponent } from '../tenant-form-dialog/tenant-form-dialog';
-import { AuthFacade } from '../../../store/auth/auth.facade';
-import { take } from 'rxjs';
 import { Tenant, PaginationInfo } from '../../../core/models/tenant.model';
 
 @Component({
@@ -30,7 +28,6 @@ import { Tenant, PaginationInfo } from '../../../core/models/tenant.model';
 export class TenantList implements OnInit {
   private dialog = inject(MatDialog);
   private tenantService = inject(TenantService);
-  private authFacade = inject(AuthFacade);
 
   tenants: Tenant[] = [];
   displayedColumns: string[] = ['name', 'type', 'email', 'phone', 'status', 'created'];
@@ -47,7 +44,7 @@ export class TenantList implements OnInit {
     this.loadTenants();
   }
 
-  loadTenants(page: number = 1, pageSize: number = 10) {
+  loadTenants(page = 1, pageSize = 10) {
     this.tenantService.getAllTenants(page, pageSize).subscribe({
       next: (response) => {
         this.tenants = response.tenants;
@@ -71,17 +68,14 @@ export class TenantList implements OnInit {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.authFacade.user$.pipe(take(1)).subscribe((user) => {
-          const userID = user?.id || 0;
-          this.tenantService.createTenant(result).subscribe({
-            next: (tenant) => {
-              console.log('Tenant created successfully:', tenant);
-              this.loadTenants(); // Refresh list
-            },
-            error: (err) => {
-              console.error('Error creating tenant:', err);
-            },
-          });
+        this.tenantService.createTenant(result).subscribe({
+          next: (tenant) => {
+            console.log('Tenant created successfully:', tenant);
+            this.loadTenants(); // Refresh list
+          },
+          error: (err) => {
+            console.error('Error creating tenant:', err);
+          },
         });
       }
     });

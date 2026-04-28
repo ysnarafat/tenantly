@@ -35,7 +35,7 @@ describe('AuthService', () => {
 
     // IMPORTANT: Set up the spy BEFORE creating the service
     // because the service creates observables in its constructor
-    storeSpy.select.and.callFake((selector: any) => {
+    storeSpy.select.and.callFake((selector: (state: AppState) => unknown) => {
       // Return appropriate observables based on selector
       if (selector === AuthSelectors.selectUser) return of(mockUser);
       if (selector === AuthSelectors.selectUserRole) return of('Admin');

@@ -13,18 +13,38 @@ describe('AuthEffects', () => {
   let httpMock: HttpTestingController;
   let router: jasmine.SpyObj<Router>;
 
+  const mockUser = {
+    id: 1,
+    username: 'testuser',
+    email: 'test@example.com',
+    role: 'Admin',
+    active: true,
+    created_at: '2023-01-01T00:00:00Z',
+    updated_at: '2023-01-01T00:00:00Z',
+  };
+
+  const mockOrg1 = {
+    id: 10,
+    organization_id: 100,
+    organization: { id: 100, name: 'Acme Corp', created_at: '', updated_at: '' },
+    role: 'Admin',
+    created_at: '',
+    updated_at: '',
+  };
+
+  const mockOrg2 = {
+    id: 11,
+    organization_id: 101,
+    organization: { id: 101, name: 'Beta Ltd', created_at: '', updated_at: '' },
+    role: 'PropertyManager',
+    created_at: '',
+    updated_at: '',
+  };
+
   const mockLoginResponse = {
     token: 'test-token',
     refresh_token: 'test-refresh-token',
-    user: {
-      id: 1,
-      username: 'testuser',
-      email: 'test@example.com',
-      role: 'Admin',
-      active: true,
-      created_at: '2023-01-01T00:00:00Z',
-      updated_at: '2023-01-01T00:00:00Z',
-    },
+    user: mockUser,
     expires_at: '2023-12-31T23:59:59Z',
   };
 
@@ -55,7 +75,9 @@ describe('AuthEffects', () => {
 
   describe('login$', () => {
     it('should return loginSuccess action on successful demo login', (done) => {
-      spyOn<any>(effects, 'isDemoMode').and.returnValue(true);
+      spyOn<AuthEffects>(effects, 'isDemoMode' as unknown as keyof AuthEffects).and.returnValue(
+        true
+      );
       const credentials = { username: 'demo', password: 'demo123' };
       const action = AuthActions.login({ credentials });
 
@@ -71,7 +93,9 @@ describe('AuthEffects', () => {
     });
 
     it('should return loginFailure action on invalid demo credentials', (done) => {
-      spyOn<any>(effects, 'isDemoMode').and.returnValue(true);
+      spyOn<AuthEffects>(effects, 'isDemoMode' as unknown as keyof AuthEffects).and.returnValue(
+        true
+      );
       const credentials = { username: 'invalid', password: 'invalid' };
       const action = AuthActions.login({ credentials });
 
@@ -103,11 +127,140 @@ describe('AuthEffects', () => {
         done();
       });
     });
+
+    it('should navigate to /select-organization when user has multiple orgs and no default', (done) => {
+      const response = { ...mockLoginResponse, organizations: [mockOrg1, mockOrg2] };
+      actions$ = of(AuthActions.loginSuccess({ response }));
+
+      effects.loginSuccess$.subscribe(() => {
+        expect(router.navigate).toHaveBeenCalledWith(['/select-organization']);
+        done();
+      });
+    });
+
+    it('should navigate to /dashboard when user has a single org', (done) => {
+      const response = { ...mockLoginResponse, organizations: [mockOrg1] };
+      actions$ = of(AuthActions.loginSuccess({ response }));
+
+      effects.loginSuccess$.subscribe(() => {
+        expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+        done();
+      });
+    });
+
+    it('should navigate to /dashboard when a default_organization_id is set', (done) => {
+      const response = {
+        ...mockLoginResponse,
+        organizations: [mockOrg1, mockOrg2],
+        default_organization_id: 100,
+      };
+      actions$ = of(AuthActions.loginSuccess({ response }));
+
+      effects.loginSuccess$.subscribe(() => {
+        expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+        done();
+      });
+    });
+
+    it('should persist organizations array to localStorage', (done) => {
+      const response = { ...mockLoginResponse, organizations: [mockOrg1, mockOrg2] };
+      actions$ = of(AuthActions.loginSuccess({ response }));
+
+      effects.loginSuccess$.subscribe(() => {
+        const stored = JSON.parse(localStorage.getItem('tenantly_organizations')!);
+        expect(stored).toEqual([mockOrg1, mockOrg2]);
+        done();
+      });
+    });
+
+    it('should store organization_id to localStorage for a single org', (done) => {
+      const response = { ...mockLoginResponse, organizations: [mockOrg1] };
+      actions$ = of(AuthActions.loginSuccess({ response }));
+
+      effects.loginSuccess$.subscribe(() => {
+        expect(localStorage.getItem('tenantly_current_org_id')).toBe('100');
+        done();
+      });
+    });
+
+    it('should store default_organization_id to localStorage when provided', (done) => {
+      const response = {
+        ...mockLoginResponse,
+        organizations: [mockOrg1, mockOrg2],
+        default_organization_id: 101,
+      };
+      actions$ = of(AuthActions.loginSuccess({ response }));
+
+      effects.loginSuccess$.subscribe(() => {
+        expect(localStorage.getItem('tenantly_current_org_id')).toBe('101');
+        done();
+      });
+    });
+  });
+
+  describe('switchOrganization$', () => {
+    it('should call the set-organization API and dispatch switchOrganizationSuccess', (done) => {
+      const mockSwitchResponse = {
+        token: 'new-token',
+        refresh_token: 'new-refresh',
+        organization: mockOrg1,
+        expires_at: '2099-01-01T00:00:00Z',
+      };
+      actions$ = of(AuthActions.switchOrganization({ organizationId: 100 }));
+
+      effects.switchOrganization$.subscribe((result) => {
+        expect(result.type).toBe(AuthActions.switchOrganizationSuccess.type);
+        expect((result as unknown as { response: typeof mockSwitchResponse }).response).toEqual(
+          mockSwitchResponse
+        );
+        done();
+      });
+
+      const req = httpMock.expectOne(`${environment.apiUrl}/auth/set-organization`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ organization_id: 100 });
+      req.flush(mockSwitchResponse);
+    });
+
+    it('should dispatch switchOrganizationFailure on API error', (done) => {
+      actions$ = of(AuthActions.switchOrganization({ organizationId: 100 }));
+
+      effects.switchOrganization$.subscribe((result) => {
+        expect(result.type).toBe(AuthActions.switchOrganizationFailure.type);
+        done();
+      });
+
+      const req = httpMock.expectOne(`${environment.apiUrl}/auth/set-organization`);
+      req.flush({ error: 'Forbidden' }, { status: 403, statusText: 'Forbidden' });
+    });
+  });
+
+  describe('switchOrganizationSuccess$', () => {
+    it('should update tokens in localStorage and navigate to dashboard', (done) => {
+      const response = {
+        token: 'new-token',
+        refresh_token: 'new-refresh',
+        organization: mockOrg1,
+        expires_at: '2099-01-01T00:00:00Z',
+      };
+      actions$ = of(AuthActions.switchOrganizationSuccess({ response }));
+
+      effects.switchOrganizationSuccess$.subscribe(() => {
+        expect(localStorage.getItem('tenantly_token')).toBe('new-token');
+        expect(localStorage.getItem('tenantly_refresh_token')).toBe('new-refresh');
+        expect(localStorage.getItem('tenantly_current_org_id')).toBe('100');
+        expect(localStorage.getItem('tenantly_current_org')).toBe(JSON.stringify(mockOrg1));
+        expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+        done();
+      });
+    });
   });
 
   describe('logout$', () => {
     it('should return logoutSuccess action in demo mode', (done) => {
-      spyOn<any>(effects, 'isDemoMode').and.returnValue(true);
+      spyOn<AuthEffects>(effects, 'isDemoMode' as unknown as keyof AuthEffects).and.returnValue(
+        true
+      );
       const action = AuthActions.logout();
       actions$ = of(action);
 
@@ -119,21 +272,25 @@ describe('AuthEffects', () => {
   });
 
   describe('logoutSuccess$', () => {
-    it('should clear auth data from localStorage and navigate to login', (done) => {
-      // Set up localStorage with auth data
+    it('should clear auth and org data from localStorage and navigate to login', (done) => {
       localStorage.setItem('tenantly_token', 'test-token');
       localStorage.setItem('tenantly_refresh_token', 'test-refresh-token');
       localStorage.setItem('tenantly_user', JSON.stringify(mockLoginResponse.user));
       localStorage.setItem('tenantly_expires_at', 'test-expires-at');
+      localStorage.setItem('tenantly_organizations', JSON.stringify([mockOrg1]));
+      localStorage.setItem('tenantly_current_org_id', '100');
+      localStorage.setItem('tenantly_current_org', JSON.stringify(mockOrg1));
 
-      const action = AuthActions.logoutSuccess();
-      actions$ = of(action);
+      actions$ = of(AuthActions.logoutSuccess());
 
       effects.logoutSuccess$.subscribe(() => {
         expect(localStorage.getItem('tenantly_token')).toBeNull();
         expect(localStorage.getItem('tenantly_refresh_token')).toBeNull();
         expect(localStorage.getItem('tenantly_user')).toBeNull();
         expect(localStorage.getItem('tenantly_expires_at')).toBeNull();
+        expect(localStorage.getItem('tenantly_organizations')).toBeNull();
+        expect(localStorage.getItem('tenantly_current_org_id')).toBeNull();
+        expect(localStorage.getItem('tenantly_current_org')).toBeNull();
         expect(router.navigate).toHaveBeenCalledWith(['/login']);
         done();
       });
@@ -142,7 +299,9 @@ describe('AuthEffects', () => {
 
   describe('refreshToken$', () => {
     it('should return refreshTokenSuccess action in demo mode', (done) => {
-      spyOn<any>(effects, 'isDemoMode').and.returnValue(true);
+      spyOn<AuthEffects>(effects, 'isDemoMode' as unknown as keyof AuthEffects).and.returnValue(
+        true
+      );
       localStorage.setItem('tenantly_refresh_token', 'test-refresh-token');
       localStorage.setItem('tenantly_user', JSON.stringify(mockLoginResponse.user));
 
@@ -211,7 +370,9 @@ describe('AuthEffects', () => {
 
   describe('changePassword$', () => {
     it('should return changePasswordSuccess action in demo mode', (done) => {
-      spyOn<any>(effects, 'isDemoMode').and.returnValue(true);
+      spyOn<AuthEffects>(effects, 'isDemoMode' as unknown as keyof AuthEffects).and.returnValue(
+        true
+      );
       const request = { current_password: 'old', new_password: 'new' };
       const action = AuthActions.changePassword({ request });
       actions$ = of(action);
@@ -228,7 +389,9 @@ describe('AuthEffects', () => {
 
   describe('resetPassword$', () => {
     it('should return resetPasswordSuccess action in demo mode', (done) => {
-      spyOn<any>(effects, 'isDemoMode').and.returnValue(true);
+      spyOn<AuthEffects>(effects, 'isDemoMode' as unknown as keyof AuthEffects).and.returnValue(
+        true
+      );
       const request = { email: 'test@example.com' };
       const action = AuthActions.resetPassword({ request });
       actions$ = of(action);

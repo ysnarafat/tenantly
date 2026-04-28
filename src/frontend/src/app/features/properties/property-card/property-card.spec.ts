@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { PropertyCardComponent } from './property-card';
+import { PropertyCardComponent, DisplayedProperty } from './property-card';
 
 describe('PropertyCard', () => {
   let component: PropertyCardComponent;
@@ -19,7 +19,7 @@ describe('PropertyCard', () => {
       address: '123 Test St',
       property_type: 'Residential',
       expanded: false,
-    } as any;
+    } as DisplayedProperty;
     fixture.detectChanges();
   });
 

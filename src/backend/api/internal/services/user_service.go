@@ -18,6 +18,7 @@ type UserService struct {
 	userRepo            interfaces.UserRepositoryInterface
 	auditService        interfaces.AuditServiceInterface
 	organizationService *OrganizationService
+	userOrgRoleRepo     interfaces.UserOrganizationRoleRepositoryInterface
 	jwtSecret           string
 	jwtExpiration       time.Duration
 }
@@ -31,11 +32,12 @@ func NewUserService(userRepo interfaces.UserRepositoryInterface, auditService in
 	}
 }
 
-func NewUserServiceWithOrganization(userRepo interfaces.UserRepositoryInterface, auditService interfaces.AuditServiceInterface, organizationService *OrganizationService, jwtSecret string, jwtExpiration time.Duration) *UserService {
+func NewUserServiceWithOrganization(userRepo interfaces.UserRepositoryInterface, auditService interfaces.AuditServiceInterface, organizationService *OrganizationService, userOrgRoleRepo interfaces.UserOrganizationRoleRepositoryInterface, jwtSecret string, jwtExpiration time.Duration) *UserService {
 	return &UserService{
 		userRepo:            userRepo,
 		auditService:        auditService,
 		organizationService: organizationService,
+		userOrgRoleRepo:     userOrgRoleRepo,
 		jwtSecret:           jwtSecret,
 		jwtExpiration:       jwtExpiration,
 	}
@@ -108,12 +110,14 @@ func (s *UserService) ValidateUserInput(req *models.CreateUserRequest) error {
 
 	// Validate role
 	validRoles := map[string]bool{
+		"SUPER_ADMIN":     true,
+		"ORG_ADMIN":       true,
 		"Admin":           true,
 		"PropertyManager": true,
 		"Accountant":      true,
 	}
 	if !validRoles[req.Role] {
-		return fmt.Errorf("invalid role: must be Admin, PropertyManager, or Accountant")
+		return fmt.Errorf("invalid role: must be SUPER_ADMIN, ORG_ADMIN, Admin, PropertyManager, or Accountant")
 	}
 
 	return nil
@@ -153,11 +157,15 @@ func (s *UserService) CreateUser(req *models.CreateUserRequest) (*models.User, e
 	}
 
 	user := &models.User{
-		Username:     username,
-		Email:        email,
-		PasswordHash: string(hashedPassword),
-		Role:         req.Role,
-		Active:       true,
+		Username:       username,
+		Email:          email,
+		PasswordHash:   string(hashedPassword),
+		Role:           req.Role,
+		Active:         true,
+		FirstName:      req.FirstName,
+		LastName:       req.LastName,
+		OrganizationID: req.OrganizationID,
+		Status:         "active",
 	}
 
 	if err := s.userRepo.Create(user); err != nil {
@@ -259,10 +267,55 @@ func (s *UserService) Login(req *models.LoginRequest, clientIP, userAgent string
 		)
 	}
 
+	// Load all organizations this user belongs to
+	var userOrgs []models.UserOrganizationRole
+	defaultOrgID := 0
+	if s.userOrgRoleRepo != nil {
+		userOrgs, _ = s.userOrgRoleRepo.GetByUserID(user.ID)
+		if len(userOrgs) > 0 {
+			defaultOrgID = userOrgs[0].OrganizationID
+		}
+	}
+	// Fallback: use the user's organization_id field if no junction entries
+	if defaultOrgID == 0 && user.OrganizationID != nil {
+		defaultOrgID = *user.OrganizationID
+	}
+
 	return &models.LoginResponse{
+		Token:                 token,
+		RefreshToken:          refreshToken,
+		User:                  *user,
+		Organizations:         userOrgs,
+		DefaultOrganizationID: defaultOrgID,
+		ExpiresAt:             time.Now().Add(s.jwtExpiration),
+	}, nil
+}
+
+// SetOrganization switches the user's active organization context and returns a new token
+func (s *UserService) SetOrganization(userID int, req *models.SetOrganizationRequest) (*models.SetOrganizationResponse, error) {
+	if s.userOrgRoleRepo == nil {
+		return nil, fmt.Errorf("multi-organization support is not configured")
+	}
+
+	orgRole, err := s.userOrgRoleRepo.GetByUserAndOrg(userID, req.OrganizationID)
+	if err != nil {
+		return nil, fmt.Errorf("access denied: %w", err)
+	}
+
+	user, err := s.userRepo.GetByID(userID)
+	if err != nil {
+		return nil, fmt.Errorf("user not found: %w", err)
+	}
+
+	token, refreshToken, err := s.generateTokensForOrg(user, orgRole.OrganizationID, orgRole.Role)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	return &models.SetOrganizationResponse{
 		Token:        token,
 		RefreshToken: refreshToken,
-		User:         *user,
+		Organization: *orgRole,
 		ExpiresAt:    time.Now().Add(s.jwtExpiration),
 	}, nil
 }
@@ -271,16 +324,16 @@ func (s *UserService) GetUserByID(id int) (*models.User, error) {
 	return s.userRepo.GetByID(id)
 }
 
-func (s *UserService) GetAllUsers() ([]*models.User, error) {
-	return s.userRepo.GetAll()
+func (s *UserService) GetAllUsers(activeOnly bool) ([]*models.User, error) {
+	return s.userRepo.GetAll(activeOnly)
 }
 
 // GetUsersByOrganization retrieves all users in a specific organization
-func (s *UserService) GetUsersByOrganization(orgID int) ([]*models.User, error) {
+func (s *UserService) GetUsersByOrganization(orgID int, activeOnly bool) ([]*models.User, error) {
 	if orgID <= 0 {
 		return nil, fmt.Errorf("invalid organization ID")
 	}
-	return s.userRepo.GetByOrganizationID(orgID)
+	return s.userRepo.GetByOrganizationID(orgID, activeOnly)
 }
 
 // GetUserByIDInOrganization retrieves a user by ID if they belong to the specified organization
@@ -469,6 +522,41 @@ func (s *UserService) generateTokens(user *models.User) (string, string, error) 
 		"type":     "refresh",
 		"iat":      time.Now().Unix(),
 		"exp":      time.Now().Add(7 * 24 * time.Hour).Unix(), // 7 days
+	}
+
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+	refreshTokenString, err := refreshToken.SignedString([]byte(s.jwtSecret))
+	if err != nil {
+		return "", "", fmt.Errorf("failed to sign refresh token: %w", err)
+	}
+
+	return accessTokenString, refreshTokenString, nil
+}
+
+// generateTokensForOrg creates tokens with an explicit organization_id and role override
+func (s *UserService) generateTokensForOrg(user *models.User, orgID int, role string) (string, string, error) {
+	accessClaims := jwt.MapClaims{
+		"user_id":         user.ID,
+		"username":        user.Username,
+		"role":            role,
+		"organization_id": orgID,
+		"type":            "access",
+		"iat":             time.Now().Unix(),
+		"exp":             time.Now().Add(s.jwtExpiration).Unix(),
+	}
+
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
+	accessTokenString, err := accessToken.SignedString([]byte(s.jwtSecret))
+	if err != nil {
+		return "", "", fmt.Errorf("failed to sign access token: %w", err)
+	}
+
+	refreshClaims := jwt.MapClaims{
+		"user_id":  user.ID,
+		"username": user.Username,
+		"type":     "refresh",
+		"iat":      time.Now().Unix(),
+		"exp":      time.Now().Add(7 * 24 * time.Hour).Unix(),
 	}
 
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)

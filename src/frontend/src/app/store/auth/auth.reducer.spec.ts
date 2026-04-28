@@ -1,4 +1,5 @@
 import { authReducer, initialState, AuthState } from './auth.reducer';
+import { Action } from '@ngrx/store';
 import * as AuthActions from './auth.actions';
 
 describe('AuthReducer', () => {
@@ -10,6 +11,24 @@ describe('AuthReducer', () => {
     active: true,
     created_at: '2023-01-01T00:00:00Z',
     updated_at: '2023-01-01T00:00:00Z',
+  };
+
+  const mockOrg1 = {
+    id: 10,
+    organization_id: 100,
+    organization: { id: 100, name: 'Acme Corp', created_at: '', updated_at: '' },
+    role: 'Admin',
+    created_at: '',
+    updated_at: '',
+  };
+
+  const mockOrg2 = {
+    id: 11,
+    organization_id: 101,
+    organization: { id: 101, name: 'Beta Ltd', created_at: '', updated_at: '' },
+    role: 'PropertyManager',
+    created_at: '',
+    updated_at: '',
   };
 
   const mockLoginResponse = {
@@ -29,7 +48,7 @@ describe('AuthReducer', () => {
 
   describe('unknown action', () => {
     it('should return the previous state', () => {
-      const action = {} as any;
+      const action = {} as Action;
       const result = authReducer(initialState, action);
       expect(result).toBe(initialState);
     });
@@ -56,6 +75,47 @@ describe('AuthReducer', () => {
       expect(state.isAuthenticated).toBe(true);
       expect(state.loading).toBe(false);
       expect(state.error).toBe(null);
+    });
+
+    it('should populate userOrganizations from login response', () => {
+      const response = { ...mockLoginResponse, organizations: [mockOrg1, mockOrg2] };
+      const state = authReducer(initialState, AuthActions.loginSuccess({ response }));
+
+      expect(state.userOrganizations).toEqual([mockOrg1, mockOrg2]);
+    });
+
+    it('should set currentOrganizationId to organization_id when single org returned', () => {
+      const response = { ...mockLoginResponse, organizations: [mockOrg1] };
+      const state = authReducer(initialState, AuthActions.loginSuccess({ response }));
+
+      expect(state.currentOrganizationId).toBe(100);
+    });
+
+    it('should set currentOrganizationId from default_organization_id when provided', () => {
+      const response = {
+        ...mockLoginResponse,
+        organizations: [mockOrg1, mockOrg2],
+        default_organization_id: 101,
+      };
+      const state = authReducer(initialState, AuthActions.loginSuccess({ response }));
+
+      expect(state.currentOrganizationId).toBe(101);
+    });
+
+    it('should leave currentOrganizationId null when multiple orgs and no default', () => {
+      const response = { ...mockLoginResponse, organizations: [mockOrg1, mockOrg2] };
+      const state = authReducer(initialState, AuthActions.loginSuccess({ response }));
+
+      expect(state.currentOrganizationId).toBeNull();
+    });
+
+    it('should set userOrganizations to empty array when no organizations in response', () => {
+      const state = authReducer(
+        initialState,
+        AuthActions.loginSuccess({ response: mockLoginResponse })
+      );
+
+      expect(state.userOrganizations).toEqual([]);
     });
 
     it('should clear user data and set error on loginFailure', () => {
@@ -94,6 +154,8 @@ describe('AuthReducer', () => {
         user: mockUser,
         token: 'test-token',
         isAuthenticated: true,
+        userOrganizations: [mockOrg1],
+        currentOrganizationId: 100,
       };
       const action = AuthActions.logoutSuccess();
       const state = authReducer(authenticatedState, action);
@@ -105,6 +167,8 @@ describe('AuthReducer', () => {
       expect(state.isAuthenticated).toBe(false);
       expect(state.loading).toBe(false);
       expect(state.error).toBe(null);
+      expect(state.userOrganizations).toEqual([]);
+      expect(state.currentOrganizationId).toBeNull();
     });
 
     it('should set error on logoutFailure', () => {
@@ -232,11 +296,10 @@ describe('AuthReducer', () => {
     });
 
     it('should initialize auth from localStorage on initializeAuth', () => {
-      // Set up localStorage
       localStorage.setItem('tenantly_token', 'stored-token');
       localStorage.setItem('tenantly_refresh_token', 'stored-refresh-token');
       localStorage.setItem('tenantly_user', JSON.stringify(mockUser));
-      localStorage.setItem('tenantly_expires_at', '2099-12-31T23:59:59Z'); // Future date
+      localStorage.setItem('tenantly_expires_at', '2099-12-31T23:59:59Z');
 
       const action = AuthActions.initializeAuth();
       const state = authReducer(initialState, action);
@@ -248,18 +311,110 @@ describe('AuthReducer', () => {
       expect(state.isAuthenticated).toBe(true);
     });
 
-    it('should not initialize auth from localStorage if token is expired', () => {
-      // Set up localStorage with expired token
-      localStorage.setItem('tenantly_token', 'expired-token');
-      localStorage.setItem('tenantly_refresh_token', 'expired-refresh-token');
+    it('should restore userOrganizations and currentOrganizationId from localStorage on initializeAuth', () => {
+      localStorage.setItem('tenantly_token', 'stored-token');
+      localStorage.setItem('tenantly_refresh_token', 'stored-refresh-token');
       localStorage.setItem('tenantly_user', JSON.stringify(mockUser));
-      localStorage.setItem('tenantly_expires_at', '2020-01-01T00:00:00Z'); // Past date
+      localStorage.setItem('tenantly_expires_at', '2099-12-31T23:59:59Z');
+      localStorage.setItem('tenantly_organizations', JSON.stringify([mockOrg1, mockOrg2]));
+      localStorage.setItem('tenantly_current_org_id', '100');
 
       const action = AuthActions.initializeAuth();
       const state = authReducer(initialState, action);
 
-      // Should remain in initial state since token is expired
+      expect(state.userOrganizations).toEqual([mockOrg1, mockOrg2]);
+      expect(state.currentOrganizationId).toBe(100);
+    });
+
+    it('should not initialize auth from localStorage if token is expired', () => {
+      localStorage.setItem('tenantly_token', 'expired-token');
+      localStorage.setItem('tenantly_refresh_token', 'expired-refresh-token');
+      localStorage.setItem('tenantly_user', JSON.stringify(mockUser));
+      localStorage.setItem('tenantly_expires_at', '2020-01-01T00:00:00Z');
+
+      const action = AuthActions.initializeAuth();
+      const state = authReducer(initialState, action);
+
       expect(state).toEqual(initialState);
+    });
+  });
+
+  describe('organization actions', () => {
+    it('should set organizations and defaultOrganizationId on setUserOrganizations', () => {
+      const action = AuthActions.setUserOrganizations({
+        organizations: [mockOrg1, mockOrg2],
+        defaultOrganizationId: 100,
+      });
+      const state = authReducer(initialState, action);
+
+      expect(state.userOrganizations).toEqual([mockOrg1, mockOrg2]);
+      expect(state.currentOrganizationId).toBe(100);
+    });
+
+    it('should preserve existing currentOrganizationId when no default provided', () => {
+      const baseState: AuthState = { ...initialState, currentOrganizationId: 100 };
+      const action = AuthActions.setUserOrganizations({ organizations: [mockOrg1] });
+      const state = authReducer(baseState, action);
+
+      expect(state.currentOrganizationId).toBe(100);
+    });
+
+    it('should update currentOrganizationId on setCurrentOrganization', () => {
+      const action = AuthActions.setCurrentOrganization({ organizationId: 101 });
+      const state = authReducer(initialState, action);
+
+      expect(state.currentOrganizationId).toBe(101);
+    });
+
+    it('should set loading to true on switchOrganization', () => {
+      const action = AuthActions.switchOrganization({ organizationId: 100 });
+      const state = authReducer(initialState, action);
+
+      expect(state.loading).toBe(true);
+      expect(state.error).toBe(null);
+    });
+
+    it('should update token, refreshToken, expiresAt and currentOrganizationId on switchOrganizationSuccess', () => {
+      const loadingState: AuthState = { ...initialState, loading: true };
+      const response = {
+        token: 'new-token',
+        refresh_token: 'new-refresh-token',
+        organization: mockOrg1,
+        expires_at: '2099-06-01T00:00:00Z',
+      };
+      const action = AuthActions.switchOrganizationSuccess({ response });
+      const state = authReducer(loadingState, action);
+
+      expect(state.token).toBe('new-token');
+      expect(state.refreshToken).toBe('new-refresh-token');
+      expect(state.expiresAt).toBe('2099-06-01T00:00:00Z');
+      expect(state.currentOrganizationId).toBe(100); // mockOrg1.organization_id
+      expect(state.loading).toBe(false);
+      expect(state.error).toBe(null);
+    });
+
+    it('should convert Date expires_at to ISO string on switchOrganizationSuccess', () => {
+      const date = new Date('2099-06-01T00:00:00Z');
+      const response = {
+        token: 'new-token',
+        refresh_token: 'new-refresh',
+        organization: mockOrg1,
+        expires_at: date,
+      };
+      const action = AuthActions.switchOrganizationSuccess({ response });
+      const state = authReducer(initialState, action);
+
+      expect(state.expiresAt).toBe(date.toISOString());
+    });
+
+    it('should set error and clear loading on switchOrganizationFailure', () => {
+      const loadingState: AuthState = { ...initialState, loading: true };
+      const error = { message: 'Switch failed' };
+      const action = AuthActions.switchOrganizationFailure({ error });
+      const state = authReducer(loadingState, action);
+
+      expect(state.loading).toBe(false);
+      expect(state.error).toBe(error);
     });
   });
 });

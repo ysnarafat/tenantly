@@ -73,10 +73,14 @@ func (r *UserRepository) GetByEmail(email string) (*models.User, error) {
 	return user, nil
 }
 
-func (r *UserRepository) GetAll() ([]*models.User, error) {
+func (r *UserRepository) GetAll(activeOnly bool) ([]*models.User, error) {
 	query := `
 		SELECT id, username, email, password_hash, role, active, first_name, last_name, organization_id, status, created_at, updated_at
-		FROM users WHERE active = true ORDER BY created_at DESC`
+		FROM users`
+	if activeOnly {
+		query += ` WHERE active = true`
+	}
+	query += ` ORDER BY created_at DESC`
 
 	rows, err := r.db.Query(query)
 	if err != nil {
@@ -127,10 +131,14 @@ func (r *UserRepository) Delete(id int) error {
 	return err
 }
 
-func (r *UserRepository) GetByOrganizationID(orgID int) ([]*models.User, error) {
+func (r *UserRepository) GetByOrganizationID(orgID int, activeOnly bool) ([]*models.User, error) {
 	query := `
 		SELECT id, username, email, password_hash, role, active, first_name, last_name, organization_id, status, created_at, updated_at
-		FROM users WHERE organization_id = $1 AND active = true ORDER BY created_at DESC`
+		FROM users WHERE organization_id = $1`
+	if activeOnly {
+		query += ` AND active = true`
+	}
+	query += ` ORDER BY created_at DESC`
 
 	rows, err := r.db.Query(query, orgID)
 	if err != nil {
