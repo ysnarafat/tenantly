@@ -68,6 +68,7 @@ func (r *BuildingRepository) GetByID(id int) (*models.Building, error) {
 	err := r.db.QueryRow(query, id).Scan(
 		&building.ID,
 		&building.PropertyID,
+		&building.OrganizationID,
 		&building.BuildingName,
 		&building.BuildingCode,
 		&building.BuildingType,
@@ -114,6 +115,7 @@ func (r *BuildingRepository) GetByPropertyID(propertyID int) ([]*models.Building
 		err := rows.Scan(
 			&building.ID,
 			&building.PropertyID,
+			&building.OrganizationID,
 			&building.BuildingName,
 			&building.BuildingCode,
 			&building.BuildingType,
@@ -148,6 +150,7 @@ func (r *BuildingRepository) GetByPropertyAndCode(propertyID int, code string) (
 	err := r.db.QueryRow(query, propertyID, code).Scan(
 		&building.ID,
 		&building.PropertyID,
+		&building.OrganizationID,
 		&building.BuildingName,
 		&building.BuildingCode,
 		&building.BuildingType,
@@ -385,6 +388,7 @@ func (r *BuildingRepository) Search(filters *models.BuildingSearchFilters) ([]*m
 		err := rows.Scan(
 			&building.ID,
 			&building.PropertyID,
+			&building.OrganizationID,
 			&building.BuildingName,
 			&building.BuildingCode,
 			&building.BuildingType,
@@ -558,6 +562,7 @@ func (r *BuildingRepository) GetByPropertyWithSorting(propertyID int, filters *m
 		err := rows.Scan(
 			&building.ID,
 			&building.PropertyID,
+			&building.OrganizationID,
 			&building.BuildingName,
 			&building.BuildingCode,
 			&building.BuildingType,
@@ -726,6 +731,7 @@ func (r *BuildingRepository) AdvancedSearch(req *models.BuildingSearchRequest) (
 		err := rows.Scan(
 			&building.ID,
 			&building.PropertyID,
+			&building.OrganizationID,
 			&building.BuildingName,
 			&building.BuildingCode,
 			&building.BuildingType,

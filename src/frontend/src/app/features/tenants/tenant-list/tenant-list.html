@@ -1,73 +1,250 @@
 <div class="tenant-list-container">
-  <div class="header">
-    <h1>Tenants</h1>
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1>Tenants</h1>
+      <div class="stats-row">
+        <span class="stat-chip total">{{ tenants.length }} Total</span>
+        <span class="stat-chip active">{{ activeCount }} Active</span>
+        <span class="stat-chip inactive" *ngIf="inactiveCount > 0"
+          >{{ inactiveCount }} Inactive</span
+        >
+      </div>
+    </div>
     <button mat-raised-button color="primary" (click)="addTenant()">
-      <mat-icon>add</mat-icon>
+      <mat-icon>person_add</mat-icon>
       Add Tenant
     </button>
   </div>
 
-  <mat-card>
-    <mat-card-content>
-      <div class="table-container">
-        <table mat-table [dataSource]="tenants" class="mat-elevation-z0">
-          <!-- Name Column -->
-          <ng-container matColumnDef="name">
-            <th mat-header-cell *matHeaderCellDef>Name</th>
-            <td mat-cell *matCellDef="let tenant">{{tenant.name}}</td>
-          </ng-container>
-
-          <!-- Type Column -->
-          <ng-container matColumnDef="type">
-            <th mat-header-cell *matHeaderCellDef>Type</th>
-            <td mat-cell *matCellDef="let tenant">{{tenant.tenant_type}}</td>
-          </ng-container>
-
-          <!-- Email Column -->
-          <ng-container matColumnDef="email">
-            <th mat-header-cell *matHeaderCellDef>Email</th>
-            <td mat-cell *matCellDef="let tenant">{{tenant.email || '-'}}</td>
-          </ng-container>
-
-          <!-- Phone Column -->
-          <ng-container matColumnDef="phone">
-            <th mat-header-cell *matHeaderCellDef>Phone</th>
-            <td mat-cell *matCellDef="let tenant">{{tenant.phone_number || '-'}}</td>
-          </ng-container>
-
-          <!-- Status Column -->
-          <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Status</th>
-            <td mat-cell *matCellDef="let tenant">
-              <span [class.active-status]="tenant.active" [class.inactive-status]="!tenant.active">
-                {{tenant.active ? 'Active' : 'Inactive'}}
-              </span>
-            </td>
-          </ng-container>
-
-          <!-- Created Column -->
-          <ng-container matColumnDef="created">
-            <th mat-header-cell *matHeaderCellDef>Joined</th>
-            <td mat-cell *matCellDef="let tenant">{{tenant.created_at | date:'mediumDate'}}</td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-
-          <tr class="mat-row" *matNoDataRow>
-            <td class="mat-cell" colspan="6">No tenants found</td>
-          </tr>
-        </table>
-      </div>
-      <mat-paginator
-        [length]="pagination.total_items"
-        [pageSize]="pagination.page_size"
-        [pageSizeOptions]="[5, 10, 25, 100]"
-        [pageIndex]="pagination.current_page - 1"
-        (page)="onPageChange($event)"
-        aria-label="Select page of tenants"
+  <!-- Filters Bar -->
+  <div class="filters-bar">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Search tenants</mat-label>
+      <mat-icon matPrefix>search</mat-icon>
+      <input
+        matInput
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="onSearchChange()"
+        placeholder="Name, phone, email or NID…"
+      />
+      <button
+        *ngIf="searchQuery"
+        matSuffix
+        mat-icon-button
+        (click)="clearSearch()"
+        matTooltip="Clear"
       >
-      </mat-paginator>
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
+
+    <div class="filter-group">
+      <span class="filter-label">Status</span>
+      <div class="filter-pills">
+        <button
+          class="pill"
+          [class.selected]="activeFilter === 'all'"
+          (click)="setActiveFilter('all')"
+        >
+          All
+        </button>
+        <button
+          class="pill"
+          [class.selected]="activeFilter === 'active'"
+          (click)="setActiveFilter('active')"
+        >
+          Active
+        </button>
+        <button
+          class="pill"
+          [class.selected]="activeFilter === 'inactive'"
+          (click)="setActiveFilter('inactive')"
+        >
+          Inactive
+        </button>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">Type</span>
+      <div class="filter-pills">
+        <button class="pill" [class.selected]="typeFilter === 'all'" (click)="setTypeFilter('all')">
+          All
+        </button>
+        <button
+          class="pill"
+          [class.selected]="typeFilter === 'Individual'"
+          (click)="setTypeFilter('Individual')"
+        >
+          Individual
+        </button>
+        <button
+          class="pill"
+          [class.selected]="typeFilter === 'Business'"
+          (click)="setTypeFilter('Business')"
+        >
+          Business
+        </button>
+      </div>
+    </div>
+
+    <span *ngIf="hasActiveFilters" class="results-count"
+      >{{ filteredTenants.length }} result{{ filteredTenants.length !== 1 ? 's' : '' }}</span
+    >
+  </div>
+
+  <!-- Content Card -->
+  <mat-card class="content-card">
+    <mat-card-content>
+      <!-- Loading -->
+      <div *ngIf="loading" class="loading-state">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Loading tenants…</p>
+      </div>
+
+      <ng-container *ngIf="!loading">
+        <!-- Table -->
+        <div class="table-wrapper" *ngIf="pagedTenants.length > 0">
+          <table mat-table [dataSource]="pagedTenants" class="tenant-table">
+            <!-- Name Column -->
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Tenant</th>
+              <td mat-cell *matCellDef="let tenant">
+                <div class="tenant-cell">
+                  <div class="tenant-avatar" [class.business]="tenant.tenant_type === 'Business'">
+                    <mat-icon
+                      >{{ tenant.tenant_type === 'Business' ? 'business' : 'person' }}</mat-icon
+                    >
+                  </div>
+                  <div>
+                    <div class="tenant-name">{{ tenant.name }}</div>
+                    <div *ngIf="tenant.address" class="tenant-address">{{ tenant.address }}</div>
+                  </div>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Type Column -->
+            <ng-container matColumnDef="type">
+              <th mat-header-cell *matHeaderCellDef>Type</th>
+              <td mat-cell *matCellDef="let tenant">
+                <span class="type-badge" [class.business]="tenant.tenant_type === 'Business'">
+                  {{ tenant.tenant_type }}
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- Contact Column -->
+            <ng-container matColumnDef="contact">
+              <th mat-header-cell *matHeaderCellDef>Contact</th>
+              <td mat-cell *matCellDef="let tenant">
+                <div class="contact-cell">
+                  <div *ngIf="tenant.phone_number" class="contact-row">
+                    <mat-icon class="contact-icon">phone</mat-icon>
+                    <span>{{ tenant.phone_number }}</span>
+                  </div>
+                  <div *ngIf="tenant.email" class="contact-row">
+                    <mat-icon class="contact-icon">mail_outline</mat-icon>
+                    <span>{{ tenant.email }}</span>
+                  </div>
+                  <span *ngIf="!tenant.phone_number && !tenant.email" class="empty-val">—</span>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- NID Column -->
+            <ng-container matColumnDef="nid">
+              <th mat-header-cell *matHeaderCellDef>NID / Reg. No.</th>
+              <td mat-cell *matCellDef="let tenant">
+                <span class="mono-val">{{ tenant.nid_number || '—' }}</span>
+              </td>
+            </ng-container>
+
+            <!-- Status Column -->
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let tenant">
+                <span
+                  class="status-badge"
+                  [class.is-active]="tenant.active"
+                  [class.is-inactive]="!tenant.active"
+                >
+                  <span class="status-dot"></span>
+                  {{ tenant.active ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- Created Column -->
+            <ng-container matColumnDef="created">
+              <th mat-header-cell *matHeaderCellDef>Joined</th>
+              <td mat-cell *matCellDef="let tenant">
+                <span class="date-val">{{ tenant.created_at | date: 'mediumDate' }}</span>
+              </td>
+            </ng-container>
+
+            <!-- Actions Column -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef class="actions-header">Actions</th>
+              <td mat-cell *matCellDef="let tenant">
+                <div class="actions-cell">
+                  <button
+                    mat-icon-button
+                    [matMenuTriggerFor]="menu"
+                    matTooltip="More actions"
+                    (click)="$event.stopPropagation()"
+                  >
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                  <mat-menu #menu="matMenu">
+                    <button mat-menu-item (click)="viewTenant(tenant)">
+                      <mat-icon>visibility</mat-icon>
+                      <span>View Details</span>
+                    </button>
+                    <button mat-menu-item (click)="editTenant(tenant)">
+                      <mat-icon>edit</mat-icon>
+                      <span>Edit</span>
+                    </button>
+                    <button mat-menu-item (click)="deleteTenant(tenant)" class="delete-action">
+                      <mat-icon>delete_outline</mat-icon>
+                      <span>Delete</span>
+                    </button>
+                  </mat-menu>
+                </div>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns" class="tenant-row"></tr>
+          </table>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="filteredTenants.length === 0" class="empty-state">
+          <mat-icon>{{ hasActiveFilters ? 'search_off' : 'people_outline' }}</mat-icon>
+          <h3>{{ hasActiveFilters ? 'No matching tenants' : 'No tenants yet' }}</h3>
+          <p>
+            {{ hasActiveFilters ? 'Try adjusting your search or filters.' : 'Add your first tenant
+            to get started.' }}
+          </p>
+          <button *ngIf="!hasActiveFilters" mat-raised-button color="primary" (click)="addTenant()">
+            <mat-icon>person_add</mat-icon>
+            Add Tenant
+          </button>
+        </div>
+
+        <!-- Pagination -->
+        <mat-paginator
+          *ngIf="filteredTenants.length > pageSize"
+          [length]="filteredTenants.length"
+          [pageSize]="pageSize"
+          [pageIndex]="pageIndex"
+          [pageSizeOptions]="[10, 25, 50]"
+          (page)="onPageChange($event)"
+          showFirstLastButtons
+        ></mat-paginator>
+      </ng-container>
     </mat-card-content>
   </mat-card>
 </div>

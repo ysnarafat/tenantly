@@ -124,12 +124,82 @@ func dropAllTables(db *sql.DB) error {
 func CreateTestProperty(t *testing.T, db *sql.DB) int {
 	var propertyID int
 	err := db.QueryRow(`
-		INSERT INTO properties (property_name, property_code, address, property_type)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO properties (property_name, property_code, address, property_type, organization_id)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id`,
-		"Test Property", "TEST001", "123 Test Street", "Commercial").Scan(&propertyID)
+		"Test Property", "TEST001", "123 Test Street", "Commercial", 1).Scan(&propertyID)
 	if err != nil {
 		t.Fatalf("Failed to create test property: %v", err)
 	}
 	return propertyID
+}
+
+// CreateTestBuilding is a helper to create a test building for repository tests
+func CreateTestBuilding(t *testing.T, db *sql.DB, propertyID int, orgID int) int {
+	var buildingID int
+	err := db.QueryRow(`
+		INSERT INTO buildings (property_id, building_name, building_code, building_type, organization_id)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id`,
+		propertyID, "Test Building", "BLD001", "Office", orgID).Scan(&buildingID)
+	if err != nil {
+		t.Fatalf("Failed to create test building: %v", err)
+	}
+	return buildingID
+}
+
+// CreateTestUnit is a helper to create a test unit for repository tests
+func CreateTestUnit(t *testing.T, db *sql.DB, buildingID int, orgID int) int {
+	var unitID int
+	err := db.QueryRow(`
+		INSERT INTO units (building_id, unit_number, unit_type, floor_number, area_sqft, organization_id)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id`,
+		buildingID, "UNIT001", "Office Space", 1, 500, orgID).Scan(&unitID)
+	if err != nil {
+		t.Fatalf("Failed to create test unit: %v", err)
+	}
+	return unitID
+}
+
+// CreateTestTenant is a helper to create a test tenant for repository tests
+func CreateTestTenant(t *testing.T, db *sql.DB, orgID int) int {
+	var tenantID int
+	err := db.QueryRow(`
+		INSERT INTO tenants (name, tenant_type, phone_number, email, nid_number, address, organization_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING id`,
+		"Test Tenant", "Individual", "+8801234567890", "test@example.com", "1234567890", "123 Test Street", orgID).Scan(&tenantID)
+	if err != nil {
+		t.Fatalf("Failed to create test tenant: %v", err)
+	}
+	return tenantID
+}
+
+// CreateTestUser is a helper to create a test user for repository tests
+func CreateTestUser(t *testing.T, db *sql.DB) int {
+	var userID int
+	err := db.QueryRow(`
+		INSERT INTO users (username, email, password_hash, full_name, role)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id`,
+		"testuser", "test@example.com", "hashedpassword", "Test User", "Admin").Scan(&userID)
+	if err != nil {
+		t.Fatalf("Failed to create test user: %v", err)
+	}
+	return userID
+}
+
+// CreateTestOrganization is a helper to create a test organization for repository tests
+func CreateTestOrganization(t *testing.T, db *sql.DB) int {
+	var orgID int
+	err := db.QueryRow(`
+		INSERT INTO organizations (org_name, org_code, org_type, contact_email)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id`,
+		"Test Organization", "TEST001", "PropertyManagement", "org@example.com").Scan(&orgID)
+	if err != nil {
+		t.Fatalf("Failed to create test organization: %v", err)
+	}
+	return orgID
 }

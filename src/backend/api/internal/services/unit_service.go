@@ -49,8 +49,14 @@ func (s *UnitService) CreateUnit(req *models.CreateUnitRequest, userID int) (*mo
 		return nil, fmt.Errorf("unit type validation failed: %w", err)
 	}
 
-	// Create unit
-	unit, err := s.unitRepo.Create(req)
+	// Get building to retrieve organization_id
+	building, err := s.buildingRepo.GetByID(req.BuildingID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get building: %w", err)
+	}
+
+	// Create unit with organization_id
+	unit, err := s.unitRepo.Create(req, building.OrganizationID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create unit: %w", err)
 	}

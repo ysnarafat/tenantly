@@ -21,29 +21,30 @@ func NewUnitRepository(db *sql.DB) *UnitRepository {
 }
 
 // Create creates a new unit
-func (r *UnitRepository) Create(req *models.CreateUnitRequest) (*models.Unit, error) {
+func (r *UnitRepository) Create(req *models.CreateUnitRequest, organizationID int) (*models.Unit, error) {
 	query := fmt.Sprintf(`
 		INSERT INTO %s (
 			%s, %s, %s, %s, 
-			%s, %s, %s, %s, %s, %s
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
+			%s, %s, %s, %s, %s, %s, %s
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true)
 		RETURNING %s, %s, %s`,
 		columns.UnitTable,
 		columns.UnitBuildingID, columns.UnitPropertyID, columns.UnitNumber, columns.UnitName,
-		columns.UnitFloor, columns.UnitSection, columns.UnitType, columns.UnitMonthlyRent, columns.UnitMetadata, columns.UnitActive,
+		columns.UnitFloor, columns.UnitSection, columns.UnitType, columns.UnitMonthlyRent, columns.UnitMetadata, columns.UnitOrganizationID, columns.UnitActive,
 		columns.UnitID, columns.UnitCreatedAt, columns.UnitUpdatedAt)
 
 	unit := &models.Unit{
-		BuildingID:  req.BuildingID,
-		PropertyID:  req.PropertyID,
-		UnitNumber:  req.UnitNumber,
-		UnitName:    req.UnitName,
-		Floor:       req.Floor,
-		Section:     req.Section,
-		UnitType:    req.UnitType,
-		MonthlyRent: req.MonthlyRent,
-		Metadata:    req.Metadata,
-		Active:      true,
+		BuildingID:     req.BuildingID,
+		PropertyID:      req.PropertyID,
+		UnitNumber:      req.UnitNumber,
+		UnitName:        req.UnitName,
+		Floor:           req.Floor,
+		Section:         req.Section,
+		UnitType:        req.UnitType,
+		MonthlyRent:     req.MonthlyRent,
+		Metadata:        req.Metadata,
+		OrganizationID:  organizationID,
+		Active:          true,
 	}
 
 	err := r.db.QueryRow(
@@ -57,6 +58,7 @@ func (r *UnitRepository) Create(req *models.CreateUnitRequest) (*models.Unit, er
 		unit.UnitType,
 		unit.MonthlyRent,
 		unit.Metadata,
+		unit.OrganizationID,
 	).Scan(&unit.ID, &unit.CreatedAt, &unit.UpdatedAt)
 
 	if err != nil {
@@ -81,6 +83,7 @@ func (r *UnitRepository) GetByID(id int) (*models.Unit, error) {
 		&unit.ID,
 		&unit.BuildingID,
 		&unit.PropertyID,
+		&unit.OrganizationID,
 		&unit.UnitNumber,
 		&unit.UnitName,
 		&unit.Floor,
@@ -109,14 +112,14 @@ func (r *UnitRepository) GetByIDWithDetails(id int) (*models.UnitWithDetails, er
 		SELECT u.id, u.building_id, u.property_id, u.unit_number, u.unit_name, 
 			   u.floor, u.section, u.unit_type, u.monthly_rent, u.metadata, u.active, 
 			   u.created_at, u.updated_at,
-			   p.name as property_name,
+			   p.property_name as property_name,
 			   b.building_name, b.building_code,
-			   COALESCE(t.first_name || ' ' || t.last_name, '') as tenant_name,
+			   COALESCE(t.name, '') as tenant_name,
 			   CASE WHEN l.id IS NOT NULL THEN true ELSE false END as lease_active
 		FROM units u
 		JOIN properties p ON u.property_id = p.id
 		JOIN buildings b ON u.building_id = b.id
-		LEFT JOIN leases l ON u.id = l.unit_id AND l.status = 'Active'
+		LEFT JOIN leases l ON u.id = l.unit_id AND l.active = true
 		LEFT JOIN tenants t ON l.tenant_id = t.id
 		WHERE u.id = $1 AND u.active = true`
 
@@ -305,14 +308,14 @@ func (r *UnitRepository) GetByBuildingWithDetails(buildingID int, limit, offset,
 		SELECT u.id, u.building_id, u.property_id, u.unit_number, u.unit_name,
 			   u.floor, u.section, u.unit_type, u.monthly_rent, u.metadata, u.active,
 			   u.created_at, u.updated_at,
-			   p.name as property_name,
+			   p.property_name as property_name,
 			   b.building_name, b.building_code,
-			   COALESCE(t.first_name || ' ' || t.last_name, '') as tenant_name,
+			   COALESCE(t.name, '') as tenant_name,
 			   CASE WHEN l.id IS NOT NULL THEN true ELSE false END as lease_active
 		FROM units u
 		JOIN properties p ON u.property_id = p.id
 		JOIN buildings b ON u.building_id = b.id
-		LEFT JOIN leases l ON u.id = l.unit_id AND l.status = 'Active'
+		LEFT JOIN leases l ON u.id = l.unit_id AND l.active = true
 		LEFT JOIN tenants t ON l.tenant_id = t.id
 		WHERE u.building_id = $1 AND u.active = true%s
 		ORDER BY u.floor, u.unit_number
@@ -371,14 +374,14 @@ func (r *UnitRepository) GetByPropertyWithDetails(propertyID int, limit, offset,
 		SELECT u.id, u.building_id, u.property_id, u.unit_number, u.unit_name,
 			   u.floor, u.section, u.unit_type, u.monthly_rent, u.metadata, u.active,
 			   u.created_at, u.updated_at,
-			   p.name as property_name,
+			   p.property_name as property_name,
 			   b.building_name, b.building_code,
-			   COALESCE(t.first_name || ' ' || t.last_name, '') as tenant_name,
+			   COALESCE(t.name, '') as tenant_name,
 			   CASE WHEN l.id IS NOT NULL THEN true ELSE false END as lease_active
 		FROM units u
 		JOIN properties p ON u.property_id = p.id
 		JOIN buildings b ON u.building_id = b.id
-		LEFT JOIN leases l ON u.id = l.unit_id AND l.status = 'Active'
+		LEFT JOIN leases l ON u.id = l.unit_id AND l.active = true
 		LEFT JOIN tenants t ON l.tenant_id = t.id
 		WHERE u.property_id = $1 AND u.active = true AND p.organization_id = $2
 		ORDER BY b.building_name, u.floor, u.unit_number

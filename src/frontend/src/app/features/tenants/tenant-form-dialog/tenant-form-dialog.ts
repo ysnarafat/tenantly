@@ -11,7 +11,7 @@ import { Tenant, TenantType } from '../../../core/models/tenant.model';
 
 export interface TenantFormDialogData {
   tenant?: Tenant;
-  mode: 'create' | 'edit';
+  mode: 'create' | 'edit' | 'view';
 }
 
 @Component({
@@ -46,13 +46,29 @@ export class TenantFormDialogComponent implements OnInit {
     const tenant = this.data.tenant;
 
     this.tenantForm = this.fb.group({
-      name: [tenant?.name || '', [Validators.required, Validators.maxLength(100)]],
-      tenant_type: [tenant?.tenant_type || 'Individual', [Validators.required]],
-      nid_number: [tenant?.nid_number || '', [Validators.required, Validators.maxLength(20)]],
-      phone_number: [tenant?.phone_number || '', [Validators.required, Validators.maxLength(20)]],
-      email: [tenant?.email || '', [Validators.email]],
+      name: [
+        tenant?.name || '',
+        this.isViewMode ? [] : [Validators.required, Validators.maxLength(100)],
+      ],
+      tenant_type: [
+        tenant?.tenant_type || 'Individual',
+        this.isViewMode ? [] : [Validators.required],
+      ],
+      nid_number: [
+        tenant?.nid_number || '',
+        this.isViewMode ? [] : [Validators.required, Validators.maxLength(20)],
+      ],
+      phone_number: [
+        tenant?.phone_number || '',
+        this.isViewMode ? [] : [Validators.required, Validators.maxLength(20)],
+      ],
+      email: [tenant?.email || '', this.isViewMode ? [] : [Validators.email]],
       address: [tenant?.address || ''],
     });
+
+    if (this.isViewMode) {
+      this.tenantForm.disable();
+    }
   }
 
   onSubmit() {
@@ -104,7 +120,14 @@ export class TenantFormDialogComponent implements OnInit {
     return this.data.mode === 'edit';
   }
 
+  get isViewMode(): boolean {
+    return this.data.mode === 'view';
+  }
+
   get dialogTitle(): string {
+    if (this.isViewMode) {
+      return 'Tenant Details';
+    }
     return this.isEditMode ? 'Edit Tenant' : 'Add New Tenant';
   }
 }

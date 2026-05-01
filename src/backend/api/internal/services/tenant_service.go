@@ -9,15 +9,18 @@ import (
 
 type TenantService struct {
 	tenantRepo   interfaces.TenantRepositoryInterface
+	leaseRepo    interfaces.LeaseRepositoryInterface
 	auditService interfaces.AuditServiceInterface
 }
 
 func NewTenantService(
 	tenantRepo interfaces.TenantRepositoryInterface,
+	leaseRepo interfaces.LeaseRepositoryInterface,
 	auditService interfaces.AuditServiceInterface,
 ) *TenantService {
 	return &TenantService{
 		tenantRepo:   tenantRepo,
+		leaseRepo:    leaseRepo,
 		auditService: auditService,
 	}
 }
@@ -100,4 +103,148 @@ func (s *TenantService) GetAllTenants(page, pageSize, orgID int) (*models.Tenant
 		Tenants:    responses,
 		Pagination: pagination,
 	}, nil
+}
+
+// GetTenantByID retrieves a tenant by ID with lease information
+func (s *TenantService) GetTenantByID(id int, orgID int) (*models.TenantWithLeases, error) {
+	tenant, err := s.tenantRepo.GetByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenant: %w", err)
+	}
+
+	// Verify organization ownership
+	if tenant.OrganizationID != orgID {
+		return nil, fmt.Errorf("tenant not found")
+	}
+
+	// Get active lease count
+	hasActiveLease, err := s.leaseRepo.HasActiveLeaseForTenant(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check active leases: %w", err)
+	}
+
+	activeLeases := 0
+	if hasActiveLease {
+		activeLeases = 1
+	}
+
+	return &models.TenantWithLeases{
+		Tenant:       *tenant,
+		ActiveLeases: activeLeases,
+		TotalUnits:   activeLeases, // Each active lease corresponds to a unit
+	}, nil
+}
+
+// UpdateTenant updates a tenant
+func (s *TenantService) UpdateTenant(id int, req *models.UpdateTenantRequest, userID, orgID int) (*models.TenantResponse, error) {
+	// Get existing tenant
+	existingTenant, err := s.tenantRepo.GetByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenant: %w", err)
+	}
+
+	// Verify organization ownership
+	if existingTenant.OrganizationID != orgID {
+		return nil, fmt.Errorf("tenant not found")
+	}
+
+	// Validate email uniqueness if being updated
+	if req.Email != nil && *req.Email != existingTenant.Email {
+		exists, err := s.tenantRepo.CheckEmailExists(*req.Email, id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check email uniqueness: %w", err)
+		}
+		if exists {
+			return nil, fmt.Errorf("email already exists")
+		}
+	}
+
+	// Validate NID uniqueness if being updated
+	if req.NIDNumber != nil && *req.NIDNumber != existingTenant.NIDNumber {
+		exists, err := s.tenantRepo.CheckNIDExists(*req.NIDNumber, id)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check NID uniqueness: %w", err)
+		}
+		if exists {
+			return nil, fmt.Errorf("NID number already exists")
+		}
+	}
+
+	// Build update map
+	updates := make(map[string]interface{})
+	if req.Name != nil {
+		updates["name"] = *req.Name
+	}
+	if req.TenantType != nil {
+		updates["tenant_type"] = *req.TenantType
+	}
+	if req.PhoneNumber != nil {
+		updates["phone_number"] = *req.PhoneNumber
+	}
+	if req.Email != nil {
+		updates["email"] = *req.Email
+	}
+	if req.NIDNumber != nil {
+		updates["nid_number"] = *req.NIDNumber
+	}
+	if req.Address != nil {
+		updates["address"] = *req.Address
+	}
+	if req.Active != nil {
+		updates["active"] = *req.Active
+	}
+
+	// Update tenant
+	if err := s.tenantRepo.Update(id, updates); err != nil {
+		return nil, fmt.Errorf("failed to update tenant: %w", err)
+	}
+
+	// Get updated tenant
+	updatedTenant, err := s.tenantRepo.GetByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get updated tenant: %w", err)
+	}
+
+	// Log audit
+	if s.auditService != nil {
+		_ = s.auditService.LogUserAction(userID, "update", "tenants", &id, existingTenant, updatedTenant)
+	}
+
+	return updatedTenant.ToResponse(), nil
+}
+
+// DeleteTenant soft deletes a tenant (guards against active leases)
+func (s *TenantService) DeleteTenant(id int, userID, orgID int) error {
+	// Get existing tenant
+	existingTenant, err := s.tenantRepo.GetByID(id)
+	if err != nil {
+		return fmt.Errorf("failed to get tenant: %w", err)
+	}
+
+	// Verify organization ownership
+	if existingTenant.OrganizationID != orgID {
+		return fmt.Errorf("tenant not found")
+	}
+
+	// Check for active leases
+	hasActiveLease, err := s.leaseRepo.HasActiveLeaseForTenant(id)
+	if err != nil {
+		return fmt.Errorf("failed to check active leases: %w", err)
+	}
+	if hasActiveLease {
+		return fmt.Errorf("cannot delete tenant with active leases")
+	}
+
+	// Soft delete tenant
+	updates := map[string]interface{}{"active": false}
+	if err := s.tenantRepo.Update(id, updates); err != nil {
+		return fmt.Errorf("failed to delete tenant: %w", err)
+	}
+
+	// Log audit
+	if s.auditService != nil {
+		_ = s.auditService.LogUserAction(userID, "delete", "tenants", &id, existingTenant, nil)
+	}
+
+	return nil
 }
