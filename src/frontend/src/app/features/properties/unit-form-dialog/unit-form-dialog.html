@@ -12,7 +12,12 @@
   <form [formGroup]="unitForm" class="unit-form">
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>{{ 'UNIT_FORM_DIALOG.FIELDS.UNIT_NUMBER' | translate }}</mat-label>
-      <input matInput formControlName="unit_number" [placeholder]="'UNIT_FORM_DIALOG.PLACEHOLDERS.UNIT_NUMBER' | translate" required />
+      <input
+        matInput
+        formControlName="unit_number"
+        [placeholder]="'UNIT_FORM_DIALOG.PLACEHOLDERS.UNIT_NUMBER' | translate"
+        required
+      />
       <mat-icon matPrefix>tag</mat-icon>
       @if (!isEditMode) {
       <mat-hint>{{ 'UNIT_FORM_DIALOG.HINTS.UNIT_NUMBER' | translate }}</mat-hint>
@@ -22,7 +27,11 @@
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>{{ 'UNIT_FORM_DIALOG.FIELDS.UNIT_NAME' | translate }}</mat-label>
-      <input matInput formControlName="unit_name" [placeholder]="'UNIT_FORM_DIALOG.PLACEHOLDERS.UNIT_NAME' | translate" />
+      <input
+        matInput
+        formControlName="unit_name"
+        [placeholder]="'UNIT_FORM_DIALOG.PLACEHOLDERS.UNIT_NAME' | translate"
+      />
       <mat-icon matPrefix>label</mat-icon>
       <mat-error>{{ getErrorMessage('unit_name') }}</mat-error>
     </mat-form-field>
@@ -44,7 +53,12 @@
     <div class="form-row">
       <mat-form-field appearance="outline" class="half-width">
         <mat-label>{{ 'UNIT_FORM_DIALOG.FIELDS.FLOOR' | translate }}</mat-label>
-        <input matInput type="number" formControlName="floor" [placeholder]="'UNIT_FORM_DIALOG.PLACEHOLDERS.FLOOR' | translate" />
+        <input
+          matInput
+          type="number"
+          formControlName="floor"
+          [placeholder]="'UNIT_FORM_DIALOG.PLACEHOLDERS.FLOOR' | translate"
+        />
         <mat-icon matPrefix>layers</mat-icon>
         <mat-hint>{{ 'UNIT_FORM_DIALOG.HINTS.FLOOR' | translate }}</mat-hint>
         <mat-error>{{ getErrorMessage('floor') }}</mat-error>
@@ -52,7 +66,11 @@
 
       <mat-form-field appearance="outline" class="half-width">
         <mat-label>{{ 'UNIT_FORM_DIALOG.FIELDS.SECTION' | translate }}</mat-label>
-        <input matInput formControlName="section" [placeholder]="'UNIT_FORM_DIALOG.PLACEHOLDERS.SECTION' | translate" />
+        <input
+          matInput
+          formControlName="section"
+          [placeholder]="'UNIT_FORM_DIALOG.PLACEHOLDERS.SECTION' | translate"
+        />
         <mat-icon matPrefix>view_module</mat-icon>
         <mat-hint>{{ 'UNIT_FORM_DIALOG.HINTS.SECTION' | translate }}</mat-hint>
         <mat-error>{{ getErrorMessage('section') }}</mat-error>
@@ -82,6 +100,7 @@
   </button>
   <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="unitForm.invalid">
     <mat-icon>{{ isEditMode ? 'save' : 'add' }}</mat-icon>
-    {{ (isEditMode ? 'UNIT_FORM_DIALOG.BUTTONS.UPDATE' : 'UNIT_FORM_DIALOG.BUTTONS.CREATE') | translate }}
+    {{ (isEditMode ? 'UNIT_FORM_DIALOG.BUTTONS.UPDATE' : 'UNIT_FORM_DIALOG.BUTTONS.CREATE') |
+    translate }}
   </button>
 </mat-dialog-actions>

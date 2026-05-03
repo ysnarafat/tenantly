@@ -81,7 +81,7 @@ func (s *Server) setupRoutes() {
 	unitService := services.NewUnitService(unitRepo, buildingRepo, propertyRepo, auditService)
 	tenantService := services.NewTenantService(tenantRepo, leaseRepo, auditService)
 	leaseService := services.NewLeaseService(leaseRepo, tenantRepo, unitRepo, auditService)
-	
+
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService)
 	propertyHandler := handlers.NewPropertyHandler(propertyService)

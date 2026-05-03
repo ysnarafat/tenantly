@@ -73,7 +73,9 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button mat-button type="button" (click)="onCancel()" [disabled]="submitLoading">{{ 'COMMON.BUTTONS.CANCEL' | translate }}</button>
+  <button mat-button type="button" (click)="onCancel()" [disabled]="submitLoading">
+    {{ 'COMMON.BUTTONS.CANCEL' | translate }}
+  </button>
   <button
     mat-raised-button
     color="primary"
@@ -86,6 +88,7 @@
       diameter="18"
       style="display: inline-block; margin-right: 8px"
     ></mat-spinner>
-    {{ submitLoading ? ('EDIT_LEASE_DIALOG.BUTTONS.SAVING' | translate) : ('EDIT_LEASE_DIALOG.BUTTONS.SAVE' | translate) }}
+    {{ submitLoading ? ('EDIT_LEASE_DIALOG.BUTTONS.SAVING' | translate) :
+    ('EDIT_LEASE_DIALOG.BUTTONS.SAVE' | translate) }}
   </button>
 </mat-dialog-actions>

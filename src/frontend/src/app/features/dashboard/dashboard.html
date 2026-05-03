@@ -99,7 +99,9 @@
           <mat-icon>event</mat-icon>
           {{ 'DASHBOARD.SECTIONS.EXPIRING_LEASES' | translate }}
         </mat-card-title>
-        <button mat-button routerLink="/leases" color="primary">{{ 'DASHBOARD.BUTTONS.VIEW_ALL' | translate }}</button>
+        <button mat-button routerLink="/leases" color="primary">
+          {{ 'DASHBOARD.BUTTONS.VIEW_ALL' | translate }}
+        </button>
       </mat-card-header>
       <mat-card-content>
         <div class="lease-list">
@@ -110,7 +112,9 @@
               <div class="tenant-name">{{ lease.property_name }}</div>
             </div>
             <div class="lease-status">
-              <mat-chip color="warn" selected> {{ lease.days_remaining }} {{ 'DASHBOARD.SUFFIXES.DAYS_LEFT' | translate }} </mat-chip>
+              <mat-chip color="warn" selected>
+                {{ lease.days_remaining }} {{ 'DASHBOARD.SUFFIXES.DAYS_LEFT' | translate }}
+              </mat-chip>
             </div>
           </div>
           }
@@ -127,7 +131,9 @@
           <mat-icon>assignment</mat-icon>
           {{ 'DASHBOARD.SECTIONS.RECENT_LEASES' | translate }}
         </mat-card-title>
-        <button mat-button routerLink="/leases" color="primary">{{ 'DASHBOARD.BUTTONS.VIEW_ALL' | translate }}</button>
+        <button mat-button routerLink="/leases" color="primary">
+          {{ 'DASHBOARD.BUTTONS.VIEW_ALL' | translate }}
+        </button>
       </mat-card-header>
       <mat-card-content>
         <div class="lease-list">
@@ -137,7 +143,10 @@
               <div class="shop-name">{{ lease.tenant_name }} ({{ lease.unit_number }})</div>
               <div class="tenant-name">{{ lease.property_name }}</div>
             </div>
-            <div class="lease-rent">{{ formatCurrency(lease.monthly_rent) }}{{ 'DASHBOARD.SUFFIXES.PER_MONTH' | translate }}</div>
+            <div class="lease-rent">
+              {{ formatCurrency(lease.monthly_rent) }}{{ 'DASHBOARD.SUFFIXES.PER_MONTH' | translate
+              }}
+            </div>
           </div>
           }
         </div>
@@ -156,7 +165,9 @@
           <mat-icon>attach_file</mat-icon>
           {{ 'DASHBOARD.SECTIONS.RECENT_ATTACHMENTS' | translate }}
         </mat-card-title>
-        <button mat-button routerLink="/attachments" color="primary">{{ 'DASHBOARD.BUTTONS.VIEW_ALL' | translate }}</button>
+        <button mat-button routerLink="/attachments" color="primary">
+          {{ 'DASHBOARD.BUTTONS.VIEW_ALL' | translate }}
+        </button>
       </mat-card-header>
       <mat-card-content>
         <div class="attachment-list">
@@ -174,7 +185,9 @@
           }
         </div>
         @if (recentAttachments.length === 0) {
-        <div class="empty-message">{{ 'DASHBOARD.EMPTY_STATE.NO_RECENT_ATTACHMENTS' | translate }}</div>
+        <div class="empty-message">
+          {{ 'DASHBOARD.EMPTY_STATE.NO_RECENT_ATTACHMENTS' | translate }}
+        </div>
         }
       </mat-card-content>
     </mat-card>

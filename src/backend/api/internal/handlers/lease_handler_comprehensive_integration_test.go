@@ -26,25 +26,25 @@ import (
 // LeaseIntegrationTestSuite provides comprehensive integration testing for lease management API
 type LeaseIntegrationTestSuite struct {
 	suite.Suite
-	db             *sql.DB
-	router         *gin.Engine
-	config         *config.Config
-	leaseHandler   *LeaseHandler
-	tenantHandler  *TenantHandler
-	propertyRepo   *repositories.PropertyRepository
-	buildingRepo   *repositories.BuildingRepository
-	unitRepo       *repositories.UnitRepository
-	tenantRepo     *repositories.TenantRepository
-	leaseRepo      *repositories.LeaseRepository
-	userRepo       *repositories.UserRepository
-	orgRepo        *repositories.OrganizationRepository
-	testProperty   *models.Property
-	testBuilding   *models.Building
-	testUnit       *models.Unit
-	testTenant     *models.Tenant
-	testUser       *models.User
-	testOrg        *models.Organization
-	authToken      string
+	db            *sql.DB
+	router        *gin.Engine
+	config        *config.Config
+	leaseHandler  *LeaseHandler
+	tenantHandler *TenantHandler
+	propertyRepo  *repositories.PropertyRepository
+	buildingRepo  *repositories.BuildingRepository
+	unitRepo      *repositories.UnitRepository
+	tenantRepo    *repositories.TenantRepository
+	leaseRepo     *repositories.LeaseRepository
+	userRepo      *repositories.UserRepository
+	orgRepo       *repositories.OrganizationRepository
+	testProperty  *models.Property
+	testBuilding  *models.Building
+	testUnit      *models.Unit
+	testTenant    *models.Tenant
+	testUser      *models.User
+	testOrg       *models.Organization
+	authToken     string
 }
 
 func (suite *LeaseIntegrationTestSuite) SetupSuite() {
@@ -171,15 +171,15 @@ func (suite *LeaseIntegrationTestSuite) createTestData() {
 
 	// Create test user
 	suite.testUser = &models.User{
-		Username: "testuser",
-		Email:    "test@example.com",
+		Username:     "testuser",
+		Email:        "test@example.com",
 		PasswordHash: "hashedpassword",
-		Role:     "Admin",
-		Active:   true,
+		Role:         "Admin",
+		Active:       true,
 	}
 	err = suite.userRepo.Create(suite.testUser)
 	require.NoError(suite.T(), err)
-	
+
 	// Link user to organization
 	orgRoleRepo := repositories.NewUserOrganizationRoleRepository(suite.db)
 	err = orgRoleRepo.Upsert(suite.testUser.ID, suite.testOrg.ID, "Admin")
@@ -226,12 +226,12 @@ func (suite *LeaseIntegrationTestSuite) createTestData() {
 
 	// Create test tenant
 	tenantReq := &models.CreateTenantRequest{
-		Name:        "John Doe",
-		TenantType:  models.TenantTypeIndividual,
-		PhoneNumber: "1234567890",
-		Email:       "john@example.com",
-		NIDNumber:   "NID123",
-		Address:     "123 Main St",
+		Name:           "John Doe",
+		TenantType:     models.TenantTypeIndividual,
+		PhoneNumber:    "1234567890",
+		Email:          "john@example.com",
+		NIDNumber:      "NID123",
+		Address:        "123 Main St",
 		OrganizationID: suite.testOrg.ID,
 	}
 	suite.testTenant, err = suite.tenantRepo.Create(tenantReq)
@@ -313,7 +313,7 @@ func (suite *LeaseIntegrationTestSuite) makeAuthenticatedRequest(method, path st
 // Test Lease CRUD Operations
 func (suite *LeaseIntegrationTestSuite) TestCreateLease_Success() {
 	endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
-	
+
 	leaseReq := &models.CreateLeaseRequest{
 		UnitID:          suite.testUnit.ID,
 		TenantID:        suite.testTenant.ID,
@@ -323,7 +323,7 @@ func (suite *LeaseIntegrationTestSuite) TestCreateLease_Success() {
 		DurationMonths:  12,
 		MonthlyRent:     15000,
 		SecurityDeposit: 30000,
-		OrganizationID:   suite.testOrg.ID,
+		OrganizationID:  suite.testOrg.ID,
 	}
 
 	w := suite.makeAuthenticatedRequest("POST", "/api/v1/leases", leaseReq)
@@ -391,7 +391,7 @@ func (suite *LeaseIntegrationTestSuite) TestUpdateLease_Success() {
 	newRent := 20000.0
 	newDuration := 24
 	updateReq := map[string]interface{}{
-		"monthly_rent":     newRent,
+		"monthly_rent":    newRent,
 		"duration_months": newDuration,
 	}
 
@@ -414,7 +414,7 @@ func (suite *LeaseIntegrationTestSuite) TestDeleteLease_Success() {
 	// Create a lease with future start date
 	futureStartDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
 	endDate := time.Now().AddDate(2, 0, 0).Format("2006-01-02")
-	
+
 	lease := suite.createTestLeaseWithDates(futureStartDate, endDate)
 
 	w := suite.makeAuthenticatedRequest("DELETE", fmt.Sprintf("/api/v1/leases/%d", lease.ID), nil)
@@ -515,7 +515,7 @@ func (suite *LeaseIntegrationTestSuite) createTestLeaseWithDates(startDate, endD
 		DurationMonths:  12,
 		MonthlyRent:     15000,
 		SecurityDeposit: 30000,
-		OrganizationID:   suite.testOrg.ID,
+		OrganizationID:  suite.testOrg.ID,
 	}
 
 	lease, err := suite.leaseRepo.Create(leaseReq)

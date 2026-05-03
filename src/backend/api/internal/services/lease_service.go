@@ -10,10 +10,10 @@ import (
 
 // LeaseService implements the LeaseServiceInterface
 type LeaseService struct {
-	leaseRepo     interfaces.LeaseRepositoryInterface
-	tenantRepo    interfaces.TenantRepositoryInterface
-	unitRepo      interfaces.UnitRepositoryInterface
-	auditService  interfaces.AuditServiceInterface
+	leaseRepo    interfaces.LeaseRepositoryInterface
+	tenantRepo   interfaces.TenantRepositoryInterface
+	unitRepo     interfaces.UnitRepositoryInterface
+	auditService interfaces.AuditServiceInterface
 }
 
 // NewLeaseService creates a new lease service
@@ -92,11 +92,11 @@ func (s *LeaseService) GetAllLeases(page, pageSize, orgID int) (*models.LeaseLis
 		Leases: leases,
 		Pagination: &models.PaginationInfo{
 			CurrentPage: page,
-			PageSize:   pageSize,
+			PageSize:    pageSize,
 			TotalItems:  total,
-			TotalPages: totalPages,
-			HasNext:    hasNext,
-			HasPrev:    hasPrev,
+			TotalPages:  totalPages,
+			HasNext:     hasNext,
+			HasPrev:     hasPrev,
 		},
 	}
 
@@ -241,11 +241,11 @@ func (s *LeaseService) GetLeasesByUnit(unitID int, page, pageSize, orgID int) (*
 		Leases: leases,
 		Pagination: &models.PaginationInfo{
 			CurrentPage: page,
-			PageSize:   pageSize,
+			PageSize:    pageSize,
 			TotalItems:  total,
-			TotalPages: totalPages,
-			HasNext:    hasNext,
-			HasPrev:    hasPrev,
+			TotalPages:  totalPages,
+			HasNext:     hasNext,
+			HasPrev:     hasPrev,
 		},
 	}
 
@@ -267,16 +267,17 @@ func (s *LeaseService) GetLeasesByTenant(tenantID int, page, pageSize, orgID int
 		Leases: leases,
 		Pagination: &models.PaginationInfo{
 			CurrentPage: page,
-			PageSize:   pageSize,
+			PageSize:    pageSize,
 			TotalItems:  total,
-			TotalPages: totalPages,
-			HasNext:    hasNext,
-			HasPrev:    hasPrev,
+			TotalPages:  totalPages,
+			HasNext:     hasNext,
+			HasPrev:     hasPrev,
 		},
 	}
 
 	return response, nil
 }
+
 // GetLeasesDue retrieves all leases with unpaid rent for the current month
 func (s *LeaseService) GetLeasesDue(orgID int) ([]models.LeaseDue, error) {
 	leasesDue, err := s.leaseRepo.GetLeasesDueForMonth(orgID)

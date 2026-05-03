@@ -35,16 +35,16 @@ func (r *UnitRepository) Create(req *models.CreateUnitRequest, organizationID in
 
 	unit := &models.Unit{
 		BuildingID:     req.BuildingID,
-		PropertyID:      req.PropertyID,
-		UnitNumber:      req.UnitNumber,
-		UnitName:        req.UnitName,
-		Floor:           req.Floor,
-		Section:         req.Section,
-		UnitType:        req.UnitType,
-		MonthlyRent:     req.MonthlyRent,
-		Metadata:        req.Metadata,
-		OrganizationID:  organizationID,
-		Active:          true,
+		PropertyID:     req.PropertyID,
+		UnitNumber:     req.UnitNumber,
+		UnitName:       req.UnitName,
+		Floor:          req.Floor,
+		Section:        req.Section,
+		UnitType:       req.UnitType,
+		MonthlyRent:    req.MonthlyRent,
+		Metadata:       req.Metadata,
+		OrganizationID: organizationID,
+		Active:         true,
 	}
 
 	err := r.db.QueryRow(

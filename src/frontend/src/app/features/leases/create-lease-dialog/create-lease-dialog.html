@@ -15,7 +15,8 @@
         (openedChange)="onTenantSelectOpened()"
       >
         <mat-option *ngFor="let tenant of filteredTenants" [value]="tenant.id">
-          {{ tenant.name }} ({{ tenant.phone_number || ('CREATE_LEASE_DIALOG.ERRORS.NO_PHONE' | translate) }})
+          {{ tenant.name }} ({{ tenant.phone_number || ('CREATE_LEASE_DIALOG.ERRORS.NO_PHONE' |
+          translate) }})
         </mat-option>
       </mat-select>
       <mat-error *ngIf="leaseForm.get('tenant_id')?.touched && leaseForm.get('tenant_id')?.invalid">
@@ -136,12 +137,15 @@
 
     <!-- Calculated End Date -->
     <div class="end-date-info" *ngIf="calculateEndDate()">
-      <strong>{{ 'CREATE_LEASE_DIALOG.INFO.END_DATE' | translate }}</strong> {{ calculateEndDate() | date:'mediumDate' }}
+      <strong>{{ 'CREATE_LEASE_DIALOG.INFO.END_DATE' | translate }}</strong> {{ calculateEndDate() |
+      date:'mediumDate' }}
     </div>
   </form>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <button mat-button type="button" (click)="onCancel()" [disabled]="submitLoading">{{ 'COMMON.BUTTONS.CANCEL' | translate }}</button>
+  <button mat-button type="button" (click)="onCancel()" [disabled]="submitLoading">
+    {{ 'COMMON.BUTTONS.CANCEL' | translate }}
+  </button>
   <button
     mat-raised-button
     color="primary"

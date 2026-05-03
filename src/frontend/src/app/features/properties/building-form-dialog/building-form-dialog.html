@@ -1,6 +1,7 @@
 <h2 mat-dialog-title>
   <mat-icon>{{ isEditMode ? 'edit' : 'add_business' }}</mat-icon>
-  {{ (isEditMode ? 'BUILDING_FORM_DIALOG.TITLE_EDIT' : 'BUILDING_FORM_DIALOG.TITLE_CREATE') | translate }}
+  {{ (isEditMode ? 'BUILDING_FORM_DIALOG.TITLE_EDIT' : 'BUILDING_FORM_DIALOG.TITLE_CREATE') |
+  translate }}
 </h2>
 
 <mat-dialog-content>
@@ -12,14 +13,24 @@
   <form [formGroup]="buildingForm" class="building-form">
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>{{ 'BUILDING_FORM_DIALOG.FIELDS.BUILDING_NAME' | translate }}</mat-label>
-      <input matInput formControlName="building_name" [placeholder]="'BUILDING_FORM_DIALOG.PLACEHOLDERS.BUILDING_NAME' | translate" required />
+      <input
+        matInput
+        formControlName="building_name"
+        [placeholder]="'BUILDING_FORM_DIALOG.PLACEHOLDERS.BUILDING_NAME' | translate"
+        required
+      />
       <mat-icon matPrefix>apartment</mat-icon>
       <mat-error>{{ getErrorMessage('building_name') }}</mat-error>
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>{{ 'BUILDING_FORM_DIALOG.FIELDS.BUILDING_CODE' | translate }}</mat-label>
-      <input matInput formControlName="building_code" [placeholder]="'BUILDING_FORM_DIALOG.PLACEHOLDERS.BUILDING_CODE' | translate" required />
+      <input
+        matInput
+        formControlName="building_code"
+        [placeholder]="'BUILDING_FORM_DIALOG.PLACEHOLDERS.BUILDING_CODE' | translate"
+        required
+      />
       <mat-icon matPrefix>tag</mat-icon>
       @if (!isEditMode) {
       <mat-hint>{{ 'BUILDING_FORM_DIALOG.HINTS.BUILDING_CODE' | translate }}</mat-hint>
@@ -77,6 +88,7 @@
   </button>
   <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="buildingForm.invalid">
     <mat-icon>{{ isEditMode ? 'save' : 'add' }}</mat-icon>
-    {{ (isEditMode ? 'BUILDING_FORM_DIALOG.BUTTONS.UPDATE' : 'BUILDING_FORM_DIALOG.BUTTONS.CREATE') | translate }}
+    {{ (isEditMode ? 'BUILDING_FORM_DIALOG.BUTTONS.UPDATE' : 'BUILDING_FORM_DIALOG.BUTTONS.CREATE')
+    | translate }}
   </button>
 </mat-dialog-actions>

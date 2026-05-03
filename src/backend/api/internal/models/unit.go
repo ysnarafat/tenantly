@@ -41,20 +41,20 @@ func (m *UnitMetadata) Scan(value interface{}) error {
 
 // Unit represents a rentable space (shop, apartment, office, etc.)
 type Unit struct {
-	ID          int          `json:"id" db:"id"`
+	ID             int          `json:"id" db:"id"`
 	BuildingID     int          `json:"building_id" db:"building_id"`
 	PropertyID     int          `json:"property_id" db:"property_id"` // Denormalized for performance
 	OrganizationID int          `json:"organization_id" db:"organization_id"`
 	UnitNumber     string       `json:"unit_number" db:"unit_number"`
-	UnitName    string       `json:"unit_name" db:"unit_name"`
-	Floor       int          `json:"floor" db:"floor"`
-	Section     string       `json:"section" db:"section"`
-	UnitType    UnitType     `json:"unit_type" db:"unit_type"`
-	MonthlyRent float64      `json:"monthly_rent" db:"monthly_rent"`
-	Metadata    UnitMetadata `json:"metadata" db:"metadata"`
-	Active      bool         `json:"active" db:"active"`
-	CreatedAt   time.Time    `json:"created_at" db:"created_at"`
-	UpdatedAt   time.Time    `json:"updated_at" db:"updated_at"`
+	UnitName       string       `json:"unit_name" db:"unit_name"`
+	Floor          int          `json:"floor" db:"floor"`
+	Section        string       `json:"section" db:"section"`
+	UnitType       UnitType     `json:"unit_type" db:"unit_type"`
+	MonthlyRent    float64      `json:"monthly_rent" db:"monthly_rent"`
+	Metadata       UnitMetadata `json:"metadata" db:"metadata"`
+	Active         bool         `json:"active" db:"active"`
+	CreatedAt      time.Time    `json:"created_at" db:"created_at"`
+	UpdatedAt      time.Time    `json:"updated_at" db:"updated_at"`
 }
 
 // CreateUnitRequest represents the request to create a unit

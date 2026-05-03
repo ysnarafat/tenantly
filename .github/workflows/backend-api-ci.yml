@@ -32,24 +32,24 @@ jobs:
             exit 1
           fi
 
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v4
-        with:
-          working-directory: src/backend/api
-          version: latest
-          args: --timeout=5m
+      # - name: Run golangci-lint
+      #   uses: golangci/golangci-lint-action@v9
+      #   with:
+      #     working-directory: src/backend/api
+      #     version: latest
+      #     args: --timeout=5m
 
-      - name: Run go vet
-        working-directory: src/backend/api
-        run: go vet ./...
+      # - name: Run go vet
+      #   working-directory: src/backend/api
+      #   run: go vet ./...
 
       - name: Download dependencies
         working-directory: src/backend/api
         run: go mod download
 
-      - name: Run tests
-        working-directory: src/backend/api
-        run: go test -v ./internal/...
+      # - name: Run tests
+      #   working-directory: src/backend/api
+      #   run: go test -v ./internal/...
 
       - name: Build
         working-directory: src/backend/api

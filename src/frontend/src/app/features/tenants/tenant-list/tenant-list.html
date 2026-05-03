@@ -4,8 +4,12 @@
     <div class="header-left">
       <h1>{{ 'TENANT_LIST.PAGE_TITLE' | translate }}</h1>
       <div class="stats-row">
-        <span class="stat-chip total">{{ tenants.length }} {{ 'TENANT_LIST.STATS.TOTAL' | translate }}</span>
-        <span class="stat-chip active">{{ activeCount }} {{ 'TENANT_LIST.STATS.ACTIVE' | translate }}</span>
+        <span class="stat-chip total"
+          >{{ tenants.length }} {{ 'TENANT_LIST.STATS.TOTAL' | translate }}</span
+        >
+        <span class="stat-chip active"
+          >{{ activeCount }} {{ 'TENANT_LIST.STATS.ACTIVE' | translate }}</span
+        >
         <span class="stat-chip inactive" *ngIf="inactiveCount > 0"
           >{{ inactiveCount }} {{ 'TENANT_LIST.STATS.INACTIVE' | translate }}</span
         >
@@ -90,7 +94,8 @@
     </div>
 
     <span *ngIf="hasActiveFilters" class="results-count"
-      >{{ filteredTenants.length }} {{ filteredTenants.length === 1 ? ('COMMON.PAGINATION.RESULT' | translate) : ('COMMON.PAGINATION.RESULTS' | translate) }}</span
+      >{{ filteredTenants.length }} {{ filteredTenants.length === 1 ? ('COMMON.PAGINATION.RESULT' |
+      translate) : ('COMMON.PAGINATION.RESULTS' | translate) }}</span
     >
   </div>
 
@@ -109,7 +114,9 @@
           <table mat-table [dataSource]="pagedTenants" class="tenant-table">
             <!-- Name Column -->
             <ng-container matColumnDef="name">
-              <th mat-header-cell *matHeaderCellDef>{{ 'TENANT_LIST.TABLE.TENANT' | translate }}</th>
+              <th mat-header-cell *matHeaderCellDef>
+                {{ 'TENANT_LIST.TABLE.TENANT' | translate }}
+              </th>
               <td mat-cell *matCellDef="let tenant">
                 <div class="tenant-cell">
                   <div class="tenant-avatar" [class.business]="tenant.tenant_type === 'Business'">
@@ -137,7 +144,9 @@
 
             <!-- Contact Column -->
             <ng-container matColumnDef="contact">
-              <th mat-header-cell *matHeaderCellDef>{{ 'TENANT_LIST.TABLE.CONTACT' | translate }}</th>
+              <th mat-header-cell *matHeaderCellDef>
+                {{ 'TENANT_LIST.TABLE.CONTACT' | translate }}
+              </th>
               <td mat-cell *matCellDef="let tenant">
                 <div class="contact-cell">
                   <div *ngIf="tenant.phone_number" class="contact-row">
@@ -163,7 +172,9 @@
 
             <!-- Status Column -->
             <ng-container matColumnDef="status">
-              <th mat-header-cell *matHeaderCellDef>{{ 'TENANT_LIST.TABLE.STATUS' | translate }}</th>
+              <th mat-header-cell *matHeaderCellDef>
+                {{ 'TENANT_LIST.TABLE.STATUS' | translate }}
+              </th>
               <td mat-cell *matCellDef="let tenant">
                 <span
                   class="status-badge"
@@ -171,14 +182,17 @@
                   [class.is-inactive]="!tenant.active"
                 >
                   <span class="status-dot"></span>
-                  {{ tenant.active ? ('TENANT_LIST.TABLE.ACTIVE' | translate) : ('TENANT_LIST.TABLE.INACTIVE' | translate) }}
+                  {{ tenant.active ? ('TENANT_LIST.TABLE.ACTIVE' | translate) :
+                  ('TENANT_LIST.TABLE.INACTIVE' | translate) }}
                 </span>
               </td>
             </ng-container>
 
             <!-- Created Column -->
             <ng-container matColumnDef="created">
-              <th mat-header-cell *matHeaderCellDef>{{ 'TENANT_LIST.TABLE.JOINED' | translate }}</th>
+              <th mat-header-cell *matHeaderCellDef>
+                {{ 'TENANT_LIST.TABLE.JOINED' | translate }}
+              </th>
               <td mat-cell *matCellDef="let tenant">
                 <span class="date-val">{{ tenant.created_at | date: 'mediumDate' }}</span>
               </td>
@@ -186,7 +200,9 @@
 
             <!-- Actions Column -->
             <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef class="actions-header">{{ 'TENANT_LIST.TABLE.ACTIONS' | translate }}</th>
+              <th mat-header-cell *matHeaderCellDef class="actions-header">
+                {{ 'TENANT_LIST.TABLE.ACTIONS' | translate }}
+              </th>
               <td mat-cell *matCellDef="let tenant">
                 <div class="actions-cell">
                   <button
@@ -223,9 +239,13 @@
         <!-- Empty State -->
         <div *ngIf="filteredTenants.length === 0" class="empty-state">
           <mat-icon>{{ hasActiveFilters ? 'search_off' : 'people_outline' }}</mat-icon>
-          <h3>{{ hasActiveFilters ? ('TENANT_LIST.EMPTY_STATE.NO_MATCHING' | translate) : ('TENANT_LIST.EMPTY_STATE.NO_TENANTS' | translate) }}</h3>
+          <h3>
+            {{ hasActiveFilters ? ('TENANT_LIST.EMPTY_STATE.NO_MATCHING' | translate) :
+            ('TENANT_LIST.EMPTY_STATE.NO_TENANTS' | translate) }}
+          </h3>
           <p>
-            {{ hasActiveFilters ? ('COMMON.EMPTY_STATE.TRY_ADJUST' | translate) : ('TENANT_LIST.EMPTY_STATE.ADD_FIRST' | translate) }}
+            {{ hasActiveFilters ? ('COMMON.EMPTY_STATE.TRY_ADJUST' | translate) :
+            ('TENANT_LIST.EMPTY_STATE.ADD_FIRST' | translate) }}
           </p>
           <button *ngIf="!hasActiveFilters" mat-raised-button color="primary" (click)="addTenant()">
             <mat-icon>person_add</mat-icon>

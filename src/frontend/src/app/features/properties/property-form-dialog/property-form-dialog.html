@@ -1,6 +1,7 @@
 <h2 mat-dialog-title>
   <mat-icon>{{ isEditMode ? 'edit' : 'add_business' }}</mat-icon>
-  {{ (isEditMode ? 'PROPERTY_FORM_DIALOG.TITLE_EDIT' : 'PROPERTY_FORM_DIALOG.TITLE_CREATE') | translate }}
+  {{ (isEditMode ? 'PROPERTY_FORM_DIALOG.TITLE_EDIT' : 'PROPERTY_FORM_DIALOG.TITLE_CREATE') |
+  translate }}
 </h2>
 
 <mat-dialog-content>
@@ -19,7 +20,12 @@
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>{{ 'PROPERTY_FORM_DIALOG.FIELDS.PROPERTY_CODE' | translate }}</mat-label>
-      <input matInput formControlName="property_code" [placeholder]="'PROPERTY_FORM_DIALOG.PLACEHOLDERS.PROPERTY_CODE' | translate" required />
+      <input
+        matInput
+        formControlName="property_code"
+        [placeholder]="'PROPERTY_FORM_DIALOG.PLACEHOLDERS.PROPERTY_CODE' | translate"
+        required
+      />
       <mat-icon matPrefix>tag</mat-icon>
       @if (!isEditMode) {
       <mat-hint>{{ 'PROPERTY_FORM_DIALOG.HINTS.PROPERTY_CODE' | translate }}</mat-hint>
@@ -40,7 +46,12 @@
 
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>{{ 'PROPERTY_FORM_DIALOG.FIELDS.ADDRESS' | translate }}</mat-label>
-      <input matInput formControlName="address" [placeholder]="'PROPERTY_FORM_DIALOG.PLACEHOLDERS.ADDRESS' | translate" required />
+      <input
+        matInput
+        formControlName="address"
+        [placeholder]="'PROPERTY_FORM_DIALOG.PLACEHOLDERS.ADDRESS' | translate"
+        required
+      />
       <mat-icon matPrefix>location_on</mat-icon>
       <mat-error>{{ getErrorMessage('address') }}</mat-error>
     </mat-form-field>
@@ -48,14 +59,22 @@
     <div class="form-row">
       <mat-form-field appearance="outline" class="half-width">
         <mat-label>{{ 'PROPERTY_FORM_DIALOG.FIELDS.CITY' | translate }}</mat-label>
-        <input matInput formControlName="city" [placeholder]="'PROPERTY_FORM_DIALOG.PLACEHOLDERS.CITY' | translate" />
+        <input
+          matInput
+          formControlName="city"
+          [placeholder]="'PROPERTY_FORM_DIALOG.PLACEHOLDERS.CITY' | translate"
+        />
         <mat-icon matPrefix>location_city</mat-icon>
         <mat-error>{{ getErrorMessage('city') }}</mat-error>
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="half-width">
         <mat-label>{{ 'PROPERTY_FORM_DIALOG.FIELDS.POSTAL_CODE' | translate }}</mat-label>
-        <input matInput formControlName="postal_code" [placeholder]="'PROPERTY_FORM_DIALOG.PLACEHOLDERS.POSTAL_CODE' | translate" />
+        <input
+          matInput
+          formControlName="postal_code"
+          [placeholder]="'PROPERTY_FORM_DIALOG.PLACEHOLDERS.POSTAL_CODE' | translate"
+        />
         <mat-icon matPrefix>markunread_mailbox</mat-icon>
         <mat-hint>{{ 'PROPERTY_FORM_DIALOG.HINTS.POSTAL_CODE' | translate }}</mat-hint>
         <mat-error>{{ getErrorMessage('postal_code') }}</mat-error>
@@ -71,6 +90,7 @@
   </button>
   <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="propertyForm.invalid">
     <mat-icon>{{ isEditMode ? 'save' : 'add' }}</mat-icon>
-    {{ (isEditMode ? 'PROPERTY_FORM_DIALOG.BUTTONS.UPDATE' : 'PROPERTY_FORM_DIALOG.BUTTONS.CREATE') | translate }}
+    {{ (isEditMode ? 'PROPERTY_FORM_DIALOG.BUTTONS.UPDATE' : 'PROPERTY_FORM_DIALOG.BUTTONS.CREATE')
+    | translate }}
   </button>
 </mat-dialog-actions>
