@@ -1,16 +1,16 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 📋 Project Overview
 
-**Tenantly** is a property rental management system built for the Bangladesh market. It's a full-stack platform with three main components:
+**Tenantly** = property rental management system, Bangladesh market. Full-stack, three components:
 
-- **Backend API**: Go (Gin) service at `src/backend/api` - handles core business logic
-- **Frontend**: Angular 21 application at `src/frontend` - modern standalone components with Material Design
-- **Notification Service**: .NET background service at `src/backend/notification-service` - handles SMS/Email alerts
+- **Backend API**: Go (Gin) at `src/backend/api` - core business logic
+- **Frontend**: Angular 21 at `src/frontend` - standalone components, Material Design
+- **Notification Service**: .NET background service at `src/backend/notification-service` - SMS/Email alerts
 
-The system uses PostgreSQL for data storage and Docker Compose for local development.
+PostgreSQL for storage. Docker Compose for local dev.
 
 ---
 
@@ -162,12 +162,12 @@ src/app/
 ```
 
 **Key Patterns:**
-- Uses standalone components (no NgModule)
-- Global state managed via NgRx in `src/app/store/`
-- Features can have their own NgRx stores (e.g., `features/properties/store/`) for feature-specific state
+- Standalone components (no NgModule)
+- Global state via NgRx in `src/app/store/`
+- Features can have own NgRx stores (e.g., `features/properties/store/`) for feature-specific state
 - Services use RxJS observables
-- Material Design for UI components
-- Environment files for configuration
+- Material Design for UI
+- Environment files for config
 
 ### Notification Service (.NET)
 
@@ -186,7 +186,7 @@ src/backend/notification-service/
 
 - **System**: PostgreSQL
 - **Driver**: `lib/pq` (Go)
-- **Migrations**: golang-migrate (versioned SQL files in `migrations/`)
+- **Migrations**: golang-migrate (versioned SQL in `migrations/`)
 - **Migration Commands**:
   ```bash
   cd src/backend/api
@@ -202,7 +202,7 @@ src/backend/notification-service/
 
 **Backend**:
 - Tokens generated in `internal/handlers/auth.go`
-- Middleware validates tokens in `internal/middleware/`
+- Middleware validates in `internal/middleware/`
 - Claims include user ID and role
 - Reference: `src/backend/api/AUTHENTICATION.md`
 
@@ -211,11 +211,11 @@ src/backend/notification-service/
 - HTTP interceptor attaches token to requests
 - Auth guard protects routes
 
-**Current Roles & Multi-Tenancy** (3-level system):
-- `Admin` - Full access, organization-wide administration
-- `PropertyManager` - Property-level operations, building/unit management
+**Roles & Multi-Tenancy** (3-level):
+- `Admin` - Full access, org-wide administration
+- `PropertyManager` - Property-level ops, building/unit management
 - `Accountant` - Read-only financial access
-- Multi-tenancy fully implemented with organization management and admin hierarchy
+- Multi-tenancy fully implemented with org management and admin hierarchy
 
 ---
 
@@ -223,10 +223,7 @@ src/backend/notification-service/
 
 ### Theme System
 
-The frontend supports light and dark themes using **CSS variables**. This enables:
-- Runtime theme switching without reloads
-- Consistent color palettes across components
-- Easy maintenance of theme colors in one place
+Frontend supports light/dark themes via **CSS variables**: runtime switching without reloads, consistent palettes, easy maintenance.
 
 **Theme Structure:**
 ```scss
@@ -269,10 +266,10 @@ toggleTheme(): void {
 
 ### Component Styling Guidelines
 
-When developing new Angular components:
+New Angular components:
 
 1. **Organize SCSS**:
-   - Group theme variables at the top
+   - Group theme variables at top
    - Use mixins for reusable patterns
    - Order: variables → mixins → base styles → responsive media queries
 
@@ -301,10 +298,10 @@ When developing new Angular components:
    - Example: See dashboard sparkline animations
 
 5. **Accessibility**:
-   - All interactive elements must have `:hover`, `:focus`, `:active` states
+   - All interactive elements need `:hover`, `:focus`, `:active` states
    - Use `tabindex="0"` for custom interactive elements
    - Provide `aria-label` for icon-only buttons
-   - Ensure color contrast meets WCAG AA standards (4.5:1 for text)
+   - Color contrast must meet WCAG AA (4.5:1 for text)
 
 ---
 
@@ -317,7 +314,7 @@ When developing new Angular components:
 - Run specific: `go test -v ./internal/repositories`
 
 ### Frontend (Angular)
-- Jasmine/Karma test framework
+- Jasmine/Karma framework
 - Tests alongside components as `.spec.ts` files
 - Run: `npm test`
 
@@ -336,7 +333,7 @@ When developing new Angular components:
 - `docker-compose.yml`, `docker-compose.dev.yml` - Container orchestration
 
 **Build Budgets** (Angular):
-- Component style budget: 18kB max error (updated from 6.5kB to accommodate feature-rich components)
+- Component style budget: 18kB max error (updated from 6.5kB for feature-rich components)
 - Adjust in `angular.json` under `projects → tenantly-frontend → architect → build → configurations → production → budgets`
 
 ### Git Conventions (from CONTRIBUTING.md)
@@ -357,21 +354,21 @@ When developing new Angular components:
 
 ## 🔄 Development Workflow
 
-1. Create feature branch: `git checkout -b feat/feature-name` or `git checkout -b topic/##/feature-name`
-2. Make changes following conventions
+1. Create branch: `git checkout -b feat/feature-name` or `git checkout -b topic/##/feature-name`
+2. Make changes per conventions
 3. Run quality checks:
    - Backend: `go test ./internal/...`
    - Frontend: `npm run quality && npm test`
-4. Commit with conventional message: `git commit -m "feat(scope): description"`
-5. Push and create pull request for review
-6. CI/CD runs automatically (GitHub Actions workflows in `.github/workflows/`)
+4. Commit: `git commit -m "feat(scope): description"`
+5. Push and create PR
+6. CI/CD runs automatically (GitHub Actions in `.github/workflows/`)
 
 ---
 
 ## 📝 Key Project Files
 
 - `README.md` - Project overview and quick start
-- `CONTRIBUTING.md` - Detailed conventions & guidelines (reference for code style)
+- `CONTRIBUTING.md` - Conventions & guidelines (code style reference)
 - `src/backend/api/README.md` - Backend architecture details
 - `src/backend/api/AUTHENTICATION.md` - Auth implementation details
 - `src/frontend/README.md` - Frontend setup & conventions
@@ -381,10 +378,10 @@ When developing new Angular components:
 
 ## 🛠️ Scripts
 
-Available helper scripts in `scripts/` directory:
-- `dev-setup.sh` / `dev-setup.bat` - Initial development environment setup
+Helper scripts in `scripts/`:
+- `dev-setup.sh` / `dev-setup.bat` - Initial dev environment setup
 - `fast-build.sh` / `fast-build.bat` - Quick build for all services
-- `benchmark-build.sh` - Performance profiling of builds
+- `benchmark-build.sh` - Build performance profiling
 
 ---
 
@@ -392,7 +389,7 @@ Available helper scripts in `scripts/` directory:
 
 ### Dashboard Redesign
 - **Location**: `src/frontend/src/app/features/dashboard/`
-- **Features**: Financial metrics, collection rate progress ring, 6-month trend sparklines, light/dark theme support
+- **Features**: Financial metrics, collection rate progress ring, 6-month trend sparklines, light/dark theme
 - **Reference for**: Theme implementation, SVG charts, progress indicators, staggered animations
 
 ### Property Card Redesign
@@ -404,13 +401,13 @@ Available helper scripts in `scripts/` directory:
 
 ## ⚠️ Common Issues & Notes
 
-- **Frontend**: Uses Angular 21 with standalone components (no NgModule), signals for state management
+- **Frontend**: Angular 21 standalone components (no NgModule), signals for state
 - **Backend**: Environment variables required (see `.env.example`)
-- **Database**: PostgreSQL must be running before API starts
-- **Node version**: Node 25+ required for frontend
-- **Go version**: Go 1.25+ required for backend
+- **Database**: PostgreSQL must run before API starts
+- **Node version**: Node 25+ required
+- **Go version**: Go 1.25+ required
 - **SCSS Build Size**: Feature-rich components may exceed default style budgets; update `angular.json` if needed
-- **Theme Persistence**: Theme preference is stored in localStorage under key `dashboard-theme` or `theme`
+- **Theme Persistence**: Stored in localStorage under `dashboard-theme` or `theme`
 
 ---
 

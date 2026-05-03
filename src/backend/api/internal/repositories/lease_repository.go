@@ -560,3 +560,109 @@ func (r *LeaseRepository) HasActiveLeaseForTenant(tenantID int) (bool, error) {
 
 	return exists, nil
 }
+
+// GetLeasesDueForMonth returns all leases with unpaid rent for the current month
+func (r *LeaseRepository) GetLeasesDueForMonth(orgID int) ([]models.LeaseDue, error) {
+	now := time.Now()
+	currentYear := now.Year()
+	currentMonth := int(now.Month())
+
+	firstDayOfMonth := time.Date(currentYear, time.Month(currentMonth), 1, 0, 0, 0, 0, now.Location())
+
+	query := `
+		SELECT
+			l.id as lease_id,
+			l.tenant_id,
+			COALESCE(t.name, '') as tenant_name,
+			l.unit_id,
+			u.unit_number,
+			u.unit_type,
+			u.building_id,
+			b.building_name,
+			b.building_code,
+			b.property_id,
+			p.property_name,
+			l.monthly_rent,
+			CASE
+				WHEN l.start_date > $1 THEN
+					EXTRACT(DAY FROM AGE(CURRENT_DATE, l.start_date))::int
+				ELSE
+					EXTRACT(DAY FROM AGE(CURRENT_DATE, $1))::int
+			END as days_overdue,
+			l.organization_id
+		FROM leases l
+		INNER JOIN units u ON l.unit_id = u.id
+		INNER JOIN buildings b ON u.building_id = b.id
+		INNER JOIN properties p ON b.property_id = p.id
+		INNER JOIN tenants t ON l.tenant_id = t.id
+		WHERE l.active = true
+			AND l.organization_id = $2
+			AND l.start_date <= CURRENT_DATE
+			AND l.end_date >= $1
+			AND NOT EXISTS (
+				SELECT 1 FROM payments pay
+				WHERE pay.unit_id = l.unit_id
+					AND pay.tenant_id = l.tenant_id
+					AND pay.month = $3
+					AND pay.year = $4
+					AND pay.status IN ('Paid', 'Partial')
+			)
+		ORDER BY days_overdue DESC, tenant_name ASC
+	`
+
+	rows, err := r.db.Query(query, firstDayOfMonth, orgID, currentMonth, currentYear)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query due leases: %w", err)
+	}
+	defer rows.Close()
+
+	var leasesDue []models.LeaseDue
+	for rows.Next() {
+		var leaseDue models.LeaseDue
+		err := rows.Scan(
+			&leaseDue.LeaseID,
+			&leaseDue.TenantID,
+			&leaseDue.TenantName,
+			&leaseDue.UnitID,
+			&leaseDue.UnitNumber,
+			&leaseDue.UnitType,
+			&leaseDue.BuildingID,
+			&leaseDue.BuildingName,
+			&leaseDue.BuildingCode,
+			&leaseDue.PropertyID,
+			&leaseDue.PropertyName,
+			&leaseDue.MonthlyRent,
+			&leaseDue.DaysOverdue,
+			&leaseDue.OrganizationID,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan lease due row: %w", err)
+		}
+		leasesDue = append(leasesDue, leaseDue)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating lease due rows: %w", err)
+	}
+
+	return leasesDue, nil
+}
+
+// GetDueSummary calculates summary statistics for unpaid rent
+func (r *LeaseRepository) GetDueSummary(orgID int) (*models.DueSummary, error) {
+	leasesDue, err := r.GetLeasesDueForMonth(orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	summary := &models.DueSummary{
+		TotalDueAmount:  0,
+		TotalTenantsDue: len(leasesDue),
+	}
+
+	for _, lease := range leasesDue {
+		summary.TotalDueAmount += lease.MonthlyRent
+	}
+
+	return summary, nil
+}

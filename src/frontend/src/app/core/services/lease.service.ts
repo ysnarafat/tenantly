@@ -5,6 +5,28 @@ import { environment } from '../../../environments/environment';
 
 export type LeaseType = 'Residential' | 'Commercial';
 
+export interface LeaseDue {
+  lease_id: number;
+  tenant_id: number;
+  tenant_name: string;
+  unit_id: number;
+  unit_number: string;
+  unit_type: string;
+  building_id: number;
+  building_name: string;
+  building_code: string;
+  property_id: number;
+  property_name: string;
+  monthly_rent: number;
+  days_overdue: number;
+  organization_id: number;
+}
+
+export interface DueSummary {
+  total_due_amount: number;
+  total_tenants_due: number;
+}
+
 export interface Lease {
   id: number;
   unit_id: number;
@@ -396,5 +418,13 @@ export class LeaseService {
     const end = new Date(start);
     end.setMonth(end.getMonth() + durationMonths);
     return end.toISOString().split('T')[0];
+  }
+
+  getLeasesDue(): Observable<LeaseDue[]> {
+    return this.http.get<LeaseDue[]>(`${this.apiUrl}/due`);
+  }
+
+  getDueSummary(): Observable<DueSummary> {
+    return this.http.get<DueSummary>(`${this.apiUrl}/due/summary`);
   }
 }

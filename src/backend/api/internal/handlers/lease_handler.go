@@ -196,3 +196,29 @@ func (h *LeaseHandler) GetLeasesByTenant(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
+
+// GetLeasesDue handles fetching all leases with unpaid rent for current month
+func (h *LeaseHandler) GetLeasesDue(c *gin.Context) {
+	orgID := c.GetInt("org_id")
+
+	leasesDue, err := h.leaseService.GetLeasesDue(orgID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"leases": leasesDue})
+}
+
+// GetDueSummary handles fetching summary statistics for unpaid rent
+func (h *LeaseHandler) GetDueSummary(c *gin.Context) {
+	orgID := c.GetInt("org_id")
+
+	summary, err := h.leaseService.GetDueSummary(orgID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, summary)
+}

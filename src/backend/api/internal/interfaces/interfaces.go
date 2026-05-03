@@ -321,33 +321,6 @@ type TenantServiceInterface interface {
 	DeleteTenant(id int, userID, orgID int) error
 }
 
-// LeaseRepositoryInterface defines the interface for lease repository operations
-type LeaseRepositoryInterface interface {
-	Create(req *models.CreateLeaseRequest) (*models.Lease, error)
-	GetByID(id int) (*models.Lease, error)
-	GetByIDWithDetails(id int) (*models.LeaseWithDetails, error)
-	GetAll(page, pageSize, orgID int) ([]*models.LeaseWithDetails, int, error)
-	GetByUnitID(unitID int, page, pageSize, orgID int) ([]*models.LeaseWithDetails, int, error)
-	GetByTenantID(tenantID int, page, pageSize, orgID int) ([]*models.LeaseWithDetails, int, error)
-	Update(id int, req *models.UpdateLeaseRequest) (*models.Lease, error)
-	Delete(id int) error
-	SoftDelete(id int) error
-	HasActiveLeaseOnUnit(unitID int, excludeLeaseID *int) (bool, error)
-	HasActiveLeaseForTenant(tenantID int) (bool, error)
-}
-
-// LeaseServiceInterface defines the interface for lease service operations
-type LeaseServiceInterface interface {
-	CreateLease(req *models.CreateLeaseRequest, userID int) (*models.LeaseWithDetails, error)
-	GetLeaseByID(id int, orgID int) (*models.LeaseWithDetails, error)
-	GetAllLeases(page, pageSize, orgID int) (*models.LeaseListResponse, error)
-	UpdateLease(id int, req *models.UpdateLeaseRequest, userID, orgID int) (*models.LeaseWithDetails, error)
-	DeleteLease(id int, userID, orgID int) error
-	TerminateLease(id int, userID, orgID int, terminationDate string) error
-	GetLeasesByUnit(unitID int, page, pageSize, orgID int) (*models.LeaseListResponse, error)
-	GetLeasesByTenant(tenantID int, page, pageSize, orgID int) (*models.LeaseListResponse, error)
-}
-
 // PropertyRepositoryInterface defines the interface for property repository operations
 type PropertyRepositoryInterface interface {
 	GetByID(id int) (*models.Property, error)
@@ -366,4 +339,35 @@ type PropertyRepositoryInterface interface {
 type ReportingServiceInterface interface {
 	GenerateComprehensiveReport(propertyID *int, buildingID *int, startDate, endDate time.Time, userID int) (*models.ComprehensiveReport, error)
 	GenerateDashboardReport(filters map[string]interface{}, groupBy string, userID int) (*models.DashboardReport, error)
+}
+
+// LeaseRepositoryInterface defines the interface for lease repository operations
+type LeaseRepositoryInterface interface {
+	Create(req *models.CreateLeaseRequest) (*models.Lease, error)
+	GetByID(id int) (*models.Lease, error)
+	GetByIDWithDetails(id int) (*models.LeaseWithDetails, error)
+	GetAll(page, pageSize, orgID int) ([]*models.LeaseWithDetails, int, error)
+	GetByUnitID(unitID int, page, pageSize, orgID int) ([]*models.LeaseWithDetails, int, error)
+	GetByTenantID(tenantID int, page, pageSize, orgID int) ([]*models.LeaseWithDetails, int, error)
+	Update(id int, req *models.UpdateLeaseRequest) (*models.Lease, error)
+	Delete(id int) error
+	SoftDelete(id int) error
+	HasActiveLeaseOnUnit(unitID int, excludeLeaseID *int) (bool, error)
+	HasActiveLeaseForTenant(tenantID int) (bool, error)
+	GetLeasesDueForMonth(orgID int) ([]models.LeaseDue, error)
+	GetDueSummary(orgID int) (*models.DueSummary, error)
+}
+
+// LeaseServiceInterface defines the interface for lease service operations
+type LeaseServiceInterface interface {
+	CreateLease(req *models.CreateLeaseRequest, userID int) (*models.LeaseWithDetails, error)
+	GetLeaseByID(id int, orgID int) (*models.LeaseWithDetails, error)
+	GetAllLeases(page, pageSize, orgID int) (*models.LeaseListResponse, error)
+	UpdateLease(id int, req *models.UpdateLeaseRequest, userID, orgID int) (*models.LeaseWithDetails, error)
+	DeleteLease(id int, userID, orgID int) error
+	TerminateLease(id int, userID, orgID int, terminationDate string) error
+	GetLeasesByUnit(unitID int, page, pageSize, orgID int) (*models.LeaseListResponse, error)
+	GetLeasesByTenant(tenantID int, page, pageSize, orgID int) (*models.LeaseListResponse, error)
+	GetLeasesDue(orgID int) ([]models.LeaseDue, error)
+	GetDueSummary(orgID int) (*models.DueSummary, error)
 }

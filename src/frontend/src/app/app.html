@@ -10,6 +10,14 @@
     </div>
     <app-organization-selector></app-organization-selector>
     <span class="spacer"></span>
+    <button
+      mat-icon-button
+      (click)="languageService.toggle()"
+      class="language-toggle"
+      [matTooltip]="languageService.currentLang() === 'en' ? 'বাংলা' : 'English'"
+    >
+      <mat-icon>language</mat-icon>
+    </button>
     <div class="user-info">
       <div class="user-details">
         <span class="user-name">{{ user()?.username || 'User' }}</span>
@@ -79,11 +87,11 @@
           routerLink="/properties"
           routerLinkActive="nav-active"
           (click)="onNavigate()"
-          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Units' : ''"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Properties' : ''"
           matTooltipPosition="right"
         >
           <mat-icon class="nav-icon">meeting_room</mat-icon>
-          <span class="nav-label">Units</span>
+          <span class="nav-label">Properties</span>
         </a>
         } @if (canManageTenants()) {
         <a
@@ -101,12 +109,24 @@
           class="nav-item"
           routerLink="/leases"
           routerLinkActive="nav-active"
+          [routerLinkActiveOptions]="{exact: true}"
           (click)="onNavigate()"
           [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Leases' : ''"
           matTooltipPosition="right"
         >
           <mat-icon class="nav-icon">assignment</mat-icon>
           <span class="nav-label">Leases</span>
+        </a>
+        <a
+          class="nav-item"
+          routerLink="/leases/due"
+          routerLinkActive="nav-active"
+          (click)="onNavigate()"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Due List' : ''"
+          matTooltipPosition="right"
+        >
+          <mat-icon class="nav-icon">account_balance_wallet</mat-icon>
+          <span class="nav-label">Due List</span>
         </a>
         } @if (canViewPayments()) {
         <a

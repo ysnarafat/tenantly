@@ -247,10 +247,14 @@ func (s *Server) setupRoutes() {
 				leases.PUT("/:id", middleware.RequireAdminOrPropertyManager(), leaseHandler.UpdateLease)
 				leases.DELETE("/:id", middleware.RequireAdmin(), leaseHandler.DeleteLease)
 				leases.POST("/:id/terminate", middleware.RequireAdminOrPropertyManager(), leaseHandler.TerminateLease)
-				
+
 				// Lease relationships
 				leases.GET("/unit/:unit_id", middleware.RequireAnyRole(), leaseHandler.GetLeasesByUnit)
 				leases.GET("/tenant/:tenant_id", middleware.RequireAnyRole(), leaseHandler.GetLeasesByTenant)
+
+				// Due list
+				leases.GET("/due", middleware.RequireAdminOrPropertyManagerOrAccountant(), leaseHandler.GetLeasesDue)
+				leases.GET("/due/summary", middleware.RequireAdminOrPropertyManagerOrAccountant(), leaseHandler.GetDueSummary)
 			}
 
 			payments := protected.Group("/payments")
