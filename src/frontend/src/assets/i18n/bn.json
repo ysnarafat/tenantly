@@ -1,0 +1,21 @@
+{
+  "DUE_LIST": {
+    "PAGE_TITLE": "ভাড়া বাকি তালিকা",
+    "REFRESH": "রিফ্রেশ",
+    "LOADING": "লোড হচ্ছে...",
+    "EMPTY_TITLE": "সবাই ভাড়া দিয়েছে ✓",
+    "EMPTY_DESCRIPTION": "এই মাসে কোনো বাকি ভাড়া নেই",
+    "TOTAL_DUE": "মোট বাকি টাকা",
+    "TENANTS_DUE": "বাকি ভাড়াদার",
+    "COLUMNS": {
+      "TENANT_NAME": "ভাড়াদারের নাম",
+      "PROPERTY": "সম্পত্তি",
+      "BUILDING": "ভবন",
+      "UNIT": "ইউনিট",
+      "MONTHLY_RENT": "মাসিক ভাড়া",
+      "DAYS_OVERDUE": "দিন বাকি"
+    },
+    "DAYS": "দিন",
+    "ERROR_LOADING": "ভাড়া তালিকা লোড করতে সমস্যা হয়েছে"
+  }
+}

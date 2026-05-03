@@ -15,6 +15,7 @@ import { AuthFacade } from './store/auth/auth.facade';
 import { PermissionService } from './core/services/permission.service';
 import { Permission } from './core/models/role.model';
 import { User } from './core/services/auth.service';
+import { LanguageService } from './core/services/language.service';
 import { OrganizationSelector } from './shared/organization-selector/organization-selector';
 
 const AVATAR_COLORS = [
@@ -52,6 +53,7 @@ export class App implements OnInit {
 
   public authFacade = inject(AuthFacade);
   public permissions = inject(PermissionService);
+  public languageService = inject(LanguageService);
   private breakpointObserver = inject(BreakpointObserver);
 
   isAuthenticated = signal(false);

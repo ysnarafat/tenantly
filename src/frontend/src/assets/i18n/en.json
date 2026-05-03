@@ -1,0 +1,21 @@
+{
+  "DUE_LIST": {
+    "PAGE_TITLE": "Rent Due List",
+    "REFRESH": "Refresh",
+    "LOADING": "Loading...",
+    "EMPTY_TITLE": "All paid ✓",
+    "EMPTY_DESCRIPTION": "No outstanding rent this month",
+    "TOTAL_DUE": "Total Due Amount",
+    "TENANTS_DUE": "Tenants Due",
+    "COLUMNS": {
+      "TENANT_NAME": "Tenant Name",
+      "PROPERTY": "Property",
+      "BUILDING": "Building",
+      "UNIT": "Unit",
+      "MONTHLY_RENT": "Monthly Rent",
+      "DAYS_OVERDUE": "Days Overdue"
+    },
+    "DAYS": "days",
+    "ERROR_LOADING": "Failed to load due list"
+  }
+}

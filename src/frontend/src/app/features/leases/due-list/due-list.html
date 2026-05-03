@@ -4,11 +4,11 @@
     <div class="header-content">
       <h1 class="page-title">
         <mat-icon class="title-icon">account_balance_wallet</mat-icon>
-        ভাড়া বাকি তালিকা
+        {{ 'DUE_LIST.PAGE_TITLE' | translate }}
       </h1>
       <button mat-button (click)="refresh()" class="refresh-btn">
         <mat-icon>refresh</mat-icon>
-        রিফ্রেশ
+        {{ 'DUE_LIST.REFRESH' | translate }}
       </button>
     </div>
   </div>
@@ -16,14 +16,14 @@
   <!-- Loading State -->
   <div *ngIf="loading()" class="loading-container">
     <mat-spinner diameter="50"></mat-spinner>
-    <p>লোড হচ্ছে...</p>
+    <p>{{ 'DUE_LIST.LOADING' | translate }}</p>
   </div>
 
   <!-- Empty State -->
   <div *ngIf="isEmpty()" class="empty-state">
     <mat-icon class="empty-icon">check_circle</mat-icon>
-    <h2 class="empty-title">সবাই ভাড়া দিয়েছে ✓</h2>
-    <p class="empty-description">এই মাসে কোনো বাকি ভাড়া নেই</p>
+    <h2 class="empty-title">{{ 'DUE_LIST.EMPTY_TITLE' | translate }}</h2>
+    <p class="empty-description">{{ 'DUE_LIST.EMPTY_DESCRIPTION' | translate }}</p>
   </div>
 
   <!-- Content Section -->
@@ -35,7 +35,7 @@
           <mat-icon>payments</mat-icon>
         </div>
         <div class="card-content">
-          <p class="card-label">মোট বাকি টাকা</p>
+          <p class="card-label">{{ 'DUE_LIST.TOTAL_DUE' | translate }}</p>
           <p class="card-value">{{ formatCurrency(summary()?.total_due_amount || 0) }}</p>
         </div>
       </div>
@@ -45,7 +45,7 @@
           <mat-icon>people</mat-icon>
         </div>
         <div class="card-content">
-          <p class="card-label">বাকি ভাড়াদার</p>
+          <p class="card-label">{{ 'DUE_LIST.TENANTS_DUE' | translate }}</p>
           <p class="card-value">{{ summary()?.total_tenants_due || 0 }}</p>
         </div>
       </div>
@@ -55,22 +55,28 @@
     <div class="table-section">
       <mat-card class="table-card">
         <mat-card-content>
-          <table mat-table [dataSource]="leases()" class="due-table">
+          <table mat-table [dataSource]="dataSource()" class="due-table">
             <!-- Tenant Name Column -->
             <ng-container matColumnDef="tenant_name">
-              <th mat-header-cell *matHeaderCellDef>ভাড়াদারের নাম</th>
+              <th mat-header-cell *matHeaderCellDef>
+                {{ 'DUE_LIST.COLUMNS.TENANT_NAME' | translate }}
+              </th>
               <td mat-cell *matCellDef="let element">{{ element.tenant_name }}</td>
             </ng-container>
 
             <!-- Property Column -->
             <ng-container matColumnDef="property_name">
-              <th mat-header-cell *matHeaderCellDef>সম্পত্তি</th>
+              <th mat-header-cell *matHeaderCellDef>
+                {{ 'DUE_LIST.COLUMNS.PROPERTY' | translate }}
+              </th>
               <td mat-cell *matCellDef="let element">{{ element.property_name }}</td>
             </ng-container>
 
             <!-- Building Column -->
             <ng-container matColumnDef="building_name">
-              <th mat-header-cell *matHeaderCellDef>ভবন</th>
+              <th mat-header-cell *matHeaderCellDef>
+                {{ 'DUE_LIST.COLUMNS.BUILDING' | translate }}
+              </th>
               <td mat-cell *matCellDef="let element">
                 <span class="building-info">
                   {{ element.building_name }}
@@ -81,7 +87,7 @@
 
             <!-- Unit Column -->
             <ng-container matColumnDef="unit_number">
-              <th mat-header-cell *matHeaderCellDef>ইউনিট</th>
+              <th mat-header-cell *matHeaderCellDef>{{ 'DUE_LIST.COLUMNS.UNIT' | translate }}</th>
               <td mat-cell *matCellDef="let element">
                 <span class="unit-info">
                   {{ element.unit_number }}
@@ -92,7 +98,9 @@
 
             <!-- Monthly Rent Column -->
             <ng-container matColumnDef="monthly_rent">
-              <th mat-header-cell *matHeaderCellDef class="amount-column">মাসিক ভাড়া</th>
+              <th mat-header-cell *matHeaderCellDef class="amount-column">
+                {{ 'DUE_LIST.COLUMNS.MONTHLY_RENT' | translate }}
+              </th>
               <td mat-cell *matCellDef="let element" class="amount-cell">
                 {{ formatCurrency(element.monthly_rent) }}
               </td>
@@ -100,11 +108,13 @@
 
             <!-- Days Overdue Column -->
             <ng-container matColumnDef="days_overdue">
-              <th mat-header-cell *matHeaderCellDef>দিন বাকি</th>
+              <th mat-header-cell *matHeaderCellDef>
+                {{ 'DUE_LIST.COLUMNS.DAYS_OVERDUE' | translate }}
+              </th>
               <td mat-cell *matCellDef="let element">
                 <mat-chip [ngClass]="'overdue-chip ' + getOverdueColor(element.days_overdue)">
                   <mat-icon class="chip-icon">{{ getOverdueIcon(element.days_overdue) }}</mat-icon>
-                  {{ element.days_overdue }} দিন
+                  {{ element.days_overdue }} {{ 'DUE_LIST.DAYS' | translate }}
                 </mat-chip>
               </td>
             </ng-container>

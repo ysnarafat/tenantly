@@ -10,6 +10,14 @@
     </div>
     <app-organization-selector></app-organization-selector>
     <span class="spacer"></span>
+    <button
+      mat-icon-button
+      (click)="languageService.toggle()"
+      class="language-toggle"
+      [matTooltip]="languageService.currentLang() === 'en' ? 'বাংলা' : 'English'"
+    >
+      <mat-icon>language</mat-icon>
+    </button>
     <div class="user-info">
       <div class="user-details">
         <span class="user-name">{{ user()?.username || 'User' }}</span>
