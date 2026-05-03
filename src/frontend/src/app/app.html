@@ -79,49 +79,13 @@
           routerLink="/properties"
           routerLinkActive="nav-active"
           (click)="onNavigate()"
-          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Units' : ''"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Properties' : ''"
           matTooltipPosition="right"
         >
           <mat-icon class="nav-icon">meeting_room</mat-icon>
-          <span class="nav-label">Units</span>
+          <span class="nav-label">Properties</span>
         </a>
         } @if (canManageTenants()) {
-        <a mat-list-item routerLink="/tenants" routerLinkActive="active" (click)="onNavigate()">
-          <mat-icon>people</mat-icon>
-          <span>Tenants</span>
-        </a>
-
-        <a mat-list-item routerLink="/leases" routerLinkActive="active" (click)="onNavigate()">
-          <mat-icon>assignment</mat-icon>
-          <span>Leases</span>
-        </a>
-
-        <a mat-list-item routerLink="/leases/due" routerLinkActive="active" (click)="onNavigate()">
-          <mat-icon>account_balance_wallet</mat-icon>
-          <span>Due List</span>
-        </a>
-        }
-
-        @if (canViewPayments()) {
-        <a mat-list-item routerLink="/payments" routerLinkActive="active" (click)="onNavigate()">
-          <mat-icon>payment</mat-icon>
-          <span>Payments</span>
-        </a>
-        } @if (canViewReports()) {
-        <a mat-list-item routerLink="/reports" routerLinkActive="active" (click)="onNavigate()">
-          <mat-icon>assessment</mat-icon>
-          <span>Reports</span>
-        </a>
-        }
-
-        @if (canManageDocuments()) {
-        <a mat-list-item routerLink="/documents" routerLinkActive="active" (click)="onNavigate()">
-          <mat-icon>folder</mat-icon>
-          <span>Documents</span>
-        </a>
-        } @if (canManageUsers() || isSuperAdmin() || isOrgAdmin()) {
-        <mat-divider></mat-divider>
-        } @if (canManageOrganizations()) {
         <a
           class="nav-item"
           routerLink="/tenants"
@@ -137,12 +101,24 @@
           class="nav-item"
           routerLink="/leases"
           routerLinkActive="nav-active"
+          [routerLinkActiveOptions]="{exact: true}"
           (click)="onNavigate()"
           [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Leases' : ''"
           matTooltipPosition="right"
         >
           <mat-icon class="nav-icon">assignment</mat-icon>
           <span class="nav-label">Leases</span>
+        </a>
+        <a
+          class="nav-item"
+          routerLink="/leases/due"
+          routerLinkActive="nav-active"
+          (click)="onNavigate()"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Due List' : ''"
+          matTooltipPosition="right"
+        >
+          <mat-icon class="nav-icon">account_balance_wallet</mat-icon>
+          <span class="nav-label">Due List</span>
         </a>
         } @if (canViewPayments()) {
         <a

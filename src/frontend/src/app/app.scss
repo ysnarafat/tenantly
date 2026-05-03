@@ -84,6 +84,7 @@ app-organization-selector {
 // Navigation list styling
 mat-nav-list {
   padding: 0;
+}
 
 .app-branding {
   display: flex;
@@ -168,19 +169,6 @@ mat-nav-list {
   user-select: none;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   flex-shrink: 0;
-}
-
-// ── Organization selector ─────────────────────────────────────────────────────
-app-organization-selector {
-  margin: 0 16px;
-  display: flex;
-  align-items: center;
-  @media (max-width: 768px) {
-    margin: 0 8px;
-    .org-name {
-      display: none !important;
-    }
-  }
 }
 
 // ── Nav list ──────────────────────────────────────────────────────────────────

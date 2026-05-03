@@ -51,7 +51,7 @@ export class DueList {
 
   loadDueList() {
     this.loading.set(true);
-    
+
     // Load both leases and summary in parallel
     Promise.all([
       this.leaseService.getLeasesDue().toPromise(),

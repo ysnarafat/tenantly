@@ -5,7 +5,8 @@
       "Bash(npm run *)",
       "Bash(npm run:*)",
       "Bash(git add *)",
-      "Bash(git rebase *)"
+      "Bash(git rebase *)",
+      "Bash(go build *)",
     ]
   }
 }

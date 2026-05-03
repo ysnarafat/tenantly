@@ -277,3 +277,20 @@ func (s *LeaseService) GetLeasesByTenant(tenantID int, page, pageSize, orgID int
 
 	return response, nil
 }
+// GetLeasesDue retrieves all leases with unpaid rent for the current month
+func (s *LeaseService) GetLeasesDue(orgID int) ([]models.LeaseDue, error) {
+	leasesDue, err := s.leaseRepo.GetLeasesDueForMonth(orgID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get leases due: %w", err)
+	}
+	return leasesDue, nil
+}
+
+// GetDueSummary retrieves summary statistics for unpaid rent
+func (s *LeaseService) GetDueSummary(orgID int) (*models.DueSummary, error) {
+	summary, err := s.leaseRepo.GetDueSummary(orgID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get due summary: %w", err)
+	}
+	return summary, nil
+}

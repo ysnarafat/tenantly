@@ -69,7 +69,6 @@ func (s *Server) setupRoutes() {
 	organizationRepo := repositories.NewOrganizationRepository(s.db)
 	userInvitationRepo := repositories.NewUserInvitationRepository(s.db)
 	userOrgRoleRepo := repositories.NewUserOrganizationRoleRepository(s.db)
-	leaseRepo := repositories.NewLeaseRepository(s.db)
 
 	// Initialize metadata validator
 	metadataValidator := services.NewBuildingMetadataValidator()
@@ -91,7 +90,6 @@ func (s *Server) setupRoutes() {
 	tenantHandler := handlers.NewTenantHandler(tenantService)
 	leaseHandler := handlers.NewLeaseHandler(leaseService)
 	organizationHandler := handlers.NewOrganizationHandler(organizationService)
-	leaseHandler := handlers.NewLeaseHandler(leaseService)
 
 	// Health check endpoint
 	s.router.GET("/health", func(c *gin.Context) {
@@ -249,15 +247,12 @@ func (s *Server) setupRoutes() {
 				leases.PUT("/:id", middleware.RequireAdminOrPropertyManager(), leaseHandler.UpdateLease)
 				leases.DELETE("/:id", middleware.RequireAdmin(), leaseHandler.DeleteLease)
 				leases.POST("/:id/terminate", middleware.RequireAdminOrPropertyManager(), leaseHandler.TerminateLease)
-				
+
 				// Lease relationships
 				leases.GET("/unit/:unit_id", middleware.RequireAnyRole(), leaseHandler.GetLeasesByUnit)
 				leases.GET("/tenant/:tenant_id", middleware.RequireAnyRole(), leaseHandler.GetLeasesByTenant)
-			}
 
-			leases := protected.Group("/leases")
-			leases.Use(middleware.RequireOrgContext())
-			{
+				// Due list
 				leases.GET("/due", middleware.RequireAdminOrPropertyManagerOrAccountant(), leaseHandler.GetLeasesDue)
 				leases.GET("/due/summary", middleware.RequireAdminOrPropertyManagerOrAccountant(), leaseHandler.GetDueSummary)
 			}
