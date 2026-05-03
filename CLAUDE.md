@@ -219,6 +219,80 @@ src/backend/notification-service/
 
 ---
 
+## 🌐 Internationalization (i18n)
+
+Frontend supports **English** and **Bangla** translations using **ngx-translate**.
+
+### Translation File Structure
+
+```
+src/frontend/src/assets/i18n/
+├── en.json       # English translations (235+ keys)
+└── bn.json       # Bangla translations (235+ keys, synchronized with en.json)
+```
+
+### Key Organization Pattern
+
+All keys use 3-level hierarchy: `NAMESPACE.SECTION.KEY`
+
+```json
+{
+  "COMMON": {
+    "BUTTONS": { "CANCEL": "Cancel", "SAVE": "Save", ... },
+    "ERRORS": { "REQUIRED": "Required", ... },
+    "ACTIONS": { "VIEW_DETAILS": "View Details", ... },
+    "PAGINATION": { "RESULT": "result", "RESULTS": "results" },
+    "EMPTY_STATE": { "TRY_ADJUST": "Try adjusting...", ... },
+    "STATUS": { "ACTIVE": "Active", ... }
+  },
+  "LEASE_LIST": { "PAGE_TITLE": "Lease Management", ... },
+  "CREATE_LEASE_DIALOG": { "TITLE": "Create New Lease", ... }
+}
+```
+
+### Using Translations in Templates
+
+```typescript
+// In component TypeScript with TranslateModule imported:
+import { TranslateModule } from '@ngx-translate/core';
+
+@Component({
+  imports: [TranslateModule],
+  template: `<h1>{{ 'LEASE_LIST.PAGE_TITLE' | translate }}</h1>`
+})
+```
+
+### Key Patterns
+
+- **COMMON namespace**: Shared UI vocabulary (buttons, errors, pagination) used across multiple features — eliminates ~40% duplication
+- **Feature namespaces**: Context-specific labels (e.g., `LEASE_LIST.TABLE.TENANT`, `TENANT_FORM_DIALOG.FIELDS.NAME`)
+- **Validation errors**: Form-specific error messages stay in feature scope (e.g., `BUILDING_FORM_DIALOG.ERRORS.PATTERN`)
+
+### Screens with Translations
+
+✓ Complete (all keys translated):
+- Dashboard
+- Lease List, Create/Edit Lease Dialog
+- Tenant List, Add Tenant Dialog
+- Property List, Create/Edit Property Dialog
+- Unit Form Dialog, Building Form Dialog
+- Due List
+
+❌ Incomplete (hardcoded text, needs translation):
+- Organization Management (admin feature) - 2 screens
+- User List (admin feature)
+- Attachment List
+- Payment List
+
+### Adding New Translations
+
+1. Add key to **both** `en.json` and `bn.json` (must be synchronized)
+2. Use in template: `{{ 'NAMESPACE.SECTION.KEY' | translate }}`
+3. Run `npm run build` to verify no missing key errors
+4. Test both languages: toggle in UI language switcher
+
+---
+
 ## 🎨 Frontend Styling & Theming
 
 ### Theme System
@@ -408,12 +482,21 @@ Helper scripts in `scripts/`:
 - **Go version**: Go 1.25+ required
 - **SCSS Build Size**: Feature-rich components may exceed default style budgets; update `angular.json` if needed
 - **Theme Persistence**: Stored in localStorage under `dashboard-theme` or `theme`
+- **Bundle Budget Warnings**: Production build shows 3 warnings (bundle +293.58kB, fonts +3.72kB, styles +1.12kB) — acceptable for current scope, monitor if adding large features
+- **Translation Key Sync**: Always keep en.json and bn.json synchronized (same number of keys, same structure). Build will pass without errors but missing Bangla keys fall back to English
+
+---
+
+## 📚 Frontend Documentation Files
+
+- `docs/I18N_ORGANIZATION.md` - Comprehensive i18n patterns, Approach A (COMMON namespace), future migration path to Approach B (feature-split files)
 
 ---
 
 ## 🔗 Related Documentation
 
 - **Angular Docs**: https://angular.io/docs
+- **ngx-translate**: https://github.com/ngx-translate/core
 - **Gin Web Framework**: https://github.com/gin-gonic/gin
 - **PostgreSQL**: https://www.postgresql.org/docs/
 - **Docker Compose**: https://docs.docker.com/compose/

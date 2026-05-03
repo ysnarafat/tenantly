@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, ViewChild, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, ViewChild, signal, computed, effect } from '@angular/core';
 
 import { RouterOutlet, RouterModule } from '@angular/router';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -134,6 +134,11 @@ export class App implements OnInit {
         this.isMobile.set(result.matches);
         if (result.matches) this.sidenavCollapsed.set(false);
       });
+
+    effect(() => {
+      const lang = this.languageService.currentLang();
+      document.documentElement.setAttribute('lang', lang);
+    });
   }
 
   ngOnInit() {

@@ -1,21 +1,21 @@
-<h2 mat-dialog-title>Create New Lease</h2>
+<h2 mat-dialog-title>{{ 'CREATE_LEASE_DIALOG.TITLE' | translate }}</h2>
 <mat-dialog-content class="dialog-content">
   <div *ngIf="loading" class="loading-container">
     <mat-spinner diameter="40"></mat-spinner>
-    <p>Loading data...</p>
+    <p>{{ 'CREATE_LEASE_DIALOG.LOADING' | translate }}</p>
   </div>
 
   <form [formGroup]="leaseForm" class="lease-form" *ngIf="!loading">
     <!-- Tenant Selection -->
     <mat-form-field appearance="outline">
-      <mat-label>Tenant</mat-label>
+      <mat-label>{{ 'CREATE_LEASE_DIALOG.FIELDS.TENANT' | translate }}</mat-label>
       <mat-select
         formControlName="tenant_id"
         [compareWith]="compareById"
         (openedChange)="onTenantSelectOpened()"
       >
         <mat-option *ngFor="let tenant of filteredTenants" [value]="tenant.id">
-          {{ tenant.name }} ({{ tenant.phone_number || 'No phone' }})
+          {{ tenant.name }} ({{ tenant.phone_number || ('CREATE_LEASE_DIALOG.ERRORS.NO_PHONE' | translate) }})
         </mat-option>
       </mat-select>
       <mat-error *ngIf="leaseForm.get('tenant_id')?.touched && leaseForm.get('tenant_id')?.invalid">
@@ -25,7 +25,7 @@
 
     <!-- Property Selection -->
     <mat-form-field appearance="outline">
-      <mat-label>Property</mat-label>
+      <mat-label>{{ 'CREATE_LEASE_DIALOG.FIELDS.PROPERTY' | translate }}</mat-label>
       <mat-select
         formControlName="property_id"
         [compareWith]="compareById"
@@ -44,7 +44,7 @@
 
     <!-- Building Selection -->
     <mat-form-field appearance="outline">
-      <mat-label>Building</mat-label>
+      <mat-label>{{ 'CREATE_LEASE_DIALOG.FIELDS.BUILDING' | translate }}</mat-label>
       <mat-select
         formControlName="building_id"
         [compareWith]="compareById"
@@ -63,7 +63,7 @@
 
     <!-- Unit Selection -->
     <mat-form-field appearance="outline">
-      <mat-label>Unit</mat-label>
+      <mat-label>{{ 'CREATE_LEASE_DIALOG.FIELDS.UNIT' | translate }}</mat-label>
       <mat-select formControlName="unit_id" [compareWith]="compareById">
         <mat-option *ngFor="let unit of units" [value]="unit.id">
           Unit {{ unit.unit_number }} - {{ unit.unit_type }}
@@ -76,7 +76,7 @@
 
     <!-- Lease Type -->
     <mat-form-field appearance="outline">
-      <mat-label>Lease Type</mat-label>
+      <mat-label>{{ 'CREATE_LEASE_DIALOG.FIELDS.LEASE_TYPE' | translate }}</mat-label>
       <mat-select formControlName="lease_type">
         <mat-option value="Residential">Residential</mat-option>
         <mat-option value="Commercial">Commercial</mat-option>
@@ -90,7 +90,7 @@
 
     <!-- Start Date -->
     <mat-form-field appearance="outline">
-      <mat-label>Start Date</mat-label>
+      <mat-label>{{ 'CREATE_LEASE_DIALOG.FIELDS.START_DATE' | translate }}</mat-label>
       <input matInput [matDatepicker]="startDate" formControlName="start_date" [min]="minDate" />
       <mat-datepicker-toggle matSuffix [for]="startDate"></mat-datepicker-toggle>
       <mat-datepicker #startDate></mat-datepicker>
@@ -103,7 +103,7 @@
 
     <!-- Duration -->
     <mat-form-field appearance="outline">
-      <mat-label>Duration (Months)</mat-label>
+      <mat-label>{{ 'CREATE_LEASE_DIALOG.FIELDS.DURATION_MONTHS' | translate }}</mat-label>
       <input matInput type="number" formControlName="duration_months" min="1" max="60" />
       <mat-error
         *ngIf="leaseForm.get('duration_months')?.touched && leaseForm.get('duration_months')?.invalid"
@@ -114,7 +114,7 @@
 
     <!-- Monthly Rent -->
     <mat-form-field appearance="outline">
-      <mat-label>Monthly Rent (BDT)</mat-label>
+      <mat-label>{{ 'CREATE_LEASE_DIALOG.FIELDS.MONTHLY_RENT' | translate }}</mat-label>
       <input matInput type="number" formControlName="monthly_rent" min="0" />
       <mat-error
         *ngIf="leaseForm.get('monthly_rent')?.touched && leaseForm.get('monthly_rent')?.invalid"
@@ -125,7 +125,7 @@
 
     <!-- Security Deposit (Optional) -->
     <mat-form-field appearance="outline">
-      <mat-label>Security Deposit (BDT) - Optional</mat-label>
+      <mat-label>{{ 'CREATE_LEASE_DIALOG.FIELDS.SECURITY_DEPOSIT' | translate }}</mat-label>
       <input matInput type="number" formControlName="security_deposit" min="0" />
       <mat-error
         *ngIf="leaseForm.get('security_deposit')?.touched && leaseForm.get('security_deposit')?.invalid"
@@ -136,12 +136,12 @@
 
     <!-- Calculated End Date -->
     <div class="end-date-info" *ngIf="calculateEndDate()">
-      <strong>End Date:</strong> {{ calculateEndDate() | date:'mediumDate' }}
+      <strong>{{ 'CREATE_LEASE_DIALOG.INFO.END_DATE' | translate }}</strong> {{ calculateEndDate() | date:'mediumDate' }}
     </div>
   </form>
 </mat-dialog-content>
 <mat-dialog-actions align="end">
-  <button mat-button type="button" (click)="onCancel()" [disabled]="submitLoading">Cancel</button>
+  <button mat-button type="button" (click)="onCancel()" [disabled]="submitLoading">{{ 'COMMON.BUTTONS.CANCEL' | translate }}</button>
   <button
     mat-raised-button
     color="primary"
@@ -149,10 +149,10 @@
     (click)="onSubmit()"
     [disabled]="submitLoading || leaseForm.invalid"
   >
-    <span *ngIf="!submitLoading">Create Lease</span>
+    <span *ngIf="!submitLoading">{{ 'CREATE_LEASE_DIALOG.BUTTONS.CREATE' | translate }}</span>
     <span *ngIf="submitLoading">
       <mat-spinner diameter="20"></mat-spinner>
-      Creating...
+      {{ 'CREATE_LEASE_DIALOG.BUTTONS.CREATING' | translate }}
     </span>
   </button>
 </mat-dialog-actions>

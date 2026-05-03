@@ -6,6 +6,7 @@ import { MatGridListModule } from '@angular/material/grid-list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
+import { TranslateModule } from '@ngx-translate/core';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { LeaseService, LeaseWithDetails } from '../../core/services/lease.service';
@@ -36,6 +37,7 @@ interface DashboardStats {
     MatIconModule,
     MatButtonModule,
     MatChipsModule,
+    TranslateModule,
   ],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.scss'],

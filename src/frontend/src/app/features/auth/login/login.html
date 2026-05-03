@@ -1,17 +1,17 @@
 <div class="login-container">
   <mat-card class="login-card">
     <mat-card-header>
-      <mat-card-title>Tenantly Login</mat-card-title>
+      <mat-card-title>{{ 'LOGIN.TITLE' | translate }}</mat-card-title>
     </mat-card-header>
     <mat-card-content>
       <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
         <mat-form-field appearance="outline" class="w-100">
-          <mat-label>Username</mat-label>
+          <mat-label>{{ 'LOGIN.FIELDS.USERNAME' | translate }}</mat-label>
           <input matInput formControlName="username" required />
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="w-100">
-          <mat-label>Password</mat-label>
+          <mat-label>{{ 'LOGIN.FIELDS.PASSWORD' | translate }}</mat-label>
           <input matInput type="password" formControlName="password" required />
         </mat-form-field>
 
@@ -24,7 +24,7 @@
         >
           @if (loading()) {
           <mat-spinner diameter="24"></mat-spinner>
-          } @else { Login }
+          } @else { {{ 'LOGIN.BUTTONS.LOGIN' | translate }} }
         </button>
       </form>
 

@@ -11,6 +11,7 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { TranslateModule } from '@ngx-translate/core';
 import { LeaseService, CreateLeaseRequest } from '../../../core/services/lease.service';
 import { PropertyService } from '../../../core/services/property.service';
 import { BuildingService } from '../../../core/services/building.service';
@@ -37,6 +38,7 @@ import { LeaseType } from '../../../core/models/lease.model';
     MatNativeDateModule,
     MatProgressSpinnerModule,
     ReactiveFormsModule,
+    TranslateModule,
   ],
   templateUrl: './create-lease-dialog.html',
   styleUrls: ['./create-lease-dialog.scss'],

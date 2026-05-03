@@ -9,6 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
+import { TranslateModule } from '@ngx-translate/core';
 import { Store } from '@ngrx/store';
 import { PropertyActions } from '../store/property.actions';
 import { BuildingActions } from '../store/building.actions';
@@ -55,6 +56,7 @@ interface BuildingWithUnits extends Building {
     MatExpansionModule,
     MatTooltipModule,
     PropertyCardComponent,
+    TranslateModule,
   ],
   templateUrl: './property-list.component.html',
   styleUrls: ['./property-list.component.scss'],

@@ -5,7 +5,7 @@
     <div class="form-grid">
       <!-- Name -->
       <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Full Name</mat-label>
+        <mat-label>{{ 'TENANT_FORM_DIALOG.FIELDS.NAME' | translate }}</mat-label>
         <input matInput formControlName="name" placeholder="Enter tenant name" />
         <mat-icon matPrefix>person</mat-icon>
         @if (tenantForm.get('name')?.invalid) {
@@ -16,7 +16,7 @@
       <div class="row">
         <!-- Tenant Type -->
         <mat-form-field appearance="outline">
-          <mat-label>Tenant Type</mat-label>
+          <mat-label>{{ 'TENANT_FORM_DIALOG.FIELDS.TENANT_TYPE' | translate }}</mat-label>
           <mat-select formControlName="tenant_type">
             @for (type of tenantTypes; track type) {
             <mat-option [value]="type">{{ type }}</mat-option>
@@ -29,7 +29,7 @@
 
         <!-- NID Number -->
         <mat-form-field appearance="outline">
-          <mat-label>NID / Registry No.</mat-label>
+          <mat-label>{{ 'TENANT_FORM_DIALOG.FIELDS.NID' | translate }}</mat-label>
           <input matInput formControlName="nid_number" placeholder="Enter NID" />
           <mat-icon matPrefix>badge</mat-icon>
           @if (tenantForm.get('nid_number')?.invalid) {
@@ -41,7 +41,7 @@
       <div class="row">
         <!-- Phone Number -->
         <mat-form-field appearance="outline">
-          <mat-label>Phone Number</mat-label>
+          <mat-label>{{ 'TENANT_FORM_DIALOG.FIELDS.PHONE' | translate }}</mat-label>
           <input matInput formControlName="phone_number" placeholder="Enter phone" />
           <mat-icon matPrefix>phone</mat-icon>
           @if (tenantForm.get('phone_number')?.invalid) {
@@ -53,7 +53,7 @@
       <div class="row">
         <!-- Email -->
         <mat-form-field appearance="outline">
-          <mat-label>Email Address</mat-label>
+          <mat-label>{{ 'TENANT_FORM_DIALOG.FIELDS.EMAIL' | translate }}</mat-label>
           <input matInput type="email" formControlName="email" placeholder="example@mail.com" />
           <mat-icon matPrefix>email</mat-icon>
           @if (tenantForm.get('email')?.invalid) {
@@ -64,7 +64,7 @@
 
       <!-- Address -->
       <mat-form-field appearance="outline" class="full-width">
-        <mat-label>Address</mat-label>
+        <mat-label>{{ 'TENANT_FORM_DIALOG.FIELDS.ADDRESS' | translate }}</mat-label>
         <textarea
           matInput
           formControlName="address"
@@ -81,12 +81,12 @@
 
   <mat-dialog-actions align="end">
     @if (!isViewMode) {
-    <button mat-button type="button" (click)="onCancel()">Cancel</button>
+    <button mat-button type="button" (click)="onCancel()">{{ 'COMMON.BUTTONS.CANCEL' | translate }}</button>
     <button mat-raised-button color="primary" type="submit" [disabled]="tenantForm.invalid">
-      {{ isEditMode ? 'Update' : 'Add' }} Tenant
+      {{ isEditMode ? ('TENANT_FORM_DIALOG.BUTTONS.UPDATE' | translate) : ('TENANT_FORM_DIALOG.BUTTONS.ADD' | translate) }}
     </button>
     } @else {
-    <button mat-raised-button color="primary" type="button" (click)="onCancel()">Close</button>
+    <button mat-raised-button color="primary" type="button" (click)="onCancel()">{{ 'COMMON.BUTTONS.CLOSE' | translate }}</button>
     }
   </mat-dialog-actions>
 </form>

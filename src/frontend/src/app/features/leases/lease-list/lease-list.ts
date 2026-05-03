@@ -14,6 +14,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { TranslateModule } from '@ngx-translate/core';
 import { LeaseService, LeaseWithDetails } from '../../../core/services/lease.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CreateLeaseDialog } from '../create-lease-dialog/create-lease-dialog';
@@ -36,6 +37,7 @@ import { EditLeaseDialog } from '../edit-lease-dialog/edit-lease-dialog';
     MatPaginatorModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
+    TranslateModule,
   ],
   templateUrl: './lease-list.html',
   styleUrls: ['./lease-list.scss'],
