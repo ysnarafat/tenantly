@@ -7,6 +7,10 @@
       "Bash(git add *)",
       "Bash(git rebase *)",
       "Bash(go build *)",
+      "Bash(go vet *)",
+      "Bash(go test *)",
+      "Bash(go tool *)",
+      "Bash(npx tsc *)"
     ]
   }
 }

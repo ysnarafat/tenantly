@@ -6,28 +6,27 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ysnarafat/tenantly/internal/database"
+	"github.com/ysnarafat/tenantly/internal/interfaces"
 	"github.com/ysnarafat/tenantly/internal/models"
-	"github.com/ysnarafat/tenantly/internal/repositories"
 )
 
 type OrganizationService struct {
-	orgRepo              *repositories.OrganizationRepository
-	userInvitationRepo   *repositories.UserInvitationRepository
-	auditService         *database.AuditService
+	orgRepo              interfaces.OrganizationRepositoryInterface
+	userInvitationRepo   interfaces.UserInvitationRepositoryInterface
+	auditService         interfaces.AuditServiceInterface
 	invitationExpiryDays int
 }
 
 func NewOrganizationService(
-	orgRepo *repositories.OrganizationRepository,
-	userInvitationRepo *repositories.UserInvitationRepository,
-	auditService *database.AuditService,
+	orgRepo interfaces.OrganizationRepositoryInterface,
+	userInvitationRepo interfaces.UserInvitationRepositoryInterface,
+	auditService interfaces.AuditServiceInterface,
 ) *OrganizationService {
 	return &OrganizationService{
 		orgRepo:              orgRepo,
 		userInvitationRepo:   userInvitationRepo,
 		auditService:         auditService,
-		invitationExpiryDays: 7, // 7 days expiry for invitations
+		invitationExpiryDays: 7,
 	}
 }
 

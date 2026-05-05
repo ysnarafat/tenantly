@@ -127,6 +127,23 @@ func (s *PaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequest,
 	return updatedPayment, nil
 }
 
+// GetPayments retrieves payments scoped only by the provided filters (no entity validation)
+func (s *PaymentService) GetPayments(page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+	offset := (page - 1) * pageSize
+
+	payments, total, err := s.paymentRepo.GetWithDetailsAndFilters(filters, pageSize, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get payments: %w", err)
+	}
+	return payments, total, nil
+}
+
 // GetPaymentsByBuilding retrieves payments for a specific building
 func (s *PaymentService) GetPaymentsByBuilding(buildingID int, page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error) {
 	// Validate building exists

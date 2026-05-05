@@ -34,14 +34,15 @@ type Payment struct {
 }
 
 type CreatePaymentRequest struct {
-	UnitID     int     `json:"unit_id" binding:"required"`
-	TenantID   int     `json:"tenant_id" binding:"required"`
-	BuildingID int     `json:"building_id" binding:"required"`
-	PropertyID int     `json:"property_id" binding:"required"`
-	Month      int     `json:"month" binding:"required,min=1,max=12"`
-	Year       int     `json:"year" binding:"required,min=2020"`
-	AmountDue  float64 `json:"amount_due" binding:"required,gt=0"`
-	DueDate    string  `json:"due_date" binding:"omitempty"`
+	UnitID         int     `json:"unit_id" binding:"required"`
+	TenantID       int     `json:"tenant_id" binding:"required"`
+	BuildingID     int     `json:"building_id" binding:"required"`
+	PropertyID     int     `json:"property_id" binding:"required"`
+	OrganizationID int     `json:"-"` // set from JWT context
+	Month          int     `json:"month" binding:"required,min=1,max=12"`
+	Year           int     `json:"year" binding:"required,min=2020"`
+	AmountDue      float64 `json:"amount_due" binding:"required,gt=0"`
+	DueDate        string  `json:"due_date" binding:"omitempty"`
 }
 
 type UpdatePaymentRequest struct {
@@ -61,6 +62,29 @@ type PaymentWithDetails struct {
 	UnitNumber   string `json:"unit_number" db:"unit_number"`
 	UnitType     string `json:"unit_type" db:"unit_type"`
 	TenantName   string `json:"tenant_name" db:"tenant_name"`
+}
+
+// PaymentListResponse is the paginated response for payment list endpoints
+type PaymentListResponse struct {
+	Payments   []*PaymentWithDetails `json:"payments"`
+	Total      int                   `json:"total"`
+	Page       int                   `json:"page"`
+	PageSize   int                   `json:"page_size"`
+	TotalPages int                   `json:"total_pages"`
+}
+
+// PaymentStats holds aggregate statistics for a set of payments
+type PaymentStats struct {
+	TotalRecords   int     `json:"total_records"`
+	TotalDue       float64 `json:"total_due"`
+	TotalPaid      float64 `json:"total_paid"`
+	TotalPending   float64 `json:"total_pending"`
+	TotalOverdue   float64 `json:"total_overdue"`
+	CollectionRate float64 `json:"collection_rate"`
+	PaidCount      int     `json:"paid_count"`
+	DueCount       int     `json:"due_count"`
+	PartialCount   int     `json:"partial_count"`
+	OverdueCount   int     `json:"overdue_count"`
 }
 
 // DashboardSummary represents aggregated payment statistics

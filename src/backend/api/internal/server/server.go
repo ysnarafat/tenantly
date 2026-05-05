@@ -65,6 +65,7 @@ func (s *Server) setupRoutes() {
 	buildingRepo := repositories.NewBuildingRepository(s.db)
 	unitRepo := repositories.NewUnitRepository(s.db)
 	tenantRepo := repositories.NewTenantRepository(s.db)
+	paymentRepo := repositories.NewPaymentRepository(s.db)
 	leaseRepo := repositories.NewLeaseRepository(s.db)
 	organizationRepo := repositories.NewOrganizationRepository(s.db)
 	userInvitationRepo := repositories.NewUserInvitationRepository(s.db)
@@ -81,7 +82,7 @@ func (s *Server) setupRoutes() {
 	unitService := services.NewUnitService(unitRepo, buildingRepo, propertyRepo, auditService)
 	tenantService := services.NewTenantService(tenantRepo, leaseRepo, auditService)
 	leaseService := services.NewLeaseService(leaseRepo, tenantRepo, unitRepo, auditService)
-
+	paymentService := services.NewPaymentService(paymentRepo, unitRepo, buildingRepo, propertyRepo, auditService)
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService)
 	propertyHandler := handlers.NewPropertyHandler(propertyService)
@@ -89,6 +90,7 @@ func (s *Server) setupRoutes() {
 	unitHandler := handlers.NewUnitHandler(unitService)
 	tenantHandler := handlers.NewTenantHandler(tenantService)
 	leaseHandler := handlers.NewLeaseHandler(leaseService)
+	paymentHandler := handlers.NewPaymentHandler(paymentService)
 	organizationHandler := handlers.NewOrganizationHandler(organizationService)
 
 	// Health check endpoint
@@ -258,16 +260,20 @@ func (s *Server) setupRoutes() {
 			}
 
 			payments := protected.Group("/payments")
+			payments.Use(middleware.RequireOrgContext())
 			{
-				payments.GET("", s.handlePlaceholder("Get payments"))
-				payments.POST("", s.handlePlaceholder("Create payment"))
-				payments.GET("/:id", s.handlePlaceholder("Get payment"))
-				payments.PUT("/:id", s.handlePlaceholder("Update payment"))
+				payments.GET("", middleware.RequireAnyRole(), paymentHandler.GetPayments)
+				payments.POST("", middleware.RequireAdminOrPropertyManager(), paymentHandler.CreatePayment)
+				payments.POST("/bulk", middleware.RequireAdminOrPropertyManager(), paymentHandler.BulkCreatePayments)
+				payments.GET("/:id", middleware.RequireAnyRole(), paymentHandler.GetPayment)
+				payments.PUT("/:id", middleware.RequireAdminOrPropertyManager(), paymentHandler.UpdatePayment)
+				payments.GET("/building/:building_id/report", middleware.RequireAnyRole(), paymentHandler.GetBuildingPaymentReport)
+				payments.GET("/property/:property_id/report", middleware.RequireAnyRole(), paymentHandler.GetPropertyPaymentReport)
 			}
 
 			dashboard := protected.Group("/dashboard")
 			{
-				dashboard.GET("/summary", s.handlePlaceholder("Dashboard summary"))
+				dashboard.GET("/summary", middleware.RequireAnyRole(), paymentHandler.GetDashboardSummary)
 			}
 
 			reports := protected.Group("/reports")

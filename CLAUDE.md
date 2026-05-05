@@ -47,8 +47,10 @@ go run cmd/migrate/main.go down    # Rollback last migration
 go run cmd/migrate/main.go version # Show current version
 
 # Testing
-go test -v ./internal/...  # All tests
-go test -v ./internal/repositories/...  # Specific package
+go test -v ./internal/...                                        # All tests
+go test -v ./internal/repositories/...                          # Specific package
+go test -v -run TestPaymentHandler_Create ./internal/handlers/  # Single test by name
+go test -v -count=1 ./internal/...                              # Force re-run (bypass cache)
 
 # Building
 go build -o ./tmp/main ./cmd/server
@@ -63,8 +65,8 @@ go build -o ./tmp/main ./cmd/server
 npm ci  # Use npm ci instead of npm install for CI environments
 
 # Development
-npm start:local       # localhost:4200
-npm start:network     # 0.0.0.0:4200 (accessible on network)
+npm run start:local       # localhost:4200
+npm run start:network     # 0.0.0.0:4200 (accessible on network)
 
 # Building
 npm run build
@@ -193,6 +195,7 @@ src/backend/notification-service/
   go run cmd/migrate/main.go up   # Apply pending migrations
   ```
   Migrations also run automatically on server startup.
+- **Creating migrations**: Add files as `migrations/NNNNNN_description.up.sql` and `migrations/NNNNNN_description.down.sql`, where `NNNNNN` is the next sequential number (zero-padded to 6 digits, e.g. `000010`).
 
 ---
 
@@ -211,11 +214,14 @@ src/backend/notification-service/
 - HTTP interceptor attaches token to requests
 - Auth guard protects routes
 
-**Roles & Multi-Tenancy** (3-level):
-- `Admin` - Full access, org-wide administration
-- `PropertyManager` - Property-level ops, building/unit management
+**Current Roles & Multi-Tenancy** (5-level hierarchy):
+- `SUPER_ADMIN` - Platform level, manages organizations
+- `ORG_ADMIN` - Organization level, manages org users
+- `Admin` - Organization data management
+- `PropertyManager` - Property-level operations, building/unit management
 - `Accountant` - Read-only financial access
-- Multi-tenancy fully implemented with org management and admin hierarchy
+
+Role constants live in `internal/middleware/auth.go`. Middleware helpers: `RequireSuperAdmin()`, `RequireOrgAdmin()`, `RequireAdmin()`, `RequireAnyRole()`.
 
 ---
 

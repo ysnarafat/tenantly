@@ -197,7 +197,7 @@ describe('UserInvitationService', () => {
 
   describe('revokeInvitation', () => {
     it('should revoke an invitation', () => {
-      service.revokeInvitation(1).subscribe();
+      service.revokeInvitation(1, 1).subscribe();
 
       const req = httpMock.expectOne(`${invitationsUrl}/1`);
       expect(req.request.method).toBe('DELETE');
@@ -205,7 +205,7 @@ describe('UserInvitationService', () => {
     });
 
     it('should handle revoking non-existent invitation', () => {
-      service.revokeInvitation(999).subscribe(
+      service.revokeInvitation(999, 1).subscribe(
         () => fail('should have failed'),
         (error) => {
           expect(error.status).toBe(404);
@@ -217,7 +217,7 @@ describe('UserInvitationService', () => {
     });
 
     it('should handle revoking already accepted invitation', () => {
-      service.revokeInvitation(1).subscribe(
+      service.revokeInvitation(1, 1).subscribe(
         () => fail('should have failed'),
         (error) => {
           expect(error.status).toBe(400);

@@ -1,3 +1,332 @@
+:root,
+[data-theme='light'] {
+  --bg-primary: #ffffff;
+  --bg-surface: #f5f7fa;
+  --text-primary: #1a1a1a;
+  --text-secondary: #666;
+  --border-color: #e0e0e0;
+  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.08);
+  --color-primary: #1e88e5;
+  --color-paid: #4caf50;
+  --color-due: #90a4ae;
+  --color-partial: #ff9800;
+  --color-overdue: #f44336;
+  --color-paid-bg: #e8f5e9;
+  --color-due-bg: #eceff1;
+  --color-partial-bg: #fff3e0;
+  --color-overdue-bg: #ffebee;
+}
+
+[data-theme='dark'] {
+  --bg-primary: #1e1e1e;
+  --bg-surface: #2a2a2a;
+  --text-primary: #e0e0e0;
+  --text-secondary: #aaa;
+  --border-color: #333;
+  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.4);
+  --color-primary: #64b5f6;
+  --color-paid: #81c784;
+  --color-due: #90a4ae;
+  --color-partial: #ffb74d;
+  --color-overdue: #ef9a9a;
+  --color-paid-bg: #1b3a1e;
+  --color-due-bg: #263238;
+  --color-partial-bg: #3e2800;
+  --color-overdue-bg: #3b1010;
+}
+
 .payment-list-container {
-  padding: 20px;
+  padding: 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+  background-color: var(--bg-surface);
+  min-height: 100vh;
+}
+
+// ── Summary row ──────────────────────────────────────────────────────────────
+.summary-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 1024px) {
+  .summary-row { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .summary-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+// Icon avatar colors — use theme vars so dark mode works
+.icon-due     { background: var(--color-due-bg)     !important; color: var(--color-due)     !important; }
+.icon-paid    { background: var(--color-paid-bg)    !important; color: var(--color-paid)    !important; }
+.icon-partial { background: var(--color-partial-bg) !important; color: var(--color-partial) !important; }
+.icon-overdue { background: var(--color-overdue-bg) !important; color: var(--color-overdue) !important; }
+.icon-primary { background: #e3f2fd               !important; color: var(--color-primary) !important; }
+
+// ── Toolbar ──────────────────────────────────────────────────────────────────
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+// ── Filters ──────────────────────────────────────────────────────────────────
+.filter-card {
+  margin-bottom: 16px;
+  background: var(--bg-primary) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.filter-field {
+  min-width: 160px;
+  flex: 1;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 1.34375em;
+}
+
+// ── Table ─────────────────────────────────────────────────────────────────────
+.table-container {
+  position: relative;
+  overflow-x: auto;
+  min-height: 200px;
+}
+
+.payment-table {
+  width: 100%;
+}
+
+.payment-table th {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.payment-table td {
+  color: var(--text-primary);
+}
+
+.cell-primary {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.cell-secondary {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.amount-cell {
+  font-family: 'Roboto Mono', monospace;
+  text-align: right;
+  font-size: 14px;
+}
+
+// ── Status chips — styled via M3 component tokens ─────────────────────────────
+.mat-mdc-chip.status-paid {
+  --mdc-chip-elevated-container-color: var(--color-paid-bg);
+  --mdc-chip-label-text-color: var(--color-paid);
+}
+.mat-mdc-chip.status-due {
+  --mdc-chip-elevated-container-color: var(--color-due-bg);
+  --mdc-chip-label-text-color: var(--color-due);
+}
+.mat-mdc-chip.status-partial {
+  --mdc-chip-elevated-container-color: var(--color-partial-bg);
+  --mdc-chip-label-text-color: var(--color-partial);
+}
+.mat-mdc-chip.status-overdue {
+  --mdc-chip-elevated-container-color: var(--color-overdue-bg);
+  --mdc-chip-label-text-color: var(--color-overdue);
+}
+
+// ── Loading ───────────────────────────────────────────────────────────────────
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.6);
+  z-index: 10;
+}
+
+.no-data {
+  text-align: center;
+  padding: 48px;
+  color: var(--text-secondary);
+}
+
+// ── Mobile payment cards (hidden on desktop) ──────────────────────────────────
+.mobile-payment-list {
+  display: none;
+}
+
+// ── Responsive ────────────────────────────────────────────────────────────────
+@media (max-width: 768px) {
+  .payment-list-container {
+    padding: 12px;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  .toolbar {
+    gap: 10px;
+  }
+
+  .filter-field {
+    min-width: 0;
+    width: 100%;
+    flex: 1 1 140px;
+  }
+
+  .filter-actions {
+    width: 100%;
+    padding-bottom: 0;
+  }
+
+  .filter-actions button {
+    flex: 1;
+  }
+
+  // Hide desktop table, show mobile cards
+  .table-container {
+    display: none;
+  }
+
+  .mobile-payment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .mobile-payment-card {
+    background: var(--bg-primary);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+
+  .mobile-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 14px 16px 10px;
+    gap: 8px;
+  }
+
+  .mobile-card-tenant {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mobile-card-body {
+    padding: 0 16px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 10px;
+  }
+
+  .mobile-card-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+  }
+
+  .mobile-card-label {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .mobile-card-value {
+    color: var(--text-primary);
+    font-size: 13px;
+    text-align: right;
+  }
+
+  .mobile-card-amounts {
+    display: flex;
+    gap: 0;
+    margin-top: 4px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 8px;
+  }
+
+  .mobile-amount-block {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+
+    &:first-child {
+      border-right: 1px solid var(--border-color);
+    }
+  }
+
+  .mobile-amount-value {
+    font-family: 'Roboto Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+
+    &.paid {
+      color: var(--color-paid);
+    }
+  }
+
+  .mobile-card-footer {
+    padding: 8px 16px 12px;
+    display: flex;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  .summary-value {
+    font-size: 18px;
+  }
+
+  .summary-card {
+    padding: 14px 10px;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toolbar button {
+    width: 100%;
+  }
 }

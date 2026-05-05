@@ -49,6 +49,14 @@ export interface UpdatePaymentRequest {
   receipt_number?: string;
 }
 
+export interface PaymentListResponse {
+  payments: PaymentWithDetails[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
 export interface DashboardSummary {
   total_due: number;
   total_paid: number;
