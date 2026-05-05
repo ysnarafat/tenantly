@@ -8,13 +8,14 @@ import { provideStoreDevtools } from '@ngrx/store-devtools';
 
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
+import { slowRequestInterceptor } from './core/interceptors/slow-request.interceptor';
 import { reducers, metaReducers } from './store';
 import { AuthEffects } from './store/auth/auth.effects';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, slowRequestInterceptor])),
     importProvidersFrom(MatSnackBarModule),
     provideStore(reducers, {
       metaReducers,
