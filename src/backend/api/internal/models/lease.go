@@ -47,6 +47,8 @@ type UpdateLeaseRequest struct {
 
 type LeaseWithDetails struct {
 	Lease
+	BuildingID    int    `json:"building_id" db:"building_id"`
+	PropertyID    int    `json:"property_id" db:"property_id"`
 	PropertyName  string `json:"property_name" db:"property_name"`
 	BuildingName  string `json:"building_name" db:"building_name"`
 	BuildingCode  string `json:"building_code" db:"building_code"`

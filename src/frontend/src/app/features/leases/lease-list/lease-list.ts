@@ -9,7 +9,8 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
-import { LeaseService, LeaseWithDetails } from '../../../core/services/lease.service';
+import { LeaseService } from '../../../core/services/lease.service';
+import { LeaseWithDetails } from '../../../core/models/lease.model';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -35,8 +36,8 @@ export class LeaseList implements OnInit {
 
   leases: LeaseWithDetails[] = [];
   displayedColumns: string[] = [
-    'shop_number',
-    'shop_name',
+    'unit_number',
+    'building_name',
     'tenant_name',
     'monthly_rent',
     'start_date',
@@ -52,7 +53,7 @@ export class LeaseList implements OnInit {
 
   loadLeases() {
     this.loading = true;
-    this.leaseService.getAllLeases().subscribe({
+    this.leaseService.getActiveLeases().subscribe({
       next: (leases) => {
         this.leases = leases;
         this.loading = false;
@@ -108,18 +109,9 @@ export class LeaseList implements OnInit {
   }
 
   deleteLease(lease: LeaseWithDetails) {
-    if (confirm(`Are you sure you want to delete the lease for ${lease.shop_name}?`)) {
-      this.leaseService.deleteLease(lease.id).subscribe({
-        next: () => {
-          this.snackBar.open('Lease deleted successfully', 'Close', { duration: 3000 });
-          this.loadLeases();
-        },
-        error: (error) => {
-          console.error('Error deleting lease:', error);
-          this.snackBar.open('Error deleting lease', 'Close', { duration: 3000 });
-        },
-      });
-    }
+    this.snackBar.open(`Delete lease for ${lease.tenant_name} — not yet implemented`, 'Close', {
+      duration: 3000,
+    });
   }
 
   viewDetails(lease: LeaseWithDetails): void {

@@ -13,16 +13,16 @@
     <mat-card-content>
       <div class="table-container">
         <table mat-table [dataSource]="leases" class="lease-table">
-          <!-- Shop Number Column -->
-          <ng-container matColumnDef="shop_number">
-            <th mat-header-cell *matHeaderCellDef>Shop #</th>
-            <td mat-cell *matCellDef="let lease">{{ lease.shop_number }}</td>
+          <!-- Unit Number Column -->
+          <ng-container matColumnDef="unit_number">
+            <th mat-header-cell *matHeaderCellDef>Unit</th>
+            <td mat-cell *matCellDef="let lease">{{ lease.unit_number }}</td>
           </ng-container>
 
-          <!-- Shop Name Column -->
-          <ng-container matColumnDef="shop_name">
-            <th mat-header-cell *matHeaderCellDef>Shop Name</th>
-            <td mat-cell *matCellDef="let lease">{{ lease.shop_name }}</td>
+          <!-- Building Column -->
+          <ng-container matColumnDef="building_name">
+            <th mat-header-cell *matHeaderCellDef>Building</th>
+            <td mat-cell *matCellDef="let lease">{{ lease.building_name }}</td>
           </ng-container>
 
           <!-- Tenant Name Column -->

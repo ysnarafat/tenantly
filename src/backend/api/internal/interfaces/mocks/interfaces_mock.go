@@ -44,8 +44,8 @@ func (m *TenantRepositoryInterface) GetByUnitID(unitID int) (*models.Tenant, err
 	return args.Get(0).(*models.Tenant), args.Error(1)
 }
 
-func (m *TenantRepositoryInterface) GetAll(page, pageSize int) ([]*models.Tenant, int, error) {
-	args := m.Called(page, pageSize)
+func (m *TenantRepositoryInterface) GetAll(page, pageSize, orgID int) ([]*models.Tenant, int, error) {
+	args := m.Called(page, pageSize, orgID)
 	if args.Get(0) == nil {
 		return nil, args.Int(1), args.Error(2)
 	}

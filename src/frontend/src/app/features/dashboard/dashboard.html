@@ -106,7 +106,7 @@
           @for (lease of expiringLeases; track lease) {
           <div class="lease-item">
             <div class="lease-info">
-              <div class="shop-name">{{ lease.shop_name }} ({{ lease.shop_number }})</div>
+              <div class="shop-name">{{ lease.unit_number }} ({{ lease.building_code }})</div>
               <div class="tenant-name">{{ lease.tenant_name }}</div>
             </div>
             <div class="lease-status">
@@ -134,7 +134,7 @@
           @for (lease of recentLeases; track lease) {
           <div class="lease-item">
             <div class="lease-info">
-              <div class="shop-name">{{ lease.shop_name }} ({{ lease.shop_number }})</div>
+              <div class="shop-name">{{ lease.unit_number }} ({{ lease.building_code }})</div>
               <div class="tenant-name">{{ lease.tenant_name }}</div>
             </div>
             <div class="lease-rent">{{ formatCurrency(lease.monthly_rent) }}/month</div>

@@ -268,6 +268,7 @@ type PaymentServiceInterface interface {
 	CreatePayment(req *models.CreatePaymentRequest, userID int) (*models.Payment, error)
 	GetPayment(id int) (*models.PaymentWithDetails, error)
 	UpdatePayment(id int, req *models.UpdatePaymentRequest, userID int) (*models.Payment, error)
+	GetPayments(page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
 	GetPaymentsByBuilding(buildingID int, page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
 	GetPaymentsByProperty(propertyID int, page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
 	GenerateBuildingPaymentReport(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error)

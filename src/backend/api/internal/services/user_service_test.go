@@ -52,6 +52,14 @@ func (m *MockUserRepository) GetAll(activeOnly bool) ([]*models.User, error) {
 	return args.Get(0).([]*models.User), args.Error(1)
 }
 
+func (m *MockUserRepository) GetByOrganizationID(orgID int, activeOnly bool) ([]*models.User, error) {
+	args := m.Called(orgID, activeOnly)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*models.User), args.Error(1)
+}
+
 func (m *MockUserRepository) Update(id int, updates map[string]interface{}) error {
 	args := m.Called(id, updates)
 	return args.Error(0)

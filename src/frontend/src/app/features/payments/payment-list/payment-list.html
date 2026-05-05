@@ -1,8 +1,182 @@
 <div class="payment-list-container">
-  <h1>Payment Management</h1>
-  <mat-card>
+
+  <!-- Summary cards -->
+  @if (summary()) {
+    <div class="summary-row">
+      <div class="summary-card summary-due">
+        <span class="summary-label">Total Due</span>
+        <span class="summary-value">৳{{ summary()!.total_due | number:'1.0-0' }}</span>
+      </div>
+      <div class="summary-card summary-paid">
+        <span class="summary-label">Total Collected</span>
+        <span class="summary-value">৳{{ summary()!.total_paid | number:'1.0-0' }}</span>
+      </div>
+      <div class="summary-card summary-pending">
+        <span class="summary-label">Pending</span>
+        <span class="summary-value">৳{{ summary()!.total_pending | number:'1.0-0' }}</span>
+      </div>
+      <div class="summary-card summary-overdue">
+        <span class="summary-label">Overdue</span>
+        <span class="summary-value">৳{{ summary()!.total_overdue | number:'1.0-0' }}</span>
+      </div>
+      <div class="summary-card summary-rate">
+        <span class="summary-label">Collection Rate</span>
+        <span class="summary-value" [style.color]="collectionRateColor(summary()!.collection_rate)">
+          {{ summary()!.collection_rate | number:'1.1-1' }}%
+        </span>
+      </div>
+    </div>
+  }
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <h1 class="page-title">Payments</h1>
+    <button mat-raised-button color="primary" (click)="openCreateDialog()">
+      <mat-icon>add</mat-icon> New Payment
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <mat-card class="filter-card">
     <mat-card-content>
-      <p>Payment management functionality will be implemented in later tasks</p>
+      <div class="filter-row">
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Status</mat-label>
+          <mat-select [(ngModel)]="filterStatus">
+            <mat-option value="">All</mat-option>
+            @for (s of statuses; track s) {
+              <mat-option [value]="s">{{ s }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Month</mat-label>
+          <mat-select [(ngModel)]="filterMonth">
+            <mat-option value="">All</mat-option>
+            @for (m of months; track m.value) {
+              <mat-option [value]="m.value">{{ m.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Year</mat-label>
+          <mat-select [(ngModel)]="filterYear">
+            @for (y of years; track y) {
+              <mat-option [value]="y">{{ y }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <div class="filter-actions">
+          <button mat-raised-button color="primary" (click)="applyFilters()">
+            <mat-icon>search</mat-icon> Apply
+          </button>
+          <button mat-stroked-button (click)="clearFilters()">
+            <mat-icon>clear</mat-icon> Clear
+          </button>
+        </div>
+      </div>
     </mat-card-content>
   </mat-card>
+
+  <!-- Table -->
+  <mat-card>
+    <mat-card-content>
+      @if (loading()) {
+        <div class="loading-overlay">
+          <mat-spinner diameter="48"></mat-spinner>
+        </div>
+      }
+
+      <div class="table-container">
+        <table mat-table [dataSource]="payments()" class="payment-table">
+
+          <!-- Tenant column -->
+          <ng-container matColumnDef="tenant">
+            <th mat-header-cell *matHeaderCellDef>Tenant / Unit</th>
+            <td mat-cell *matCellDef="let p">
+              <div class="cell-primary">{{ p.tenant_name || '—' }}</div>
+              <div class="cell-secondary">{{ p.unit_number }} · {{ p.building_name }}</div>
+            </td>
+          </ng-container>
+
+          <!-- Unit column -->
+          <ng-container matColumnDef="unit">
+            <th mat-header-cell *matHeaderCellDef>Property</th>
+            <td mat-cell *matCellDef="let p">
+              <div class="cell-primary">{{ p.property_name || '—' }}</div>
+              <div class="cell-secondary">{{ p.building_code }}</div>
+            </td>
+          </ng-container>
+
+          <!-- Period column -->
+          <ng-container matColumnDef="period">
+            <th mat-header-cell *matHeaderCellDef>Period</th>
+            <td mat-cell *matCellDef="let p">
+              {{ monthName(p.month) }} {{ p.year }}
+            </td>
+          </ng-container>
+
+          <!-- Amount Due column -->
+          <ng-container matColumnDef="amount_due">
+            <th mat-header-cell *matHeaderCellDef>Due (৳)</th>
+            <td mat-cell *matCellDef="let p" class="amount-cell">
+              {{ p.amount_due | number:'1.2-2' }}
+            </td>
+          </ng-container>
+
+          <!-- Amount Paid column -->
+          <ng-container matColumnDef="amount_paid">
+            <th mat-header-cell *matHeaderCellDef>Paid (৳)</th>
+            <td mat-cell *matCellDef="let p" class="amount-cell">
+              {{ p.amount_paid | number:'1.2-2' }}
+            </td>
+          </ng-container>
+
+          <!-- Status column -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let p">
+              <span class="status-badge" [ngClass]="getStatusClass(p.status)">
+                {{ p.status }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Actions column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let p">
+              <button mat-icon-button
+                      title="Update payment"
+                      (click)="openUpdateDialog(p)">
+                <mat-icon>edit</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+          <tr class="mat-row" *matNoDataRow>
+            <td class="mat-cell no-data" [attr.colspan]="displayedColumns.length">
+              No payments found
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <mat-paginator
+        [length]="total()"
+        [pageSize]="pageSize()"
+        [pageSizeOptions]="[10, 20, 50, 100]"
+        [pageIndex]="page() - 1"
+        (page)="onPageChange($event)"
+        aria-label="Select page"
+      ></mat-paginator>
+    </mat-card-content>
+  </mat-card>
+
 </div>

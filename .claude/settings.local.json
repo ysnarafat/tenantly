@@ -3,7 +3,12 @@
     "allow": [
       "Bash(npm test:*)",
       "Bash(npm run *)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(go build *)",
+      "Bash(go vet *)",
+      "Bash(go test *)",
+      "Bash(go tool *)",
+      "Bash(npx tsc *)"
     ]
   }
 }

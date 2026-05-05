@@ -16,6 +16,8 @@ export interface Lease {
 }
 
 export interface LeaseWithDetails extends Lease {
+  building_id: number;
+  property_id: number;
   property_name: string;
   building_name: string;
   building_code: string;

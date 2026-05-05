@@ -8,7 +8,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
-import { LeaseService, LeaseWithDetails } from '../../core/services/lease.service';
+import { LeaseService } from '../../core/services/lease.service';
+import { LeaseWithDetails } from '../../core/models/lease.model';
 import { AttachmentService, Attachment } from '../../core/services/attachment.service';
 import { AuthService } from '../../core/services/auth.service';
 import { AppState } from '../../store';
@@ -78,23 +79,16 @@ export class Dashboard implements OnInit {
     this.loading = true;
 
     // Load leases data
-    this.leaseService.getAllLeases().subscribe({
+    this.leaseService.getActiveLeases().subscribe({
       next: (leases) => {
         this.processLeaseData(leases);
         this.recentLeases = leases
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
           .slice(0, 5);
+        this.expiringLeases = leases.filter((l) => l.days_remaining <= 30 && l.days_remaining > 0).slice(0, 5);
+        this.stats.expiringLeases = leases.filter((l) => l.days_remaining <= 30 && l.days_remaining > 0).length;
       },
       error: (error) => console.error('Error loading leases:', error),
-    });
-
-    // Load expiring leases
-    this.leaseService.getExpiringLeases(30).subscribe({
-      next: (leases) => {
-        this.expiringLeases = leases.slice(0, 5);
-        this.stats.expiringLeases = leases.length;
-      },
-      error: (error) => console.error('Error loading expiring leases:', error),
     });
 
     // Load attachments data

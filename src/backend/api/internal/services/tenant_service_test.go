@@ -102,9 +102,9 @@ func TestTenantService_GetAllTenants(t *testing.T) {
 		}
 		totalCount := 2
 
-		mockRepo.On("GetAll", 1, 10).Return(tenants, totalCount, nil).Once()
+		mockRepo.On("GetAll", 1, 10, 0).Return(tenants, totalCount, nil).Once()
 
-		resp, err := service.GetAllTenants(1, 10)
+		resp, err := service.GetAllTenants(1, 10, 0)
 
 		assert.NoError(t, err)
 		assert.NotNil(t, resp)
@@ -114,9 +114,9 @@ func TestTenantService_GetAllTenants(t *testing.T) {
 	})
 
 	t.Run("repo error", func(t *testing.T) {
-		mockRepo.On("GetAll", 1, 10).Return([]*models.Tenant{}, 0, fmt.Errorf("db error")).Once()
+		mockRepo.On("GetAll", 1, 10, 0).Return([]*models.Tenant{}, 0, fmt.Errorf("db error")).Once()
 
-		resp, err := service.GetAllTenants(1, 10)
+		resp, err := service.GetAllTenants(1, 10, 0)
 
 		assert.Error(t, err)
 		assert.Nil(t, resp)
