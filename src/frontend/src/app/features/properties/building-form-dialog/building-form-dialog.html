@@ -1,6 +1,7 @@
 <h2 mat-dialog-title>
   <mat-icon>{{ isEditMode ? 'edit' : 'add_business' }}</mat-icon>
-  {{ dialogTitle }}
+  {{ (isEditMode ? 'BUILDING_FORM_DIALOG.TITLE_EDIT' : 'BUILDING_FORM_DIALOG.TITLE_CREATE') |
+  translate }}
 </h2>
 
 <mat-dialog-content>
@@ -11,24 +12,34 @@
 
   <form [formGroup]="buildingForm" class="building-form">
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Building Name</mat-label>
-      <input matInput formControlName="building_name" placeholder="e.g., Tower A" required />
+      <mat-label>{{ 'BUILDING_FORM_DIALOG.FIELDS.BUILDING_NAME' | translate }}</mat-label>
+      <input
+        matInput
+        formControlName="building_name"
+        [placeholder]="'BUILDING_FORM_DIALOG.PLACEHOLDERS.BUILDING_NAME' | translate"
+        required
+      />
       <mat-icon matPrefix>apartment</mat-icon>
       <mat-error>{{ getErrorMessage('building_name') }}</mat-error>
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Building Code</mat-label>
-      <input matInput formControlName="building_code" placeholder="e.g., BLD-001" required />
+      <mat-label>{{ 'BUILDING_FORM_DIALOG.FIELDS.BUILDING_CODE' | translate }}</mat-label>
+      <input
+        matInput
+        formControlName="building_code"
+        [placeholder]="'BUILDING_FORM_DIALOG.PLACEHOLDERS.BUILDING_CODE' | translate"
+        required
+      />
       <mat-icon matPrefix>tag</mat-icon>
       @if (!isEditMode) {
-      <mat-hint>Unique identifier for this building</mat-hint>
+      <mat-hint>{{ 'BUILDING_FORM_DIALOG.HINTS.BUILDING_CODE' | translate }}</mat-hint>
       }
       <mat-error>{{ getErrorMessage('building_code') }}</mat-error>
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Building Type</mat-label>
+      <mat-label>{{ 'BUILDING_FORM_DIALOG.FIELDS.BUILDING_TYPE' | translate }}</mat-label>
       <mat-select formControlName="building_type" required>
         @for (type of buildingTypes; track type) {
         <mat-option [value]="type"> {{ type }} </mat-option>
@@ -40,15 +51,15 @@
 
     <div class="form-row">
       <mat-form-field appearance="outline" class="half-width">
-        <mat-label>Total Floors</mat-label>
+        <mat-label>{{ 'BUILDING_FORM_DIALOG.FIELDS.TOTAL_FLOORS' | translate }}</mat-label>
         <input matInput type="number" formControlName="total_floors" placeholder="e.g., 10" />
         <mat-icon matPrefix>layers</mat-icon>
-        <mat-hint>Optional</mat-hint>
+        <mat-hint>{{ 'BUILDING_FORM_DIALOG.HINTS.TOTAL_FLOORS' | translate }}</mat-hint>
         <mat-error>{{ getErrorMessage('total_floors') }}</mat-error>
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="half-width">
-        <mat-label>Construction Year</mat-label>
+        <mat-label>{{ 'BUILDING_FORM_DIALOG.FIELDS.CONSTRUCTION_YEAR' | translate }}</mat-label>
         <input
           matInput
           type="number"
@@ -56,7 +67,7 @@
           placeholder="e.g., 2020"
         />
         <mat-icon matPrefix>calendar_today</mat-icon>
-        <mat-hint>Optional</mat-hint>
+        <mat-hint>{{ 'BUILDING_FORM_DIALOG.HINTS.CONSTRUCTION_YEAR' | translate }}</mat-hint>
         <mat-error>{{ getErrorMessage('construction_year') }}</mat-error>
       </mat-form-field>
     </div>
@@ -64,7 +75,7 @@
     <div class="checkbox-field">
       <mat-checkbox formControlName="has_elevator">
         <mat-icon>elevator</mat-icon>
-        Has Elevator
+        {{ 'BUILDING_FORM_DIALOG.FIELDS.HAS_ELEVATOR' | translate }}
       </mat-checkbox>
     </div>
   </form>
@@ -73,10 +84,11 @@
 <mat-dialog-actions align="end">
   <button mat-button (click)="onCancel()">
     <mat-icon>close</mat-icon>
-    Cancel
+    {{ 'COMMON.BUTTONS.CANCEL' | translate }}
   </button>
   <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="buildingForm.invalid">
     <mat-icon>{{ isEditMode ? 'save' : 'add' }}</mat-icon>
-    {{ isEditMode ? 'Update' : 'Create' }} Building
+    {{ (isEditMode ? 'BUILDING_FORM_DIALOG.BUTTONS.UPDATE' : 'BUILDING_FORM_DIALOG.BUTTONS.CREATE')
+    | translate }}
   </button>
 </mat-dialog-actions>

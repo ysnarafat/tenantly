@@ -13,24 +13,24 @@ const (
 )
 
 type Payment struct {
-	ID            int           `json:"id" db:"id"`
-	UnitID        int           `json:"unit_id" db:"unit_id"`
-	TenantID      int           `json:"tenant_id" db:"tenant_id"`
+	ID             int           `json:"id" db:"id"`
+	UnitID         int           `json:"unit_id" db:"unit_id"`
+	TenantID       int           `json:"tenant_id" db:"tenant_id"`
 	BuildingID     int           `json:"building_id" db:"building_id"` // Denormalized for reporting
 	PropertyID     int           `json:"property_id" db:"property_id"` // Denormalized for reporting
 	OrganizationID int           `json:"organization_id" db:"organization_id"`
 	Month          int           `json:"month" db:"month"`
-	Year          int           `json:"year" db:"year"`
-	AmountDue     float64       `json:"amount_due" db:"amount_due"`
-	AmountPaid    float64       `json:"amount_paid" db:"amount_paid"`
-	Status        PaymentStatus `json:"status" db:"status"`
-	PaymentMethod string        `json:"payment_method" db:"payment_method"`
-	PaymentDate   *time.Time    `json:"payment_date" db:"payment_date"`
-	Notes         string        `json:"notes" db:"notes"`
-	ReceiptNumber string        `json:"receipt_number" db:"receipt_number"`
-	DueDate       *time.Time    `json:"due_date" db:"due_date"`
-	CreatedAt     time.Time     `json:"created_at" db:"created_at"`
-	UpdatedAt     time.Time     `json:"updated_at" db:"updated_at"`
+	Year           int           `json:"year" db:"year"`
+	AmountDue      float64       `json:"amount_due" db:"amount_due"`
+	AmountPaid     float64       `json:"amount_paid" db:"amount_paid"`
+	Status         PaymentStatus `json:"status" db:"status"`
+	PaymentMethod  string        `json:"payment_method" db:"payment_method"`
+	PaymentDate    *time.Time    `json:"payment_date" db:"payment_date"`
+	Notes          string        `json:"notes" db:"notes"`
+	ReceiptNumber  string        `json:"receipt_number" db:"receipt_number"`
+	DueDate        *time.Time    `json:"due_date" db:"due_date"`
+	CreatedAt      time.Time     `json:"created_at" db:"created_at"`
+	UpdatedAt      time.Time     `json:"updated_at" db:"updated_at"`
 }
 
 type CreatePaymentRequest struct {

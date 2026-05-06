@@ -193,12 +193,12 @@ func NewMockAuditService() *MockAuditService {
 
 func (m *MockAuditService) LogUserAction(userID int, action, tableName string, recordID *int, oldValues, newValues interface{}) error {
 	m.logs = append(m.logs, map[string]interface{}{
-		"user_id":  userID,
-		"action":   action,
-		"table":    tableName,
-		"record":   recordID,
-		"old":      oldValues,
-		"new":      newValues,
+		"user_id": userID,
+		"action":  action,
+		"table":   tableName,
+		"record":  recordID,
+		"old":     oldValues,
+		"new":     newValues,
 	})
 	return nil
 }

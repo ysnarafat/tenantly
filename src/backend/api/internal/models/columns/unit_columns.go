@@ -2,21 +2,21 @@ package columns
 
 // Unit table and column names
 const (
-	UnitTable           = "units"
-	UnitID              = "id"
-	UnitBuildingID      = "building_id"
-	UnitPropertyID      = "property_id"
-	UnitOrganizationID  = "organization_id"
-	UnitNumber          = "unit_number"
-	UnitName            = "unit_name"
-	UnitFloor           = "floor"
-	UnitSection         = "section"
-	UnitType            = "unit_type"
-	UnitMonthlyRent     = "monthly_rent"
-	UnitMetadata        = "metadata"
-	UnitActive          = "active"
-	UnitCreatedAt       = "created_at"
-	UnitUpdatedAt       = "updated_at"
+	UnitTable          = "units"
+	UnitID             = "id"
+	UnitBuildingID     = "building_id"
+	UnitPropertyID     = "property_id"
+	UnitOrganizationID = "organization_id"
+	UnitNumber         = "unit_number"
+	UnitName           = "unit_name"
+	UnitFloor          = "floor"
+	UnitSection        = "section"
+	UnitType           = "unit_type"
+	UnitMonthlyRent    = "monthly_rent"
+	UnitMetadata       = "metadata"
+	UnitActive         = "active"
+	UnitCreatedAt      = "created_at"
+	UnitUpdatedAt      = "updated_at"
 )
 
 // UnitAllColumns returns a comma-separated list of all unit columns

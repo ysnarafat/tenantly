@@ -10,6 +10,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { TranslateModule } from '@ngx-translate/core';
 import { LeaseService, LeaseWithDetails } from '../../../core/services/lease.service';
 
 @Component({
@@ -26,6 +27,7 @@ import { LeaseService, LeaseWithDetails } from '../../../core/services/lease.ser
     MatProgressSpinnerModule,
     MatSlideToggleModule,
     ReactiveFormsModule,
+    TranslateModule,
   ],
   templateUrl: './edit-lease-dialog.html',
   styleUrls: ['./edit-lease-dialog.scss'],

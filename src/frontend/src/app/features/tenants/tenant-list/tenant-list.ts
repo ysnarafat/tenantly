@@ -13,6 +13,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatMenuModule } from '@angular/material/menu';
+import { TranslateModule } from '@ngx-translate/core';
 import { TenantService } from '../../../core/services/tenant.service';
 import { TenantFormDialogComponent } from '../tenant-form-dialog/tenant-form-dialog';
 import { Tenant } from '../../../core/models/tenant.model';
@@ -34,6 +35,7 @@ import { Tenant } from '../../../core/models/tenant.model';
     MatTooltipModule,
     MatProgressSpinnerModule,
     MatMenuModule,
+    TranslateModule,
   ],
   templateUrl: './tenant-list.html',
   styleUrls: ['./tenant-list.scss'],

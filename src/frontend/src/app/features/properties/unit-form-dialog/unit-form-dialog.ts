@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
+import { TranslateModule } from '@ngx-translate/core';
 import { Unit, UnitType, Building, Property } from '../../../core/models';
 
 export interface UnitFormDialogData {
@@ -28,6 +29,7 @@ export interface UnitFormDialogData {
     MatButtonModule,
     MatSelectModule,
     MatIconModule,
+    TranslateModule,
   ],
   templateUrl: './unit-form-dialog.html',
   styleUrls: ['./unit-form-dialog.scss'],

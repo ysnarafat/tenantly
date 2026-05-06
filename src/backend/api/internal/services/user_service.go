@@ -977,11 +977,11 @@ func (s *UserService) RegisterWithInvitation(req *models.RegisterWithInvitationR
 			&user.ID,
 			nil,
 			map[string]interface{}{
-				"username":           user.Username,
-				"email":              user.Email,
-				"role":               user.Role,
-				"organization_id":    user.OrganizationID,
-				"invitation_token":   req.InvitationToken,
+				"username":         user.Username,
+				"email":            user.Email,
+				"role":             user.Role,
+				"organization_id":  user.OrganizationID,
+				"invitation_token": req.InvitationToken,
 			},
 		)
 	}

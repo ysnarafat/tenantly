@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
+import { TranslateModule } from '@ngx-translate/core';
 import { Tenant, TenantType } from '../../../core/models/tenant.model';
 
 export interface TenantFormDialogData {
@@ -26,6 +27,7 @@ export interface TenantFormDialogData {
     MatButtonModule,
     MatSelectModule,
     MatIconModule,
+    TranslateModule,
   ],
   templateUrl: './tenant-form-dialog.html',
   styleUrls: ['./tenant-form-dialog.scss'],

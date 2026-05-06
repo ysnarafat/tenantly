@@ -1,16 +1,16 @@
 <div class="property-list-container">
   <div class="header">
-    <h1>Properties</h1>
+    <h1>{{ 'PROPERTY_LIST.PAGE_TITLE' | translate }}</h1>
     <button mat-raised-button color="primary" (click)="addProperty()">
       <mat-icon>add</mat-icon>
-      Add Property
+      {{ 'PROPERTY_LIST.BUTTONS.ADD_PROPERTY' | translate }}
     </button>
   </div>
 
   @if (loading()) {
     <div class="loading-container">
       <mat-spinner diameter="50"></mat-spinner>
-      <p>Loading properties...</p>
+      <p>{{ 'PROPERTY_LIST.LOADING' | translate }}</p>
     </div>
   }
 
@@ -19,7 +19,7 @@
       <mat-card-content>
         <mat-icon color="warn">error</mat-icon>
         <p>{{ error() }}</p>
-        <button mat-button (click)="ngOnInit()">Retry</button>
+        <button mat-button (click)="ngOnInit()">{{ 'COMMON.BUTTONS.RETRY' | translate }}</button>
       </mat-card-content>
     </mat-card>
   }
@@ -44,11 +44,11 @@
     @if (properties().length === 0) {
       <mat-card class="empty-state">
         <mat-icon>domain</mat-icon>
-        <h2>No Properties Yet</h2>
-        <p>Get started by adding your first property</p>
+        <h2>{{ 'PROPERTY_LIST.EMPTY_STATE.TITLE' | translate }}</h2>
+        <p>{{ 'PROPERTY_LIST.EMPTY_STATE.DESCRIPTION' | translate }}</p>
         <button mat-raised-button color="primary" (click)="addProperty()">
           <mat-icon>add</mat-icon>
-          Add Property
+          {{ 'PROPERTY_LIST.BUTTONS.ADD_PROPERTY' | translate }}
         </button>
       </mat-card>
     }

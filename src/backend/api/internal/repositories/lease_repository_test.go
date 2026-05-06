@@ -25,7 +25,7 @@ func TestLeaseRepository_Create(t *testing.T) {
 	tenantID := testutil.CreateTestTenant(t, repo.db, orgID)
 
 	endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
-	
+
 	req := &models.CreateLeaseRequest{
 		UnitID:          unitID,
 		TenantID:        tenantID,
@@ -35,7 +35,7 @@ func TestLeaseRepository_Create(t *testing.T) {
 		DurationMonths:  12,
 		MonthlyRent:     15000,
 		SecurityDeposit: 30000,
-		OrganizationID:   orgID,
+		OrganizationID:  orgID,
 	}
 
 	lease, err := repo.Create(req)
@@ -72,7 +72,7 @@ func TestLeaseRepository_GetByID(t *testing.T) {
 	tenantID := testutil.CreateTestTenant(t, repo.db, orgID)
 
 	endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
-	
+
 	req := &models.CreateLeaseRequest{
 		UnitID:          unitID,
 		TenantID:        tenantID,
@@ -82,7 +82,7 @@ func TestLeaseRepository_GetByID(t *testing.T) {
 		DurationMonths:  12,
 		MonthlyRent:     15000,
 		SecurityDeposit: 30000,
-		OrganizationID:   orgID,
+		OrganizationID:  orgID,
 	}
 
 	createdLease, err := repo.Create(req)
@@ -119,7 +119,7 @@ func TestLeaseRepository_GetAll(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		unitID := testutil.CreateTestUnit(t, repo.db, buildingID, orgID)
 		endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
-		
+
 		req := &models.CreateLeaseRequest{
 			UnitID:          unitID,
 			TenantID:        tenantID,
@@ -129,7 +129,7 @@ func TestLeaseRepository_GetAll(t *testing.T) {
 			DurationMonths:  12,
 			MonthlyRent:     15000,
 			SecurityDeposit: 30000,
-			OrganizationID:   orgID,
+			OrganizationID:  orgID,
 		}
 		_, err := repo.Create(req)
 		if err != nil {
@@ -164,7 +164,7 @@ func TestLeaseRepository_Update(t *testing.T) {
 	tenantID := testutil.CreateTestTenant(t, repo.db, orgID)
 
 	endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
-	
+
 	req := &models.CreateLeaseRequest{
 		UnitID:          unitID,
 		TenantID:        tenantID,
@@ -174,7 +174,7 @@ func TestLeaseRepository_Update(t *testing.T) {
 		DurationMonths:  12,
 		MonthlyRent:     15000,
 		SecurityDeposit: 30000,
-		OrganizationID:   orgID,
+		OrganizationID:  orgID,
 	}
 
 	createdLease, err := repo.Create(req)
@@ -216,7 +216,7 @@ func TestLeaseRepository_Delete(t *testing.T) {
 	tenantID := testutil.CreateTestTenant(t, repo.db, orgID)
 
 	endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
-	
+
 	req := &models.CreateLeaseRequest{
 		UnitID:          unitID,
 		TenantID:        tenantID,
@@ -226,7 +226,7 @@ func TestLeaseRepository_Delete(t *testing.T) {
 		DurationMonths:  12,
 		MonthlyRent:     15000,
 		SecurityDeposit: 30000,
-		OrganizationID:   orgID,
+		OrganizationID:  orgID,
 	}
 
 	createdLease, err := repo.Create(req)
@@ -270,7 +270,7 @@ func TestLeaseRepository_HasActiveLeaseOnUnit(t *testing.T) {
 
 	// Create active lease
 	endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
-	
+
 	req := &models.CreateLeaseRequest{
 		UnitID:          unitID,
 		TenantID:        tenantID,
@@ -280,7 +280,7 @@ func TestLeaseRepository_HasActiveLeaseOnUnit(t *testing.T) {
 		DurationMonths:  12,
 		MonthlyRent:     15000,
 		SecurityDeposit: 30000,
-		OrganizationID:   orgID,
+		OrganizationID:  orgID,
 	}
 
 	createdLease, err := repo.Create(req)
@@ -312,7 +312,7 @@ func TestLeaseRepository_GetByUnitID(t *testing.T) {
 
 	// Create lease
 	endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
-	
+
 	req := &models.CreateLeaseRequest{
 		UnitID:          unitID,
 		TenantID:        tenantID,
@@ -322,7 +322,7 @@ func TestLeaseRepository_GetByUnitID(t *testing.T) {
 		DurationMonths:  12,
 		MonthlyRent:     15000,
 		SecurityDeposit: 30000,
-		OrganizationID:   orgID,
+		OrganizationID:  orgID,
 	}
 
 	createdLease, err := repo.Create(req)
@@ -362,7 +362,7 @@ func TestLeaseRepository_GetByTenantID(t *testing.T) {
 
 	// Create lease
 	endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
-	
+
 	req := &models.CreateLeaseRequest{
 		UnitID:          unitID,
 		TenantID:        tenantID,
@@ -372,7 +372,7 @@ func TestLeaseRepository_GetByTenantID(t *testing.T) {
 		DurationMonths:  12,
 		MonthlyRent:     15000,
 		SecurityDeposit: 30000,
-		OrganizationID:   orgID,
+		OrganizationID:  orgID,
 	}
 
 	createdLease, err := repo.Create(req)

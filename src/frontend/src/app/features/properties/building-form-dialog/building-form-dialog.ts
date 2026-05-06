@@ -8,6 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { TranslateModule } from '@ngx-translate/core';
 import { Building, BuildingType, Property } from '../../../core/models';
 
 export interface BuildingFormDialogData {
@@ -29,6 +30,7 @@ export interface BuildingFormDialogData {
     MatSelectModule,
     MatIconModule,
     MatCheckboxModule,
+    TranslateModule,
   ],
   templateUrl: './building-form-dialog.html',
   styleUrls: ['./building-form-dialog.scss'],
