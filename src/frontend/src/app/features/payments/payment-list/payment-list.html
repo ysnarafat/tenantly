@@ -14,7 +14,9 @@
       <mat-card-header>
         <mat-icon mat-card-avatar class="icon-paid">payments</mat-icon>
         <mat-card-title>৳{{ summary()!.total_paid | number:'1.0-0' }}</mat-card-title>
-        <mat-card-subtitle>{{ 'PAYMENT_LIST.SUMMARY.TOTAL_COLLECTED' | translate }}</mat-card-subtitle>
+        <mat-card-subtitle
+          >{{ 'PAYMENT_LIST.SUMMARY.TOTAL_COLLECTED' | translate }}</mat-card-subtitle
+        >
       </mat-card-header>
     </mat-card>
 
@@ -40,7 +42,9 @@
         <mat-card-title [style.color]="collectionRateColor(summary()!.collection_rate)">
           {{ summary()!.collection_rate | number:'1.1-1' }}%
         </mat-card-title>
-        <mat-card-subtitle>{{ 'PAYMENT_LIST.SUMMARY.COLLECTION_RATE' | translate }}</mat-card-subtitle>
+        <mat-card-subtitle
+          >{{ 'PAYMENT_LIST.SUMMARY.COLLECTION_RATE' | translate }}</mat-card-subtitle
+        >
       </mat-card-header>
     </mat-card>
   </div>
@@ -73,7 +77,9 @@
           <mat-select [(ngModel)]="filterMonth">
             <mat-option value="">{{ 'PAYMENT_LIST.FILTERS.ALL' | translate }}</mat-option>
             @for (m of months; track m.value) {
-            <mat-option [value]="m.value">{{ 'PAYMENT_LIST.MONTHS.' + m.label | translate }}</mat-option>
+            <mat-option [value]="m.value"
+              >{{ 'PAYMENT_LIST.MONTHS.' + m.label | translate }}</mat-option
+            >
             }
           </mat-select>
         </mat-form-field>
@@ -113,7 +119,9 @@
         <table mat-table [dataSource]="payments()" class="payment-table">
           <!-- Tenant column -->
           <ng-container matColumnDef="tenant">
-            <th mat-header-cell *matHeaderCellDef>{{ 'PAYMENT_LIST.TABLE.TENANT_UNIT' | translate }}</th>
+            <th mat-header-cell *matHeaderCellDef>
+              {{ 'PAYMENT_LIST.TABLE.TENANT_UNIT' | translate }}
+            </th>
             <td mat-cell *matCellDef="let p">
               <div class="cell-primary">{{ p.tenant_name || '—' }}</div>
               <div class="cell-secondary">{{ p.unit_number }} · {{ p.building_name }}</div>
@@ -122,7 +130,9 @@
 
           <!-- Unit column -->
           <ng-container matColumnDef="unit">
-            <th mat-header-cell *matHeaderCellDef>{{ 'PAYMENT_LIST.TABLE.PROPERTY' | translate }}</th>
+            <th mat-header-cell *matHeaderCellDef>
+              {{ 'PAYMENT_LIST.TABLE.PROPERTY' | translate }}
+            </th>
             <td mat-cell *matCellDef="let p">
               <div class="cell-primary">{{ p.property_name || '—' }}</div>
               <div class="cell-secondary">{{ p.building_code }}</div>
@@ -137,7 +147,9 @@
 
           <!-- Amount Due column -->
           <ng-container matColumnDef="amount_due">
-            <th mat-header-cell *matHeaderCellDef>{{ 'PAYMENT_LIST.TABLE.AMOUNT_DUE' | translate }}</th>
+            <th mat-header-cell *matHeaderCellDef>
+              {{ 'PAYMENT_LIST.TABLE.AMOUNT_DUE' | translate }}
+            </th>
             <td mat-cell *matCellDef="let p" class="amount-cell">
               {{ p.amount_due | number:'1.2-2' }}
             </td>
@@ -145,7 +157,9 @@
 
           <!-- Amount Paid column -->
           <ng-container matColumnDef="amount_paid">
-            <th mat-header-cell *matHeaderCellDef>{{ 'PAYMENT_LIST.TABLE.AMOUNT_PAID' | translate }}</th>
+            <th mat-header-cell *matHeaderCellDef>
+              {{ 'PAYMENT_LIST.TABLE.AMOUNT_PAID' | translate }}
+            </th>
             <td mat-cell *matCellDef="let p" class="amount-cell">
               {{ p.amount_paid | number:'1.2-2' }}
             </td>
@@ -167,7 +181,11 @@
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef></th>
             <td mat-cell *matCellDef="let p">
-              <button mat-icon-button [title]="'UPDATE_PAYMENT_DIALOG.TITLE' | translate" (click)="openUpdateDialog(p)">
+              <button
+                mat-icon-button
+                [title]="'UPDATE_PAYMENT_DIALOG.TITLE' | translate"
+                (click)="openUpdateDialog(p)"
+              >
                 <mat-icon>edit</mat-icon>
               </button>
             </td>
@@ -210,11 +228,15 @@
             </div>
             <div class="mobile-card-amounts">
               <div class="mobile-amount-block">
-                <span class="mobile-card-label">{{ 'PAYMENT_LIST.TABLE.AMOUNT_DUE' | translate }}</span>
+                <span class="mobile-card-label"
+                  >{{ 'PAYMENT_LIST.TABLE.AMOUNT_DUE' | translate }}</span
+                >
                 <span class="mobile-amount-value">৳{{ p.amount_due | number:'1.2-2' }}</span>
               </div>
               <div class="mobile-amount-block">
-                <span class="mobile-card-label">{{ 'PAYMENT_LIST.TABLE.AMOUNT_PAID' | translate }}</span>
+                <span class="mobile-card-label"
+                  >{{ 'PAYMENT_LIST.TABLE.AMOUNT_PAID' | translate }}</span
+                >
                 <span class="mobile-amount-value paid">৳{{ p.amount_paid | number:'1.2-2' }}</span>
               </div>
             </div>
