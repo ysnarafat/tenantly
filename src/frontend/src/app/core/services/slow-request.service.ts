@@ -10,11 +10,9 @@ export class SlowRequestService {
   markSlow(): void {
     this.pendingCount++;
     if (this.pendingCount === 1) {
-      this.snackBarRef = this.snackBar.open(
-        '⏳ This is taking longer than expected…',
-        undefined,
-        { panelClass: 'slow-request-snackbar' }
-      );
+      this.snackBarRef = this.snackBar.open('⏳ This is taking longer than expected…', undefined, {
+        panelClass: 'slow-request-snackbar',
+      });
     }
   }
 

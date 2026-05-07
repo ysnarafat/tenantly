@@ -10,7 +10,8 @@
       "Bash(go vet *)",
       "Bash(go test *)",
       "Bash(go tool *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

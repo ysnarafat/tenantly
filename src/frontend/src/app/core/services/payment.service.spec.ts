@@ -376,9 +376,7 @@ describe('PaymentService', () => {
         expect(res).toBeTruthy();
       });
 
-      const req = httpMock.expectOne(
-        (r) => r.url === `${apiUrl}/building/${buildingId}/report`
-      );
+      const req = httpMock.expectOne((r) => r.url === `${apiUrl}/building/${buildingId}/report`);
       expect(req.request.method).toBe('GET');
       expect(req.request.params.get('start_date')).toBe(startDate);
       expect(req.request.params.get('end_date')).toBe(endDate);
@@ -406,9 +404,7 @@ describe('PaymentService', () => {
         expect(res).toBeTruthy();
       });
 
-      const req = httpMock.expectOne(
-        (r) => r.url === `${apiUrl}/property/${propertyId}/report`
-      );
+      const req = httpMock.expectOne((r) => r.url === `${apiUrl}/property/${propertyId}/report`);
       expect(req.request.method).toBe('GET');
       expect(req.request.params.get('start_date')).toBe(startDate);
       expect(req.request.params.get('end_date')).toBe(endDate);

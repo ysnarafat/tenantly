@@ -52,19 +52,38 @@
 }
 
 @media (max-width: 1024px) {
-  .summary-row { grid-template-columns: repeat(3, 1fr); }
+  .summary-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 @media (max-width: 600px) {
-  .summary-row { grid-template-columns: repeat(2, 1fr); }
+  .summary-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 // Icon avatar colors — use theme vars so dark mode works
-.icon-due     { background: var(--color-due-bg)     !important; color: var(--color-due)     !important; }
-.icon-paid    { background: var(--color-paid-bg)    !important; color: var(--color-paid)    !important; }
-.icon-partial { background: var(--color-partial-bg) !important; color: var(--color-partial) !important; }
-.icon-overdue { background: var(--color-overdue-bg) !important; color: var(--color-overdue) !important; }
-.icon-primary { background: #e3f2fd               !important; color: var(--color-primary) !important; }
+.icon-due {
+  background: var(--color-due-bg) !important;
+  color: var(--color-due) !important;
+}
+.icon-paid {
+  background: var(--color-paid-bg) !important;
+  color: var(--color-paid) !important;
+}
+.icon-partial {
+  background: var(--color-partial-bg) !important;
+  color: var(--color-partial) !important;
+}
+.icon-overdue {
+  background: var(--color-overdue-bg) !important;
+  color: var(--color-overdue) !important;
+}
+.icon-primary {
+  background: #e3f2fd !important;
+  color: var(--color-primary) !important;
+}
 
 // ── Toolbar ──────────────────────────────────────────────────────────────────
 .toolbar {

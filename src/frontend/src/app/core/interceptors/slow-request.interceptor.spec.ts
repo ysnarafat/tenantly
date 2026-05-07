@@ -62,7 +62,9 @@ describe('slowRequestInterceptor', () => {
     http.get('/api/failing').subscribe({ error: () => {} });
 
     tick(SLOW_REQUEST_THRESHOLD_MS);
-    httpMock.expectOne('/api/failing').flush('Server error', { status: 500, statusText: 'Internal Server Error' });
+    httpMock
+      .expectOne('/api/failing')
+      .flush('Server error', { status: 500, statusText: 'Internal Server Error' });
     tick();
 
     expect(slowRequestSpy.markDone).toHaveBeenCalledTimes(1);
@@ -72,7 +74,9 @@ describe('slowRequestInterceptor', () => {
     http.get('/api/fast-fail').subscribe({ error: () => {} });
 
     tick(SLOW_REQUEST_THRESHOLD_MS - 1);
-    httpMock.expectOne('/api/fast-fail').flush('Not found', { status: 404, statusText: 'Not Found' });
+    httpMock
+      .expectOne('/api/fast-fail')
+      .flush('Not found', { status: 404, statusText: 'Not Found' });
     tick();
 
     expect(slowRequestSpy.markSlow).not.toHaveBeenCalled();

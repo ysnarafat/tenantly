@@ -87,12 +87,15 @@ export class Dashboard implements OnInit {
         this.recentLeases = leases
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
           .slice(0, 5);
-        this.expiringLeases = leases.filter((l) => l.days_remaining <= 30 && l.days_remaining > 0).slice(0, 5);
-        this.stats.expiringLeases = leases.filter((l) => l.days_remaining <= 30 && l.days_remaining > 0).length;
+        this.expiringLeases = leases
+          .filter((l) => l.days_remaining <= 30 && l.days_remaining > 0)
+          .slice(0, 5);
+        this.stats.expiringLeases = leases.filter(
+          (l) => l.days_remaining <= 30 && l.days_remaining > 0
+        ).length;
       },
       error: (error) => console.error('Error loading leases:', error),
     });
-
 
     // Load attachments data
     this.attachmentService.getAllAttachments().subscribe({

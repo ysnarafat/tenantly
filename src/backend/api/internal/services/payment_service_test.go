@@ -14,21 +14,21 @@ import (
 // ---------------------------------------------------------------------------
 
 type MockPaymentRepo struct {
-	payments             map[int]*models.PaymentWithDetails
-	nextID               int
-	shouldFailCreate     bool
-	shouldFailGetByID    bool
-	shouldFailUpdate     bool
-	shouldFailList       bool
-	shouldFailStats      bool
-	shouldFailPeriod     bool
-	shouldFailDashboard  bool
-	shouldFailBldgLevel  bool
-	shouldFailAnalytics  bool
-	dashboardResult      *models.DashboardSummary
-	buildingLevelResult  map[string]interface{}
-	analyticsResult      *models.BuildingPaymentAnalytics
-	auditLog             []string
+	payments            map[int]*models.PaymentWithDetails
+	nextID              int
+	shouldFailCreate    bool
+	shouldFailGetByID   bool
+	shouldFailUpdate    bool
+	shouldFailList      bool
+	shouldFailStats     bool
+	shouldFailPeriod    bool
+	shouldFailDashboard bool
+	shouldFailBldgLevel bool
+	shouldFailAnalytics bool
+	dashboardResult     *models.DashboardSummary
+	buildingLevelResult map[string]interface{}
+	analyticsResult     *models.BuildingPaymentAnalytics
+	auditLog            []string
 }
 
 func newMockPaymentRepo() *MockPaymentRepo {
@@ -187,8 +187,8 @@ func (m *MockPaymentRepo) GetBuildingPaymentAnalytics(buildingID int, startDate,
 // ---------------------------------------------------------------------------
 
 type MockPaymentUnitRepo struct {
-	units         map[int]*models.Unit
-	shouldFail    bool
+	units      map[int]*models.Unit
+	shouldFail bool
 }
 
 func newMockPaymentUnitRepo() *MockPaymentUnitRepo {
@@ -878,8 +878,8 @@ func TestGetPayments(t *testing.T) {
 		seedCount    int
 		wantErr      bool
 		errContains  string
-		wantPage     int  // effective page applied
-		wantPageSize int  // effective pageSize applied
+		wantPage     int // effective page applied
+		wantPageSize int // effective pageSize applied
 	}{
 		{
 			name:         "normal page/pageSize",
@@ -988,15 +988,15 @@ func TestGetPayments(t *testing.T) {
 
 func TestGetPaymentsByBuilding(t *testing.T) {
 	tests := []struct {
-		name        string
-		buildingID  int
+		name         string
+		buildingID   int
 		seedBuilding bool
 		buildingFail bool
-		repoFail    bool
-		page        int
-		pageSize    int
-		wantErr     bool
-		errContains string
+		repoFail     bool
+		page         int
+		pageSize     int
+		wantErr      bool
+		errContains  string
 	}{
 		{
 			name:         "happy path",
@@ -1480,8 +1480,8 @@ func TestGetDashboardSummaryWithBuildingContext(t *testing.T) {
 					"total_buildings": tc.buildingCount,
 				}
 				payRepo.dashboardResult = &models.DashboardSummary{
-					TotalDue:      1000,
-					TotalPaid:     800,
+					TotalDue:       1000,
+					TotalPaid:      800,
 					CollectionRate: 80,
 				}
 			}
@@ -1518,11 +1518,11 @@ func TestGetDashboardSummaryWithBuildingContext(t *testing.T) {
 
 func TestProcessBulkPayments(t *testing.T) {
 	tests := []struct {
-		name          string
-		requests      func() []*models.CreatePaymentRequest
-		setupFails    func(*MockPaymentUnitRepo)
-		wantPayments  int
-		wantErrors    int
+		name           string
+		requests       func() []*models.CreatePaymentRequest
+		setupFails     func(*MockPaymentUnitRepo)
+		wantPayments   int
+		wantErrors     int
 		wantAuditCalls int
 	}{
 		{
@@ -1610,14 +1610,14 @@ func TestProcessBulkPayments(t *testing.T) {
 
 func TestGetPaymentAnalyticsByBuilding(t *testing.T) {
 	tests := []struct {
-		name         string
-		buildingID   int
-		period       string
-		seedBuilding bool
-		bldgFail     bool
+		name          string
+		buildingID    int
+		period        string
+		seedBuilding  bool
+		bldgFail      bool
 		analyticsFail bool
-		wantErr      bool
-		errContains  string
+		wantErr       bool
+		errContains   string
 	}{
 		{
 			name:         "happy path – month period",

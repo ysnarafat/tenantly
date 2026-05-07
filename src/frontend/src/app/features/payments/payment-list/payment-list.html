@@ -1,50 +1,49 @@
 <div class="payment-list-container">
-
   <!-- Summary cards -->
   @if (summary()) {
-    <div class="summary-row">
-      <mat-card appearance="outlined">
-        <mat-card-header>
-          <mat-icon mat-card-avatar class="icon-due">account_balance_wallet</mat-icon>
-          <mat-card-title>৳{{ summary()!.total_due | number:'1.0-0' }}</mat-card-title>
-          <mat-card-subtitle>Total Due</mat-card-subtitle>
-        </mat-card-header>
-      </mat-card>
+  <div class="summary-row">
+    <mat-card appearance="outlined">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="icon-due">account_balance_wallet</mat-icon>
+        <mat-card-title>৳{{ summary()!.total_due | number:'1.0-0' }}</mat-card-title>
+        <mat-card-subtitle>Total Due</mat-card-subtitle>
+      </mat-card-header>
+    </mat-card>
 
-      <mat-card appearance="outlined">
-        <mat-card-header>
-          <mat-icon mat-card-avatar class="icon-paid">payments</mat-icon>
-          <mat-card-title>৳{{ summary()!.total_paid | number:'1.0-0' }}</mat-card-title>
-          <mat-card-subtitle>Total Collected</mat-card-subtitle>
-        </mat-card-header>
-      </mat-card>
+    <mat-card appearance="outlined">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="icon-paid">payments</mat-icon>
+        <mat-card-title>৳{{ summary()!.total_paid | number:'1.0-0' }}</mat-card-title>
+        <mat-card-subtitle>Total Collected</mat-card-subtitle>
+      </mat-card-header>
+    </mat-card>
 
-      <mat-card appearance="outlined">
-        <mat-card-header>
-          <mat-icon mat-card-avatar class="icon-partial">pending_actions</mat-icon>
-          <mat-card-title>৳{{ summary()!.total_pending | number:'1.0-0' }}</mat-card-title>
-          <mat-card-subtitle>Pending</mat-card-subtitle>
-        </mat-card-header>
-      </mat-card>
+    <mat-card appearance="outlined">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="icon-partial">pending_actions</mat-icon>
+        <mat-card-title>৳{{ summary()!.total_pending | number:'1.0-0' }}</mat-card-title>
+        <mat-card-subtitle>Pending</mat-card-subtitle>
+      </mat-card-header>
+    </mat-card>
 
-      <mat-card appearance="outlined">
-        <mat-card-header>
-          <mat-icon mat-card-avatar class="icon-overdue">warning_amber</mat-icon>
-          <mat-card-title>৳{{ summary()!.total_overdue | number:'1.0-0' }}</mat-card-title>
-          <mat-card-subtitle>Overdue</mat-card-subtitle>
-        </mat-card-header>
-      </mat-card>
+    <mat-card appearance="outlined">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="icon-overdue">warning_amber</mat-icon>
+        <mat-card-title>৳{{ summary()!.total_overdue | number:'1.0-0' }}</mat-card-title>
+        <mat-card-subtitle>Overdue</mat-card-subtitle>
+      </mat-card-header>
+    </mat-card>
 
-      <mat-card appearance="outlined">
-        <mat-card-header>
-          <mat-icon mat-card-avatar class="icon-primary">trending_up</mat-icon>
-          <mat-card-title [style.color]="collectionRateColor(summary()!.collection_rate)">
-            {{ summary()!.collection_rate | number:'1.1-1' }}%
-          </mat-card-title>
-          <mat-card-subtitle>Collection Rate</mat-card-subtitle>
-        </mat-card-header>
-      </mat-card>
-    </div>
+    <mat-card appearance="outlined">
+      <mat-card-header>
+        <mat-icon mat-card-avatar class="icon-primary">trending_up</mat-icon>
+        <mat-card-title [style.color]="collectionRateColor(summary()!.collection_rate)">
+          {{ summary()!.collection_rate | number:'1.1-1' }}%
+        </mat-card-title>
+        <mat-card-subtitle>Collection Rate</mat-card-subtitle>
+      </mat-card-header>
+    </mat-card>
+  </div>
   }
 
   <!-- Toolbar -->
@@ -64,7 +63,7 @@
           <mat-select [(ngModel)]="filterStatus">
             <mat-option value="">All</mat-option>
             @for (s of statuses; track s) {
-              <mat-option [value]="s">{{ s }}</mat-option>
+            <mat-option [value]="s">{{ s }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
@@ -74,7 +73,7 @@
           <mat-select [(ngModel)]="filterMonth">
             <mat-option value="">All</mat-option>
             @for (m of months; track m.value) {
-              <mat-option [value]="m.value">{{ m.label }}</mat-option>
+            <mat-option [value]="m.value">{{ m.label }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
@@ -83,7 +82,7 @@
           <mat-label>Year</mat-label>
           <mat-select [(ngModel)]="filterYear">
             @for (y of years; track y) {
-              <mat-option [value]="y">{{ y }}</mat-option>
+            <mat-option [value]="y">{{ y }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
@@ -104,15 +103,14 @@
   <mat-card>
     <mat-card-content>
       @if (loading()) {
-        <div class="loading-overlay">
-          <mat-spinner diameter="48"></mat-spinner>
-        </div>
+      <div class="loading-overlay">
+        <mat-spinner diameter="48"></mat-spinner>
+      </div>
       }
 
       <!-- Desktop table -->
       <div class="table-container">
         <table mat-table [dataSource]="payments()" class="payment-table">
-
           <!-- Tenant column -->
           <ng-container matColumnDef="tenant">
             <th mat-header-cell *matHeaderCellDef>Tenant / Unit</th>
@@ -134,9 +132,7 @@
           <!-- Period column -->
           <ng-container matColumnDef="period">
             <th mat-header-cell *matHeaderCellDef>Period</th>
-            <td mat-cell *matCellDef="let p">
-              {{ monthName(p.month) }} {{ p.year }}
-            </td>
+            <td mat-cell *matCellDef="let p">{{ monthName(p.month) }} {{ p.year }}</td>
           </ng-container>
 
           <!-- Amount Due column -->
@@ -171,9 +167,7 @@
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef></th>
             <td mat-cell *matCellDef="let p">
-              <button mat-icon-button
-                      title="Update payment"
-                      (click)="openUpdateDialog(p)">
+              <button mat-icon-button title="Update payment" (click)="openUpdateDialog(p)">
                 <mat-icon>edit</mat-icon>
               </button>
             </td>
@@ -193,45 +187,46 @@
       <!-- Mobile card list -->
       <div class="mobile-payment-list">
         @for (p of payments(); track p.id) {
-          <div class="mobile-payment-card">
-            <div class="mobile-card-header">
-              <div class="mobile-card-tenant">
-                <div class="cell-primary">{{ p.tenant_name || '—' }}</div>
-                <div class="cell-secondary">{{ p.unit_number }} · {{ p.building_name }}</div>
-              </div>
-              <mat-chip-set>
-                <mat-chip [class]="getStatusClass(p.status)" highlighted disableRipple>{{ p.status }}</mat-chip>
-              </mat-chip-set>
+        <div class="mobile-payment-card">
+          <div class="mobile-card-header">
+            <div class="mobile-card-tenant">
+              <div class="cell-primary">{{ p.tenant_name || '—' }}</div>
+              <div class="cell-secondary">{{ p.unit_number }} · {{ p.building_name }}</div>
             </div>
-            <div class="mobile-card-body">
-              <div class="mobile-card-row">
-                <span class="mobile-card-label">Property</span>
-                <span class="mobile-card-value">{{ p.property_name || '—' }}</span>
-              </div>
-              <div class="mobile-card-row">
-                <span class="mobile-card-label">Period</span>
-                <span class="mobile-card-value">{{ monthName(p.month) }} {{ p.year }}</span>
-              </div>
-              <div class="mobile-card-amounts">
-                <div class="mobile-amount-block">
-                  <span class="mobile-card-label">Due</span>
-                  <span class="mobile-amount-value">৳{{ p.amount_due | number:'1.2-2' }}</span>
-                </div>
-                <div class="mobile-amount-block">
-                  <span class="mobile-card-label">Paid</span>
-                  <span class="mobile-amount-value paid">৳{{ p.amount_paid | number:'1.2-2' }}</span>
-                </div>
-              </div>
+            <mat-chip-set>
+              <mat-chip [class]="getStatusClass(p.status)" highlighted disableRipple
+                >{{ p.status }}</mat-chip
+              >
+            </mat-chip-set>
+          </div>
+          <div class="mobile-card-body">
+            <div class="mobile-card-row">
+              <span class="mobile-card-label">Property</span>
+              <span class="mobile-card-value">{{ p.property_name || '—' }}</span>
             </div>
-            <div class="mobile-card-footer">
-              <button mat-stroked-button (click)="openUpdateDialog(p)">
-                <mat-icon>edit</mat-icon> Update
-              </button>
+            <div class="mobile-card-row">
+              <span class="mobile-card-label">Period</span>
+              <span class="mobile-card-value">{{ monthName(p.month) }} {{ p.year }}</span>
+            </div>
+            <div class="mobile-card-amounts">
+              <div class="mobile-amount-block">
+                <span class="mobile-card-label">Due</span>
+                <span class="mobile-amount-value">৳{{ p.amount_due | number:'1.2-2' }}</span>
+              </div>
+              <div class="mobile-amount-block">
+                <span class="mobile-card-label">Paid</span>
+                <span class="mobile-amount-value paid">৳{{ p.amount_paid | number:'1.2-2' }}</span>
+              </div>
             </div>
           </div>
-        }
-        @if (payments().length === 0 && !loading()) {
-          <div class="no-data">No payments found</div>
+          <div class="mobile-card-footer">
+            <button mat-stroked-button (click)="openUpdateDialog(p)">
+              <mat-icon>edit</mat-icon> Update
+            </button>
+          </div>
+        </div>
+        } @if (payments().length === 0 && !loading()) {
+        <div class="no-data">No payments found</div>
         }
       </div>
 
@@ -245,5 +240,4 @@
       ></mat-paginator>
     </mat-card-content>
   </mat-card>
-
 </div>
