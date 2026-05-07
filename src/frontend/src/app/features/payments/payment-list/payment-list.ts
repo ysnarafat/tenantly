@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { TranslateModule } from '@ngx-translate/core';
 import {
   FormsModule,
   ReactiveFormsModule,
@@ -45,6 +46,7 @@ import {
     CommonModule,
     FormsModule,
     ReactiveFormsModule,
+    TranslateModule,
     MatCardModule,
     MatButtonModule,
     MatIconModule,

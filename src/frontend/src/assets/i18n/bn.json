@@ -371,5 +371,97 @@
       "DELETE_BUILDING": "আপনি কি এটি মুছতে চান",
       "DELETE_UNIT": "আপনি কি ইউনিট মুছতে চান"
     }
+  },
+  "PAYMENT_LIST": {
+    "PAGE_TITLE": "পেমেন্ট",
+    "SUMMARY": {
+      "TOTAL_DUE": "মোট বকেয়া",
+      "TOTAL_COLLECTED": "মোট সংগৃহীত",
+      "PENDING": "অপেক্ষমাণ",
+      "OVERDUE": "নির্ধারিত সময় অতিক্রম করেছে",
+      "COLLECTION_RATE": "সংগ্রহের হার"
+    },
+    "BUTTONS": {
+      "NEW_PAYMENT": "নতুন পেমেন্ট",
+      "APPLY": "প্রয়োগ করুন",
+      "CLEAR": "সাফ করুন",
+      "UPDATE": "আপডেট করুন"
+    },
+    "FILTERS": {
+      "STATUS": "স্থিতি",
+      "MONTH": "মাস",
+      "YEAR": "বছর",
+      "ALL": "সব"
+    },
+    "TABLE": {
+      "TENANT_UNIT": "ভাড়াটে / ইউনিট",
+      "PROPERTY": "সম্পত্তি",
+      "PERIOD": "সময়কাল",
+      "AMOUNT_DUE": "বকেয়া (৳)",
+      "AMOUNT_PAID": "পরিশোধিত (৳)",
+      "STATUS": "স্থিতি"
+    },
+    "STATUS": {
+      "PAID": "পরিশোধিত",
+      "DUE": "বকেয়া",
+      "PARTIAL": "আংশিক",
+      "OVERDUE": "নির্ধারিত সময় অতিক্রম করেছে"
+    },
+    "MONTHS": {
+      "JANUARY": "জানুয়ারি",
+      "FEBRUARY": "ফেব্রুয়ারি",
+      "MARCH": "মার্চ",
+      "APRIL": "এপ্রিল",
+      "MAY": "মে",
+      "JUNE": "জুন",
+      "JULY": "জুলাই",
+      "AUGUST": "অগাস্ট",
+      "SEPTEMBER": "সেপ্টেম্বর",
+      "OCTOBER": "অক্টোবর",
+      "NOVEMBER": "নভেম্বর",
+      "DECEMBER": "ডিসেম্বর"
+    },
+    "EMPTY_STATE": "কোনো পেমেন্ট পাওয়া যায়নি",
+    "LOADING": "পেমেন্ট লোড হচ্ছে..."
+  },
+  "CREATE_PAYMENT_DIALOG": {
+    "TITLE": "নতুন পেমেন্ট তৈরি করুন",
+    "FIELDS": {
+      "TENANT": "ভাড়াটে",
+      "UNIT": "ইউনিট",
+      "BUILDING": "বিল্ডিং",
+      "PROPERTY": "সম্পত্তি",
+      "MONTH": "মাস",
+      "YEAR": "বছর",
+      "AMOUNT_DUE": "বকেয়া পরিমাণ (৳)",
+      "DUE_DATE": "পরিশোধের তারিখ"
+    },
+    "ERRORS": {
+      "REQUIRED": "এই ক্ষেত্র প্রয়োজন",
+      "INVALID_AMOUNT": "দয়া করে একটি বৈধ পরিমাণ প্রবেশ করুন",
+      "INVALID_DATE": "দয়া করে একটি বৈধ তারিখ প্রবেশ করুন"
+    },
+    "BUTTONS": {
+      "CREATE": "তৈরি করুন",
+      "CANCEL": "বাতিল করুন"
+    }
+  },
+  "UPDATE_PAYMENT_DIALOG": {
+    "TITLE": "পেমেন্ট আপডেট করুন",
+    "FIELDS": {
+      "AMOUNT_PAID": "পরিশোধিত পরিমাণ (৳)",
+      "STATUS": "স্থিতি",
+      "PAYMENT_METHOD": "পেমেন্ট পদ্ধতি",
+      "PAYMENT_DATE": "পেমেন্টের তারিখ",
+      "NOTES": "নোট"
+    },
+    "ERRORS": {
+      "REQUIRED": "এই ক্ষেত্র প্রয়োজন",
+      "INVALID_AMOUNT": "দয়া করে একটি বৈধ পরিমাণ প্রবেশ করুন"
+    },
+    "BUTTONS": {
+      "UPDATE": "আপডেট করুন",
+      "CANCEL": "বাতিল করুন"
+    }
   }
 }

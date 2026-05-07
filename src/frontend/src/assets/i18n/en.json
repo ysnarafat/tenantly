@@ -371,5 +371,97 @@
       "DELETE_BUILDING": "Are you sure you want to delete",
       "DELETE_UNIT": "Are you sure you want to delete unit"
     }
+  },
+  "PAYMENT_LIST": {
+    "PAGE_TITLE": "Payments",
+    "SUMMARY": {
+      "TOTAL_DUE": "Total Due",
+      "TOTAL_COLLECTED": "Total Collected",
+      "PENDING": "Pending",
+      "OVERDUE": "Overdue",
+      "COLLECTION_RATE": "Collection Rate"
+    },
+    "BUTTONS": {
+      "NEW_PAYMENT": "New Payment",
+      "APPLY": "Apply",
+      "CLEAR": "Clear",
+      "UPDATE": "Update"
+    },
+    "FILTERS": {
+      "STATUS": "Status",
+      "MONTH": "Month",
+      "YEAR": "Year",
+      "ALL": "All"
+    },
+    "TABLE": {
+      "TENANT_UNIT": "Tenant / Unit",
+      "PROPERTY": "Property",
+      "PERIOD": "Period",
+      "AMOUNT_DUE": "Due (৳)",
+      "AMOUNT_PAID": "Paid (৳)",
+      "STATUS": "Status"
+    },
+    "STATUS": {
+      "PAID": "Paid",
+      "DUE": "Due",
+      "PARTIAL": "Partial",
+      "OVERDUE": "Overdue"
+    },
+    "MONTHS": {
+      "JANUARY": "January",
+      "FEBRUARY": "February",
+      "MARCH": "March",
+      "APRIL": "April",
+      "MAY": "May",
+      "JUNE": "June",
+      "JULY": "July",
+      "AUGUST": "August",
+      "SEPTEMBER": "September",
+      "OCTOBER": "October",
+      "NOVEMBER": "November",
+      "DECEMBER": "December"
+    },
+    "EMPTY_STATE": "No payments found",
+    "LOADING": "Loading payments..."
+  },
+  "CREATE_PAYMENT_DIALOG": {
+    "TITLE": "Create New Payment",
+    "FIELDS": {
+      "TENANT": "Tenant",
+      "UNIT": "Unit",
+      "BUILDING": "Building",
+      "PROPERTY": "Property",
+      "MONTH": "Month",
+      "YEAR": "Year",
+      "AMOUNT_DUE": "Amount Due (৳)",
+      "DUE_DATE": "Due Date"
+    },
+    "ERRORS": {
+      "REQUIRED": "This field is required",
+      "INVALID_AMOUNT": "Please enter a valid amount",
+      "INVALID_DATE": "Please enter a valid date"
+    },
+    "BUTTONS": {
+      "CREATE": "Create",
+      "CANCEL": "Cancel"
+    }
+  },
+  "UPDATE_PAYMENT_DIALOG": {
+    "TITLE": "Update Payment",
+    "FIELDS": {
+      "AMOUNT_PAID": "Amount Paid (৳)",
+      "STATUS": "Status",
+      "PAYMENT_METHOD": "Payment Method",
+      "PAYMENT_DATE": "Payment Date",
+      "NOTES": "Notes"
+    },
+    "ERRORS": {
+      "REQUIRED": "This field is required",
+      "INVALID_AMOUNT": "Please enter a valid amount"
+    },
+    "BUTTONS": {
+      "UPDATE": "Update",
+      "CANCEL": "Cancel"
+    }
   }
 }

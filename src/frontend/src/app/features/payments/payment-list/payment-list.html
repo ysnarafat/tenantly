@@ -6,7 +6,7 @@
       <mat-card-header>
         <mat-icon mat-card-avatar class="icon-due">account_balance_wallet</mat-icon>
         <mat-card-title>৳{{ summary()!.total_due | number:'1.0-0' }}</mat-card-title>
-        <mat-card-subtitle>Total Due</mat-card-subtitle>
+        <mat-card-subtitle>{{ 'PAYMENT_LIST.SUMMARY.TOTAL_DUE' | translate }}</mat-card-subtitle>
       </mat-card-header>
     </mat-card>
 
@@ -14,7 +14,7 @@
       <mat-card-header>
         <mat-icon mat-card-avatar class="icon-paid">payments</mat-icon>
         <mat-card-title>৳{{ summary()!.total_paid | number:'1.0-0' }}</mat-card-title>
-        <mat-card-subtitle>Total Collected</mat-card-subtitle>
+        <mat-card-subtitle>{{ 'PAYMENT_LIST.SUMMARY.TOTAL_COLLECTED' | translate }}</mat-card-subtitle>
       </mat-card-header>
     </mat-card>
 
@@ -22,7 +22,7 @@
       <mat-card-header>
         <mat-icon mat-card-avatar class="icon-partial">pending_actions</mat-icon>
         <mat-card-title>৳{{ summary()!.total_pending | number:'1.0-0' }}</mat-card-title>
-        <mat-card-subtitle>Pending</mat-card-subtitle>
+        <mat-card-subtitle>{{ 'PAYMENT_LIST.SUMMARY.PENDING' | translate }}</mat-card-subtitle>
       </mat-card-header>
     </mat-card>
 
@@ -30,7 +30,7 @@
       <mat-card-header>
         <mat-icon mat-card-avatar class="icon-overdue">warning_amber</mat-icon>
         <mat-card-title>৳{{ summary()!.total_overdue | number:'1.0-0' }}</mat-card-title>
-        <mat-card-subtitle>Overdue</mat-card-subtitle>
+        <mat-card-subtitle>{{ 'PAYMENT_LIST.SUMMARY.OVERDUE' | translate }}</mat-card-subtitle>
       </mat-card-header>
     </mat-card>
 
@@ -40,7 +40,7 @@
         <mat-card-title [style.color]="collectionRateColor(summary()!.collection_rate)">
           {{ summary()!.collection_rate | number:'1.1-1' }}%
         </mat-card-title>
-        <mat-card-subtitle>Collection Rate</mat-card-subtitle>
+        <mat-card-subtitle>{{ 'PAYMENT_LIST.SUMMARY.COLLECTION_RATE' | translate }}</mat-card-subtitle>
       </mat-card-header>
     </mat-card>
   </div>
@@ -48,9 +48,9 @@
 
   <!-- Toolbar -->
   <div class="toolbar">
-    <h1 class="page-title">Payments</h1>
+    <h1 class="page-title">{{ 'PAYMENT_LIST.PAGE_TITLE' | translate }}</h1>
     <button mat-raised-button color="primary" (click)="openCreateDialog()">
-      <mat-icon>add</mat-icon> New Payment
+      <mat-icon>add</mat-icon> {{ 'PAYMENT_LIST.BUTTONS.NEW_PAYMENT' | translate }}
     </button>
   </div>
 
@@ -59,27 +59,27 @@
     <mat-card-content>
       <div class="filter-row">
         <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>Status</mat-label>
+          <mat-label>{{ 'PAYMENT_LIST.FILTERS.STATUS' | translate }}</mat-label>
           <mat-select [(ngModel)]="filterStatus">
-            <mat-option value="">All</mat-option>
+            <mat-option value="">{{ 'PAYMENT_LIST.FILTERS.ALL' | translate }}</mat-option>
             @for (s of statuses; track s) {
-            <mat-option [value]="s">{{ s }}</mat-option>
+            <mat-option [value]="s">{{ 'PAYMENT_LIST.STATUS.' + s | translate }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>Month</mat-label>
+          <mat-label>{{ 'PAYMENT_LIST.FILTERS.MONTH' | translate }}</mat-label>
           <mat-select [(ngModel)]="filterMonth">
-            <mat-option value="">All</mat-option>
+            <mat-option value="">{{ 'PAYMENT_LIST.FILTERS.ALL' | translate }}</mat-option>
             @for (m of months; track m.value) {
-            <mat-option [value]="m.value">{{ m.label }}</mat-option>
+            <mat-option [value]="m.value">{{ 'PAYMENT_LIST.MONTHS.' + m.label | translate }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>Year</mat-label>
+          <mat-label>{{ 'PAYMENT_LIST.FILTERS.YEAR' | translate }}</mat-label>
           <mat-select [(ngModel)]="filterYear">
             @for (y of years; track y) {
             <mat-option [value]="y">{{ y }}</mat-option>
@@ -89,10 +89,10 @@
 
         <div class="filter-actions">
           <button mat-raised-button color="primary" (click)="applyFilters()">
-            <mat-icon>search</mat-icon> Apply
+            <mat-icon>search</mat-icon> {{ 'PAYMENT_LIST.BUTTONS.APPLY' | translate }}
           </button>
           <button mat-stroked-button (click)="clearFilters()">
-            <mat-icon>clear</mat-icon> Clear
+            <mat-icon>clear</mat-icon> {{ 'PAYMENT_LIST.BUTTONS.CLEAR' | translate }}
           </button>
         </div>
       </div>
@@ -113,7 +113,7 @@
         <table mat-table [dataSource]="payments()" class="payment-table">
           <!-- Tenant column -->
           <ng-container matColumnDef="tenant">
-            <th mat-header-cell *matHeaderCellDef>Tenant / Unit</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'PAYMENT_LIST.TABLE.TENANT_UNIT' | translate }}</th>
             <td mat-cell *matCellDef="let p">
               <div class="cell-primary">{{ p.tenant_name || '—' }}</div>
               <div class="cell-secondary">{{ p.unit_number }} · {{ p.building_name }}</div>
@@ -122,7 +122,7 @@
 
           <!-- Unit column -->
           <ng-container matColumnDef="unit">
-            <th mat-header-cell *matHeaderCellDef>Property</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'PAYMENT_LIST.TABLE.PROPERTY' | translate }}</th>
             <td mat-cell *matCellDef="let p">
               <div class="cell-primary">{{ p.property_name || '—' }}</div>
               <div class="cell-secondary">{{ p.building_code }}</div>
@@ -131,13 +131,13 @@
 
           <!-- Period column -->
           <ng-container matColumnDef="period">
-            <th mat-header-cell *matHeaderCellDef>Period</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'PAYMENT_LIST.TABLE.PERIOD' | translate }}</th>
             <td mat-cell *matCellDef="let p">{{ monthName(p.month) }} {{ p.year }}</td>
           </ng-container>
 
           <!-- Amount Due column -->
           <ng-container matColumnDef="amount_due">
-            <th mat-header-cell *matHeaderCellDef>Due (৳)</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'PAYMENT_LIST.TABLE.AMOUNT_DUE' | translate }}</th>
             <td mat-cell *matCellDef="let p" class="amount-cell">
               {{ p.amount_due | number:'1.2-2' }}
             </td>
@@ -145,7 +145,7 @@
 
           <!-- Amount Paid column -->
           <ng-container matColumnDef="amount_paid">
-            <th mat-header-cell *matHeaderCellDef>Paid (৳)</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'PAYMENT_LIST.TABLE.AMOUNT_PAID' | translate }}</th>
             <td mat-cell *matCellDef="let p" class="amount-cell">
               {{ p.amount_paid | number:'1.2-2' }}
             </td>
@@ -153,7 +153,7 @@
 
           <!-- Status column -->
           <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <th mat-header-cell *matHeaderCellDef>{{ 'PAYMENT_LIST.TABLE.STATUS' | translate }}</th>
             <td mat-cell *matCellDef="let p">
               <mat-chip-set>
                 <mat-chip [class]="getStatusClass(p.status)" highlighted disableRipple>
@@ -167,7 +167,7 @@
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef></th>
             <td mat-cell *matCellDef="let p">
-              <button mat-icon-button title="Update payment" (click)="openUpdateDialog(p)">
+              <button mat-icon-button [title]="'UPDATE_PAYMENT_DIALOG.TITLE' | translate" (click)="openUpdateDialog(p)">
                 <mat-icon>edit</mat-icon>
               </button>
             </td>
@@ -178,7 +178,7 @@
 
           <tr class="mat-row" *matNoDataRow>
             <td class="mat-cell no-data" [attr.colspan]="displayedColumns.length">
-              No payments found
+              {{ 'PAYMENT_LIST.EMPTY_STATE' | translate }}
             </td>
           </tr>
         </table>
@@ -201,32 +201,32 @@
           </div>
           <div class="mobile-card-body">
             <div class="mobile-card-row">
-              <span class="mobile-card-label">Property</span>
+              <span class="mobile-card-label">{{ 'PAYMENT_LIST.TABLE.PROPERTY' | translate }}</span>
               <span class="mobile-card-value">{{ p.property_name || '—' }}</span>
             </div>
             <div class="mobile-card-row">
-              <span class="mobile-card-label">Period</span>
+              <span class="mobile-card-label">{{ 'PAYMENT_LIST.TABLE.PERIOD' | translate }}</span>
               <span class="mobile-card-value">{{ monthName(p.month) }} {{ p.year }}</span>
             </div>
             <div class="mobile-card-amounts">
               <div class="mobile-amount-block">
-                <span class="mobile-card-label">Due</span>
+                <span class="mobile-card-label">{{ 'PAYMENT_LIST.TABLE.AMOUNT_DUE' | translate }}</span>
                 <span class="mobile-amount-value">৳{{ p.amount_due | number:'1.2-2' }}</span>
               </div>
               <div class="mobile-amount-block">
-                <span class="mobile-card-label">Paid</span>
+                <span class="mobile-card-label">{{ 'PAYMENT_LIST.TABLE.AMOUNT_PAID' | translate }}</span>
                 <span class="mobile-amount-value paid">৳{{ p.amount_paid | number:'1.2-2' }}</span>
               </div>
             </div>
           </div>
           <div class="mobile-card-footer">
             <button mat-stroked-button (click)="openUpdateDialog(p)">
-              <mat-icon>edit</mat-icon> Update
+              <mat-icon>edit</mat-icon> {{ 'PAYMENT_LIST.BUTTONS.UPDATE' | translate }}
             </button>
           </div>
         </div>
         } @if (payments().length === 0 && !loading()) {
-        <div class="no-data">No payments found</div>
+        <div class="no-data">{{ 'PAYMENT_LIST.EMPTY_STATE' | translate }}</div>
         }
       </div>
 
