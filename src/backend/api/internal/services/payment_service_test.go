@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -400,6 +401,114 @@ func (m *MockPaymentAuditService) LogSystemAction(action, tableName string, reco
 	return nil
 }
 
+func (m *MockPaymentAuditService) LogCriticalAction(userID int, action string, data map[string]interface{}) error {
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// MockPaymentUserRepo – implements interfaces.UserRepositoryInterface
+// ---------------------------------------------------------------------------
+
+type MockPaymentUserRepo struct {
+	users map[int]*models.User
+}
+
+func newMockPaymentUserRepo() *MockPaymentUserRepo {
+	return &MockPaymentUserRepo{
+		users: make(map[int]*models.User),
+	}
+}
+
+func (m *MockPaymentUserRepo) Create(user *models.User) error {
+	m.users[user.ID] = user
+	return nil
+}
+
+func (m *MockPaymentUserRepo) GetByID(id int) (*models.User, error) {
+	if user, ok := m.users[id]; ok {
+		return user, nil
+	}
+	return nil, fmt.Errorf("user not found")
+}
+
+func (m *MockPaymentUserRepo) GetByUsername(username string) (*models.User, error) {
+	for _, user := range m.users {
+		if user.Username == username {
+			return user, nil
+		}
+	}
+	return nil, fmt.Errorf("user not found")
+}
+
+func (m *MockPaymentUserRepo) GetByEmail(email string) (*models.User, error) {
+	for _, user := range m.users {
+		if user.Email == email {
+			return user, nil
+		}
+	}
+	return nil, fmt.Errorf("user not found")
+}
+
+func (m *MockPaymentUserRepo) Update(id int, updates map[string]interface{}) error {
+	if user, ok := m.users[id]; ok {
+		// Apply updates to user (simplified)
+		if name, ok := updates["name"]; ok {
+			user.FirstName = name.(string)
+		}
+		m.users[id] = user
+	}
+	return nil
+}
+
+func (m *MockPaymentUserRepo) Delete(id int) error {
+	delete(m.users, id)
+	return nil
+}
+
+func (m *MockPaymentUserRepo) List(filters map[string]interface{}, limit, offset int) ([]*models.User, int, error) {
+	return nil, 0, nil
+}
+
+func (m *MockPaymentUserRepo) CleanupExpiredTokens() error {
+	return nil
+}
+
+func (m *MockPaymentUserRepo) GetAll(activeOnly bool) ([]*models.User, error) {
+	users := make([]*models.User, 0, len(m.users))
+	for _, u := range m.users {
+		if !activeOnly || u.Active {
+			users = append(users, u)
+		}
+	}
+	return users, nil
+}
+
+func (m *MockPaymentUserRepo) GetByOrganizationID(orgID int, activeOnly bool) ([]*models.User, error) {
+	users := make([]*models.User, 0)
+	for _, u := range m.users {
+		if u.OrganizationID != nil && *u.OrganizationID == orgID && (!activeOnly || u.Active) {
+			users = append(users, u)
+		}
+	}
+	return users, nil
+}
+
+func (m *MockPaymentUserRepo) CreateResetToken(token *models.ResetPasswordToken) error {
+	return nil
+}
+
+func (m *MockPaymentUserRepo) GetResetToken(token string) (*models.ResetPasswordToken, error) {
+	return nil, fmt.Errorf("token not found")
+}
+
+func (m *MockPaymentUserRepo) DeleteResetToken(token string) error {
+	return nil
+}
+
+func (m *MockPaymentUserRepo) MarkResetTokenUsed(tokenID int) error {
+	return nil
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -418,7 +527,8 @@ func newPaymentServiceWithMocks() (
 	bldgRepo := newMockPaymentBuildingRepo()
 	propRepo := newMockPaymentPropertyRepo()
 	audit := newMockPaymentAuditService()
-	svc := NewPaymentService(payRepo, unitRepo, bldgRepo, propRepo, audit)
+	userRepo := newMockPaymentUserRepo()
+	svc := NewPaymentService(payRepo, unitRepo, bldgRepo, propRepo, audit, userRepo)
 	return svc, payRepo, unitRepo, bldgRepo, propRepo, audit
 }
 

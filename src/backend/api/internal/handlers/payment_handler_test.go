@@ -30,6 +30,8 @@ type mockPaymentService struct {
 	getDashboardSummaryFn    func() (*models.DashboardSummary, error)
 	processBulkFn            func(requests []*models.CreatePaymentRequest, userID int) ([]*models.Payment, []error)
 	getAnalyticsFn           func(buildingID int, period string) (*models.BuildingPaymentAnalytics, error)
+	canAccessPaymentFn       func(userID int, userRole string, payment *models.PaymentWithDetails, userOrgID int) bool
+	logAccessFn              func(userID int, action string, paymentID int, allowed bool)
 }
 
 func (m *mockPaymentService) CreatePayment(req *models.CreatePaymentRequest, userID int) (*models.Payment, error) {
@@ -74,6 +76,19 @@ func (m *mockPaymentService) ProcessBulkPayments(requests []*models.CreatePaymen
 
 func (m *mockPaymentService) GetPaymentAnalyticsByBuilding(buildingID int, period string) (*models.BuildingPaymentAnalytics, error) {
 	return m.getAnalyticsFn(buildingID, period)
+}
+
+func (m *mockPaymentService) CanUserAccessPayment(userID int, userRole string, payment *models.PaymentWithDetails, userOrgID int) bool {
+	if m.canAccessPaymentFn == nil {
+		return true // Allow all by default in tests
+	}
+	return m.canAccessPaymentFn(userID, userRole, payment, userOrgID)
+}
+
+func (m *mockPaymentService) LogPaymentAccess(userID int, action string, paymentID int, allowed bool) {
+	if m.logAccessFn != nil {
+		m.logAccessFn(userID, action, paymentID, allowed)
+	}
 }
 
 // Ensure the mock satisfies the interface at compile time.
@@ -351,7 +366,13 @@ func TestPaymentHandler_UpdatePayment(t *testing.T) {
 		updated.AmountPaid = amountPaid
 		updated.Status = statusPaid
 
+		// Sample existing payment for access verification
+		existing := samplePaymentWithDetails()
+
 		svc := &mockPaymentService{
+			getPaymentFn: func(id int) (*models.PaymentWithDetails, error) {
+				return existing, nil
+			},
 			updatePaymentFn: func(id int, req *models.UpdatePaymentRequest, userID int) (*models.Payment, error) {
 				return updated, nil
 			},

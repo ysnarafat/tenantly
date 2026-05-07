@@ -276,6 +276,8 @@ type PaymentServiceInterface interface {
 	GetDashboardSummaryWithBuildingContext() (*models.DashboardSummary, error)
 	ProcessBulkPayments(requests []*models.CreatePaymentRequest, userID int) ([]*models.Payment, []error)
 	GetPaymentAnalyticsByBuilding(buildingID int, period string) (*models.BuildingPaymentAnalytics, error)
+	CanUserAccessPayment(userID int, userRole string, payment *models.PaymentWithDetails, userOrgID int) bool
+	LogPaymentAccess(userID int, action string, paymentID int, allowed bool)
 }
 
 // NotificationRepositoryInterface defines the interface for notification repository operations
