@@ -182,6 +182,10 @@ func (m *MockPaymentRepo) GetBuildingPaymentAnalytics(buildingID int, startDate,
 	return &a, nil
 }
 
+func (m *MockPaymentRepo) SearchLeases(orgID int, query string) ([]*models.LeaseSearchResult, error) {
+	return make([]*models.LeaseSearchResult, 0), nil
+}
+
 // ---------------------------------------------------------------------------
 // MockPaymentUnitRepo – implements interfaces.UnitRepositoryInterface
 // ---------------------------------------------------------------------------

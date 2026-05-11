@@ -287,6 +287,25 @@ func (h *PaymentHandler) BulkCreatePayments(c *gin.Context) {
 	})
 }
 
+// SearchLeases handles GET /payments/search for autocomplete and lease discovery
+func (h *PaymentHandler) SearchLeases(c *gin.Context) {
+	orgID := c.GetInt("org_id")
+	query := c.Query("q")
+
+	if query == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "search query parameter 'q' is required"})
+		return
+	}
+
+	result, err := h.paymentService.SearchLeases(orgID, query)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 func parseDateRange(c *gin.Context) (time.Time, time.Time, error) {
 	now := time.Now()
 	startStr := c.DefaultQuery("start_date", now.AddDate(0, -1, 0).Format("2006-01-02"))

@@ -1,5 +1,26 @@
 {
   "enabledPlugins": {
     "frontend-design@claude-plugins-official": true
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | { read -r f; if [[ \"$f\" == *.go ]]; then go fmt \"$f\" 2>/dev/null; fi; } || true",
+            "statusMessage": "Formatting Go file...",
+            "shell": "bash"
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | { read -r f; if [[ \"$f\" =~ \\.(ts|tsx|js|jsx)$ ]]; then npx prettier --write \"$f\" 2>/dev/null; fi; } || true",
+            "statusMessage": "Formatting frontend file...",
+            "shell": "bash"
+          }
+        ]
+      }
+    ]
   }
 }

@@ -3,6 +3,7 @@ package repositories
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/ysnarafat/tenantly/internal/models"
@@ -239,7 +240,7 @@ func (r *TenantRepository) Update(id int, updates map[string]interface{}) error 
 		UPDATE tenants
 		SET %s
 		WHERE id = $%d
-	`, fmt.Sprintf("%s", setClauses), argPos)
+	`, strings.Join(setClauses, ", "), argPos)
 
 	_, err := r.db.Exec(query, args...)
 	if err != nil {

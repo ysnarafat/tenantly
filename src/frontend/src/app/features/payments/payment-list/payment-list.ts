@@ -37,7 +37,10 @@ import {
   PaymentStatus,
   DashboardSummary,
   CreatePaymentRequest,
+  LeaseSearchResult,
 } from '../../../core/models/payment.model';
+import { debounceTime, switchMap, startWith } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 @Component({
   selector: 'app-payment-list',
@@ -235,6 +238,7 @@ export class PaymentList implements OnInit {
     MatButtonModule,
     MatDialogModule,
     MatAutocompleteModule,
+    MatProgressSpinnerModule,
   ],
   template: `
     <h2 mat-dialog-title>New Payment</h2>
@@ -254,7 +258,7 @@ export class PaymentList implements OnInit {
             [displayWith]="leaseDisplay"
             (optionSelected)="onLeaseSelected($event.option.value)"
           >
-            @for (l of filteredLeases(); track l.id) {
+            @for (l of filteredLeases(); track l.lease_id) {
               <mat-option [value]="l">
                 <span class="lease-option-main">{{ l.tenant_name }}</span>
                 <span class="lease-option-sub">
@@ -281,6 +285,16 @@ export class PaymentList implements OnInit {
             <span>{{ selectedLease()!.building_name }}</span>
             <span class="sep">›</span>
             <span>Unit {{ selectedLease()!.unit_number }}</span>
+            <span class="sep">›</span>
+            <span class="rent">৳{{ selectedLease()!.monthly_rent | number: '1.0-0' }}/mo</span>
+          </div>
+        }
+
+        <!-- Search loading indicator -->
+        @if (searching()) {
+          <div class="search-loading">
+            <mat-spinner diameter="16"></mat-spinner>
+            <span>Searching leases...</span>
           </div>
         }
 
@@ -357,11 +371,25 @@ export class PaymentList implements OnInit {
         color: #555;
         background: var(--bg-secondary, #f5f5f5);
         border-radius: 6px;
-        padding: 6px 10px;
+        padding: 8px 10px;
         margin-top: -4px;
+      }
+      .lease-summary .rent {
+        margin-left: auto;
+        font-weight: 600;
+        color: #2196f3;
       }
       .sep {
         color: #aaa;
+      }
+      .search-loading {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: #999;
+        padding: 6px 10px;
+        margin-top: -4px;
       }
     `,
   ],
@@ -369,24 +397,12 @@ export class PaymentList implements OnInit {
 export class PaymentCreateDialog implements OnInit {
   private fb = inject(FormBuilder);
   private dialogRef = inject(MatDialogRef<PaymentCreateDialog>);
-  private leaseService = inject(LeaseService);
+  private paymentService = inject(PaymentService);
 
-  allLeases = signal<LeaseWithDetails[]>([]);
-  selectedLease = signal<LeaseWithDetails | null>(null);
+  filteredLeases = signal<LeaseSearchResult[]>([]);
+  selectedLease = signal<LeaseSearchResult | null>(null);
+  searching = signal(false);
   leaseSearch = new FormControl('');
-
-  filteredLeases = computed(() => {
-    const q = (typeof this.leaseSearch.value === 'string' ? this.leaseSearch.value : '')
-      .toLowerCase()
-      .trim();
-    if (!q) return this.allLeases();
-    return this.allLeases().filter(
-      (l) =>
-        l.tenant_name.toLowerCase().includes(q) ||
-        l.unit_number.toLowerCase().includes(q) ||
-        l.building_name.toLowerCase().includes(q)
-    );
-  });
 
   months = [
     { value: 1, label: 'January' },
@@ -416,10 +432,27 @@ export class PaymentCreateDialog implements OnInit {
   });
 
   ngOnInit(): void {
-    this.leaseService.getActiveLeases().subscribe({
-      next: (leases) => this.allLeases.set(leases),
-      error: () => {},
-    });
+    this.leaseSearch.valueChanges
+      .pipe(
+        debounceTime(300),
+        switchMap((query) => {
+          if (!query || typeof query !== 'string' || !query.trim()) {
+            return of({ results: [], total: 0 });
+          }
+          this.searching.set(true);
+          return this.paymentService.searchLeases(query.trim());
+        })
+      )
+      .subscribe({
+        next: (res) => {
+          this.filteredLeases.set(res.results);
+          this.searching.set(false);
+        },
+        error: () => {
+          this.filteredLeases.set([]);
+          this.searching.set(false);
+        },
+      });
 
     // Clear selected lease if user edits the search field manually
     this.leaseSearch.valueChanges.subscribe((v) => {
@@ -435,12 +468,12 @@ export class PaymentCreateDialog implements OnInit {
     });
   }
 
-  leaseDisplay = (lease: LeaseWithDetails | string | null): string => {
+  leaseDisplay = (lease: LeaseSearchResult | string | null): string => {
     if (!lease || typeof lease === 'string') return typeof lease === 'string' ? lease : '';
     return `${lease.tenant_name} — Unit ${lease.unit_number}`;
   };
 
-  onLeaseSelected(lease: LeaseWithDetails): void {
+  onLeaseSelected(lease: LeaseSearchResult): void {
     this.selectedLease.set(lease);
     this.form.patchValue({
       unit_id: lease.unit_id,

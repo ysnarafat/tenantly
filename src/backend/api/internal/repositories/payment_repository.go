@@ -438,6 +438,76 @@ func (r *PaymentRepository) GetBuildingLevelSummary() (map[string]interface{}, e
 	}, nil
 }
 
+// SearchLeases searches for active leases across tenants, properties, buildings, and units
+func (r *PaymentRepository) SearchLeases(orgID int, query string) ([]*models.LeaseSearchResult, error) {
+	searchPattern := "%" + strings.ToLower(query) + "%"
+
+	sqlQuery := `
+		SELECT
+			l.id AS lease_id,
+			t.id AS tenant_id,
+			t.name AS tenant_name,
+			COALESCE(t.phone, '') AS tenant_phone,
+			p.id AS property_id,
+			p.property_name,
+			b.id AS building_id,
+			b.building_name,
+			b.building_code,
+			u.id AS unit_id,
+			u.unit_number,
+			COALESCE(u.unit_type::text, '') AS unit_type,
+			l.start_date AS lease_start_date,
+			l.end_date AS lease_end_date,
+			l.monthly_rent,
+			l.active
+		FROM leases l
+		LEFT JOIN tenants t ON l.tenant_id = t.id
+		LEFT JOIN units u ON l.unit_id = u.id
+		LEFT JOIN buildings b ON u.building_id = b.id
+		LEFT JOIN properties p ON u.property_id = p.id
+		WHERE l.organization_id = $1
+			AND l.active = true
+			AND (
+				LOWER(t.name) LIKE $2
+				OR LOWER(p.property_name) LIKE $2
+				OR LOWER(b.building_name) LIKE $2
+				OR LOWER(b.building_code) LIKE $2
+				OR LOWER(u.unit_number) LIKE $2
+				OR LOWER(t.phone) LIKE $2
+				OR CAST(l.id AS TEXT) LIKE $2
+			)
+		ORDER BY t.name, l.start_date DESC
+		LIMIT 50`
+
+	rows, err := r.db.Query(sqlQuery, orgID, searchPattern)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search leases: %w", err)
+	}
+	defer rows.Close()
+
+	results := make([]*models.LeaseSearchResult, 0)
+	for rows.Next() {
+		result := &models.LeaseSearchResult{}
+		err := rows.Scan(
+			&result.LeaseID, &result.TenantID, &result.TenantName, &result.TenantPhone,
+			&result.PropertyID, &result.PropertyName,
+			&result.BuildingID, &result.BuildingName, &result.BuildingCode,
+			&result.UnitID, &result.UnitNumber, &result.UnitType,
+			&result.LeaseStartDate, &result.LeaseEndDate,
+			&result.MonthlyRent, &result.Active,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan lease search result: %w", err)
+		}
+		results = append(results, result)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("lease search rows error: %w", err)
+	}
+
+	return results, nil
+}
+
 // GetBuildingPaymentAnalytics returns detailed analytics for a building over a date range
 func (r *PaymentRepository) GetBuildingPaymentAnalytics(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentAnalytics, error) {
 	query := `

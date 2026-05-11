@@ -276,6 +276,7 @@ func (s *Server) setupRoutes() {
 				payments.GET("", middleware.RequireAnyRole(), paymentHandler.GetPayments)
 				payments.POST("", middleware.RequireAdminOrPropertyManager(), paymentHandler.CreatePayment)
 				payments.POST("/bulk", middleware.RequireAdminOrPropertyManager(), paymentHandler.BulkCreatePayments)
+				payments.GET("/search", middleware.RequireAnyRole(), paymentHandler.SearchLeases)
 				payments.GET("/:id", middleware.RequireAnyRole(), paymentHandler.GetPayment)
 				payments.PUT("/:id", middleware.RequireAdminOrPropertyManager(), paymentHandler.UpdatePayment)
 				payments.GET("/building/:building_id/report", middleware.RequireAnyRole(), paymentHandler.GetBuildingPaymentReport)

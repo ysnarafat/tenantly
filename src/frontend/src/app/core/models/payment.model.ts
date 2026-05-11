@@ -68,3 +68,27 @@ export interface DashboardSummary {
   unit_count: number;
   tenant_count: number;
 }
+
+export interface LeaseSearchResult {
+  lease_id: number;
+  tenant_id: number;
+  tenant_name: string;
+  tenant_phone: string;
+  property_id: number;
+  property_name: string;
+  building_id: number;
+  building_name: string;
+  building_code: string;
+  unit_id: number;
+  unit_number: string;
+  unit_type: string;
+  lease_start_date: string; // ISO 8601 date
+  lease_end_date: string; // ISO 8601 date
+  monthly_rent: number;
+  active: boolean;
+}
+
+export interface LeaseSearchResponse {
+  results: LeaseSearchResult[];
+  total: number;
+}

@@ -427,3 +427,20 @@ func (s *PaymentService) LogPaymentAccess(userID int, action string, paymentID i
 		s.auditService.LogUserAction(userID, fmt.Sprintf("%s_DENIED", action), "payments", &paymentID, nil, accessLog)
 	}
 }
+
+// SearchLeases searches for active leases by tenant name, property, building, unit, or lease ID
+func (s *PaymentService) SearchLeases(orgID int, query string) (*models.LeaseSearchResponse, error) {
+	if query == "" {
+		return &models.LeaseSearchResponse{Results: make([]*models.LeaseSearchResult, 0), Total: 0}, nil
+	}
+
+	results, err := s.paymentRepo.SearchLeases(orgID, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search leases: %w", err)
+	}
+
+	return &models.LeaseSearchResponse{
+		Results: results,
+		Total:   len(results),
+	}, nil
+}

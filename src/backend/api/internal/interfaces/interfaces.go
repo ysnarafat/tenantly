@@ -261,6 +261,7 @@ type PaymentRepositoryInterface interface {
 	GetDashboardSummary() (*models.DashboardSummary, error)
 	GetBuildingLevelSummary() (map[string]interface{}, error)
 	GetBuildingPaymentAnalytics(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentAnalytics, error)
+	SearchLeases(orgID int, query string) ([]*models.LeaseSearchResult, error)
 }
 
 // PaymentServiceInterface defines the interface for payment service operations
@@ -278,6 +279,7 @@ type PaymentServiceInterface interface {
 	GetPaymentAnalyticsByBuilding(buildingID int, period string) (*models.BuildingPaymentAnalytics, error)
 	CanUserAccessPayment(userID int, userRole string, payment *models.PaymentWithDetails, userOrgID int) bool
 	LogPaymentAccess(userID int, action string, paymentID int, allowed bool)
+	SearchLeases(orgID int, query string) (*models.LeaseSearchResponse, error)
 }
 
 // NotificationRepositoryInterface defines the interface for notification repository operations
