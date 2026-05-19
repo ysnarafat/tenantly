@@ -102,22 +102,22 @@ type DashboardSummary struct {
 
 // LeaseSearchResult represents a lease with related entity details for payment entry search
 type LeaseSearchResult struct {
-	LeaseID       int       `json:"lease_id" db:"lease_id"`
-	TenantID      int       `json:"tenant_id" db:"tenant_id"`
-	TenantName    string    `json:"tenant_name" db:"tenant_name"`
-	TenantPhone   string    `json:"tenant_phone" db:"tenant_phone"`
-	PropertyID    int       `json:"property_id" db:"property_id"`
-	PropertyName  string    `json:"property_name" db:"property_name"`
-	BuildingID    int       `json:"building_id" db:"building_id"`
-	BuildingName  string    `json:"building_name" db:"building_name"`
-	BuildingCode  string    `json:"building_code" db:"building_code"`
-	UnitID        int       `json:"unit_id" db:"unit_id"`
-	UnitNumber    string    `json:"unit_number" db:"unit_number"`
-	UnitType      string    `json:"unit_type" db:"unit_type"`
+	LeaseID        int       `json:"lease_id" db:"lease_id"`
+	TenantID       int       `json:"tenant_id" db:"tenant_id"`
+	TenantName     string    `json:"tenant_name" db:"tenant_name"`
+	TenantPhone    string    `json:"tenant_phone" db:"tenant_phone"`
+	PropertyID     int       `json:"property_id" db:"property_id"`
+	PropertyName   string    `json:"property_name" db:"property_name"`
+	BuildingID     int       `json:"building_id" db:"building_id"`
+	BuildingName   string    `json:"building_name" db:"building_name"`
+	BuildingCode   string    `json:"building_code" db:"building_code"`
+	UnitID         int       `json:"unit_id" db:"unit_id"`
+	UnitNumber     string    `json:"unit_number" db:"unit_number"`
+	UnitType       string    `json:"unit_type" db:"unit_type"`
 	LeaseStartDate time.Time `json:"lease_start_date" db:"lease_start_date"`
 	LeaseEndDate   time.Time `json:"lease_end_date" db:"lease_end_date"`
-	MonthlyRent   float64   `json:"monthly_rent" db:"monthly_rent"`
-	Active        bool      `json:"active" db:"active"`
+	MonthlyRent    float64   `json:"monthly_rent" db:"monthly_rent"`
+	Active         bool      `json:"active" db:"active"`
 }
 
 // LeaseSearchResponse represents paginated search results
