@@ -17,6 +17,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { TenantService } from '../../../core/services/tenant.service';
 import { TenantFormDialogComponent } from '../tenant-form-dialog/tenant-form-dialog';
 import { Tenant } from '../../../core/models/tenant.model';
+import { cleanEmptyFields } from '../../../shared/utils/object.utils';
 
 @Component({
   selector: 'app-tenant-list',
@@ -67,7 +68,7 @@ export class TenantList implements OnInit {
     this.loading = true;
     this.tenantService.getAllTenants(1, 100).subscribe({
       next: (response) => {
-        this.tenants = response.tenants;
+        this.tenants = response.tenants || [];
         this.applyFilters();
         this.loading = false;
       },
@@ -181,7 +182,9 @@ export class TenantList implements OnInit {
 
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
-        this.tenantService.updateTenant(tenant.id, result).subscribe({
+        const cleanedResult = cleanEmptyFields(result);
+        console.log('Updating tenant with ID:', tenant.id, 'Data:', cleanedResult);
+        this.tenantService.updateTenant(tenant.id, cleanedResult).subscribe({
           next: () => {
             this.snackBar.open('Tenant updated successfully', 'Close', { duration: 3000 });
             this.loadTenants();
