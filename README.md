@@ -2,13 +2,7 @@
 
 A multi-tenant property management platform built for the Bangladesh market. Handles tenant onboarding, lease management, payment tracking, and automated billing across multiple organisations.
 
-## Services
-
-| Service | Stack | Port |
-|---------|-------|------|
-| Backend API | Go (Gin) + PostgreSQL | 8080 |
-| Frontend | Angular + Material Design | 4200 |
-| Notification Service | .NET background worker | — |
+**Website:** [tenantly.xyz](https://tenantly.xyz)
 
 ## Quick Start
 
@@ -24,24 +18,38 @@ docker-compose up -d
 
 For local development without Docker, see the component READMEs below.
 
-Seed test users (one per role) are documented in [src/backend/api/README.md](./src/backend/api/README.md#development-seed-users). Password for all: `Test@1234`.
-
 ## Features
 
-- **Multi-Organisation** — Users belong to one or more organisations; login routes to an organisation picker when multiple are available, issuing organisation-scoped JWTs
-- **Role-Based Access** — Five roles: `SUPER_ADMIN`, `ORG_ADMIN`, `Admin`, `PropertyManager`, `Accountant`
-- **Property Management** — Buildings, units, occupancy tracking
-- **Tenant & Lease Management** — Profiles, lease terms, automated renewals
+- **Multi-Organisation** — Users belong to multiple organisations with role-based access
+- **Property Management** — Buildings, units, and occupancy tracking
+- **Tenant & Lease Management** — Profiles, lease terms, and automated renewals
 - **Payment Tracking** — Multi-channel payment recording and reporting
-- **User Onboarding** — Token-based invitation workflow for new organisation members
-- **Admin Panel** — Organisation management, invitation management, and audit logs (SUPER_ADMIN / ORG_ADMIN)
+- **User Onboarding** — Token-based invitation workflow for new members
+- **Admin Panel** — Organisation management, user invitations, and audit logs
 - **Notifications** — SMS and email reminders for rent due and lease renewals
 - **Localisation** — Bengali language support, BDT (৳) currency
 
+## Tech Stack
+
+| Component | Technology |
+|-----------|------------|
+| Backend API | Go (Gin) + PostgreSQL |
+| Frontend | Angular 21 + Material Design 3 |
+| Notifications | .NET background worker |
+
+## Architecture
+
+Tenantly is a three-service architecture:
+- **API Server** (Go/Gin) — RESTful backend with JWT authentication
+- **Web Frontend** (Angular) — SPA with NgRx state management
+- **Notification Worker** (.NET) — Async SMS/email service
+
+All services are containerised and coordinated via Docker Compose for easy local development and deployment.
+
 ## Documentation
 
-| Component | README |
-|-----------|--------|
+| Component | Link |
+|-----------|------|
 | Backend API | [src/backend/api/README.md](./src/backend/api/README.md) |
 | Frontend | [src/frontend/README.md](./src/frontend/README.md) |
 | Notification Service | [src/backend/notification-service/README.md](./src/backend/notification-service/README.md) |
