@@ -26,7 +26,7 @@ export interface Building {
   has_elevator: boolean;
   construction_year?: number;
   metadata?: BuildingMetadata;
-  active: boolean;
+  active_status: boolean;
   created_at: string; // ISO 8601 UTC timestamp
   updated_at: string; // ISO 8601 UTC timestamp
 }
@@ -57,5 +57,5 @@ export interface UpdateBuildingRequest {
   has_elevator?: boolean;
   construction_year?: number;
   metadata?: BuildingMetadata;
-  active?: boolean;
+  active_status?: boolean;
 }

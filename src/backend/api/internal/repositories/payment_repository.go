@@ -10,6 +10,11 @@ import (
 	"github.com/ysnarafat/tenantly/internal/models"
 )
 
+// Helper function to convert time.Time to sql.NullTime
+func timeToNullTime(t time.Time) sql.NullTime {
+	return sql.NullTime{Time: t, Valid: true}
+}
+
 // PaymentRepository implements PaymentRepositoryInterface
 type PaymentRepository struct {
 	db      *sql.DB
@@ -80,20 +85,20 @@ func (r *PaymentRepository) GetByIDWithDetails(id int) (*models.PaymentWithDetai
 // GetBuildingPaymentsInPeriod returns paginated payments for a building within a date range
 func (r *PaymentRepository) GetBuildingPaymentsInPeriod(buildingID int, startDate, endDate time.Time, limit, offset int) ([]*models.PaymentWithDetails, int, error) {
 	count, err := r.queries.CountBuildingPaymentsInPeriod(context.Background(), db.CountBuildingPaymentsInPeriodParams{
-		BuildingID: int32(buildingID),
-		CreatedAt:  startDate,
-		CreatedAt_2: endDate,
+		BuildingID:  int32(buildingID),
+		CreatedAt:   timeToNullTime(startDate),
+		CreatedAt_2: timeToNullTime(endDate),
 	})
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count building payments: %w", err)
 	}
 
 	rows, err := r.queries.GetBuildingPaymentsInPeriod(context.Background(), db.GetBuildingPaymentsInPeriodParams{
-		BuildingID: int32(buildingID),
-		CreatedAt:  startDate,
-		CreatedAt_2: endDate,
-		Limit:      int32(limit),
-		Offset:     int32(offset),
+		BuildingID:  int32(buildingID),
+		CreatedAt:   timeToNullTime(startDate),
+		CreatedAt_2: timeToNullTime(endDate),
+		Limit:       int32(limit),
+		Offset:      int32(offset),
 	})
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to query building payments: %w", err)
@@ -110,9 +115,9 @@ func (r *PaymentRepository) GetBuildingPaymentsInPeriod(buildingID int, startDat
 // GetBuildingPaymentStats returns aggregate payment stats for a building in a date range
 func (r *PaymentRepository) GetBuildingPaymentStats(buildingID int, startDate, endDate time.Time) (interface{}, error) {
 	row, err := r.queries.GetBuildingPaymentStats(context.Background(), db.GetBuildingPaymentStatsParams{
-		BuildingID: int32(buildingID),
-		CreatedAt:  startDate,
-		CreatedAt_2: endDate,
+		BuildingID:  int32(buildingID),
+		CreatedAt:   timeToNullTime(startDate),
+		CreatedAt_2: timeToNullTime(endDate),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get building payment stats: %w", err)
@@ -123,26 +128,26 @@ func (r *PaymentRepository) GetBuildingPaymentStats(buildingID int, startDate, e
 // GetPropertyPaymentStats returns aggregate payment stats for a property in a date range
 func (r *PaymentRepository) GetPropertyPaymentStats(propertyID int, startDate, endDate time.Time) (interface{}, error) {
 	row, err := r.queries.GetPropertyPaymentStats(context.Background(), db.GetPropertyPaymentStatsParams{
-		PropertyID: int32(propertyID),
-		CreatedAt:  startDate,
-		CreatedAt_2: endDate,
+		PropertyID:  int32(propertyID),
+		CreatedAt:   timeToNullTime(startDate),
+		CreatedAt_2: timeToNullTime(endDate),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get property payment stats: %w", err)
 	}
-	return toPaymentStats(row), nil
+	return toPropertyPaymentStats(row), nil
 }
 
 // GetSystemPaymentStats returns system-wide aggregate payment stats for a date range
 func (r *PaymentRepository) GetSystemPaymentStats(startDate, endDate time.Time) (interface{}, error) {
 	row, err := r.queries.GetSystemPaymentStats(context.Background(), db.GetSystemPaymentStatsParams{
-		CreatedAt:  startDate,
-		CreatedAt_2: endDate,
+		CreatedAt:   timeToNullTime(startDate),
+		CreatedAt_2: timeToNullTime(endDate),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get system payment stats: %w", err)
 	}
-	return toPaymentStats(row), nil
+	return toSystemPaymentStats(row), nil
 }
 
 // GetDashboardSummary returns overall payment summary across the system
@@ -169,7 +174,7 @@ func (r *PaymentRepository) SearchLeases(orgID int, query string) ([]*models.Lea
 
 	rows, err := r.queries.SearchLeases(context.Background(), db.SearchLeasesParams{
 		OrganizationID: int32(orgID),
-		Ilike:          searchPattern,
+		Name:           searchPattern,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to search leases: %w", err)
@@ -186,9 +191,9 @@ func (r *PaymentRepository) SearchLeases(orgID int, query string) ([]*models.Lea
 // GetBuildingPaymentAnalytics returns detailed analytics for a building over a date range
 func (r *PaymentRepository) GetBuildingPaymentAnalytics(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentAnalytics, error) {
 	analyticsRow, err := r.queries.GetBuildingPaymentAnalytics(context.Background(), db.GetBuildingPaymentAnalyticsParams{
-		BuildingID: int32(buildingID),
-		CreatedAt:  startDate,
-		CreatedAt_2: endDate,
+		BuildingID:  int32(buildingID),
+		CreatedAt:   timeToNullTime(startDate),
+		CreatedAt_2: timeToNullTime(endDate),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get building payment analytics: %w", err)
@@ -198,9 +203,9 @@ func (r *PaymentRepository) GetBuildingPaymentAnalytics(buildingID int, startDat
 
 	// Fetch monthly trend
 	trendRows, err := r.queries.GetBuildingPaymentTrend(context.Background(), db.GetBuildingPaymentTrendParams{
-		BuildingID: int32(buildingID),
-		CreatedAt:  startDate,
-		CreatedAt_2: endDate,
+		BuildingID:  int32(buildingID),
+		CreatedAt:   timeToNullTime(startDate),
+		CreatedAt_2: timeToNullTime(endDate),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get building payment trend: %w", err)
@@ -214,11 +219,13 @@ func (r *PaymentRepository) GetBuildingPaymentAnalytics(buildingID int, startDat
 	}
 	trend := make([]trendPoint, len(trendRows))
 	for i, row := range trendRows {
+		due, _ := row.Due.(float64)
+		paid, _ := row.Paid.(float64)
 		trend[i] = trendPoint{
 			Year:  int(row.Year),
 			Month: int(row.Month),
-			Due:   row.Due,
-			Paid:  row.Paid,
+			Due:   due,
+			Paid:  paid,
 		}
 	}
 	analytics.TrendAnalysis = trend

@@ -26,8 +26,10 @@ import {
 } from '@angular/material/dialog';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { PaymentService, PaymentFilters } from '../../../core/services/payment.service';
 import { LeaseService } from '../../../core/services/lease.service';
 import { LeaseWithDetails } from '../../../core/models/lease.model';
@@ -61,8 +63,10 @@ import { of } from 'rxjs';
     MatDialogModule,
     MatChipsModule,
     MatProgressSpinnerModule,
+    MatProgressBarModule,
     MatSnackBarModule,
     MatDividerModule,
+    MatTooltipModule,
   ],
   templateUrl: './payment-list.html',
   styleUrls: ['./payment-list.scss'],

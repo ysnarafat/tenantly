@@ -706,7 +706,7 @@ WHERE l.organization_id = $1
         OR LOWER(b.building_name) LIKE $2
         OR LOWER(b.building_code) LIKE $2
         OR LOWER(u.unit_number) LIKE $2
-        OR LOWER(t.phone_number) LIKE $2
+        OR (CASE WHEN t.phone_number IS NOT NULL THEN LOWER(t.phone_number) ELSE '' END) LIKE $2
         OR CAST(l.id AS TEXT) LIKE $2
     )
 ORDER BY t.name, l.start_date DESC

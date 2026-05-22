@@ -1,565 +1,661 @@
+// ═══════════════════════════════════════════════════════════════════════════════
+// Payment List Component - Material UI 3 Optimized
+// Minimal CSS: Leverage Material Design System, CSS Grid, Flexbox
+// ═══════════════════════════════════════════════════════════════════════════════
+
 :root,
 [data-theme='light'] {
-  --bg-primary: #ffffff;
-  --bg-surface: #f5f7fa;
-  --text-primary: #1a1a1a;
-  --text-secondary: #666;
-  --border-color: #e0e0e0;
-  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.12);
-  --color-primary: #1e88e5;
-  --color-paid: #4caf50;
   --color-due: #90a4ae;
-  --color-partial: #ff9800;
+  --color-paid: #4caf50;
+  --color-pending: #ff9800;
   --color-overdue: #f44336;
-  --color-paid-bg: #e8f5e9;
-  --color-due-bg: #eceff1;
-  --color-partial-bg: #fff3e0;
-  --color-overdue-bg: #ffebee;
+  --bg-surface: #f5f7fa;
+  --border-subtle: #e0e0e0;
 }
 
 [data-theme='dark'] {
-  --bg-primary: #1e1e1e;
-  --bg-surface: #2a2a2a;
-  --text-primary: #e0e0e0;
-  --text-secondary: #aaa;
-  --border-color: #333;
-  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.6);
-  --color-primary: #64b5f6;
-  --color-paid: #81c784;
   --color-due: #90a4ae;
-  --color-partial: #ffb74d;
+  --color-paid: #81c784;
+  --color-pending: #ffb74d;
   --color-overdue: #ef9a9a;
-  --color-paid-bg: #1b3a1e;
-  --color-due-bg: #263238;
-  --color-partial-bg: #3e2800;
-  --color-overdue-bg: #3b1010;
+  --bg-surface: #2a2a2a;
+  --border-subtle: #333;
 }
 
-.payment-list-container {
+// ──────────────────────────────────────────────────────────────────────────────
+// Container & Layout
+// ──────────────────────────────────────────────────────────────────────────────
+
+.payment-container {
   padding: 24px;
-  max-width: 1280px;
+  max-width: 1400px;
   margin: 0 auto;
-  background-color: var(--bg-surface);
+  background: var(--bg-surface);
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 }
 
-// ── Summary row ──────────────────────────────────────────────────────────────
-.summary-row {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
+// ──────────────────────────────────────────────────────────────────────────────
+// Page Header
+// ──────────────────────────────────────────────────────────────────────────────
+
+.page-header {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
-.summary-row mat-card {
-  transition: all 0.3s ease;
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
 
-  &:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
+.header-text {
+  flex: 1;
+  min-width: 200px;
+}
+
+.page-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.5px;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+  font-weight: 500;
+}
+
+.create-btn {
+  white-space: nowrap;
+  min-height: 48px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .btn-text {
+    @media (max-width: 480px) {
+      display: none;
+    }
   }
 }
 
-.summary-row mat-card-header {
-  margin: 0 !important;
+// ──────────────────────────────────────────────────────────────────────────────
+// Summary Section
+// ──────────────────────────────────────────────────────────────────────────────
+
+.summary-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.summary-row mat-card-title {
-  font-size: 20px !important;
-  font-weight: 600 !important;
-  margin: 8px 0 4px 0 !important;
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
 }
 
-.summary-row mat-card-subtitle {
-  font-size: 12px !important;
-  opacity: 0.85;
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
 }
+
+.stat-card {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  mat-card-content {
+    padding: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+}
+
+.stat-icon {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+
+.stat-card-due .stat-icon {
+  background: rgba(144, 164, 174, 0.12);
+  color: var(--color-due);
+}
+
+.stat-card-paid .stat-icon {
+  background: rgba(76, 175, 80, 0.12);
+  color: var(--color-paid);
+}
+
+.stat-card-pending .stat-icon {
+  background: rgba(255, 152, 0, 0.12);
+  color: var(--color-pending);
+}
+
+.stat-card-overdue .stat-icon {
+  background: rgba(244, 67, 54, 0.12);
+  color: var(--color-overdue);
+}
+
+.stat-card-rate .stat-icon {
+  background: rgba(33, 150, 243, 0.12);
+  color: #2196f3;
+}
+
+.stat-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-label {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.7;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.progress-bar {
+  margin-top: 8px;
+  height: 4px;
+  border-radius: 2px;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Filters Section
+// ──────────────────────────────────────────────────────────────────────────────
+
+.filters-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.filters-card {
+  mat-card-content {
+    padding: 24px;
+  }
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.form-field {
+  width: 100%;
+  min-width: 0;
+}
+
+.button-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  flex: 1;
+  min-width: 120px;
+  white-space: nowrap;
+  padding: 0 16px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Payments Section
+// ──────────────────────────────────────────────────────────────────────────────
+
+.payments-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.loading-card,
+.empty-card {
+  mat-card-content {
+    padding: 48px 24px;
+  }
+}
+
+.loading-content,
+.empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+
+  p {
+    margin: 0;
+    color: #666;
+    font-size: 14px;
+  }
+}
+
+.empty-icon {
+  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  color: #ccc;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Desktop Table
+// ──────────────────────────────────────────────────────────────────────────────
+
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: 8px;
+  background: white;
+  border: 1px solid var(--border-subtle);
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+
+.payment-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    background: #f9fafb;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 14px 16px;
+    text-align: left;
+    color: #666;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+
+    &:last-child {
+      text-align: right;
+    }
+  }
+
+  tr:hover {
+    background: #fafafa;
+  }
+}
+
+.cell-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cell-main {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.cell-sub {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.amount-cell {
+  text-align: right;
+  font-family: 'Roboto Mono', monospace;
+  font-weight: 500;
+}
+
+.col-tenant {
+  min-width: 200px;
+}
+
+.col-property {
+  min-width: 160px;
+}
+
+.col-period {
+  min-width: 120px;
+}
+
+.col-amount {
+  min-width: 100px;
+  text-align: right;
+}
+
+.col-status {
+  min-width: 100px;
+}
+
+.col-actions {
+  width: 48px;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Mobile Cards View
+// ──────────────────────────────────────────────────────────────────────────────
+
+.mobile-cards-list {
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+
+  @media (max-width: 768px) {
+    display: flex;
+  }
+}
+
+.payment-card {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  &:active {
+    transform: translateY(1px);
+  }
+
+  mat-card-header {
+    padding: 12px 16px;
+    margin: 0;
+  }
+
+  .card-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .card-left {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .card-tenant {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-location {
+    font-size: 12px;
+    color: var(--text-secondary, #666);
+    margin-top: 2px;
+  }
+
+  mat-card-content {
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    &.card-amounts {
+      padding: 8px 16px;
+    }
+  }
+
+  mat-card-actions {
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 0;
+    border-top: 1px solid var(--border-subtle);
+
+    button {
+      flex: 1;
+      border-radius: 0;
+      margin: 0;
+      min-height: 44px;
+    }
+  }
+}
+
+.amount-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.period-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary, #666);
+  flex: 1;
+}
+
+.amount-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-end;
+}
+
+.amount-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.6;
+}
+
+.amount-value {
+  font-size: 15px;
+  font-weight: 700;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.edit-btn {
+  .edit-text {
+    @media (max-width: 480px) {
+      display: none;
+    }
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Status Chips
+// ──────────────────────────────────────────────────────────────────────────────
+
+.mat-mdc-chip {
+  &.status-paid {
+    --mdc-chip-elevated-container-color: rgba(76, 175, 80, 0.12);
+    --mdc-chip-label-text-color: var(--color-paid);
+  }
+
+  &.status-due {
+    --mdc-chip-elevated-container-color: rgba(144, 164, 174, 0.12);
+    --mdc-chip-label-text-color: var(--color-due);
+  }
+
+  &.status-partial {
+    --mdc-chip-elevated-container-color: rgba(255, 152, 0, 0.12);
+    --mdc-chip-label-text-color: var(--color-pending);
+  }
+
+  &.status-overdue {
+    --mdc-chip-elevated-container-color: rgba(244, 67, 54, 0.12);
+    --mdc-chip-label-text-color: var(--color-overdue);
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Pagination
+// ──────────────────────────────────────────────────────────────────────────────
+
+.pagination {
+  margin-top: 24px;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Responsive Design
+// ──────────────────────────────────────────────────────────────────────────────
 
 @media (max-width: 1024px) {
-  .summary-row {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
+  .summary-cards {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   }
 }
 
 @media (max-width: 768px) {
-  .summary-row {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-    margin-bottom: 20px;
+  .payment-container {
+    padding: 16px;
+    gap: 24px;
   }
 
-  .summary-row mat-card-title {
-    font-size: 18px !important;
+  .page-title {
+    font-size: 24px;
   }
 
-  .summary-row mat-card-subtitle {
-    font-size: 11px !important;
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .button-group {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .action-btn {
+    min-width: auto;
+    padding: 0 12px;
+  }
+
+  .summary-cards {
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 480px) {
-  .summary-row {
-    grid-template-columns: 1fr;
-    gap: 8px;
+  .payment-container {
+    padding: 12px;
+    gap: 20px;
   }
 
-  .summary-row mat-card {
-    padding: 12px !important;
+  .header-inner {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .summary-row mat-card-title {
-    font-size: 16px !important;
-  }
-
-  .summary-row mat-card-subtitle {
-    font-size: 10px !important;
-  }
-}
-
-// Icon avatar colors — use theme vars so dark mode works
-.icon-due {
-  background: var(--color-due-bg) !important;
-  color: var(--color-due) !important;
-}
-.icon-paid {
-  background: var(--color-paid-bg) !important;
-  color: var(--color-paid) !important;
-}
-.icon-partial {
-  background: var(--color-partial-bg) !important;
-  color: var(--color-partial) !important;
-}
-.icon-overdue {
-  background: var(--color-overdue-bg) !important;
-  color: var(--color-overdue) !important;
-}
-.icon-primary {
-  background: #e3f2fd !important;
-  color: var(--color-primary) !important;
-}
-
-// ── Toolbar ──────────────────────────────────────────────────────────────────
-.toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-  gap: 16px;
-}
-
-.page-title {
-  font-size: 24px;
-  font-weight: 700;
-  margin: 0;
-  color: var(--text-primary);
-}
-
-.toolbar button {
-  white-space: nowrap;
-  min-height: 44px;
-  min-width: 44px;
-}
-
-@media (max-width: 768px) {
-  .toolbar {
-    margin-bottom: 16px;
-    gap: 12px;
+  .create-btn {
+    width: 100%;
   }
 
   .page-title {
     font-size: 20px;
   }
 
-  .toolbar button {
-    min-width: auto;
-    padding: 0 16px !important;
-  }
-}
-
-@media (max-width: 480px) {
-  .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-    margin-bottom: 12px;
-  }
-
-  .page-title {
-    font-size: 18px;
-  }
-
-  .toolbar button {
-    width: 100%;
-  }
-}
-
-// ── Filters ──────────────────────────────────────────────────────────────────
-.filter-card {
-  margin-bottom: 16px;
-  background: var(--bg-primary) !important;
-  border-radius: 12px !important;
-  box-shadow: var(--shadow-sm) !important;
-  transition: box-shadow 0.3s ease;
-}
-
-.filter-card:hover {
-  box-shadow: var(--shadow-md) !important;
-}
-
-.filter-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: flex-end;
-}
-
-.filter-field {
-  min-width: 160px;
-  flex: 1 1 140px;
-}
-
-.filter-actions {
-  display: flex;
-  gap: 8px;
-  padding-bottom: 1.34375em;
-}
-
-.filter-actions button {
-  min-height: 40px;
-  white-space: nowrap;
-}
-
-@media (max-width: 768px) {
-  .filter-row {
-    gap: 8px;
-  }
-
-  .filter-field {
-    min-width: 0;
-    flex: 1 1 100px;
-  }
-
-  .filter-actions {
-    width: 100%;
-    gap: 6px;
-    padding-bottom: 0;
-  }
-
-  .filter-actions button {
-    flex: 1;
-    min-width: 0;
+  .page-subtitle {
     font-size: 12px;
   }
-}
 
-@media (max-width: 480px) {
-  .filter-card {
-    margin-bottom: 12px;
-  }
-
-  .filter-row {
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .filter-field {
-    width: 100%;
-    min-width: auto;
-  }
-
-  .filter-actions {
-    width: 100%;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .filter-actions button {
-    width: 100%;
-  }
-}
-
-// ── Table ─────────────────────────────────────────────────────────────────────
-.table-container {
-  position: relative;
-  overflow-x: auto;
-  min-height: 200px;
-}
-
-.payment-table {
-  width: 100%;
-}
-
-.payment-table th {
-  font-weight: 600;
-  color: var(--text-secondary);
-  font-size: 13px;
-}
-
-.payment-table td {
-  color: var(--text-primary);
-}
-
-.cell-primary {
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.cell-secondary {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 2px;
-}
-
-.amount-cell {
-  font-family: 'Roboto Mono', monospace;
-  text-align: right;
-  font-size: 14px;
-}
-
-// ── Status chips — styled via M3 component tokens ─────────────────────────────
-.mat-mdc-chip.status-paid {
-  --mdc-chip-elevated-container-color: var(--color-paid-bg);
-  --mdc-chip-label-text-color: var(--color-paid);
-}
-.mat-mdc-chip.status-due {
-  --mdc-chip-elevated-container-color: var(--color-due-bg);
-  --mdc-chip-label-text-color: var(--color-due);
-}
-.mat-mdc-chip.status-partial {
-  --mdc-chip-elevated-container-color: var(--color-partial-bg);
-  --mdc-chip-label-text-color: var(--color-partial);
-}
-.mat-mdc-chip.status-overdue {
-  --mdc-chip-elevated-container-color: var(--color-overdue-bg);
-  --mdc-chip-label-text-color: var(--color-overdue);
-}
-
-// ── Loading ───────────────────────────────────────────────────────────────────
-.loading-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.9);
-  z-index: 10;
-  border-radius: 12px;
-}
-
-.no-data {
-  text-align: center;
-  padding: 48px 24px;
-  color: var(--text-secondary);
-  font-size: 14px;
-}
-
-// ── Mobile payment cards (hidden on desktop) ──────────────────────────────────
-.mobile-payment-list {
-  display: none;
-}
-
-// ── Pagination ─────────────────────────────────────────────────────────────────
-::ng-deep .mat-mdc-paginator {
-  background: var(--bg-primary) !important;
-
-  .mat-mdc-paginator-container {
-    min-height: auto;
-    padding: 12px 16px;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .mat-mdc-paginator-page-size,
-  .mat-mdc-paginator-range-actions {
-    margin: 0;
-  }
-}
-
-// ── Responsive ────────────────────────────────────────────────────────────────
-@media (max-width: 768px) {
-  .payment-list-container {
-    padding: 12px;
-  }
-
-  // Hide desktop table, show mobile cards
-  .table-container {
-    display: none;
-  }
-
-  .mobile-payment-list {
-    display: flex;
-    flex-direction: column;
+  .summary-cards {
+    grid-template-columns: 1fr;
     gap: 12px;
-    margin-bottom: 8px;
   }
 
-  .mobile-payment-card {
-    background: var(--bg-primary);
-    border-radius: 12px;
-    box-shadow: var(--shadow-sm);
-    overflow: hidden;
-    transition: all 0.3s ease;
+  .stat-card mat-card-content {
+    padding: 14px;
+    gap: 12px;
+  }
 
-    &:active {
-      box-shadow: var(--shadow-md);
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+  }
+
+  .stat-value {
+    font-size: 20px;
+  }
+
+  .filters-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .button-group {
+    grid-template-columns: 1fr;
+  }
+
+  .payment-card {
+    border-radius: 8px;
+
+    mat-card-header {
+      padding: 10px 12px;
+    }
+
+    mat-card-content {
+      padding: 8px 12px !important;
+    }
+
+    mat-card-actions {
+      button {
+        min-height: 40px;
+      }
+    }
+
+    .card-tenant {
+      font-size: 14px;
+    }
+
+    .card-location {
+      font-size: 11px;
+    }
+
+    .amount-value {
+      font-size: 14px;
     }
   }
 
-  .mobile-card-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding: 14px 16px 10px;
-    gap: 8px;
-  }
-
-  .mobile-card-tenant {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .mobile-card-body {
-    padding: 0 16px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    border-top: 1px solid var(--border-color);
-    padding-top: 10px;
-  }
-
-  .mobile-card-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 13px;
-  }
-
-  .mobile-card-label {
-    color: var(--text-secondary);
-    font-size: 12px;
-    font-weight: 500;
-  }
-
-  .mobile-card-value {
-    color: var(--text-primary);
-    font-size: 13px;
-    text-align: right;
-    flex: 0 1 auto;
-    margin-left: 8px;
-  }
-
-  .mobile-card-amounts {
-    display: flex;
-    gap: 0;
-    margin-top: 4px;
-    border-top: 1px solid var(--border-color);
-    padding-top: 8px;
-  }
-
-  .mobile-amount-block {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 0;
-
-    &:first-child {
-      border-right: 1px solid var(--border-color);
-    }
-  }
-
-  .mobile-amount-value {
-    font-family: 'Roboto Mono', monospace;
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text-primary);
-
-    &.paid {
-      color: var(--color-paid);
-    }
-  }
-
-  .mobile-card-footer {
-    padding: 10px 16px;
-    display: flex;
-    gap: 8px;
-    border-top: 1px solid var(--border-color);
-  }
-
-  .mobile-card-footer button {
-    flex: 1;
-    min-height: 40px;
-  }
-
-  .no-data {
-    padding: 32px 16px;
-    font-size: 13px;
-  }
-}
-
-@media (max-width: 480px) {
-  .payment-list-container {
-    padding: 8px;
-  }
-
-  .mobile-payment-card {
-    border-radius: 10px;
-  }
-
-  .mobile-card-header {
-    padding: 12px 14px 8px;
-    gap: 6px;
-  }
-
-  .mobile-card-body {
-    padding: 0 14px 8px;
-    gap: 5px;
-    padding-top: 8px;
-  }
-
-  .mobile-card-row {
-    font-size: 12px;
-  }
-
-  .mobile-card-label {
-    font-size: 11px;
-  }
-
-  .mobile-card-value {
-    font-size: 12px;
-  }
-
-  .mobile-amount-block {
-    gap: 3px;
-  }
-
-  .mobile-amount-value {
-    font-size: 13px;
-  }
-
-  .mobile-card-footer {
-    padding: 8px 14px;
-    gap: 6px;
-  }
-
-  .mobile-card-footer button {
-    font-size: 12px;
-  }
-
-  .filter-card mat-card-content {
-    padding: 12px !important;
-  }
-
-  ::ng-deep .mat-mdc-paginator-container {
-    padding: 8px 12px !important;
-    font-size: 12px;
-  }
-
-  ::ng-deep .mat-mdc-form-field {
-    font-size: 12px;
+  .section-header h2 {
+    font-size: 16px;
   }
 }

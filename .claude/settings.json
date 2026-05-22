@@ -9,14 +9,14 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path' | { read -r f; if [[ \"$f\" == *.go ]]; then go fmt \"$f\" 2>/dev/null; fi; } || true",
-            "statusMessage": "Formatting Go file...",
+            "command": "file_path=$(jq -r '.tool_input.file_path'); if [[ \"$file_path\" == *.go ]]; then cd src/backend/api; go fmt ./... 2>/dev/null; fi; true",
+            "statusMessage": "Formatting Go files...",
             "shell": "bash"
           },
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path' | { read -r f; if [[ \"$f\" =~ \\.(ts|tsx|js|jsx)$ ]]; then npx prettier --write \"$f\" 2>/dev/null; fi; } || true",
-            "statusMessage": "Formatting frontend file...",
+            "command": "file_path=$(jq -r '.tool_input.file_path'); if [[ \"$file_path\" =~ \\.(ts|tsx|js|jsx)$ ]]; then cd src/frontend; npm run format 2>/dev/null; fi; true",
+            "statusMessage": "Formatting frontend files...",
             "shell": "bash"
           }
         ]
