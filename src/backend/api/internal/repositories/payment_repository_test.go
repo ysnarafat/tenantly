@@ -258,8 +258,8 @@ func TestPaymentRepository_Update(t *testing.T) {
 		newStatus := models.PaymentStatusPaid
 		newAmount := 6000.0
 		updated, err := repo.Update(created.ID, &models.UpdatePaymentRequest{
-			Status:      &newStatus,
-			AmountPaid:  &newAmount,
+			Status:        &newStatus,
+			AmountPaid:    &newAmount,
 			PaymentMethod: ptrString("Bank Transfer"),
 		})
 		if err != nil {
@@ -502,8 +502,8 @@ func TestPaymentRepository_GetBuildingPaymentStats(t *testing.T) {
 		})
 		paymentID := 1
 		repo.Update(paymentID, &models.UpdatePaymentRequest{
-			Status:      &paidStatus,
-			AmountPaid:  &paidAmount,
+			Status:     &paidStatus,
+			AmountPaid: &paidAmount,
 		})
 
 		startDate := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)

@@ -546,4 +546,3 @@ func TestPaymentHandler_SearchLeases(t *testing.T) {
 		}
 	})
 }
-
