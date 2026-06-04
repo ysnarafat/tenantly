@@ -40,9 +40,11 @@ const createPayment = `-- name: CreatePayment :one
 
 INSERT INTO payments (
     unit_id, tenant_id, building_id, property_id, organization_id,
-    month, year, amount_due, amount_paid, status, due_date
+    month, year, amount_due, amount_paid, status,
+    payment_method, payment_date, receipt_number, notes, due_date
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, 0, 'Due', $9
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+    $11, $12, $13, $14, $15
 )
 RETURNING id, unit_id, tenant_id, building_id, property_id, organization_id,
     month, year, amount_due, amount_paid, status,
@@ -53,15 +55,21 @@ RETURNING id, unit_id, tenant_id, building_id, property_id, organization_id,
 `
 
 type CreatePaymentParams struct {
-	UnitID         int32        `db:"unit_id" json:"unit_id"`
-	TenantID       int32        `db:"tenant_id" json:"tenant_id"`
-	BuildingID     int32        `db:"building_id" json:"building_id"`
-	PropertyID     int32        `db:"property_id" json:"property_id"`
-	OrganizationID int32        `db:"organization_id" json:"organization_id"`
-	Month          int32        `db:"month" json:"month"`
-	Year           int32        `db:"year" json:"year"`
-	AmountDue      float64      `db:"amount_due" json:"amount_due"`
-	DueDate        sql.NullTime `db:"due_date" json:"due_date"`
+	UnitID         int32          `db:"unit_id" json:"unit_id"`
+	TenantID       int32          `db:"tenant_id" json:"tenant_id"`
+	BuildingID     int32          `db:"building_id" json:"building_id"`
+	PropertyID     int32          `db:"property_id" json:"property_id"`
+	OrganizationID int32          `db:"organization_id" json:"organization_id"`
+	Month          int32          `db:"month" json:"month"`
+	Year           int32          `db:"year" json:"year"`
+	AmountDue      float64        `db:"amount_due" json:"amount_due"`
+	AmountPaid     float64        `db:"amount_paid" json:"amount_paid"`
+	Status         string         `db:"status" json:"status"`
+	PaymentMethod  sql.NullString `db:"payment_method" json:"payment_method"`
+	PaymentDate    sql.NullTime   `db:"payment_date" json:"payment_date"`
+	ReceiptNumber  sql.NullString `db:"receipt_number" json:"receipt_number"`
+	Notes          sql.NullString `db:"notes" json:"notes"`
+	DueDate        sql.NullTime   `db:"due_date" json:"due_date"`
 }
 
 type CreatePaymentRow struct {
@@ -97,6 +105,12 @@ func (q *Queries) CreatePayment(ctx context.Context, arg CreatePaymentParams) (C
 		arg.Month,
 		arg.Year,
 		arg.AmountDue,
+		arg.AmountPaid,
+		arg.Status,
+		arg.PaymentMethod,
+		arg.PaymentDate,
+		arg.ReceiptNumber,
+		arg.Notes,
 		arg.DueDate,
 	)
 	var i CreatePaymentRow

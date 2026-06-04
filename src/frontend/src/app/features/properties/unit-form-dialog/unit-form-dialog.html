@@ -80,19 +80,7 @@
       </mat-form-field>
     </div>
 
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>{{ 'UNIT_FORM_DIALOG.FIELDS.MONTHLY_RENT' | translate }}</mat-label>
-      <input
-        matInput
-        type="number"
-        formControlName="monthly_rent"
-        [placeholder]="'UNIT_FORM_DIALOG.PLACEHOLDERS.MONTHLY_RENT' | translate"
-        required
-      />
-      <mat-icon matPrefix>attach_money</mat-icon>
-      <span matTextPrefix>৳&nbsp;</span>
-      <mat-error>{{ getErrorMessage('monthly_rent') }}</mat-error>
-    </mat-form-field>
+
   </form>
 </mat-dialog-content>
 

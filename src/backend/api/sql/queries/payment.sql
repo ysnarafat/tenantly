@@ -4,9 +4,11 @@
 -- name: CreatePayment :one
 INSERT INTO payments (
     unit_id, tenant_id, building_id, property_id, organization_id,
-    month, year, amount_due, amount_paid, status, due_date
+    month, year, amount_due, amount_paid, status,
+    payment_method, payment_date, receipt_number, notes, due_date
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, 0, 'Due', $9
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+    $11, $12, $13, $14, $15
 )
 RETURNING id, unit_id, tenant_id, building_id, property_id, organization_id,
     month, year, amount_due, amount_paid, status,

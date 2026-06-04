@@ -34,15 +34,21 @@ type Payment struct {
 }
 
 type CreatePaymentRequest struct {
-	UnitID         int     `json:"unit_id" binding:"required"`
-	TenantID       int     `json:"tenant_id" binding:"required"`
-	BuildingID     int     `json:"building_id" binding:"required"`
-	PropertyID     int     `json:"property_id" binding:"required"`
-	OrganizationID int     `json:"-"` // set from JWT context
-	Month          int     `json:"month" binding:"required,min=1,max=12"`
-	Year           int     `json:"year" binding:"required,min=2020"`
-	AmountDue      float64 `json:"amount_due" binding:"required,gt=0"`
-	DueDate        string  `json:"due_date" binding:"omitempty"`
+	UnitID         int            `json:"unit_id" binding:"required"`
+	TenantID       int            `json:"tenant_id" binding:"required"`
+	BuildingID     int            `json:"building_id" binding:"required"`
+	PropertyID     int            `json:"property_id" binding:"required"`
+	OrganizationID int            `json:"-"` // set from JWT context
+	Month          int            `json:"month" binding:"required,min=1,max=12"`
+	Year           int            `json:"year" binding:"required,min=2020"`
+	AmountDue      float64        `json:"amount_due" binding:"required,gt=0"`
+	AmountPaid     *float64       `json:"amount_paid" binding:"omitempty,gte=0"`
+	Status         *PaymentStatus `json:"status" binding:"omitempty,oneof=Paid Due Partial Overdue"`
+	PaymentMethod  *string        `json:"payment_method" binding:"omitempty"`
+	PaymentDate    *string        `json:"payment_date" binding:"omitempty"`
+	ReceiptNumber  *string        `json:"receipt_number" binding:"omitempty"`
+	Notes          *string        `json:"notes" binding:"omitempty"`
+	DueDate        string         `json:"due_date" binding:"omitempty"`
 }
 
 type UpdatePaymentRequest struct {

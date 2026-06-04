@@ -10,11 +10,6 @@ import (
 	"github.com/ysnarafat/tenantly/internal/models"
 )
 
-// Helper function to convert time.Time to sql.NullTime
-func timeToNullTime(t time.Time) sql.NullTime {
-	return sql.NullTime{Time: t, Valid: true}
-}
-
 // PaymentRepository implements PaymentRepositoryInterface
 type PaymentRepository struct {
 	db      *sql.DB
@@ -40,6 +35,46 @@ func (r *PaymentRepository) Create(req *models.CreatePaymentRequest) (*models.Pa
 		dueDate = sql.NullTime{Time: t, Valid: true}
 	}
 
+	var paymentDate sql.NullTime
+	if req.PaymentDate != nil && *req.PaymentDate != "" {
+		t, err := time.Parse("2006-01-02", *req.PaymentDate)
+		if err != nil {
+			return nil, fmt.Errorf("invalid payment_date format (expected YYYY-MM-DD): %w", err)
+		}
+		paymentDate = sql.NullTime{Time: t, Valid: true}
+	}
+
+	amountPaid := 0.0
+	if req.AmountPaid != nil {
+		amountPaid = *req.AmountPaid
+	}
+
+	status := string(models.PaymentStatusDue)
+	if req.Status != nil {
+		status = string(*req.Status)
+	} else if amountPaid > 0 {
+		if amountPaid >= req.AmountDue {
+			status = string(models.PaymentStatusPaid)
+		} else {
+			status = string(models.PaymentStatusPartial)
+		}
+	}
+
+	var paymentMethod sql.NullString
+	if req.PaymentMethod != nil && *req.PaymentMethod != "" {
+		paymentMethod = sql.NullString{String: *req.PaymentMethod, Valid: true}
+	}
+
+	var receiptNumber sql.NullString
+	if req.ReceiptNumber != nil && *req.ReceiptNumber != "" {
+		receiptNumber = sql.NullString{String: *req.ReceiptNumber, Valid: true}
+	}
+
+	var notes sql.NullString
+	if req.Notes != nil && *req.Notes != "" {
+		notes = sql.NullString{String: *req.Notes, Valid: true}
+	}
+
 	row, err := r.queries.CreatePayment(context.Background(), db.CreatePaymentParams{
 		UnitID:         int32(req.UnitID),
 		TenantID:       int32(req.TenantID),
@@ -49,6 +84,12 @@ func (r *PaymentRepository) Create(req *models.CreatePaymentRequest) (*models.Pa
 		Month:          int32(req.Month),
 		Year:           int32(req.Year),
 		AmountDue:      req.AmountDue,
+		AmountPaid:     amountPaid,
+		Status:         status,
+		PaymentMethod:  paymentMethod,
+		PaymentDate:    paymentDate,
+		ReceiptNumber:  receiptNumber,
+		Notes:          notes,
 		DueDate:        dueDate,
 	})
 	if err != nil {
@@ -86,8 +127,8 @@ func (r *PaymentRepository) GetByIDWithDetails(id int) (*models.PaymentWithDetai
 func (r *PaymentRepository) GetBuildingPaymentsInPeriod(buildingID int, startDate, endDate time.Time, limit, offset int) ([]*models.PaymentWithDetails, int, error) {
 	count, err := r.queries.CountBuildingPaymentsInPeriod(context.Background(), db.CountBuildingPaymentsInPeriodParams{
 		BuildingID:  int32(buildingID),
-		CreatedAt:   timeToNullTime(startDate),
-		CreatedAt_2: timeToNullTime(endDate),
+		CreatedAt:   sql.NullTime{Time: startDate, Valid: true},
+		CreatedAt_2: sql.NullTime{Time: endDate, Valid: true},
 	})
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to count building payments: %w", err)
@@ -95,8 +136,8 @@ func (r *PaymentRepository) GetBuildingPaymentsInPeriod(buildingID int, startDat
 
 	rows, err := r.queries.GetBuildingPaymentsInPeriod(context.Background(), db.GetBuildingPaymentsInPeriodParams{
 		BuildingID:  int32(buildingID),
-		CreatedAt:   timeToNullTime(startDate),
-		CreatedAt_2: timeToNullTime(endDate),
+		CreatedAt:   sql.NullTime{Time: startDate, Valid: true},
+		CreatedAt_2: sql.NullTime{Time: endDate, Valid: true},
 		Limit:       int32(limit),
 		Offset:      int32(offset),
 	})
@@ -116,8 +157,8 @@ func (r *PaymentRepository) GetBuildingPaymentsInPeriod(buildingID int, startDat
 func (r *PaymentRepository) GetBuildingPaymentStats(buildingID int, startDate, endDate time.Time) (interface{}, error) {
 	row, err := r.queries.GetBuildingPaymentStats(context.Background(), db.GetBuildingPaymentStatsParams{
 		BuildingID:  int32(buildingID),
-		CreatedAt:   timeToNullTime(startDate),
-		CreatedAt_2: timeToNullTime(endDate),
+		CreatedAt:   sql.NullTime{Time: startDate, Valid: true},
+		CreatedAt_2: sql.NullTime{Time: endDate, Valid: true},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get building payment stats: %w", err)
@@ -129,8 +170,8 @@ func (r *PaymentRepository) GetBuildingPaymentStats(buildingID int, startDate, e
 func (r *PaymentRepository) GetPropertyPaymentStats(propertyID int, startDate, endDate time.Time) (interface{}, error) {
 	row, err := r.queries.GetPropertyPaymentStats(context.Background(), db.GetPropertyPaymentStatsParams{
 		PropertyID:  int32(propertyID),
-		CreatedAt:   timeToNullTime(startDate),
-		CreatedAt_2: timeToNullTime(endDate),
+		CreatedAt:   sql.NullTime{Time: startDate, Valid: true},
+		CreatedAt_2: sql.NullTime{Time: endDate, Valid: true},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get property payment stats: %w", err)
@@ -141,8 +182,8 @@ func (r *PaymentRepository) GetPropertyPaymentStats(propertyID int, startDate, e
 // GetSystemPaymentStats returns system-wide aggregate payment stats for a date range
 func (r *PaymentRepository) GetSystemPaymentStats(startDate, endDate time.Time) (interface{}, error) {
 	row, err := r.queries.GetSystemPaymentStats(context.Background(), db.GetSystemPaymentStatsParams{
-		CreatedAt:   timeToNullTime(startDate),
-		CreatedAt_2: timeToNullTime(endDate),
+		CreatedAt:   sql.NullTime{Time: startDate, Valid: true},
+		CreatedAt_2: sql.NullTime{Time: endDate, Valid: true},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get system payment stats: %w", err)
@@ -192,8 +233,8 @@ func (r *PaymentRepository) SearchLeases(orgID int, query string) ([]*models.Lea
 func (r *PaymentRepository) GetBuildingPaymentAnalytics(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentAnalytics, error) {
 	analyticsRow, err := r.queries.GetBuildingPaymentAnalytics(context.Background(), db.GetBuildingPaymentAnalyticsParams{
 		BuildingID:  int32(buildingID),
-		CreatedAt:   timeToNullTime(startDate),
-		CreatedAt_2: timeToNullTime(endDate),
+		CreatedAt:   sql.NullTime{Time: startDate, Valid: true},
+		CreatedAt_2: sql.NullTime{Time: endDate, Valid: true},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get building payment analytics: %w", err)
@@ -204,8 +245,8 @@ func (r *PaymentRepository) GetBuildingPaymentAnalytics(buildingID int, startDat
 	// Fetch monthly trend
 	trendRows, err := r.queries.GetBuildingPaymentTrend(context.Background(), db.GetBuildingPaymentTrendParams{
 		BuildingID:  int32(buildingID),
-		CreatedAt:   timeToNullTime(startDate),
-		CreatedAt_2: timeToNullTime(endDate),
+		CreatedAt:   sql.NullTime{Time: startDate, Valid: true},
+		CreatedAt_2: sql.NullTime{Time: endDate, Valid: true},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get building payment trend: %w", err)
@@ -219,13 +260,11 @@ func (r *PaymentRepository) GetBuildingPaymentAnalytics(buildingID int, startDat
 	}
 	trend := make([]trendPoint, len(trendRows))
 	for i, row := range trendRows {
-		due, _ := row.Due.(float64)
-		paid, _ := row.Paid.(float64)
 		trend[i] = trendPoint{
 			Year:  int(row.Year),
 			Month: int(row.Month),
-			Due:   due,
-			Paid:  paid,
+			Due:   interfaceToFloat64(row.Due),
+			Paid:  interfaceToFloat64(row.Paid),
 		}
 	}
 	analytics.TrendAnalysis = trend

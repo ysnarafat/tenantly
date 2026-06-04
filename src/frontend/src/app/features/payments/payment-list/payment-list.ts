@@ -331,6 +331,39 @@ export class PaymentList implements OnInit {
           <mat-label>Due Date</mat-label>
           <input matInput type="date" formControlName="due_date" />
         </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Payment Method</mat-label>
+          <mat-select formControlName="payment_method">
+            <mat-option value="">— None —</mat-option>
+            <mat-option value="Cash">Cash</mat-option>
+            <mat-option value="Bank Transfer">Bank Transfer</mat-option>
+            <mat-option value="bKash">bKash</mat-option>
+            <mat-option value="Nagad">Nagad</mat-option>
+            <mat-option value="Cheque">Cheque</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <div class="row-2">
+          <mat-form-field appearance="outline">
+            <mat-label>Amount Paid (BDT)</mat-label>
+            <input matInput type="number" formControlName="amount_paid" step="0.01" min="0" />
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Payment Date</mat-label>
+            <input matInput type="date" formControlName="payment_date" />
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Receipt Number</mat-label>
+          <input matInput formControlName="receipt_number" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Notes</mat-label>
+          <textarea matInput formControlName="notes" rows="2"></textarea>
+        </mat-form-field>
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
@@ -433,6 +466,11 @@ export class PaymentCreateDialog implements OnInit {
     year: [new Date().getFullYear(), Validators.required],
     amount_due: [null, [Validators.required, Validators.min(0.01)]],
     due_date: [''],
+    payment_method: [''],
+    amount_paid: [null, [Validators.min(0)]],
+    payment_date: [''],
+    receipt_number: [''],
+    notes: [''],
   });
 
   ngOnInit(): void {
@@ -500,6 +538,11 @@ export class PaymentCreateDialog implements OnInit {
         year: val.year,
         amount_due: val.amount_due,
         due_date: val.due_date || undefined,
+        payment_method: val.payment_method || undefined,
+        amount_paid: val.amount_paid != null ? val.amount_paid : undefined,
+        payment_date: val.payment_date || undefined,
+        receipt_number: val.receipt_number || undefined,
+        notes: val.notes || undefined,
       };
       this.dialogRef.close(req);
     }

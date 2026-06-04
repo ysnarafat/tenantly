@@ -50,7 +50,6 @@ type Unit struct {
 	Floor          int          `json:"floor" db:"floor"`
 	Section        string       `json:"section" db:"section"`
 	UnitType       UnitType     `json:"unit_type" db:"unit_type"`
-	MonthlyRent    float64      `json:"monthly_rent" db:"monthly_rent"`
 	Metadata       UnitMetadata `json:"metadata" db:"metadata"`
 	Active         bool         `json:"active" db:"active"`
 	CreatedAt      time.Time    `json:"created_at" db:"created_at"`
@@ -59,26 +58,24 @@ type Unit struct {
 
 // CreateUnitRequest represents the request to create a unit
 type CreateUnitRequest struct {
-	BuildingID  int          `json:"building_id" binding:"required"`
-	PropertyID  int          `json:"property_id" binding:"required"`
-	UnitNumber  string       `json:"unit_number" binding:"required,max=50"`
-	UnitName    string       `json:"unit_name" binding:"omitempty,max=100"`
-	Floor       int          `json:"floor" binding:"omitempty"`
-	Section     string       `json:"section" binding:"omitempty,max=50"`
-	UnitType    UnitType     `json:"unit_type" binding:"required,oneof=Shop Apartment Office Parking Storage Other"`
-	MonthlyRent float64      `json:"monthly_rent" binding:"required,gt=0"`
-	Metadata    UnitMetadata `json:"metadata" binding:"omitempty"`
+	BuildingID int          `json:"building_id" binding:"required"`
+	PropertyID int          `json:"property_id" binding:"required"`
+	UnitNumber string       `json:"unit_number" binding:"required,max=50"`
+	UnitName   string       `json:"unit_name" binding:"omitempty,max=100"`
+	Floor      int          `json:"floor" binding:"omitempty"`
+	Section    string       `json:"section" binding:"omitempty,max=50"`
+	UnitType   UnitType     `json:"unit_type" binding:"required,oneof=Shop Apartment Office Parking Storage Other"`
+	Metadata   UnitMetadata `json:"metadata" binding:"omitempty"`
 }
 
 // UpdateUnitRequest represents the request to update a unit
 type UpdateUnitRequest struct {
-	UnitName    *string       `json:"unit_name" binding:"omitempty,max=100"`
-	Floor       *int          `json:"floor" binding:"omitempty"`
-	Section     *string       `json:"section" binding:"omitempty,max=50"`
-	UnitType    *UnitType     `json:"unit_type" binding:"omitempty,oneof=Shop Apartment Office Parking Storage Other"`
-	MonthlyRent *float64      `json:"monthly_rent" binding:"omitempty,gt=0"`
-	Metadata    *UnitMetadata `json:"metadata" binding:"omitempty"`
-	Active      *bool         `json:"active"`
+	UnitName *string       `json:"unit_name" binding:"omitempty,max=100"`
+	Floor    *int          `json:"floor" binding:"omitempty"`
+	Section  *string       `json:"section" binding:"omitempty,max=50"`
+	UnitType *UnitType     `json:"unit_type" binding:"omitempty,oneof=Shop Apartment Office Parking Storage Other"`
+	Metadata *UnitMetadata `json:"metadata" binding:"omitempty"`
+	Active   *bool         `json:"active"`
 }
 
 // UnitWithDetails includes unit with property and building information

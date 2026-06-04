@@ -83,7 +83,6 @@ export class UnitFormDialogComponent implements OnInit {
       ],
       floor: [unit?.floor || null, [Validators.min(0), Validators.max(200)]],
       section: [unit?.section || '', [Validators.maxLength(50)]],
-      monthly_rent: [unit?.monthly_rent || null, [Validators.required, Validators.min(0)]],
     });
 
     // Disable unit_number in edit mode (it's the identifier)
@@ -162,7 +161,6 @@ export class UnitFormDialogComponent implements OnInit {
       unit_type: 'Unit Type',
       floor: 'Floor',
       section: 'Section',
-      monthly_rent: 'Monthly Rent',
     };
     return labels[fieldName] || fieldName;
   }

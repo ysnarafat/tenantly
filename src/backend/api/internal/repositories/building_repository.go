@@ -765,7 +765,7 @@ func (r *BuildingRepository) GetBuildingUnits(buildingID int, offset, limit int)
 	// Get units with lease information
 	query := fmt.Sprintf(`
 		SELECT 
-			u.%s, u.%s, u.%s, u.%s, u.%s, u.%s, u.%s, u.%s,
+			u.%s, u.%s, u.%s, u.%s, u.%s, u.%s, u.%s,
 			COALESCE(t.name, '') as tenant_name,
 			COALESCE(l.active, false) as lease_active
 		FROM %s u
@@ -775,7 +775,7 @@ func (r *BuildingRepository) GetBuildingUnits(buildingID int, offset, limit int)
 		ORDER BY u.%s, u.%s, u.%s
 		LIMIT $2 OFFSET $3`,
 		columns.UnitID, columns.UnitNumber, columns.UnitName, columns.UnitFloor, columns.UnitSection,
-		columns.UnitType, columns.UnitMonthlyRent, columns.UnitActive,
+		columns.UnitType, columns.UnitActive,
 		columns.UnitTable,
 		columns.UnitID,
 		columns.UnitBuildingID,
@@ -797,7 +797,6 @@ func (r *BuildingRepository) GetBuildingUnits(buildingID int, offset, limit int)
 			&unit.Floor,
 			&unit.Section,
 			&unit.UnitType,
-			&unit.MonthlyRent,
 			&unit.Active,
 			&unit.TenantName,
 			&unit.LeaseActive,

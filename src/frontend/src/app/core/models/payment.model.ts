@@ -37,6 +37,12 @@ export interface CreatePaymentRequest {
   month: number;
   year: number;
   amount_due: number;
+  amount_paid?: number;
+  status?: PaymentStatus;
+  payment_method?: string;
+  payment_date?: string;
+  receipt_number?: string;
+  notes?: string;
   due_date?: string;
 }
 

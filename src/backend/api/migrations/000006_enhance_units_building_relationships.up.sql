@@ -20,7 +20,7 @@ CREATE INDEX idx_units_property_building_type ON units(property_id, building_id,
     WHERE active = true;
 
 -- Index for hierarchical reporting and analytics
-CREATE INDEX idx_units_hierarchy_analytics ON units(property_id, building_id, unit_type, active, monthly_rent);
+CREATE INDEX idx_units_hierarchy_analytics ON units(property_id, building_id, unit_type, active);
 
 -- Update unit constraints to ensure building-property relationship integrity
 -- Add basic validation constraints for data integrity
@@ -32,10 +32,6 @@ ALTER TABLE units ADD CONSTRAINT chk_unit_number_not_empty
 -- Ensure floor is valid (positive number or ground floor = 0)
 ALTER TABLE units ADD CONSTRAINT chk_floor_valid 
     CHECK (floor IS NULL OR floor >= 0);
-
--- Ensure monthly_rent is positive
-ALTER TABLE units ADD CONSTRAINT chk_monthly_rent_positive 
-    CHECK (monthly_rent > 0);
 
 -- Add comments for documentation
 COMMENT ON INDEX idx_units_hierarchy_enhanced IS 'Hierarchical index for property -> building -> floor -> section queries';
