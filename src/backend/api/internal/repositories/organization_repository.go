@@ -157,11 +157,11 @@ func (r *OrganizationRepository) Update(id int, updates map[string]interface{}) 
 
 	// Allowed fields for updates
 	allowedFields := map[string]bool{
-		"name":                 true,
-		"slug":                 true,
-		"subscription_tier":    true,
-		"max_users":            true,
-		"active":               true,
+		"name":              true,
+		"slug":              true,
+		"subscription_tier": true,
+		"max_users":         true,
+		"active":            true,
 	}
 
 	// Build the query dynamically

@@ -1,182 +1,311 @@
-<div class="payment-list-container">
-
-  <!-- Summary cards -->
-  @if (summary()) {
-    <div class="summary-row">
-      <div class="summary-card summary-due">
-        <span class="summary-label">Total Due</span>
-        <span class="summary-value">৳{{ summary()!.total_due | number:'1.0-0' }}</span>
+<div class="payment-container">
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="header-inner">
+      <div class="header-text">
+        <h1 class="page-title">{{ 'PAYMENT_LIST.PAGE_TITLE' | translate }}</h1>
+        <p class="page-subtitle">Manage and track all payment transactions</p>
       </div>
-      <div class="summary-card summary-paid">
-        <span class="summary-label">Total Collected</span>
-        <span class="summary-value">৳{{ summary()!.total_paid | number:'1.0-0' }}</span>
-      </div>
-      <div class="summary-card summary-pending">
-        <span class="summary-label">Pending</span>
-        <span class="summary-value">৳{{ summary()!.total_pending | number:'1.0-0' }}</span>
-      </div>
-      <div class="summary-card summary-overdue">
-        <span class="summary-label">Overdue</span>
-        <span class="summary-value">৳{{ summary()!.total_overdue | number:'1.0-0' }}</span>
-      </div>
-      <div class="summary-card summary-rate">
-        <span class="summary-label">Collection Rate</span>
-        <span class="summary-value" [style.color]="collectionRateColor(summary()!.collection_rate)">
-          {{ summary()!.collection_rate | number:'1.1-1' }}%
-        </span>
-      </div>
+      <button mat-raised-button color="primary" (click)="openCreateDialog()" class="create-btn">
+        <mat-icon>add</mat-icon>
+        <span class="btn-text">{{ 'PAYMENT_LIST.BUTTONS.NEW_PAYMENT' | translate }}</span>
+      </button>
     </div>
+  </header>
+
+  <!-- Financial Summary Section -->
+  @if (summary()) {
+  <section class="summary-section">
+    <div class="section-header">
+      <h2>Financial Overview</h2>
+    </div>
+    <div class="summary-cards">
+      <!-- Card: Total Due -->
+      <mat-card class="stat-card stat-card-due">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>account_balance_wallet</mat-icon>
+          </div>
+          <div class="stat-body">
+            <span class="stat-label">{{ 'PAYMENT_LIST.SUMMARY.TOTAL_DUE' | translate }}</span>
+            <span class="stat-value">৳{{ summary()!.total_due | number:'1.0-0' }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Card: Total Collected -->
+      <mat-card class="stat-card stat-card-paid">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>check_circle</mat-icon>
+          </div>
+          <div class="stat-body">
+            <span class="stat-label">{{ 'PAYMENT_LIST.SUMMARY.TOTAL_COLLECTED' | translate }}</span>
+            <span class="stat-value">৳{{ summary()!.total_paid | number:'1.0-0' }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Card: Pending -->
+      <mat-card class="stat-card stat-card-pending">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>schedule</mat-icon>
+          </div>
+          <div class="stat-body">
+            <span class="stat-label">{{ 'PAYMENT_LIST.SUMMARY.PENDING' | translate }}</span>
+            <span class="stat-value">৳{{ summary()!.total_pending | number:'1.0-0' }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Card: Overdue -->
+      <mat-card class="stat-card stat-card-overdue">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>error</mat-icon>
+          </div>
+          <div class="stat-body">
+            <span class="stat-label">{{ 'PAYMENT_LIST.SUMMARY.OVERDUE' | translate }}</span>
+            <span class="stat-value">৳{{ summary()!.total_overdue | number:'1.0-0' }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Card: Collection Rate -->
+      <mat-card class="stat-card stat-card-rate collection-card">
+        <mat-card-content>
+          <div class="stat-icon">
+            <mat-icon>trending_up</mat-icon>
+          </div>
+          <div class="stat-body">
+            <span class="stat-label">{{ 'PAYMENT_LIST.SUMMARY.COLLECTION_RATE' | translate }}</span>
+            <span class="stat-value">{{ summary()!.collection_rate | number:'1.1-1' }}%</span>
+            <mat-progress-bar
+              mode="determinate"
+              [value]="summary()!.collection_rate"
+              class="progress-bar"
+            ></mat-progress-bar>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </section>
   }
 
-  <!-- Toolbar -->
-  <div class="toolbar">
-    <h1 class="page-title">Payments</h1>
-    <button mat-raised-button color="primary" (click)="openCreateDialog()">
-      <mat-icon>add</mat-icon> New Payment
-    </button>
-  </div>
+  <!-- Filters Section -->
+  <section class="filters-section">
+    <div class="section-header">
+      <h2>Filter Payments</h2>
+    </div>
+    <mat-card class="filters-card" appearance="outlined">
+      <mat-card-content>
+        <div class="filters-grid">
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>{{ 'PAYMENT_LIST.FILTERS.STATUS' | translate }}</mat-label>
+            <mat-select [(ngModel)]="filterStatus">
+              <mat-option value="">{{ 'PAYMENT_LIST.FILTERS.ALL' | translate }}</mat-option>
+              @for (s of statuses; track s) {
+              <mat-option [value]="s">{{ 'PAYMENT_LIST.STATUS.' + s | translate }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
 
-  <!-- Filters -->
-  <mat-card class="filter-card">
-    <mat-card-content>
-      <div class="filter-row">
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>Status</mat-label>
-          <mat-select [(ngModel)]="filterStatus">
-            <mat-option value="">All</mat-option>
-            @for (s of statuses; track s) {
-              <mat-option [value]="s">{{ s }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>{{ 'PAYMENT_LIST.FILTERS.MONTH' | translate }}</mat-label>
+            <mat-select [(ngModel)]="filterMonth">
+              <mat-option value="">{{ 'PAYMENT_LIST.FILTERS.ALL' | translate }}</mat-option>
+              @for (m of months; track m.value) {
+              <mat-option [value]="m.value">
+                {{ 'PAYMENT_LIST.MONTHS.' + m.label | translate }}
+              </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
 
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>Month</mat-label>
-          <mat-select [(ngModel)]="filterMonth">
-            <mat-option value="">All</mat-option>
-            @for (m of months; track m.value) {
-              <mat-option [value]="m.value">{{ m.label }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>Year</mat-label>
-          <mat-select [(ngModel)]="filterYear">
-            @for (y of years; track y) {
+          <mat-form-field appearance="outline" class="form-field">
+            <mat-label>{{ 'PAYMENT_LIST.FILTERS.YEAR' | translate }}</mat-label>
+            <mat-select [(ngModel)]="filterYear">
+              @for (y of years; track y) {
               <mat-option [value]="y">{{ y }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
+              }
+            </mat-select>
+          </mat-form-field>
 
-        <div class="filter-actions">
-          <button mat-raised-button color="primary" (click)="applyFilters()">
-            <mat-icon>search</mat-icon> Apply
-          </button>
-          <button mat-stroked-button (click)="clearFilters()">
-            <mat-icon>clear</mat-icon> Clear
-          </button>
+          <div class="button-group">
+            <button mat-raised-button color="primary" (click)="applyFilters()" class="action-btn">
+              <mat-icon>search</mat-icon>
+              {{ 'PAYMENT_LIST.BUTTONS.APPLY' | translate }}
+            </button>
+            <button mat-stroked-button (click)="clearFilters()" class="action-btn">
+              <mat-icon>clear</mat-icon>
+              {{ 'PAYMENT_LIST.BUTTONS.CLEAR' | translate }}
+            </button>
+          </div>
         </div>
-      </div>
-    </mat-card-content>
-  </mat-card>
+      </mat-card-content>
+    </mat-card>
+  </section>
 
-  <!-- Table -->
-  <mat-card>
-    <mat-card-content>
-      @if (loading()) {
-        <div class="loading-overlay">
-          <mat-spinner diameter="48"></mat-spinner>
-        </div>
-      }
+  <!-- Payments List Section -->
+  <section class="payments-section">
+    <div class="section-header">
+      <h2>Payment History</h2>
+    </div>
 
-      <div class="table-container">
-        <table mat-table [dataSource]="payments()" class="payment-table">
+    @if (loading()) {
+    <mat-card class="loading-card">
+      <mat-card-content class="loading-content">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Loading payments...</p>
+      </mat-card-content>
+    </mat-card>
+    } @else if (payments().length === 0) {
+    <mat-card appearance="outlined" class="empty-card">
+      <mat-card-content class="empty-content">
+        <mat-icon class="empty-icon">inbox</mat-icon>
+        <h3>{{ 'PAYMENT_LIST.EMPTY_STATE' | translate }}</h3>
+        <p>No payments found matching your filters</p>
+      </mat-card-content>
+    </mat-card>
+    } @else {
+    <!-- Desktop Table -->
+    <div class="table-wrapper">
+      <table mat-table [dataSource]="payments()" class="payment-table">
+        <!-- Tenant Column -->
+        <ng-container matColumnDef="tenant">
+          <th mat-header-cell *matHeaderCellDef class="col-tenant">
+            {{ 'PAYMENT_LIST.TABLE.TENANT_UNIT' | translate }}
+          </th>
+          <td mat-cell *matCellDef="let p">
+            <div class="cell-stack">
+              <span class="cell-main">{{ p.tenant_name || '—' }}</span>
+              <span class="cell-sub">{{ p.unit_number }} • {{ p.building_name }}</span>
+            </div>
+          </td>
+        </ng-container>
 
-          <!-- Tenant column -->
-          <ng-container matColumnDef="tenant">
-            <th mat-header-cell *matHeaderCellDef>Tenant / Unit</th>
-            <td mat-cell *matCellDef="let p">
-              <div class="cell-primary">{{ p.tenant_name || '—' }}</div>
-              <div class="cell-secondary">{{ p.unit_number }} · {{ p.building_name }}</div>
-            </td>
-          </ng-container>
+        <!-- Property Column -->
+        <ng-container matColumnDef="unit">
+          <th mat-header-cell *matHeaderCellDef class="col-property">
+            {{ 'PAYMENT_LIST.TABLE.PROPERTY' | translate }}
+          </th>
+          <td mat-cell *matCellDef="let p">
+            <div class="cell-stack">
+              <span class="cell-main">{{ p.property_name || '—' }}</span>
+              <span class="cell-sub">{{ p.building_code }}</span>
+            </div>
+          </td>
+        </ng-container>
 
-          <!-- Unit column -->
-          <ng-container matColumnDef="unit">
-            <th mat-header-cell *matHeaderCellDef>Property</th>
-            <td mat-cell *matCellDef="let p">
-              <div class="cell-primary">{{ p.property_name || '—' }}</div>
-              <div class="cell-secondary">{{ p.building_code }}</div>
-            </td>
-          </ng-container>
+        <!-- Period Column -->
+        <ng-container matColumnDef="period">
+          <th mat-header-cell *matHeaderCellDef class="col-period">
+            {{ 'PAYMENT_LIST.TABLE.PERIOD' | translate }}
+          </th>
+          <td mat-cell *matCellDef="let p">{{ monthName(p.month) }} {{ p.year }}</td>
+        </ng-container>
 
-          <!-- Period column -->
-          <ng-container matColumnDef="period">
-            <th mat-header-cell *matHeaderCellDef>Period</th>
-            <td mat-cell *matCellDef="let p">
-              {{ monthName(p.month) }} {{ p.year }}
-            </td>
-          </ng-container>
+        <!-- Amount Due Column -->
+        <ng-container matColumnDef="amount_due">
+          <th mat-header-cell *matHeaderCellDef class="col-amount">
+            {{ 'PAYMENT_LIST.TABLE.AMOUNT_DUE' | translate }}
+          </th>
+          <td mat-cell *matCellDef="let p" class="amount-cell">
+            {{ p.amount_due | number:'1.2-2' }}
+          </td>
+        </ng-container>
 
-          <!-- Amount Due column -->
-          <ng-container matColumnDef="amount_due">
-            <th mat-header-cell *matHeaderCellDef>Due (৳)</th>
-            <td mat-cell *matCellDef="let p" class="amount-cell">
-              {{ p.amount_due | number:'1.2-2' }}
-            </td>
-          </ng-container>
+        <!-- Amount Paid Column -->
+        <ng-container matColumnDef="amount_paid">
+          <th mat-header-cell *matHeaderCellDef class="col-amount">
+            {{ 'PAYMENT_LIST.TABLE.AMOUNT_PAID' | translate }}
+          </th>
+          <td mat-cell *matCellDef="let p" class="amount-cell">
+            {{ p.amount_paid | number:'1.2-2' }}
+          </td>
+        </ng-container>
 
-          <!-- Amount Paid column -->
-          <ng-container matColumnDef="amount_paid">
-            <th mat-header-cell *matHeaderCellDef>Paid (৳)</th>
-            <td mat-cell *matCellDef="let p" class="amount-cell">
-              {{ p.amount_paid | number:'1.2-2' }}
-            </td>
-          </ng-container>
-
-          <!-- Status column -->
-          <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Status</th>
-            <td mat-cell *matCellDef="let p">
-              <span class="status-badge" [ngClass]="getStatusClass(p.status)">
+        <!-- Status Column -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef class="col-status">
+            {{ 'PAYMENT_LIST.TABLE.STATUS' | translate }}
+          </th>
+          <td mat-cell *matCellDef="let p">
+            <mat-chip-set>
+              <mat-chip [class]="'status-' + p.status.toLowerCase()" highlighted>
                 {{ p.status }}
-              </span>
-            </td>
-          </ng-container>
+              </mat-chip>
+            </mat-chip-set>
+          </td>
+        </ng-container>
 
-          <!-- Actions column -->
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef></th>
-            <td mat-cell *matCellDef="let p">
-              <button mat-icon-button
-                      title="Update payment"
-                      (click)="openUpdateDialog(p)">
-                <mat-icon>edit</mat-icon>
-              </button>
-            </td>
-          </ng-container>
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="col-actions"></th>
+          <td mat-cell *matCellDef="let p">
+            <button mat-icon-button (click)="openUpdateDialog(p)" matTooltip="Edit payment">
+              <mat-icon>edit</mat-icon>
+            </button>
+          </td>
+        </ng-container>
 
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+    </div>
 
-          <tr class="mat-row" *matNoDataRow>
-            <td class="mat-cell no-data" [attr.colspan]="displayedColumns.length">
-              No payments found
-            </td>
-          </tr>
-        </table>
-      </div>
+    <!-- Mobile Cards View -->
+    <div class="mobile-cards-list">
+      @for (p of payments(); track p.id) {
+      <mat-card class="payment-card">
+        <mat-card-header>
+          <div class="card-header-content">
+            <div class="card-left">
+              <div class="card-tenant">{{ p.tenant_name || '—' }}</div>
+              <div class="card-location">{{ p.unit_number }} • {{ p.building_name }}</div>
+            </div>
+            <mat-chip-set>
+              <mat-chip [class]="'status-' + p.status.toLowerCase()" size="small">
+                {{ p.status }}
+              </mat-chip>
+            </mat-chip-set>
+          </div>
+        </mat-card-header>
+        <mat-card-content class="card-amounts">
+          <div class="amount-row">
+            <span class="period-label">{{ monthName(p.month) }} {{ p.year }}</span>
+          </div>
+          <div class="amount-row">
+            <div class="amount-col">
+              <span class="amount-label">Due</span>
+              <span class="amount-value">৳{{ p.amount_due | number:'1.2-2' }}</span>
+            </div>
+            <div class="amount-col">
+              <span class="amount-label">Paid</span>
+              <span class="amount-value">৳{{ p.amount_paid | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        </mat-card-content>
+        <mat-card-actions>
+          <button mat-button color="primary" (click)="openUpdateDialog(p)" class="edit-btn">
+            <mat-icon>edit</mat-icon>
+            <span class="edit-text">Update</span>
+          </button>
+        </mat-card-actions>
+      </mat-card>
+      }
+    </div>
 
-      <mat-paginator
-        [length]="total()"
-        [pageSize]="pageSize()"
-        [pageSizeOptions]="[10, 20, 50, 100]"
-        [pageIndex]="page() - 1"
-        (page)="onPageChange($event)"
-        aria-label="Select page"
-      ></mat-paginator>
-    </mat-card-content>
-  </mat-card>
-
+    <!-- Pagination -->
+    <mat-paginator
+      [length]="total()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="[10, 20, 50]"
+      (page)="onPageChange($event)"
+      class="pagination"
+    >
+    </mat-paginator>
+    }
+  </section>
 </div>

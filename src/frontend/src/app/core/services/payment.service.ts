@@ -8,6 +8,7 @@ import {
   PaymentListResponse,
   UpdatePaymentRequest,
   PaymentWithDetails,
+  LeaseSearchResponse,
 } from '../models/payment.model';
 import { environment } from '../../../environments/environment';
 
@@ -64,5 +65,10 @@ export class PaymentService {
   getPropertyReport(propertyId: number, startDate: string, endDate: string): Observable<unknown> {
     const params = new HttpParams().set('start_date', startDate).set('end_date', endDate);
     return this.http.get(`${this.apiUrl}/property/${propertyId}/report`, { params });
+  }
+
+  searchLeases(query: string): Observable<LeaseSearchResponse> {
+    const params = new HttpParams().set('q', query);
+    return this.http.get<LeaseSearchResponse>(`${this.apiUrl}/search`, { params });
   }
 }

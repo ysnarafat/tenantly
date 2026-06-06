@@ -1,4 +1,5 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
@@ -8,7 +9,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { Actions, ofType } from '@ngrx/effects';
+import { take } from 'rxjs/operators';
 import { AuthService, User, ChangePasswordRequest } from '../../../core/services/auth.service';
+import * as AuthActions from '../../../store/auth/auth.actions';
 
 @Component({
   selector: 'app-profile',
@@ -30,6 +34,8 @@ export class Profile implements OnInit {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private snackBar = inject(MatSnackBar);
+  private actions$ = inject(Actions);
+  private destroyRef = inject(DestroyRef);
 
   user: User | null = null;
   changePasswordForm: FormGroup;
@@ -79,23 +85,28 @@ export class Profile implements OnInit {
         new_password: this.changePasswordForm.value.newPassword,
       };
 
-      this.authService.changePassword(request).subscribe({
-        next: () => {
-          this.snackBar.open('Password changed successfully!', 'Close', { duration: 3000 });
-          this.changePasswordForm.reset();
-          this.showChangePassword = false;
+      this.authService.changePassword(request);
+
+      this.actions$
+        .pipe(
+          ofType(AuthActions.changePasswordSuccess, AuthActions.changePasswordFailure),
+          take(1),
+          takeUntilDestroyed(this.destroyRef)
+        )
+        .subscribe((action) => {
           this.isChangingPassword = false;
-        },
-        error: (error) => {
-          console.error('Change password error:', error);
-          this.snackBar.open(
-            error.error?.error || 'Failed to change password. Please try again.',
-            'Close',
-            { duration: 5000 }
-          );
-          this.isChangingPassword = false;
-        },
-      });
+          if (action.type === AuthActions.changePasswordSuccess.type) {
+            this.snackBar.open('Password changed successfully!', 'Close', { duration: 3000 });
+            this.changePasswordForm.reset();
+            this.showChangePassword = false;
+          } else {
+            const failure = action as ReturnType<typeof AuthActions.changePasswordFailure>;
+            const msg =
+              (failure.error as { message?: string })?.message ||
+              'Failed to change password. Please try again.';
+            this.snackBar.open(msg, 'Close', { duration: 5000 });
+          }
+        });
     }
   }
 

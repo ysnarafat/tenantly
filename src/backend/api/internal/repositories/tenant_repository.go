@@ -3,6 +3,8 @@ package repositories
 import (
 	"database/sql"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/ysnarafat/tenantly/internal/models"
 	"github.com/ysnarafat/tenantly/internal/models/columns"
@@ -207,4 +209,43 @@ func (r *TenantRepository) GetAll(page, pageSize, orgID int) ([]*models.Tenant, 
 	}
 
 	return tenants, totalCount, nil
+}
+
+// Update updates a tenant
+func (r *TenantRepository) Update(id int, updates map[string]interface{}) error {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	// Build SET clause
+	setClauses := []string{}
+	args := []interface{}{}
+	argPos := 1
+
+	for column, value := range updates {
+		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", column, argPos))
+		args = append(args, value)
+		argPos++
+	}
+
+	// Add updated_at timestamp
+	setClauses = append(setClauses, fmt.Sprintf("updated_at = $%d", argPos))
+	args = append(args, time.Now())
+	argPos++
+
+	// Add WHERE clause
+	args = append(args, id)
+
+	query := fmt.Sprintf(`
+		UPDATE tenants
+		SET %s
+		WHERE id = $%d
+	`, strings.Join(setClauses, ", "), argPos)
+
+	_, err := r.db.Exec(query, args...)
+	if err != nil {
+		return fmt.Errorf("failed to update tenant: %w", err)
+	}
+
+	return nil
 }

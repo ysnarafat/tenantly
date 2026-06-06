@@ -68,6 +68,7 @@ func (r *BuildingRepository) GetByID(id int) (*models.Building, error) {
 	err := r.db.QueryRow(query, id).Scan(
 		&building.ID,
 		&building.PropertyID,
+		&building.OrganizationID,
 		&building.BuildingName,
 		&building.BuildingCode,
 		&building.BuildingType,
@@ -114,6 +115,7 @@ func (r *BuildingRepository) GetByPropertyID(propertyID int) ([]*models.Building
 		err := rows.Scan(
 			&building.ID,
 			&building.PropertyID,
+			&building.OrganizationID,
 			&building.BuildingName,
 			&building.BuildingCode,
 			&building.BuildingType,
@@ -148,6 +150,7 @@ func (r *BuildingRepository) GetByPropertyAndCode(propertyID int, code string) (
 	err := r.db.QueryRow(query, propertyID, code).Scan(
 		&building.ID,
 		&building.PropertyID,
+		&building.OrganizationID,
 		&building.BuildingName,
 		&building.BuildingCode,
 		&building.BuildingType,
@@ -385,6 +388,7 @@ func (r *BuildingRepository) Search(filters *models.BuildingSearchFilters) ([]*m
 		err := rows.Scan(
 			&building.ID,
 			&building.PropertyID,
+			&building.OrganizationID,
 			&building.BuildingName,
 			&building.BuildingCode,
 			&building.BuildingType,
@@ -558,6 +562,7 @@ func (r *BuildingRepository) GetByPropertyWithSorting(propertyID int, filters *m
 		err := rows.Scan(
 			&building.ID,
 			&building.PropertyID,
+			&building.OrganizationID,
 			&building.BuildingName,
 			&building.BuildingCode,
 			&building.BuildingType,
@@ -726,6 +731,7 @@ func (r *BuildingRepository) AdvancedSearch(req *models.BuildingSearchRequest) (
 		err := rows.Scan(
 			&building.ID,
 			&building.PropertyID,
+			&building.OrganizationID,
 			&building.BuildingName,
 			&building.BuildingCode,
 			&building.BuildingType,
@@ -759,7 +765,7 @@ func (r *BuildingRepository) GetBuildingUnits(buildingID int, offset, limit int)
 	// Get units with lease information
 	query := fmt.Sprintf(`
 		SELECT 
-			u.%s, u.%s, u.%s, u.%s, u.%s, u.%s, u.%s, u.%s,
+			u.%s, u.%s, u.%s, u.%s, u.%s, u.%s, u.%s,
 			COALESCE(t.name, '') as tenant_name,
 			COALESCE(l.active, false) as lease_active
 		FROM %s u
@@ -769,7 +775,7 @@ func (r *BuildingRepository) GetBuildingUnits(buildingID int, offset, limit int)
 		ORDER BY u.%s, u.%s, u.%s
 		LIMIT $2 OFFSET $3`,
 		columns.UnitID, columns.UnitNumber, columns.UnitName, columns.UnitFloor, columns.UnitSection,
-		columns.UnitType, columns.UnitMonthlyRent, columns.UnitActive,
+		columns.UnitType, columns.UnitActive,
 		columns.UnitTable,
 		columns.UnitID,
 		columns.UnitBuildingID,
@@ -791,7 +797,6 @@ func (r *BuildingRepository) GetBuildingUnits(buildingID int, offset, limit int)
 			&unit.Floor,
 			&unit.Section,
 			&unit.UnitType,
-			&unit.MonthlyRent,
 			&unit.Active,
 			&unit.TenantName,
 			&unit.LeaseActive,

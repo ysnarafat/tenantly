@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import {
   Unit,
   UnitWithDetails,
@@ -41,7 +42,24 @@ export class UnitService {
   }
 
   getUnitsByBuilding(buildingId: number): Observable<UnitListResponse> {
-    return this.http.get<UnitListResponse>(`${environment.apiUrl}/buildings/${buildingId}/units`);
+    return this.http
+      .get<{
+        data: Unit[];
+        meta: { total: number; page: number; page_size: number };
+      }>(`${environment.apiUrl}/buildings/${buildingId}/units/list`)
+      .pipe(
+        map((response) => ({
+          units: response.data,
+          pagination: {
+            current_page: response.meta.page,
+            page_size: response.meta.page_size,
+            total_items: response.meta.total,
+            total_pages: Math.ceil(response.meta.total / response.meta.page_size),
+            has_next: response.meta.page * response.meta.page_size < response.meta.total,
+            has_prev: response.meta.page > 1,
+          },
+        }))
+      );
   }
 
   getUnit(id: number): Observable<Unit> {

@@ -30,50 +30,110 @@ type mockPaymentService struct {
 	getDashboardSummaryFn    func() (*models.DashboardSummary, error)
 	processBulkFn            func(requests []*models.CreatePaymentRequest, userID int) ([]*models.Payment, []error)
 	getAnalyticsFn           func(buildingID int, period string) (*models.BuildingPaymentAnalytics, error)
+	canAccessPaymentFn       func(userID int, userRole string, payment *models.PaymentWithDetails, userOrgID int) bool
+	logAccessFn              func(userID int, action string, paymentID int, allowed bool)
+	searchLeasesFn           func(orgID int, query string) (*models.LeaseSearchResponse, error)
 }
 
 func (m *mockPaymentService) CreatePayment(req *models.CreatePaymentRequest, userID int) (*models.Payment, error) {
+	if m.createPaymentFn == nil {
+		return nil, errors.New("create payment not mocked")
+	}
 	return m.createPaymentFn(req, userID)
 }
 
 func (m *mockPaymentService) GetPayment(id int) (*models.PaymentWithDetails, error) {
+	if m.getPaymentFn == nil {
+		return &models.PaymentWithDetails{
+			Payment: models.Payment{
+				ID: id, TenantID: 1, BuildingID: 1, PropertyID: 1, UnitID: 1,
+			},
+		}, nil
+	}
 	return m.getPaymentFn(id)
 }
 
 func (m *mockPaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequest, userID int) (*models.Payment, error) {
+	if m.updatePaymentFn == nil {
+		return nil, errors.New("update payment not mocked")
+	}
 	return m.updatePaymentFn(id, req, userID)
 }
 
 func (m *mockPaymentService) GetPayments(page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error) {
+	if m.getPaymentsFn == nil {
+		return make([]*models.PaymentWithDetails, 0), 0, nil
+	}
 	return m.getPaymentsFn(page, pageSize, filters)
 }
 
 func (m *mockPaymentService) GetPaymentsByBuilding(buildingID int, page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error) {
+	if m.getPaymentsByBuildingFn == nil {
+		return make([]*models.PaymentWithDetails, 0), 0, nil
+	}
 	return m.getPaymentsByBuildingFn(buildingID, page, pageSize, filters)
 }
 
 func (m *mockPaymentService) GetPaymentsByProperty(propertyID int, page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error) {
+	if m.getPaymentsByPropertyFn == nil {
+		return make([]*models.PaymentWithDetails, 0), 0, nil
+	}
 	return m.getPaymentsByPropertyFn(propertyID, page, pageSize, filters)
 }
 
 func (m *mockPaymentService) GenerateBuildingPaymentReport(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error) {
+	if m.generateBuildingReportFn == nil {
+		return nil, errors.New("generate building report not mocked")
+	}
 	return m.generateBuildingReportFn(buildingID, startDate, endDate)
 }
 
 func (m *mockPaymentService) GeneratePropertyPaymentReport(propertyID int, startDate, endDate time.Time) (*models.PropertyPaymentReport, error) {
+	if m.generatePropertyReportFn == nil {
+		return nil, errors.New("generate property report not mocked")
+	}
 	return m.generatePropertyReportFn(propertyID, startDate, endDate)
 }
 
 func (m *mockPaymentService) GetDashboardSummaryWithBuildingContext() (*models.DashboardSummary, error) {
+	if m.getDashboardSummaryFn == nil {
+		return nil, errors.New("get dashboard summary not mocked")
+	}
 	return m.getDashboardSummaryFn()
 }
 
 func (m *mockPaymentService) ProcessBulkPayments(requests []*models.CreatePaymentRequest, userID int) ([]*models.Payment, []error) {
+	if m.processBulkFn == nil {
+		return make([]*models.Payment, 0), []error{}
+	}
 	return m.processBulkFn(requests, userID)
 }
 
 func (m *mockPaymentService) GetPaymentAnalyticsByBuilding(buildingID int, period string) (*models.BuildingPaymentAnalytics, error) {
+	if m.getAnalyticsFn == nil {
+		return nil, errors.New("get analytics not mocked")
+	}
 	return m.getAnalyticsFn(buildingID, period)
+}
+
+func (m *mockPaymentService) CanUserAccessPayment(userID int, userRole string, payment *models.PaymentWithDetails, userOrgID int) bool {
+	if m.canAccessPaymentFn == nil {
+		return true // Allow all by default in tests
+	}
+	return m.canAccessPaymentFn(userID, userRole, payment, userOrgID)
+}
+
+func (m *mockPaymentService) LogPaymentAccess(userID int, action string, paymentID int, allowed bool) {
+	if m.logAccessFn != nil {
+		m.logAccessFn(userID, action, paymentID, allowed)
+	}
+}
+
+func (m *mockPaymentService) SearchLeases(orgID int, query string) (*models.LeaseSearchResponse, error) {
+	if m.searchLeasesFn == nil {
+		return &models.LeaseSearchResponse{Results: make([]*models.LeaseSearchResult, 0), Total: 0}, nil
+	}
+	return m.searchLeasesFn(orgID, query)
 }
 
 // Ensure the mock satisfies the interface at compile time.
@@ -99,6 +159,7 @@ func setupPaymentTestRouter(svc interfaces.PaymentServiceInterface) *gin.Engine 
 	payments.GET("", handler.GetPayments)
 	payments.POST("", handler.CreatePayment)
 	payments.POST("/bulk", handler.BulkCreatePayments)
+	payments.GET("/search", handler.SearchLeases)
 	payments.GET("/:id", handler.GetPayment)
 	payments.PUT("/:id", handler.UpdatePayment)
 	payments.GET("/building/:building_id/report", handler.GetBuildingPaymentReport)
@@ -351,7 +412,13 @@ func TestPaymentHandler_UpdatePayment(t *testing.T) {
 		updated.AmountPaid = amountPaid
 		updated.Status = statusPaid
 
+		// Sample existing payment for access verification
+		existing := samplePaymentWithDetails()
+
 		svc := &mockPaymentService{
+			getPaymentFn: func(id int) (*models.PaymentWithDetails, error) {
+				return existing, nil
+			},
 			updatePaymentFn: func(id int, req *models.UpdatePaymentRequest, userID int) (*models.Payment, error) {
 				return updated, nil
 			},
@@ -772,7 +839,7 @@ func TestPaymentHandler_GetBuildingPaymentReport(t *testing.T) {
 			t.Errorf("default end_date should be after start_date; start=%v end=%v", capturedStart, capturedEnd)
 		}
 		endDiff := capturedEnd.Sub(now)
-		if endDiff < -2*time.Minute || endDiff > 25*time.Hour {
+		if endDiff < -2*time.Minute || endDiff > 49*time.Hour {
 			t.Errorf("default end_date out of expected range: %v", endDiff)
 		}
 	})

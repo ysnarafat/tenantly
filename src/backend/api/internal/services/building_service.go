@@ -5,25 +5,28 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ysnarafat/tenantly/internal/database"
 	"github.com/ysnarafat/tenantly/internal/interfaces"
 	"github.com/ysnarafat/tenantly/internal/models"
-	"github.com/ysnarafat/tenantly/internal/repositories"
 )
+
+// propertyExistenceChecker is a minimal interface for the subset of property repo used here.
+type propertyExistenceChecker interface {
+	GetByID(id int) (*models.Property, error)
+}
 
 // BuildingService implements the BuildingServiceInterface
 type BuildingService struct {
 	buildingRepo      interfaces.BuildingRepositoryInterface
-	propertyRepo      *repositories.PropertyRepository
-	auditService      *database.AuditService
+	propertyRepo      propertyExistenceChecker
+	auditService      interfaces.AuditServiceInterface
 	metadataValidator interfaces.MetadataValidatorInterface
 }
 
 // NewBuildingService creates a new building service instance
 func NewBuildingService(
 	buildingRepo interfaces.BuildingRepositoryInterface,
-	propertyRepo *repositories.PropertyRepository,
-	auditService *database.AuditService,
+	propertyRepo propertyExistenceChecker,
+	auditService interfaces.AuditServiceInterface,
 	metadataValidator interfaces.MetadataValidatorInterface,
 ) *BuildingService {
 	return &BuildingService{
@@ -746,14 +749,12 @@ func (s *BuildingService) GetBuildingUnits(buildingID int, page, pageSize int) (
 	// Calculate summary statistics
 	totalUnits := 0
 	occupiedUnits := 0
-	totalRevenue := 0.0
 
 	for _, unit := range units {
 		totalUnits++
 		if unit.LeaseActive {
 			occupiedUnits++
 		}
-		totalRevenue += unit.MonthlyRent
 	}
 
 	// Calculate pagination info
@@ -781,7 +782,7 @@ func (s *BuildingService) GetBuildingUnits(buildingID int, page, pageSize int) (
 	response.Summary.TotalUnits = totalUnits
 	response.Summary.OccupiedUnits = occupiedUnits
 	response.Summary.VacantUnits = totalUnits - occupiedUnits
-	response.Summary.TotalRevenue = totalRevenue
+	response.Summary.TotalRevenue = 0
 
 	return response, nil
 }

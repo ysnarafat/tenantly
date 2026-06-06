@@ -6,6 +6,7 @@ import { MatGridListModule } from '@angular/material/grid-list';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
+import { TranslateModule } from '@ngx-translate/core';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { LeaseService } from '../../core/services/lease.service';
@@ -37,6 +38,7 @@ interface DashboardStats {
     MatIconModule,
     MatButtonModule,
     MatChipsModule,
+    TranslateModule,
   ],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.scss'],
@@ -85,8 +87,12 @@ export class Dashboard implements OnInit {
         this.recentLeases = leases
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
           .slice(0, 5);
-        this.expiringLeases = leases.filter((l) => l.days_remaining <= 30 && l.days_remaining > 0).slice(0, 5);
-        this.stats.expiringLeases = leases.filter((l) => l.days_remaining <= 30 && l.days_remaining > 0).length;
+        this.expiringLeases = leases
+          .filter((l) => l.days_remaining <= 30 && l.days_remaining > 0)
+          .slice(0, 5);
+        this.stats.expiringLeases = leases.filter(
+          (l) => l.days_remaining <= 30 && l.days_remaining > 0
+        ).length;
       },
       error: (error) => console.error('Error loading leases:', error),
     });

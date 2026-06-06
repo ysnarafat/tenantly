@@ -1,16 +1,16 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 📋 Project Overview
 
-**Tenantly** is a property rental management system built for the Bangladesh market. It's a full-stack platform with three main components:
+**Tenantly** = property rental management system, Bangladesh market. Full-stack, three components:
 
-- **Backend API**: Go (Gin) service at `src/backend/api` - handles core business logic
-- **Frontend**: Angular 21 application at `src/frontend` - modern standalone components with Material Design
-- **Notification Service**: .NET background service at `src/backend/notification-service` - handles SMS/Email alerts
+- **Backend API**: Go (Gin) at `src/backend/api` - core business logic
+- **Frontend**: Angular 21 at `src/frontend` - standalone components, Material Design
+- **Notification Service**: .NET background service at `src/backend/notification-service` - SMS/Email alerts
 
-The system uses PostgreSQL for data storage and Docker Compose for local development.
+PostgreSQL for storage. Docker Compose for local dev.
 
 ---
 
@@ -41,12 +41,16 @@ air  # Auto-rebuilds on file changes (configured in .air.toml)
 # Run manually
 go run cmd/server/main.go
 
-# Database migrations
-go run cmd/server/main.go migrate
+# Database migrations (auto-run on server startup; manual control via dedicated CLI)
+go run cmd/migrate/main.go up      # Apply pending migrations
+go run cmd/migrate/main.go down    # Rollback last migration
+go run cmd/migrate/main.go version # Show current version
 
 # Testing
-go test -v ./internal/...  # All tests
-go test -v ./internal/repositories/...  # Specific package
+go test -v ./internal/...                                        # All tests
+go test -v ./internal/repositories/...                          # Specific package
+go test -v -run TestPaymentHandler_Create ./internal/handlers/  # Single test by name
+go test -v -count=1 ./internal/...                              # Force re-run (bypass cache)
 
 # Building
 go build -o ./tmp/main ./cmd/server
@@ -61,8 +65,8 @@ go build -o ./tmp/main ./cmd/server
 npm ci  # Use npm ci instead of npm install for CI environments
 
 # Development
-npm start:local       # localhost:4200
-npm start:network     # 0.0.0.0:4200 (accessible on network)
+npm run start:local       # localhost:4200
+npm run start:network     # 0.0.0.0:4200 (accessible on network)
 
 # Building
 npm run build
@@ -123,12 +127,12 @@ migrations/         # SQL migration files (versioned)
 ```
 
 **Key Patterns:**
-- Services receive interfaces (repositories, dependencies) via dependency injection
-- Handlers use services to handle HTTP requests
+- All cross-layer dependencies are interfaces defined centrally in `internal/interfaces/interfaces.go` (15+ interfaces: repositories, services, audit). Concrete implementations wired in `cmd/server/main.go`.
+- Services receive repository interfaces via DI; handlers receive service interfaces via DI
 - All database access goes through repositories
-- Tests use table-driven patterns and mocks from `testutil`
+- Tests use table-driven patterns; integration tests use `testutil.SetupTestDB()` which spins up a test DB with migrations applied; mocks live in `internal/interfaces/mocks/`
+- Building module split pattern: `building_repository.go` (CRUD) + `building_repository_analytics.go` (analytics) + `building_validation_service.go` (validation) — follow this for large modules
 
-**Module Refactoring:** The Building module is split to separate core CRUD (`building_repository.go`) from analytics (`building_repository_analytics.go`) to prevent code bloat.
 
 ### Frontend (Angular) - Standalone Components with Feature-Level State
 
@@ -160,12 +164,12 @@ src/app/
 ```
 
 **Key Patterns:**
-- Uses standalone components (no NgModule)
-- Global state managed via NgRx in `src/app/store/`
-- Features can have their own NgRx stores (e.g., `features/properties/store/`) for feature-specific state
+- Standalone components (no NgModule)
+- Global state via NgRx in `src/app/store/`
+- Features can have own NgRx stores (e.g., `features/properties/store/`) for feature-specific state
 - Services use RxJS observables
-- Material Design for UI components
-- Environment files for configuration
+- Material Design for UI
+- Environment files for config
 
 ### Notification Service (.NET)
 
@@ -184,12 +188,14 @@ src/backend/notification-service/
 
 - **System**: PostgreSQL
 - **Driver**: `lib/pq` (Go)
-- **Migrations**: golang-migrate (versioned SQL files in `migrations/`)
+- **Migrations**: golang-migrate (versioned SQL in `migrations/`)
 - **Migration Commands**:
   ```bash
   cd src/backend/api
-  go run cmd/server/main.go migrate  # Run pending migrations
+  go run cmd/migrate/main.go up   # Apply pending migrations
   ```
+  Migrations also run automatically on server startup.
+- **Creating migrations**: Add files as `migrations/NNNNNN_description.up.sql` and `migrations/NNNNNN_description.down.sql`, where `NNNNNN` is the next sequential number (zero-padded to 6 digits, e.g. `000010`).
 
 ---
 
@@ -199,7 +205,7 @@ src/backend/notification-service/
 
 **Backend**:
 - Tokens generated in `internal/handlers/auth.go`
-- Middleware validates tokens in `internal/middleware/`
+- Middleware validates in `internal/middleware/`
 - Claims include user ID and role
 - Reference: `src/backend/api/AUTHENTICATION.md`
 
@@ -208,11 +214,88 @@ src/backend/notification-service/
 - HTTP interceptor attaches token to requests
 - Auth guard protects routes
 
-**Current Roles & Multi-Tenancy** (3-level system):
-- `Admin` - Full access, organization-wide administration
+**Current Roles & Multi-Tenancy** (5-level hierarchy):
+- `SUPER_ADMIN` - Platform level, manages organizations
+- `ORG_ADMIN` - Organization level, manages org users
+- `Admin` - Organization data management
 - `PropertyManager` - Property-level operations, building/unit management
 - `Accountant` - Read-only financial access
-- Multi-tenancy fully implemented with organization management and admin hierarchy
+
+Role constants live in `internal/middleware/auth.go`. Middleware helpers: `RequireSuperAdmin()`, `RequireOrgAdmin()`, `RequireAdmin()`, `RequireAnyRole()`.
+
+---
+
+## 🌐 Internationalization (i18n)
+
+Frontend supports **English** and **Bangla** translations using **ngx-translate**.
+
+### Translation File Structure
+
+```
+src/frontend/src/assets/i18n/
+├── en.json       # English translations (235+ keys)
+└── bn.json       # Bangla translations (235+ keys, synchronized with en.json)
+```
+
+### Key Organization Pattern
+
+All keys use 3-level hierarchy: `NAMESPACE.SECTION.KEY`
+
+```json
+{
+  "COMMON": {
+    "BUTTONS": { "CANCEL": "Cancel", "SAVE": "Save", ... },
+    "ERRORS": { "REQUIRED": "Required", ... },
+    "ACTIONS": { "VIEW_DETAILS": "View Details", ... },
+    "PAGINATION": { "RESULT": "result", "RESULTS": "results" },
+    "EMPTY_STATE": { "TRY_ADJUST": "Try adjusting...", ... },
+    "STATUS": { "ACTIVE": "Active", ... }
+  },
+  "LEASE_LIST": { "PAGE_TITLE": "Lease Management", ... },
+  "CREATE_LEASE_DIALOG": { "TITLE": "Create New Lease", ... }
+}
+```
+
+### Using Translations in Templates
+
+```typescript
+// In component TypeScript with TranslateModule imported:
+import { TranslateModule } from '@ngx-translate/core';
+
+@Component({
+  imports: [TranslateModule],
+  template: `<h1>{{ 'LEASE_LIST.PAGE_TITLE' | translate }}</h1>`
+})
+```
+
+### Key Patterns
+
+- **COMMON namespace**: Shared UI vocabulary (buttons, errors, pagination) used across multiple features — eliminates ~40% duplication
+- **Feature namespaces**: Context-specific labels (e.g., `LEASE_LIST.TABLE.TENANT`, `TENANT_FORM_DIALOG.FIELDS.NAME`)
+- **Validation errors**: Form-specific error messages stay in feature scope (e.g., `BUILDING_FORM_DIALOG.ERRORS.PATTERN`)
+
+### Screens with Translations
+
+✓ Complete (all keys translated):
+- Dashboard
+- Lease List, Create/Edit Lease Dialog
+- Tenant List, Add Tenant Dialog
+- Property List, Create/Edit Property Dialog
+- Unit Form Dialog, Building Form Dialog
+- Due List
+
+❌ Incomplete (hardcoded text, needs translation):
+- Organization Management (admin feature) - 2 screens
+- User List (admin feature)
+- Attachment List
+- Payment List
+
+### Adding New Translations
+
+1. Add key to **both** `en.json` and `bn.json` (must be synchronized)
+2. Use in template: `{{ 'NAMESPACE.SECTION.KEY' | translate }}`
+3. Run `npm run build` to verify no missing key errors
+4. Test both languages: toggle in UI language switcher
 
 ---
 
@@ -220,10 +303,7 @@ src/backend/notification-service/
 
 ### Theme System
 
-The frontend supports light and dark themes using **CSS variables**. This enables:
-- Runtime theme switching without reloads
-- Consistent color palettes across components
-- Easy maintenance of theme colors in one place
+Frontend supports light/dark themes via **CSS variables**: runtime switching without reloads, consistent palettes, easy maintenance.
 
 **Theme Structure:**
 ```scss
@@ -266,10 +346,10 @@ toggleTheme(): void {
 
 ### Component Styling Guidelines
 
-When developing new Angular components:
+New Angular components:
 
 1. **Organize SCSS**:
-   - Group theme variables at the top
+   - Group theme variables at top
    - Use mixins for reusable patterns
    - Order: variables → mixins → base styles → responsive media queries
 
@@ -298,10 +378,10 @@ When developing new Angular components:
    - Example: See dashboard sparkline animations
 
 5. **Accessibility**:
-   - All interactive elements must have `:hover`, `:focus`, `:active` states
+   - All interactive elements need `:hover`, `:focus`, `:active` states
    - Use `tabindex="0"` for custom interactive elements
    - Provide `aria-label` for icon-only buttons
-   - Ensure color contrast meets WCAG AA standards (4.5:1 for text)
+   - Color contrast must meet WCAG AA (4.5:1 for text)
 
 ---
 
@@ -314,7 +394,7 @@ When developing new Angular components:
 - Run specific: `go test -v ./internal/repositories`
 
 ### Frontend (Angular)
-- Jasmine/Karma test framework
+- Jasmine/Karma framework
 - Tests alongside components as `.spec.ts` files
 - Run: `npm test`
 
@@ -333,7 +413,7 @@ When developing new Angular components:
 - `docker-compose.yml`, `docker-compose.dev.yml` - Container orchestration
 
 **Build Budgets** (Angular):
-- Component style budget: 18kB max error (updated from 6.5kB to accommodate feature-rich components)
+- Component style budget: 18kB max error (updated from 6.5kB for feature-rich components)
 - Adjust in `angular.json` under `projects → tenantly-frontend → architect → build → configurations → production → budgets`
 
 ### Git Conventions (from CONTRIBUTING.md)
@@ -354,21 +434,21 @@ When developing new Angular components:
 
 ## 🔄 Development Workflow
 
-1. Create feature branch: `git checkout -b feat/feature-name` or `git checkout -b topic/##/feature-name`
-2. Make changes following conventions
+1. Create branch: `git checkout -b feat/feature-name` or `git checkout -b topic/##/feature-name`
+2. Make changes per conventions
 3. Run quality checks:
    - Backend: `go test ./internal/...`
    - Frontend: `npm run quality && npm test`
-4. Commit with conventional message: `git commit -m "feat(scope): description"`
-5. Push and create pull request for review
-6. CI/CD runs automatically (GitHub Actions workflows in `.github/workflows/`)
+4. Commit: `git commit -m "feat(scope): description"`
+5. Push and create PR
+6. CI/CD runs automatically (GitHub Actions in `.github/workflows/`)
 
 ---
 
 ## 📝 Key Project Files
 
 - `README.md` - Project overview and quick start
-- `CONTRIBUTING.md` - Detailed conventions & guidelines (reference for code style)
+- `CONTRIBUTING.md` - Conventions & guidelines (code style reference)
 - `src/backend/api/README.md` - Backend architecture details
 - `src/backend/api/AUTHENTICATION.md` - Auth implementation details
 - `src/frontend/README.md` - Frontend setup & conventions
@@ -378,10 +458,10 @@ When developing new Angular components:
 
 ## 🛠️ Scripts
 
-Available helper scripts in `scripts/` directory:
-- `dev-setup.sh` / `dev-setup.bat` - Initial development environment setup
+Helper scripts in `scripts/`:
+- `dev-setup.sh` / `dev-setup.bat` - Initial dev environment setup
 - `fast-build.sh` / `fast-build.bat` - Quick build for all services
-- `benchmark-build.sh` - Performance profiling of builds
+- `benchmark-build.sh` - Build performance profiling
 
 ---
 
@@ -389,7 +469,7 @@ Available helper scripts in `scripts/` directory:
 
 ### Dashboard Redesign
 - **Location**: `src/frontend/src/app/features/dashboard/`
-- **Features**: Financial metrics, collection rate progress ring, 6-month trend sparklines, light/dark theme support
+- **Features**: Financial metrics, collection rate progress ring, 6-month trend sparklines, light/dark theme
 - **Reference for**: Theme implementation, SVG charts, progress indicators, staggered animations
 
 ### Property Card Redesign
@@ -401,19 +481,28 @@ Available helper scripts in `scripts/` directory:
 
 ## ⚠️ Common Issues & Notes
 
-- **Frontend**: Uses Angular 21 with standalone components (no NgModule), signals for state management
+- **Frontend**: Angular 21 standalone components (no NgModule), signals for state
 - **Backend**: Environment variables required (see `.env.example`)
-- **Database**: PostgreSQL must be running before API starts
-- **Node version**: Node 25+ required for frontend
-- **Go version**: Go 1.25+ required for backend
+- **Database**: PostgreSQL must run before API starts
+- **Node version**: Node 25+ required
+- **Go version**: Go 1.25+ required
 - **SCSS Build Size**: Feature-rich components may exceed default style budgets; update `angular.json` if needed
-- **Theme Persistence**: Theme preference is stored in localStorage under key `dashboard-theme` or `theme`
+- **Theme Persistence**: Stored in localStorage under `dashboard-theme` or `theme`
+- **Bundle Budget Warnings**: Production build shows 3 warnings (bundle +293.58kB, fonts +3.72kB, styles +1.12kB) — acceptable for current scope, monitor if adding large features
+- **Translation Key Sync**: Always keep en.json and bn.json synchronized (same number of keys, same structure). Build will pass without errors but missing Bangla keys fall back to English
+
+---
+
+## 📚 Frontend Documentation Files
+
+- `docs/I18N_ORGANIZATION.md` - Comprehensive i18n patterns, Approach A (COMMON namespace), future migration path to Approach B (feature-split files)
 
 ---
 
 ## 🔗 Related Documentation
 
 - **Angular Docs**: https://angular.io/docs
+- **ngx-translate**: https://github.com/ngx-translate/core
 - **Gin Web Framework**: https://github.com/gin-gonic/gin
 - **PostgreSQL**: https://www.postgresql.org/docs/
 - **Docker Compose**: https://docs.docker.com/compose/

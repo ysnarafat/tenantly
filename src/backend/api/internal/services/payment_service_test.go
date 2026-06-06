@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -13,21 +14,21 @@ import (
 // ---------------------------------------------------------------------------
 
 type MockPaymentRepo struct {
-	payments             map[int]*models.PaymentWithDetails
-	nextID               int
-	shouldFailCreate     bool
-	shouldFailGetByID    bool
-	shouldFailUpdate     bool
-	shouldFailList       bool
-	shouldFailStats      bool
-	shouldFailPeriod     bool
-	shouldFailDashboard  bool
-	shouldFailBldgLevel  bool
-	shouldFailAnalytics  bool
-	dashboardResult      *models.DashboardSummary
-	buildingLevelResult  map[string]interface{}
-	analyticsResult      *models.BuildingPaymentAnalytics
-	auditLog             []string
+	payments            map[int]*models.PaymentWithDetails
+	nextID              int
+	shouldFailCreate    bool
+	shouldFailGetByID   bool
+	shouldFailUpdate    bool
+	shouldFailList      bool
+	shouldFailStats     bool
+	shouldFailPeriod    bool
+	shouldFailDashboard bool
+	shouldFailBldgLevel bool
+	shouldFailAnalytics bool
+	dashboardResult     *models.DashboardSummary
+	buildingLevelResult map[string]interface{}
+	analyticsResult     *models.BuildingPaymentAnalytics
+	auditLog            []string
 }
 
 func newMockPaymentRepo() *MockPaymentRepo {
@@ -181,13 +182,17 @@ func (m *MockPaymentRepo) GetBuildingPaymentAnalytics(buildingID int, startDate,
 	return &a, nil
 }
 
+func (m *MockPaymentRepo) SearchLeases(orgID int, query string) ([]*models.LeaseSearchResult, error) {
+	return make([]*models.LeaseSearchResult, 0), nil
+}
+
 // ---------------------------------------------------------------------------
 // MockPaymentUnitRepo – implements interfaces.UnitRepositoryInterface
 // ---------------------------------------------------------------------------
 
 type MockPaymentUnitRepo struct {
-	units         map[int]*models.Unit
-	shouldFail    bool
+	units      map[int]*models.Unit
+	shouldFail bool
 }
 
 func newMockPaymentUnitRepo() *MockPaymentUnitRepo {
@@ -209,7 +214,9 @@ func (m *MockPaymentUnitRepo) GetByID(id int) (*models.Unit, error) {
 	return u, nil
 }
 
-func (m *MockPaymentUnitRepo) Create(req *models.CreateUnitRequest) (*models.Unit, error) { return nil, nil }
+func (m *MockPaymentUnitRepo) Create(req *models.CreateUnitRequest, organizationID int) (*models.Unit, error) {
+	return nil, nil
+}
 func (m *MockPaymentUnitRepo) GetByIDWithDetails(id int) (*models.UnitWithDetails, error) {
 	return nil, nil
 }
@@ -398,6 +405,114 @@ func (m *MockPaymentAuditService) LogSystemAction(action, tableName string, reco
 	return nil
 }
 
+func (m *MockPaymentAuditService) LogCriticalAction(userID int, action string, data map[string]interface{}) error {
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// MockPaymentUserRepo – implements interfaces.UserRepositoryInterface
+// ---------------------------------------------------------------------------
+
+type MockPaymentUserRepo struct {
+	users map[int]*models.User
+}
+
+func newMockPaymentUserRepo() *MockPaymentUserRepo {
+	return &MockPaymentUserRepo{
+		users: make(map[int]*models.User),
+	}
+}
+
+func (m *MockPaymentUserRepo) Create(user *models.User) error {
+	m.users[user.ID] = user
+	return nil
+}
+
+func (m *MockPaymentUserRepo) GetByID(id int) (*models.User, error) {
+	if user, ok := m.users[id]; ok {
+		return user, nil
+	}
+	return nil, fmt.Errorf("user not found")
+}
+
+func (m *MockPaymentUserRepo) GetByUsername(username string) (*models.User, error) {
+	for _, user := range m.users {
+		if user.Username == username {
+			return user, nil
+		}
+	}
+	return nil, fmt.Errorf("user not found")
+}
+
+func (m *MockPaymentUserRepo) GetByEmail(email string) (*models.User, error) {
+	for _, user := range m.users {
+		if user.Email == email {
+			return user, nil
+		}
+	}
+	return nil, fmt.Errorf("user not found")
+}
+
+func (m *MockPaymentUserRepo) Update(id int, updates map[string]interface{}) error {
+	if user, ok := m.users[id]; ok {
+		// Apply updates to user (simplified)
+		if name, ok := updates["name"]; ok {
+			user.FirstName = name.(string)
+		}
+		m.users[id] = user
+	}
+	return nil
+}
+
+func (m *MockPaymentUserRepo) Delete(id int) error {
+	delete(m.users, id)
+	return nil
+}
+
+func (m *MockPaymentUserRepo) List(filters map[string]interface{}, limit, offset int) ([]*models.User, int, error) {
+	return nil, 0, nil
+}
+
+func (m *MockPaymentUserRepo) CleanupExpiredTokens() error {
+	return nil
+}
+
+func (m *MockPaymentUserRepo) GetAll(activeOnly bool) ([]*models.User, error) {
+	users := make([]*models.User, 0, len(m.users))
+	for _, u := range m.users {
+		if !activeOnly || u.Active {
+			users = append(users, u)
+		}
+	}
+	return users, nil
+}
+
+func (m *MockPaymentUserRepo) GetByOrganizationID(orgID int, activeOnly bool) ([]*models.User, error) {
+	users := make([]*models.User, 0)
+	for _, u := range m.users {
+		if u.OrganizationID != nil && *u.OrganizationID == orgID && (!activeOnly || u.Active) {
+			users = append(users, u)
+		}
+	}
+	return users, nil
+}
+
+func (m *MockPaymentUserRepo) CreateResetToken(token *models.ResetPasswordToken) error {
+	return nil
+}
+
+func (m *MockPaymentUserRepo) GetResetToken(token string) (*models.ResetPasswordToken, error) {
+	return nil, fmt.Errorf("token not found")
+}
+
+func (m *MockPaymentUserRepo) DeleteResetToken(token string) error {
+	return nil
+}
+
+func (m *MockPaymentUserRepo) MarkResetTokenUsed(tokenID int) error {
+	return nil
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -416,7 +531,8 @@ func newPaymentServiceWithMocks() (
 	bldgRepo := newMockPaymentBuildingRepo()
 	propRepo := newMockPaymentPropertyRepo()
 	audit := newMockPaymentAuditService()
-	svc := NewPaymentService(payRepo, unitRepo, bldgRepo, propRepo, audit)
+	userRepo := newMockPaymentUserRepo()
+	svc := NewPaymentService(payRepo, unitRepo, bldgRepo, propRepo, audit, userRepo)
 	return svc, payRepo, unitRepo, bldgRepo, propRepo, audit
 }
 
@@ -766,8 +882,8 @@ func TestGetPayments(t *testing.T) {
 		seedCount    int
 		wantErr      bool
 		errContains  string
-		wantPage     int  // effective page applied
-		wantPageSize int  // effective pageSize applied
+		wantPage     int // effective page applied
+		wantPageSize int // effective pageSize applied
 	}{
 		{
 			name:         "normal page/pageSize",
@@ -876,15 +992,15 @@ func TestGetPayments(t *testing.T) {
 
 func TestGetPaymentsByBuilding(t *testing.T) {
 	tests := []struct {
-		name        string
-		buildingID  int
+		name         string
+		buildingID   int
 		seedBuilding bool
 		buildingFail bool
-		repoFail    bool
-		page        int
-		pageSize    int
-		wantErr     bool
-		errContains string
+		repoFail     bool
+		page         int
+		pageSize     int
+		wantErr      bool
+		errContains  string
 	}{
 		{
 			name:         "happy path",
@@ -1368,8 +1484,8 @@ func TestGetDashboardSummaryWithBuildingContext(t *testing.T) {
 					"total_buildings": tc.buildingCount,
 				}
 				payRepo.dashboardResult = &models.DashboardSummary{
-					TotalDue:      1000,
-					TotalPaid:     800,
+					TotalDue:       1000,
+					TotalPaid:      800,
 					CollectionRate: 80,
 				}
 			}
@@ -1406,11 +1522,11 @@ func TestGetDashboardSummaryWithBuildingContext(t *testing.T) {
 
 func TestProcessBulkPayments(t *testing.T) {
 	tests := []struct {
-		name          string
-		requests      func() []*models.CreatePaymentRequest
-		setupFails    func(*MockPaymentUnitRepo)
-		wantPayments  int
-		wantErrors    int
+		name           string
+		requests       func() []*models.CreatePaymentRequest
+		setupFails     func(*MockPaymentUnitRepo)
+		wantPayments   int
+		wantErrors     int
 		wantAuditCalls int
 	}{
 		{
@@ -1498,14 +1614,14 @@ func TestProcessBulkPayments(t *testing.T) {
 
 func TestGetPaymentAnalyticsByBuilding(t *testing.T) {
 	tests := []struct {
-		name         string
-		buildingID   int
-		period       string
-		seedBuilding bool
-		bldgFail     bool
+		name          string
+		buildingID    int
+		period        string
+		seedBuilding  bool
+		bldgFail      bool
 		analyticsFail bool
-		wantErr      bool
-		errContains  string
+		wantErr       bool
+		errContains   string
 	}{
 		{
 			name:         "happy path – month period",

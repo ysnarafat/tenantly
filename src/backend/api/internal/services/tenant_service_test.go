@@ -13,7 +13,7 @@ import (
 func TestTenantService_CreateTenant(t *testing.T) {
 	mockRepo := new(mocks.TenantRepositoryInterface)
 	mockAudit := new(mocks.AuditServiceInterface)
-	service := NewTenantService(mockRepo, mockAudit)
+	service := NewTenantService(mockRepo, nil, mockAudit)
 
 	req := &models.CreateTenantRequest{
 		Name:        "John Doe",
@@ -93,7 +93,7 @@ func TestTenantService_CreateTenant(t *testing.T) {
 func TestTenantService_GetAllTenants(t *testing.T) {
 	mockRepo := new(mocks.TenantRepositoryInterface)
 	mockAudit := new(mocks.AuditServiceInterface)
-	service := NewTenantService(mockRepo, mockAudit)
+	service := NewTenantService(mockRepo, nil, mockAudit)
 
 	t.Run("success", func(t *testing.T) {
 		tenants := []*models.Tenant{

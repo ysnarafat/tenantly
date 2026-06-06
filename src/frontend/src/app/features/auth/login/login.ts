@@ -9,6 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
+import { TranslateModule } from '@ngx-translate/core';
 import { AuthService, LoginRequest } from '../../../core/services/auth.service';
 
 @Component({
@@ -21,6 +22,7 @@ import { AuthService, LoginRequest } from '../../../core/services/auth.service';
     MatInputModule,
     MatButtonModule,
     MatProgressSpinnerModule,
+    TranslateModule,
   ],
   templateUrl: './login.html',
   styleUrls: ['./login.scss'],

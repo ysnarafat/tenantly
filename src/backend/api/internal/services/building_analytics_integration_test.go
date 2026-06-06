@@ -243,20 +243,17 @@ func TestBuildingAnalyticsIntegration_WithReportingService(t *testing.T) {
 		},
 	}
 
+	// Use wide variance so performance spread > 30 and insights are generated.
+	analyticsData := []*models.BuildingAnalytics{
+		{OccupancyRate: 40, OccupiedUnits: 8, UnitCount: 20, VacantUnits: 12, MonthlyRevenue: 4000, AverageRent: 200, TotalArea: 1200},
+		{OccupancyRate: 75, OccupiedUnits: 23, UnitCount: 30, VacantUnits: 7, MonthlyRevenue: 80000, AverageRent: 2666, TotalArea: 1600},
+		{OccupancyRate: 95, OccupiedUnits: 38, UnitCount: 40, VacantUnits: 2, MonthlyRevenue: 100000, AverageRent: 2500, TotalArea: 2000},
+	}
 	for i, building := range buildings {
 		mockRepo.Create(building)
-		// Create varied analytics for reporting
-		analytics := &models.BuildingAnalytics{
-			BuildingID:     building.ID,
-			UnitCount:      20 + i*10,
-			OccupiedUnits:  15 + i*8,
-			VacantUnits:    5 + i*2,
-			OccupancyRate:  75.0 + float64(i)*10,
-			MonthlyRevenue: 60000 + float64(i)*20000,
-			AverageRent:    3000 + float64(i)*1000,
-			TotalArea:      1200 + float64(i)*400,
-		}
-		mockRepo.SetAnalytics(building.ID, analytics)
+		a := analyticsData[i]
+		a.BuildingID = building.ID
+		mockRepo.SetAnalytics(building.ID, a)
 	}
 
 	// Test comprehensive property reporting

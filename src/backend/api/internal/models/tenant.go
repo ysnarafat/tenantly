@@ -11,17 +11,17 @@ const (
 )
 
 type Tenant struct {
-	ID          int        `json:"id" db:"id"`
-	Name        string     `json:"name" db:"name"`
-	TenantType  TenantType `json:"tenant_type" db:"tenant_type"`
-	PhoneNumber string     `json:"phone_number" db:"phone_number"`
-	Email       string     `json:"email" db:"email"`
-	NIDNumber   string     `json:"nid_number" db:"nid_number"`
+	ID             int        `json:"id" db:"id"`
+	Name           string     `json:"name" db:"name"`
+	TenantType     TenantType `json:"tenant_type" db:"tenant_type"`
+	PhoneNumber    string     `json:"phone_number" db:"phone_number"`
+	Email          string     `json:"email" db:"email"`
+	NIDNumber      string     `json:"nid_number" db:"nid_number"`
 	Address        string     `json:"address" db:"address"`
 	Active         bool       `json:"active" db:"active"`
 	OrganizationID int        `json:"organization_id" db:"organization_id"`
 	CreatedAt      time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at" db:"updated_at"`
+	UpdatedAt      time.Time  `json:"updated_at" db:"updated_at"`
 }
 
 // TenantResponse represents the API response for a tenant

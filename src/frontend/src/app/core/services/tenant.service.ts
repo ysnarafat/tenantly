@@ -1,7 +1,13 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { CreateTenantRequest, Tenant, TenantListResponse } from '../models/tenant.model';
+import {
+  CreateTenantRequest,
+  UpdateTenantRequest,
+  Tenant,
+  TenantListResponse,
+  TenantWithLeases,
+} from '../models/tenant.model';
 import { environment } from '../../../environments/environment';
 
 @Injectable({
@@ -22,5 +28,17 @@ export class TenantService {
         page_size: pageSize.toString(),
       },
     });
+  }
+
+  getTenantById(id: number): Observable<TenantWithLeases> {
+    return this.http.get<TenantWithLeases>(`${this.apiUrl}/${id}`);
+  }
+
+  updateTenant(id: number, tenant: UpdateTenantRequest): Observable<Tenant> {
+    return this.http.put<Tenant>(`${this.apiUrl}/${id}`, tenant);
+  }
+
+  deleteTenant(id: number): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/${id}`);
   }
 }

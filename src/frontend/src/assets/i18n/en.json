@@ -1,0 +1,467 @@
+{
+  "COMMON": {
+    "BUTTONS": {
+      "CANCEL": "Cancel",
+      "SAVE": "Save",
+      "CREATE": "Create",
+      "UPDATE": "Update",
+      "DELETE": "Delete",
+      "EDIT": "Edit",
+      "CLOSE": "Close",
+      "RETRY": "Retry",
+      "ADD": "Add"
+    },
+    "ERRORS": {
+      "REQUIRED": "Required",
+      "MIN_VALUE": "Minimum value is",
+      "MAX_VALUE": "Maximum value is",
+      "MAX_LENGTH": "Maximum length is",
+      "MIN_LENGTH": "Minimum length is",
+      "PATTERN": "Invalid format"
+    },
+    "STATUS": {
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "LOADING": "Loading..."
+    },
+    "ACTIONS": {
+      "VIEW_DETAILS": "View Details",
+      "MORE": "More actions",
+      "CLEAR": "Clear"
+    },
+    "PAGINATION": {
+      "RESULT": "result",
+      "RESULTS": "results"
+    },
+    "EMPTY_STATE": {
+      "TRY_ADJUST": "Try adjusting your search or filters.",
+      "NO_ITEMS": "No items found"
+    },
+    "HINTS": {
+      "OPTIONAL": "Optional"
+    }
+  },
+  "DUE_LIST": {
+    "PAGE_TITLE": "Rent Due List",
+    "REFRESH": "Refresh",
+    "LOADING": "Loading...",
+    "EMPTY_TITLE": "All paid ✓",
+    "EMPTY_DESCRIPTION": "No outstanding rent this month",
+    "TOTAL_DUE": "Total Due Amount",
+    "TENANTS_DUE": "Tenants Due",
+    "COLUMNS": {
+      "TENANT_NAME": "Tenant Name",
+      "PROPERTY": "Property",
+      "BUILDING": "Building",
+      "UNIT": "Unit",
+      "MONTHLY_RENT": "Monthly Rent",
+      "DAYS_OVERDUE": "Days Overdue"
+    },
+    "DAYS": "days",
+    "ERROR_LOADING": "Failed to load due list"
+  },
+  "LEASE_LIST": {
+    "PAGE_TITLE": "Lease Management",
+    "STATS": {
+      "TOTAL": "Total",
+      "ACTIVE": "Active",
+      "EXPIRING": "Expiring",
+      "EXPIRED": "Expired",
+      "INACTIVE": "Inactive"
+    },
+    "BUTTONS": {
+      "NEW_LEASE": "New Lease",
+      "EDIT_LEASE": "Edit Lease"
+    },
+    "FILTERS": {
+      "SEARCH_LABEL": "Search leases",
+      "SEARCH_PLACEHOLDER": "Tenant, unit, building or property…",
+      "STATUS_LABEL": "Status",
+      "TYPE_LABEL": "Type",
+      "RESIDENTIAL": "Residential",
+      "COMMERCIAL": "Commercial",
+      "ALL": "All"
+    },
+    "LOADING": "Loading leases…",
+    "TABLE": {
+      "UNIT": "Unit",
+      "TENANT": "Tenant",
+      "TYPE": "Type",
+      "MONTHLY_RENT": "Monthly Rent",
+      "DURATION": "Duration",
+      "DURATION_MONTHS": "months",
+      "STATUS": "Status",
+      "ACTIONS": "Actions"
+    },
+    "DETAIL": {
+      "PROPERTY": "Property",
+      "BUILDING": "Building",
+      "UNIT_TYPE": "Unit Type",
+      "SECURITY_DEPOSIT": "Security Deposit",
+      "LEASE_ID": "Lease ID",
+      "DAYS_REMAINING": "Days Remaining",
+      "EXPIRED": "Expired"
+    },
+    "TOOLTIPS": {
+      "COLLAPSE": "Collapse"
+    },
+    "EMPTY_STATE": {
+      "NO_MATCHING": "No matching leases",
+      "NO_LEASES": "No leases yet",
+      "CREATE_FIRST": "Create your first lease agreement to get started."
+    }
+  },
+  "TENANT_LIST": {
+    "PAGE_TITLE": "Tenants",
+    "STATS": {
+      "TOTAL": "Total",
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive"
+    },
+    "BUTTONS": {
+      "ADD_TENANT": "Add Tenant"
+    },
+    "FILTERS": {
+      "SEARCH_LABEL": "Search tenants",
+      "SEARCH_PLACEHOLDER": "Name, phone, email or NID…",
+      "STATUS_LABEL": "Status",
+      "TYPE_LABEL": "Type",
+      "INDIVIDUAL": "Individual",
+      "BUSINESS": "Business",
+      "ALL": "All"
+    },
+    "LOADING": "Loading tenants…",
+    "TABLE": {
+      "TENANT": "Tenant",
+      "TYPE": "Type",
+      "CONTACT": "Contact",
+      "NID": "NID / Reg. No.",
+      "JOINED": "Joined",
+      "EMPTY_VALUE": "—",
+      "STATUS": "Status",
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive",
+      "ACTIONS": "Actions"
+    },
+    "EMPTY_STATE": {
+      "NO_MATCHING": "No matching tenants",
+      "NO_TENANTS": "No tenants yet",
+      "ADD_FIRST": "Add your first tenant to get started."
+    }
+  },
+  "DASHBOARD": {
+    "PAGE_TITLE": "Dashboard",
+    "STATS": {
+      "TOTAL_RENT_DUE": "Total Rent Due",
+      "COLLECTED_THIS_MONTH": "Collected This Month",
+      "PENDING_PAYMENTS": "Pending Payments",
+      "OVERDUE_SHOPS": "Overdue Shops",
+      "ACTIVE_LEASES": "Active Leases",
+      "EXPIRING_SOON": "Expiring Soon",
+      "TOTAL_ATTACHMENTS": "Total Attachments",
+      "RECENT_FILES": "Recent Files"
+    },
+    "SECTIONS": {
+      "EXPIRING_LEASES": "Leases Expiring Soon",
+      "RECENT_LEASES": "Recent Leases",
+      "RECENT_ATTACHMENTS": "Recent Attachments"
+    },
+    "BUTTONS": {
+      "VIEW_ALL": "View All"
+    },
+    "SUFFIXES": {
+      "DAYS_LEFT": "days left",
+      "PER_MONTH": "/month"
+    },
+    "EMPTY_STATE": {
+      "NO_RECENT_LEASES": "No recent leases found.",
+      "NO_RECENT_ATTACHMENTS": "No recent attachments found."
+    },
+    "LOADING": "Loading dashboard data..."
+  },
+  "CREATE_LEASE_DIALOG": {
+    "TITLE": "Create New Lease",
+    "LOADING": "Loading data...",
+    "FIELDS": {
+      "TENANT": "Tenant",
+      "PROPERTY": "Property",
+      "BUILDING": "Building",
+      "UNIT": "Unit",
+      "LEASE_TYPE": "Lease Type",
+      "START_DATE": "Start Date",
+      "DURATION_MONTHS": "Duration (Months)",
+      "MONTHLY_RENT": "Monthly Rent (BDT)",
+      "SECURITY_DEPOSIT": "Security Deposit (BDT) - Optional"
+    },
+    "ERRORS": {
+      "NO_PHONE": "No phone"
+    },
+    "INFO": {
+      "END_DATE": "End Date:"
+    },
+    "BUTTONS": {
+      "CREATE": "Create Lease",
+      "CREATING": "Creating..."
+    }
+  },
+  "EDIT_LEASE_DIALOG": {
+    "TITLE": "Edit Lease",
+    "CONTEXT": {
+      "UNIT": "Unit",
+      "TENANT": "Tenant",
+      "DURATION": "Duration"
+    },
+    "FIELDS": {
+      "LEASE_TYPE": "Lease Type",
+      "MONTHLY_RENT": "Monthly Rent (BDT)",
+      "SECURITY_DEPOSIT": "Security Deposit (BDT)"
+    },
+    "TOGGLE": {
+      "ACTIVE": "Lease is active",
+      "HINT": "Deactivating will mark this lease as inactive"
+    },
+    "BUTTONS": {
+      "SAVE": "Save Changes",
+      "SAVING": "Saving…"
+    }
+  },
+  "PROPERTY_FORM_DIALOG": {
+    "TITLE_CREATE": "Create Property",
+    "TITLE_EDIT": "Update Property",
+    "FIELDS": {
+      "PROPERTY_NAME": "Property Name",
+      "PROPERTY_CODE": "Property Code",
+      "PROPERTY_TYPE": "Property Type",
+      "ADDRESS": "Address",
+      "CITY": "City",
+      "POSTAL_CODE": "Postal Code"
+    },
+    "PLACEHOLDERS": {
+      "PROPERTY_NAME": "e.g., Sunset Apartments",
+      "PROPERTY_CODE": "e.g., PROP-001",
+      "ADDRESS": "e.g., 123 Main Street",
+      "CITY": "e.g., Dhaka",
+      "POSTAL_CODE": "e.g., 1212"
+    },
+    "HINTS": {
+      "PROPERTY_CODE": "Unique identifier for this property",
+      "POSTAL_CODE": "4-digit code"
+    },
+    "BUTTONS": {
+      "CREATE": "Create Property",
+      "UPDATE": "Update Property"
+    }
+  },
+  "TENANT_FORM_DIALOG": {
+    "TITLE_ADD": "Add Tenant",
+    "TITLE_EDIT": "Edit Tenant",
+    "TITLE_VIEW": "View Tenant",
+    "FIELDS": {
+      "NAME": "Full Name",
+      "TENANT_TYPE": "Tenant Type",
+      "NID": "NID / Registry No.",
+      "PHONE": "Phone Number",
+      "EMAIL": "Email Address",
+      "ADDRESS": "Address"
+    },
+    "PLACEHOLDERS": {
+      "NAME": "Enter tenant name",
+      "NID": "Enter NID",
+      "PHONE": "Enter phone",
+      "EMAIL": "example@mail.com",
+      "ADDRESS": "Enter full address"
+    },
+    "BUTTONS": {
+      "ADD": "Add Tenant",
+      "UPDATE": "Update Tenant"
+    }
+  },
+  "LOGIN": {
+    "TITLE": "Tenantly Login",
+    "FIELDS": {
+      "USERNAME": "Username",
+      "PASSWORD": "Password"
+    },
+    "BUTTONS": {
+      "LOGIN": "Login"
+    },
+    "DEMO": {
+      "LABEL": "Demo Credentials:",
+      "USERNAME_TEXT": "Username: demo",
+      "PASSWORD_TEXT": "Password: demo123"
+    }
+  },
+  "BUILDING_FORM_DIALOG": {
+    "TITLE_CREATE": "Add New Building",
+    "TITLE_EDIT": "Edit Building",
+    "FIELDS": {
+      "BUILDING_NAME": "Building Name",
+      "BUILDING_CODE": "Building Code",
+      "BUILDING_TYPE": "Building Type",
+      "TOTAL_FLOORS": "Total Floors",
+      "CONSTRUCTION_YEAR": "Construction Year",
+      "HAS_ELEVATOR": "Has Elevator"
+    },
+    "PLACEHOLDERS": {
+      "BUILDING_NAME": "e.g., Tower A",
+      "BUILDING_CODE": "e.g., BLD-001"
+    },
+    "HINTS": {
+      "BUILDING_CODE": "Unique identifier for this building",
+      "TOTAL_FLOORS": "Optional",
+      "CONSTRUCTION_YEAR": "Optional"
+    },
+    "ERRORS": {
+      "MIN_LENGTH": "Minimum length is",
+      "MAX_LENGTH": "Maximum length is",
+      "PATTERN": "Only uppercase letters, numbers, and hyphens allowed",
+      "MIN_VALUE": "Minimum value is",
+      "MAX_VALUE": "Maximum value is"
+    },
+    "BUTTONS": {
+      "CREATE": "Create Building",
+      "UPDATE": "Update Building"
+    }
+  },
+  "UNIT_FORM_DIALOG": {
+    "TITLE_CREATE": "Add New Unit",
+    "TITLE_EDIT": "Edit Unit",
+    "FIELDS": {
+      "UNIT_NUMBER": "Unit Number",
+      "UNIT_NAME": "Unit Name (Optional)",
+      "UNIT_TYPE": "Unit Type",
+      "FLOOR": "Floor",
+      "SECTION": "Section",
+      "MONTHLY_RENT": "Monthly Rent"
+    },
+    "PLACEHOLDERS": {
+      "UNIT_NUMBER": "e.g., 101, A-1, Shop-5",
+      "UNIT_NAME": "e.g., Corner Office, Master Suite",
+      "FLOOR": "e.g., 3",
+      "SECTION": "e.g., A, North Wing",
+      "MONTHLY_RENT": "e.g., 15000"
+    },
+    "HINTS": {
+      "UNIT_NUMBER": "Unique identifier for this unit",
+      "FLOOR": "Optional",
+      "SECTION": "Optional"
+    },
+    "ERRORS": {
+      "MAX_LENGTH": "Maximum length is",
+      "MIN_VALUE": "Minimum value is",
+      "MAX_VALUE": "Maximum value is"
+    },
+    "BUTTONS": {
+      "CREATE": "Create Unit",
+      "UPDATE": "Update Unit"
+    }
+  },
+  "PROPERTY_LIST": {
+    "PAGE_TITLE": "Properties",
+    "BUTTONS": {
+      "ADD_PROPERTY": "Add Property"
+    },
+    "LOADING": "Loading properties...",
+    "EMPTY_STATE": {
+      "TITLE": "No Properties Yet",
+      "DESCRIPTION": "Get started by adding your first property"
+    },
+    "DIALOGS": {
+      "DELETE_PROPERTY": "Are you sure you want to delete",
+      "DELETE_BUILDING": "Are you sure you want to delete",
+      "DELETE_UNIT": "Are you sure you want to delete unit"
+    }
+  },
+  "PAYMENT_LIST": {
+    "PAGE_TITLE": "Payments",
+    "SUMMARY": {
+      "TOTAL_DUE": "Total Due",
+      "TOTAL_COLLECTED": "Total Collected",
+      "PENDING": "Pending",
+      "OVERDUE": "Overdue",
+      "COLLECTION_RATE": "Collection Rate"
+    },
+    "BUTTONS": {
+      "NEW_PAYMENT": "New Payment",
+      "APPLY": "Apply",
+      "CLEAR": "Clear",
+      "UPDATE": "Update"
+    },
+    "FILTERS": {
+      "STATUS": "Status",
+      "MONTH": "Month",
+      "YEAR": "Year",
+      "ALL": "All"
+    },
+    "TABLE": {
+      "TENANT_UNIT": "Tenant / Unit",
+      "PROPERTY": "Property",
+      "PERIOD": "Period",
+      "AMOUNT_DUE": "Due (৳)",
+      "AMOUNT_PAID": "Paid (৳)",
+      "STATUS": "Status"
+    },
+    "STATUS": {
+      "PAID": "Paid",
+      "DUE": "Due",
+      "PARTIAL": "Partial",
+      "OVERDUE": "Overdue"
+    },
+    "MONTHS": {
+      "JANUARY": "January",
+      "FEBRUARY": "February",
+      "MARCH": "March",
+      "APRIL": "April",
+      "MAY": "May",
+      "JUNE": "June",
+      "JULY": "July",
+      "AUGUST": "August",
+      "SEPTEMBER": "September",
+      "OCTOBER": "October",
+      "NOVEMBER": "November",
+      "DECEMBER": "December"
+    },
+    "EMPTY_STATE": "No payments found",
+    "LOADING": "Loading payments..."
+  },
+  "CREATE_PAYMENT_DIALOG": {
+    "TITLE": "Create New Payment",
+    "FIELDS": {
+      "TENANT": "Tenant",
+      "UNIT": "Unit",
+      "BUILDING": "Building",
+      "PROPERTY": "Property",
+      "MONTH": "Month",
+      "YEAR": "Year",
+      "AMOUNT_DUE": "Amount Due (৳)",
+      "DUE_DATE": "Due Date"
+    },
+    "ERRORS": {
+      "REQUIRED": "This field is required",
+      "INVALID_AMOUNT": "Please enter a valid amount",
+      "INVALID_DATE": "Please enter a valid date"
+    },
+    "BUTTONS": {
+      "CREATE": "Create",
+      "CANCEL": "Cancel"
+    }
+  },
+  "UPDATE_PAYMENT_DIALOG": {
+    "TITLE": "Update Payment",
+    "FIELDS": {
+      "AMOUNT_PAID": "Amount Paid (৳)",
+      "STATUS": "Status",
+      "PAYMENT_METHOD": "Payment Method",
+      "PAYMENT_DATE": "Payment Date",
+      "NOTES": "Notes"
+    },
+    "ERRORS": {
+      "REQUIRED": "This field is required",
+      "INVALID_AMOUNT": "Please enter a valid amount"
+    },
+    "BUTTONS": {
+      "UPDATE": "Update",
+      "CANCEL": "Cancel"
+    }
+  }
+}

@@ -31,7 +31,17 @@
         </button>
       </div>
 
-      @if (property.buildings) { @for (building of property.buildings; track building.id) {
+      @if (property.buildings === null || property.buildings === undefined) {
+      <div class="loading-buildings">
+        <mat-spinner diameter="30"></mat-spinner>
+        <span>Loading buildings...</span>
+      </div>
+      } @else if (property.buildings.length === 0) {
+      <div class="empty-units">
+        <mat-icon>apartment</mat-icon>
+        <p>No buildings yet. Click the + button above to add your first building.</p>
+      </div>
+      } @else { @for (building of property.buildings; track building.id) {
       <mat-card class="building-card">
         <div
           class="building-header"
@@ -77,9 +87,20 @@
               <div class="unit-details">
                 <strong>{{ unit.unit_number }}</strong>
                 <span class="unit-type">{{ unit.unit_type }}</span>
-                <span class="unit-rent">৳{{ unit.monthly_rent }}/mo</span>
               </div>
               <div class="unit-actions">
+                <span
+                  [matTooltip]="unit.lease_active ? 'Add Payment' : 'No active lease for this unit'"
+                >
+                  <button
+                    mat-icon-button
+                    color="primary"
+                    (click)="onAddPayment(unit, building)"
+                    [disabled]="!unit.lease_active"
+                  >
+                    <mat-icon>payments</mat-icon>
+                  </button>
+                </span>
                 <button mat-icon-button (click)="onEditUnit(unit, building)" matTooltip="Edit Unit">
                   <mat-icon>edit</mat-icon>
                 </button>
@@ -104,12 +125,7 @@
         </div>
         }
       </mat-card>
-      } } @else {
-      <div class="loading-buildings">
-        <mat-spinner diameter="30"></mat-spinner>
-        <span>Loading buildings...</span>
-      </div>
-      }
+      } }
     </div>
     }
   </mat-card-content>

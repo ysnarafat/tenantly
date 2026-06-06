@@ -218,7 +218,7 @@ type BuildingAnalyticsServiceInterface interface {
 
 // UnitRepositoryInterface defines the interface for unit repository operations
 type UnitRepositoryInterface interface {
-	Create(req *models.CreateUnitRequest) (*models.Unit, error)
+	Create(req *models.CreateUnitRequest, organizationID int) (*models.Unit, error)
 	GetByID(id int) (*models.Unit, error)
 	GetByIDWithDetails(id int) (*models.UnitWithDetails, error)
 	Update(id int, req *models.UpdateUnitRequest) (*models.Unit, error)
@@ -261,6 +261,7 @@ type PaymentRepositoryInterface interface {
 	GetDashboardSummary() (*models.DashboardSummary, error)
 	GetBuildingLevelSummary() (map[string]interface{}, error)
 	GetBuildingPaymentAnalytics(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentAnalytics, error)
+	SearchLeases(orgID int, query string) ([]*models.LeaseSearchResult, error)
 }
 
 // PaymentServiceInterface defines the interface for payment service operations
@@ -276,6 +277,9 @@ type PaymentServiceInterface interface {
 	GetDashboardSummaryWithBuildingContext() (*models.DashboardSummary, error)
 	ProcessBulkPayments(requests []*models.CreatePaymentRequest, userID int) ([]*models.Payment, []error)
 	GetPaymentAnalyticsByBuilding(buildingID int, period string) (*models.BuildingPaymentAnalytics, error)
+	CanUserAccessPayment(userID int, userRole string, payment *models.PaymentWithDetails, userOrgID int) bool
+	LogPaymentAccess(userID int, action string, paymentID int, allowed bool)
+	SearchLeases(orgID int, query string) (*models.LeaseSearchResponse, error)
 }
 
 // NotificationRepositoryInterface defines the interface for notification repository operations
@@ -310,12 +314,16 @@ type TenantRepositoryInterface interface {
 	GetByID(id int) (*models.Tenant, error)
 	GetByUnitID(unitID int) (*models.Tenant, error)
 	GetAll(page, pageSize, orgID int) ([]*models.Tenant, int, error)
+	Update(id int, updates map[string]interface{}) error
 }
 
 // TenantServiceInterface defines the interface for tenant service operations
 type TenantServiceInterface interface {
 	CreateTenant(req *models.CreateTenantRequest, userID int) (*models.TenantResponse, error)
 	GetAllTenants(page, pageSize, orgID int) (*models.TenantListResponse, error)
+	GetTenantByID(id int, orgID int) (*models.TenantWithLeases, error)
+	UpdateTenant(id int, req *models.UpdateTenantRequest, userID, orgID int) (*models.TenantResponse, error)
+	DeleteTenant(id int, userID, orgID int) error
 }
 
 // PropertyRepositoryInterface defines the interface for property repository operations
@@ -336,4 +344,35 @@ type PropertyRepositoryInterface interface {
 type ReportingServiceInterface interface {
 	GenerateComprehensiveReport(propertyID *int, buildingID *int, startDate, endDate time.Time, userID int) (*models.ComprehensiveReport, error)
 	GenerateDashboardReport(filters map[string]interface{}, groupBy string, userID int) (*models.DashboardReport, error)
+}
+
+// LeaseRepositoryInterface defines the interface for lease repository operations
+type LeaseRepositoryInterface interface {
+	Create(req *models.CreateLeaseRequest) (*models.Lease, error)
+	GetByID(id int) (*models.Lease, error)
+	GetByIDWithDetails(id int) (*models.LeaseWithDetails, error)
+	GetAll(page, pageSize, orgID int) ([]*models.LeaseWithDetails, int, error)
+	GetByUnitID(unitID int, page, pageSize, orgID int) ([]*models.LeaseWithDetails, int, error)
+	GetByTenantID(tenantID int, page, pageSize, orgID int) ([]*models.LeaseWithDetails, int, error)
+	Update(id int, req *models.UpdateLeaseRequest) (*models.Lease, error)
+	Delete(id int) error
+	SoftDelete(id int) error
+	HasActiveLeaseOnUnit(unitID int, excludeLeaseID *int) (bool, error)
+	HasActiveLeaseForTenant(tenantID int) (bool, error)
+	GetLeasesDueForMonth(orgID int) ([]models.LeaseDue, error)
+	GetDueSummary(orgID int) (*models.DueSummary, error)
+}
+
+// LeaseServiceInterface defines the interface for lease service operations
+type LeaseServiceInterface interface {
+	CreateLease(req *models.CreateLeaseRequest, userID int) (*models.LeaseWithDetails, error)
+	GetLeaseByID(id int, orgID int) (*models.LeaseWithDetails, error)
+	GetAllLeases(page, pageSize, orgID int) (*models.LeaseListResponse, error)
+	UpdateLease(id int, req *models.UpdateLeaseRequest, userID, orgID int) (*models.LeaseWithDetails, error)
+	DeleteLease(id int, userID, orgID int) error
+	TerminateLease(id int, userID, orgID int, terminationDate string) error
+	GetLeasesByUnit(unitID int, page, pageSize, orgID int) (*models.LeaseListResponse, error)
+	GetLeasesByTenant(tenantID int, page, pageSize, orgID int) (*models.LeaseListResponse, error)
+	GetLeasesDue(orgID int) ([]models.LeaseDue, error)
+	GetDueSummary(orgID int) (*models.DueSummary, error)
 }

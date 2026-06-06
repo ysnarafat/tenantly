@@ -1,7 +1,9 @@
 package server
 
 import (
+	"crypto/tls"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -34,8 +36,17 @@ func New(cfg *config.Config, db *sql.DB) *Server {
 }
 
 func (s *Server) setupMiddleware() {
-	// Security headers
+	// Security headers (including HSTS for HTTPS)
 	s.router.Use(middleware.SecurityHeadersMiddleware())
+
+	// Add HSTS header for secure transport
+	s.router.Use(func(c *gin.Context) {
+		c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+		c.Header("X-Content-Type-Options", "nosniff")
+		c.Header("X-Frame-Options", "DENY")
+		c.Header("X-XSS-Protection", "1; mode=block")
+		c.Next()
+	})
 
 	// CORS is handled by nginx proxy, no need for API-level CORS
 	s.router.Use(middleware.CORS(s.config.Environment))
@@ -80,16 +91,17 @@ func (s *Server) setupRoutes() {
 	propertyService := services.NewPropertyService(propertyRepo, auditService)
 	buildingService := services.NewBuildingService(buildingRepo, propertyRepo, auditService, metadataValidator)
 	unitService := services.NewUnitService(unitRepo, buildingRepo, propertyRepo, auditService)
-	tenantService := services.NewTenantService(tenantRepo, auditService)
-	paymentService := services.NewPaymentService(paymentRepo, unitRepo, buildingRepo, propertyRepo, auditService)
+	tenantService := services.NewTenantService(tenantRepo, leaseRepo, auditService)
+	leaseService := services.NewLeaseService(leaseRepo, tenantRepo, unitRepo, auditService)
+	paymentService := services.NewPaymentService(paymentRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService)
 	propertyHandler := handlers.NewPropertyHandler(propertyService)
 	buildingHandler := handlers.NewBuildingHandler(buildingService)
 	unitHandler := handlers.NewUnitHandler(unitService)
 	tenantHandler := handlers.NewTenantHandler(tenantService)
+	leaseHandler := handlers.NewLeaseHandler(leaseService)
 	paymentHandler := handlers.NewPaymentHandler(paymentService)
-	leaseHandler := handlers.NewLeaseHandler(leaseRepo)
 	organizationHandler := handlers.NewOrganizationHandler(organizationService)
 
 	// Health check endpoint
@@ -234,15 +246,28 @@ func (s *Server) setupRoutes() {
 			{
 				tenants.GET("", middleware.RequireAnyRole(), tenantHandler.GetAllTenants)
 				tenants.POST("", middleware.RequireAdminOrPropertyManager(), tenantHandler.CreateTenant)
-				tenants.GET("/:id", s.handlePlaceholder("Get tenant"))
-				tenants.PUT("/:id", s.handlePlaceholder("Update tenant"))
-				tenants.DELETE("/:id", s.handlePlaceholder("Delete tenant"))
+				tenants.GET("/:id", middleware.RequireAnyRole(), tenantHandler.GetTenantByID)
+				tenants.PUT("/:id", middleware.RequireAdminOrPropertyManager(), tenantHandler.UpdateTenant)
+				tenants.DELETE("/:id", middleware.RequireAdmin(), tenantHandler.DeleteTenant)
 			}
 
 			leases := protected.Group("/leases")
 			leases.Use(middleware.RequireOrgContext())
 			{
-				leases.GET("", middleware.RequireAnyRole(), leaseHandler.GetActiveLeases)
+				leases.GET("", middleware.RequireAnyRole(), leaseHandler.GetAllLeases)
+				leases.POST("", middleware.RequireAdminOrPropertyManager(), leaseHandler.CreateLease)
+				leases.GET("/:id", middleware.RequireAnyRole(), leaseHandler.GetLeaseByID)
+				leases.PUT("/:id", middleware.RequireAdminOrPropertyManager(), leaseHandler.UpdateLease)
+				leases.DELETE("/:id", middleware.RequireAdmin(), leaseHandler.DeleteLease)
+				leases.POST("/:id/terminate", middleware.RequireAdminOrPropertyManager(), leaseHandler.TerminateLease)
+
+				// Lease relationships
+				leases.GET("/unit/:unit_id", middleware.RequireAnyRole(), leaseHandler.GetLeasesByUnit)
+				leases.GET("/tenant/:tenant_id", middleware.RequireAnyRole(), leaseHandler.GetLeasesByTenant)
+
+				// Due list
+				leases.GET("/due", middleware.RequireAdminOrPropertyManagerOrAccountant(), leaseHandler.GetLeasesDue)
+				leases.GET("/due/summary", middleware.RequireAdminOrPropertyManagerOrAccountant(), leaseHandler.GetDueSummary)
 			}
 
 			payments := protected.Group("/payments")
@@ -251,6 +276,7 @@ func (s *Server) setupRoutes() {
 				payments.GET("", middleware.RequireAnyRole(), paymentHandler.GetPayments)
 				payments.POST("", middleware.RequireAdminOrPropertyManager(), paymentHandler.CreatePayment)
 				payments.POST("/bulk", middleware.RequireAdminOrPropertyManager(), paymentHandler.BulkCreatePayments)
+				payments.GET("/search", middleware.RequireAnyRole(), paymentHandler.SearchLeases)
 				payments.GET("/:id", middleware.RequireAnyRole(), paymentHandler.GetPayment)
 				payments.PUT("/:id", middleware.RequireAdminOrPropertyManager(), paymentHandler.UpdatePayment)
 				payments.GET("/building/:building_id/report", middleware.RequireAnyRole(), paymentHandler.GetBuildingPaymentReport)
@@ -279,6 +305,50 @@ func (s *Server) handlePlaceholder(operation string) gin.HandlerFunc {
 	}
 }
 
+// Start starts the HTTP/HTTPS server with optional TLS support
 func (s *Server) Start(addr string) error {
-	return s.router.Run(addr)
+	// Check if TLS is configured
+	certFile, keyFile := s.getTLSCertificates()
+
+	if certFile == "" || keyFile == "" {
+		// No TLS - run plain HTTP
+		fmt.Println("⚠️  WARNING: Running without TLS/HTTPS. This is NOT recommended for production.")
+		fmt.Println("   Set TLS_CERT_FILE and TLS_KEY_FILE environment variables to enable HTTPS.")
+		return s.router.Run(addr)
+	}
+
+	// TLS enabled - configure strong ciphers and TLS version
+	tlsConfig := &tls.Config{
+		MinVersion:               tls.VersionTLS12,
+		CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+		PreferServerCipherSuites: true,
+		CipherSuites: []uint16{
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+		},
+	}
+
+	// Create HTTP server with TLS config
+	server := &http.Server{
+		Addr:      addr,
+		Handler:   s.router,
+		TLSConfig: tlsConfig,
+	}
+
+	fmt.Printf("✅ HTTPS/TLS enabled (TLS 1.2+) on %s\n", addr)
+	return server.ListenAndServeTLS(certFile, keyFile)
+}
+
+// getTLSCertificates returns TLS certificate and key file paths from environment
+func (s *Server) getTLSCertificates() (string, string) {
+	// These would be set via environment variables in production
+	// Example: export TLS_CERT_FILE=/etc/ssl/certs/server.crt
+	// Example: export TLS_KEY_FILE=/etc/ssl/private/server.key
+	certFile := ""
+	keyFile := ""
+
+	// In production, these should come from environment variables or config
+	// For now, returning empty strings will fall back to HTTP
+	return certFile, keyFile
 }

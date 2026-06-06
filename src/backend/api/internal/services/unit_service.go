@@ -49,20 +49,25 @@ func (s *UnitService) CreateUnit(req *models.CreateUnitRequest, userID int) (*mo
 		return nil, fmt.Errorf("unit type validation failed: %w", err)
 	}
 
-	// Create unit
-	unit, err := s.unitRepo.Create(req)
+	// Get building to retrieve organization_id
+	building, err := s.buildingRepo.GetByID(req.BuildingID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get building: %w", err)
+	}
+
+	// Create unit with organization_id
+	unit, err := s.unitRepo.Create(req, building.OrganizationID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create unit: %w", err)
 	}
 
 	// Log audit with building context
 	s.auditService.LogUserAction(userID, "CREATE", "units", &unit.ID, nil, map[string]interface{}{
-		"unit_id":      unit.ID,
-		"building_id":  unit.BuildingID,
-		"property_id":  unit.PropertyID,
-		"unit_number":  unit.UnitNumber,
-		"unit_type":    unit.UnitType,
-		"monthly_rent": unit.MonthlyRent,
+		"unit_id":     unit.ID,
+		"building_id": unit.BuildingID,
+		"property_id": unit.PropertyID,
+		"unit_number": unit.UnitNumber,
+		"unit_type":   unit.UnitType,
 	})
 
 	return unit, nil
@@ -306,14 +311,13 @@ func (s *UnitService) GetUnitHierarchyContext(unitID int) (map[string]interface{
 
 	context := map[string]interface{}{
 		"unit": map[string]interface{}{
-			"id":           unit.ID,
-			"unit_number":  unit.UnitNumber,
-			"unit_name":    unit.UnitName,
-			"unit_type":    unit.UnitType,
-			"floor":        unit.Floor,
-			"section":      unit.Section,
-			"monthly_rent": unit.MonthlyRent,
-			"active":       unit.Active,
+			"id":          unit.ID,
+			"unit_number": unit.UnitNumber,
+			"unit_name":   unit.UnitName,
+			"unit_type":   unit.UnitType,
+			"floor":       unit.Floor,
+			"section":     unit.Section,
+			"active":      unit.Active,
 		},
 		"building": map[string]interface{}{
 			"id":                building.ID,

@@ -1,120 +1,371 @@
 <div class="lease-list-container">
-  <div class="header">
-    <h1>Lease Management</h1>
-    @if (canEdit()) {
-    <button mat-raised-button color="primary" (click)="createLease()">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1>{{ 'LEASE_LIST.PAGE_TITLE' | translate }}</h1>
+      <div class="stats-row">
+        <span class="stat-chip total"
+          >{{ leases.length }} {{ 'LEASE_LIST.STATS.TOTAL' | translate }}</span
+        >
+        <span class="stat-chip active"
+          >{{ activeCount }} {{ 'LEASE_LIST.STATS.ACTIVE' | translate }}</span
+        >
+        <span class="stat-chip expiring" *ngIf="expiringCount > 0"
+          >{{ expiringCount }} {{ 'LEASE_LIST.STATS.EXPIRING' | translate }}</span
+        >
+        <span class="stat-chip expired" *ngIf="expiredCount > 0"
+          >{{ expiredCount }} {{ 'LEASE_LIST.STATS.EXPIRED' | translate }}</span
+        >
+        <span class="stat-chip inactive" *ngIf="inactiveCount > 0"
+          >{{ inactiveCount }} {{ 'LEASE_LIST.STATS.INACTIVE' | translate }}</span
+        >
+      </div>
+    </div>
+    <button *ngIf="canEdit()" mat-raised-button color="primary" (click)="createLease()">
       <mat-icon>add</mat-icon>
-      New Lease
+      {{ 'LEASE_LIST.BUTTONS.NEW_LEASE' | translate }}
     </button>
-    }
   </div>
 
-  <mat-card>
-    <mat-card-content>
-      <div class="table-container">
-        <table mat-table [dataSource]="leases" class="lease-table">
-          <!-- Unit Number Column -->
-          <ng-container matColumnDef="unit_number">
-            <th mat-header-cell *matHeaderCellDef>Unit</th>
-            <td mat-cell *matCellDef="let lease">{{ lease.unit_number }}</td>
-          </ng-container>
+  <!-- Filters Bar -->
+  <div class="filters-bar">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>{{ 'LEASE_LIST.FILTERS.SEARCH_LABEL' | translate }}</mat-label>
+      <mat-icon matPrefix>search</mat-icon>
+      <input
+        matInput
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="applyFilters()"
+        [placeholder]="'LEASE_LIST.FILTERS.SEARCH_PLACEHOLDER' | translate"
+      />
+      <button
+        *ngIf="searchQuery"
+        matSuffix
+        mat-icon-button
+        (click)="clearSearch()"
+        [matTooltip]="'COMMON.ACTIONS.CLEAR' | translate"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-form-field>
 
-          <!-- Building Column -->
-          <ng-container matColumnDef="building_name">
-            <th mat-header-cell *matHeaderCellDef>Building</th>
-            <td mat-cell *matCellDef="let lease">{{ lease.building_name }}</td>
-          </ng-container>
-
-          <!-- Tenant Name Column -->
-          <ng-container matColumnDef="tenant_name">
-            <th mat-header-cell *matHeaderCellDef>Tenant</th>
-            <td mat-cell *matCellDef="let lease">
-              <div>
-                <div class="tenant-name">{{ lease.tenant_name }}</div>
-                <div class="tenant-phone">{{ lease.tenant_phone }}</div>
-              </div>
-            </td>
-          </ng-container>
-
-          <!-- Monthly Rent Column -->
-          <ng-container matColumnDef="monthly_rent">
-            <th mat-header-cell *matHeaderCellDef>Monthly Rent</th>
-            <td mat-cell *matCellDef="let lease">
-              <strong>{{ formatCurrency(lease.monthly_rent) }}</strong>
-            </td>
-          </ng-container>
-
-          <!-- Start Date Column -->
-          <ng-container matColumnDef="start_date">
-            <th mat-header-cell *matHeaderCellDef>Start Date</th>
-            <td mat-cell *matCellDef="let lease">{{ formatDate(lease.start_date) }}</td>
-          </ng-container>
-
-          <!-- End Date Column -->
-          <ng-container matColumnDef="end_date">
-            <th mat-header-cell *matHeaderCellDef>End Date</th>
-            <td mat-cell *matCellDef="let lease">{{ formatDate(lease.end_date) }}</td>
-          </ng-container>
-
-          <!-- Status Column -->
-          <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef>Status</th>
-            <td mat-cell *matCellDef="let lease">
-              <mat-chip [color]="getStatusColor(lease)" selected>
-                {{ getStatusText(lease) }}
-              </mat-chip>
-            </td>
-          </ng-container>
-
-          <!-- Actions Column -->
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Actions</th>
-            <td mat-cell *matCellDef="let lease">
-              <button mat-icon-button [matMenuTriggerFor]="menu">
-                <mat-icon>more_vert</mat-icon>
-              </button>
-              <mat-menu #menu="matMenu">
-                <button mat-menu-item (click)="viewDetails(lease)">
-                  <mat-icon>visibility</mat-icon>
-                  <span>View Details</span>
-                </button>
-                @if (canEdit()) {
-                <button mat-menu-item (click)="editLease(lease)">
-                  <mat-icon>edit</mat-icon>
-                  <span>Edit</span>
-                </button>
-                } @if (canDelete()) {
-                <button mat-menu-item (click)="deleteLease(lease)" class="delete-action">
-                  <mat-icon>delete</mat-icon>
-                  <span>Delete</span>
-                </button>
-                }
-              </mat-menu>
-            </td>
-          </ng-container>
-
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-        </table>
-
-        @if (loading) {
-        <div class="loading-container">
-          <p>Loading leases...</p>
-        </div>
-        } @if (!loading && leases.length === 0) {
-        <div class="empty-state">
-          <mat-icon>assignment</mat-icon>
-          <h3>No leases found</h3>
-          <p>Start by creating your first lease agreement.</p>
-          @if (canEdit()) {
-          <button mat-raised-button color="primary" (click)="createLease()">
-            <mat-icon>add</mat-icon>
-            Create Lease
-          </button>
-          }
-        </div>
-        }
+    <div class="filter-group">
+      <span class="filter-label">{{ 'LEASE_LIST.FILTERS.STATUS_LABEL' | translate }}</span>
+      <div class="filter-pills">
+        <button
+          class="pill"
+          [class.selected]="statusFilter === 'all'"
+          (click)="setStatusFilter('all')"
+        >
+          {{ 'LEASE_LIST.FILTERS.ALL' | translate }}
+        </button>
+        <button
+          class="pill pill-active"
+          [class.selected]="statusFilter === 'active'"
+          (click)="setStatusFilter('active')"
+        >
+          {{ 'LEASE_LIST.STATS.ACTIVE' | translate }}
+        </button>
+        <button
+          class="pill pill-expiring"
+          [class.selected]="statusFilter === 'expiring'"
+          (click)="setStatusFilter('expiring')"
+        >
+          {{ 'LEASE_LIST.STATS.EXPIRING' | translate }}
+        </button>
+        <button
+          class="pill pill-expired"
+          [class.selected]="statusFilter === 'expired'"
+          (click)="setStatusFilter('expired')"
+        >
+          {{ 'LEASE_LIST.STATS.EXPIRED' | translate }}
+        </button>
+        <button
+          class="pill pill-inactive"
+          [class.selected]="statusFilter === 'inactive'"
+          (click)="setStatusFilter('inactive')"
+        >
+          {{ 'LEASE_LIST.STATS.INACTIVE' | translate }}
+        </button>
       </div>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">{{ 'LEASE_LIST.FILTERS.TYPE_LABEL' | translate }}</span>
+      <div class="filter-pills">
+        <button class="pill" [class.selected]="typeFilter === 'all'" (click)="setTypeFilter('all')">
+          {{ 'LEASE_LIST.FILTERS.ALL' | translate }}
+        </button>
+        <button
+          class="pill"
+          [class.selected]="typeFilter === 'Residential'"
+          (click)="setTypeFilter('Residential')"
+        >
+          {{ 'LEASE_LIST.FILTERS.RESIDENTIAL' | translate }}
+        </button>
+        <button
+          class="pill"
+          [class.selected]="typeFilter === 'Commercial'"
+          (click)="setTypeFilter('Commercial')"
+        >
+          {{ 'LEASE_LIST.FILTERS.COMMERCIAL' | translate }}
+        </button>
+      </div>
+    </div>
+
+    <span *ngIf="hasActiveFilters" class="results-count">
+      {{ filteredLeases.length }} {{ filteredLeases.length === 1 ? ('COMMON.PAGINATION.RESULT' |
+      translate) : ('COMMON.PAGINATION.RESULTS' | translate) }}
+    </span>
+  </div>
+
+  <!-- Content Card -->
+  <mat-card class="content-card">
+    <mat-card-content>
+      <!-- Loading -->
+      <div *ngIf="loading" class="loading-state">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>{{ 'LEASE_LIST.LOADING' | translate }}</p>
+      </div>
+
+      <ng-container *ngIf="!loading">
+        <!-- Table -->
+        <div class="table-wrapper" *ngIf="pagedLeases.length > 0">
+          <table mat-table [dataSource]="pagedLeases" class="lease-table">
+            <!-- Unit Info Column -->
+            <ng-container matColumnDef="unit_info">
+              <th mat-header-cell *matHeaderCellDef>{{ 'LEASE_LIST.TABLE.UNIT' | translate }}</th>
+              <td mat-cell *matCellDef="let lease">
+                <div class="unit-cell">
+                  <div class="unit-number">Unit {{ lease.unit_number }}</div>
+                  <div class="unit-sub">{{ lease.building_name }} · {{ lease.property_name }}</div>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Tenant Column -->
+            <ng-container matColumnDef="tenant_name">
+              <th mat-header-cell *matHeaderCellDef>{{ 'LEASE_LIST.TABLE.TENANT' | translate }}</th>
+              <td mat-cell *matCellDef="let lease">
+                <div class="tenant-cell">
+                  <div class="tenant-name">{{ lease.tenant_name }}</div>
+                  <div *ngIf="lease.tenant_phone" class="tenant-phone">
+                    {{ lease.tenant_phone }}
+                  </div>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Lease Type Column -->
+            <ng-container matColumnDef="lease_type">
+              <th mat-header-cell *matHeaderCellDef>{{ 'LEASE_LIST.TABLE.TYPE' | translate }}</th>
+              <td mat-cell *matCellDef="let lease">
+                <span class="type-badge" [class.commercial]="lease.lease_type === 'Commercial'">
+                  {{ lease.lease_type }}
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- Monthly Rent Column -->
+            <ng-container matColumnDef="monthly_rent">
+              <th mat-header-cell *matHeaderCellDef>
+                {{ 'LEASE_LIST.TABLE.MONTHLY_RENT' | translate }}
+              </th>
+              <td mat-cell *matCellDef="let lease">
+                <span class="rent-value">{{ formatCurrency(lease.monthly_rent) }}</span>
+              </td>
+            </ng-container>
+
+            <!-- Duration Column -->
+            <ng-container matColumnDef="duration">
+              <th mat-header-cell *matHeaderCellDef>
+                {{ 'LEASE_LIST.TABLE.DURATION' | translate }}
+              </th>
+              <td mat-cell *matCellDef="let lease">
+                <div class="duration-cell">
+                  <div class="duration-dates">
+                    {{ formatDate(lease.start_date) }} → {{ formatDate(lease.end_date) }}
+                  </div>
+                  <div class="duration-months">
+                    {{ lease.duration_months }} {{ 'LEASE_LIST.TABLE.DURATION_MONTHS' | translate }}
+                  </div>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Status Column -->
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>{{ 'LEASE_LIST.TABLE.STATUS' | translate }}</th>
+              <td mat-cell *matCellDef="let lease">
+                <span class="status-badge" [ngClass]="getStatusClass(lease)">
+                  <span class="status-dot"></span>
+                  {{ getStatusText(lease) }}
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- Actions Column -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef class="actions-header">
+                {{ 'LEASE_LIST.TABLE.ACTIONS' | translate }}
+              </th>
+              <td mat-cell *matCellDef="let lease">
+                <div class="actions-cell">
+                  <button
+                    mat-icon-button
+                    [matTooltip]="(expandedLease === lease ? 'LEASE_LIST.TOOLTIPS.COLLAPSE' : 'COMMON.ACTIONS.VIEW_DETAILS') | translate"
+                    (click)="toggleExpand(lease, $event)"
+                    [class.expanded-btn]="expandedLease === lease"
+                  >
+                    <mat-icon
+                      >{{ expandedLease === lease ? 'expand_less' : 'expand_more' }}</mat-icon
+                    >
+                  </button>
+                  <button
+                    mat-icon-button
+                    [matMenuTriggerFor]="menu"
+                    [matTooltip]="'COMMON.ACTIONS.MORE' | translate"
+                    (click)="$event.stopPropagation()"
+                  >
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                  <mat-menu #menu="matMenu">
+                    <button mat-menu-item (click)="toggleExpand(lease, $event)">
+                      <mat-icon>info_outline</mat-icon>
+                      <span>{{ 'COMMON.ACTIONS.VIEW_DETAILS' | translate }}</span>
+                    </button>
+                    <button *ngIf="canEdit()" mat-menu-item (click)="editLease(lease)">
+                      <mat-icon>edit</mat-icon>
+                      <span>{{ 'COMMON.BUTTONS.EDIT' | translate }}</span>
+                    </button>
+                    <button
+                      *ngIf="canDelete()"
+                      mat-menu-item
+                      (click)="deleteLease(lease)"
+                      class="delete-action"
+                    >
+                      <mat-icon>delete</mat-icon>
+                      <span>{{ 'COMMON.BUTTONS.DELETE' | translate }}</span>
+                    </button>
+                  </mat-menu>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Expanded Detail Column -->
+            <ng-container matColumnDef="expandedDetail">
+              <td
+                mat-cell
+                *matCellDef="let lease"
+                [attr.colspan]="displayedColumns.length"
+                class="detail-cell"
+              >
+                <div class="lease-detail" *ngIf="expandedLease === lease">
+                  <div class="detail-grid">
+                    <div class="detail-item">
+                      <span class="detail-label"
+                        >{{ 'LEASE_LIST.DETAIL.PROPERTY' | translate }}</span
+                      >
+                      <span class="detail-value">{{ lease.property_name }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label"
+                        >{{ 'LEASE_LIST.DETAIL.BUILDING' | translate }}</span
+                      >
+                      <span class="detail-value"
+                        >{{ lease.building_name }} ({{ lease.building_code }})</span
+                      >
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label"
+                        >{{ 'LEASE_LIST.DETAIL.UNIT_TYPE' | translate }}</span
+                      >
+                      <span class="detail-value">{{ lease.unit_type }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label"
+                        >{{ 'LEASE_LIST.DETAIL.SECURITY_DEPOSIT' | translate }}</span
+                      >
+                      <span class="detail-value">{{ formatCurrency(lease.security_deposit) }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label"
+                        >{{ 'LEASE_LIST.DETAIL.LEASE_ID' | translate }}</span
+                      >
+                      <span class="detail-value mono">#{{ lease.id }}</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label"
+                        >{{ 'LEASE_LIST.DETAIL.DAYS_REMAINING' | translate }}</span
+                      >
+                      <span
+                        class="detail-value"
+                        [class.warn-text]="lease.days_remaining <= 30 && lease.active"
+                      >
+                        {{ lease.is_expired ? ('LEASE_LIST.DETAIL.EXPIRED' | translate) :
+                        (lease.days_remaining + ' days') }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="detail-actions" *ngIf="canEdit()">
+                    <button mat-stroked-button (click)="editLease(lease)">
+                      <mat-icon>edit</mat-icon>
+                      {{ 'LEASE_LIST.BUTTONS.EDIT_LEASE' | translate }}
+                    </button>
+                  </div>
+                </div>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+            <tr
+              mat-row
+              *matRowDef="let row; columns: displayedColumns; when: isMainRow"
+              class="lease-row"
+              [class.row-expanded]="expandedLease === row"
+              (click)="toggleExpand(row, $event)"
+            ></tr>
+            <tr
+              mat-row
+              *matRowDef="let row; columns: ['expandedDetail']; when: isDetailRow"
+              class="detail-row"
+            ></tr>
+          </table>
+        </div>
+
+        <!-- Empty State -->
+        <div *ngIf="filteredLeases.length === 0" class="empty-state">
+          <mat-icon>{{ hasActiveFilters ? 'search_off' : 'assignment' }}</mat-icon>
+          <h3>
+            {{ hasActiveFilters ? ('LEASE_LIST.EMPTY_STATE.NO_MATCHING' | translate) :
+            ('LEASE_LIST.EMPTY_STATE.NO_LEASES' | translate) }}
+          </h3>
+          <p>
+            {{ hasActiveFilters ? ('COMMON.EMPTY_STATE.TRY_ADJUST' | translate) :
+            ('LEASE_LIST.EMPTY_STATE.CREATE_FIRST' | translate) }}
+          </p>
+          <button
+            *ngIf="!hasActiveFilters && canEdit()"
+            mat-raised-button
+            color="primary"
+            (click)="createLease()"
+          >
+            <mat-icon>add</mat-icon>
+            {{ 'LEASE_LIST.BUTTONS.NEW_LEASE' | translate }}
+          </button>
+        </div>
+
+        <!-- Pagination -->
+        <mat-paginator
+          *ngIf="filteredLeases.length > pageSize"
+          [length]="filteredLeases.length"
+          [pageSize]="pageSize"
+          [pageIndex]="pageIndex"
+          [pageSizeOptions]="[10, 25, 50]"
+          (page)="onPageChange($event)"
+          showFirstLastButtons
+        ></mat-paginator>
+      </ng-container>
     </mat-card-content>
   </mat-card>
 </div>

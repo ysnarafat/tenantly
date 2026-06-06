@@ -2,21 +2,36 @@
 <div class="app-container">
   <mat-toolbar color="primary" class="app-toolbar">
     <button mat-icon-button (click)="toggleSidenav()" class="menu-button">
-      <mat-icon>menu</mat-icon>
+      <mat-icon>{{ sidenavCollapsed() && !isMobile() ? 'menu_open' : 'menu' }}</mat-icon>
     </button>
     <div class="app-branding">
       <span class="app-title">Tenantly</span>
-      <span class="app-subtitle">Tenant Management System</span>
+      <span class="app-subtitle">Property Management</span>
     </div>
     <app-organization-selector></app-organization-selector>
     <span class="spacer"></span>
+    <button
+      mat-icon-button
+      (click)="languageService.toggle()"
+      class="language-toggle"
+      [matTooltip]="languageService.currentLang() === 'en' ? 'বাংলা' : 'English'"
+    >
+      <mat-icon>language</mat-icon>
+    </button>
     <div class="user-info">
       <div class="user-details">
         <span class="user-name">{{ user()?.username || 'User' }}</span>
         <span class="user-role">{{ userRole() }}</span>
       </div>
-      <button mat-icon-button [matMenuTriggerFor]="userMenu" matTooltip="Account">
-        <mat-icon>account_circle</mat-icon>
+      <button
+        mat-icon-button
+        [matMenuTriggerFor]="userMenu"
+        class="avatar-btn"
+        [matTooltip]="user()?.username || ''"
+      >
+        <div class="user-avatar" [style.background-color]="userAvatarColor()">
+          {{ userInitials() }}
+        </div>
       </button>
       <mat-menu #userMenu="matMenu">
         <button mat-menu-item disabled>
@@ -42,84 +57,169 @@
       [mode]="sidenavMode()"
       [opened]="sidenavOpened()"
       class="sidenav"
+      [class.collapsed]="sidenavCollapsed() && !isMobile()"
       [fixedInViewport]="isMobile()"
       [fixedTopGap]="fixedTopGap()"
     >
-      <mat-nav-list>
-        <a mat-list-item routerLink="/dashboard" routerLinkActive="active" (click)="onNavigate()">
-          <mat-icon>dashboard</mat-icon>
-          <span>Dashboard</span>
+      <nav class="nav-list">
+        <!-- Dashboard -->
+        <a
+          class="nav-item"
+          routerLink="/dashboard"
+          routerLinkActive="nav-active"
+          (click)="onNavigate()"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Dashboard' : ''"
+          matTooltipPosition="right"
+        >
+          <mat-icon class="nav-icon">dashboard</mat-icon>
+          <span class="nav-label">Dashboard</span>
         </a>
+
+        @if (hasWorkspaceNav()) {
+        <div class="nav-section-header">
+          <span class="nav-section-label">Workspace</span>
+          <div class="nav-section-line"></div>
+        </div>
 
         @if (canManageProperties()) {
-        <a mat-list-item routerLink="/properties" routerLinkActive="active" (click)="onNavigate()">
-          <mat-icon>meeting_room</mat-icon>
-          <span>Units</span>
+        <a
+          class="nav-item"
+          routerLink="/properties"
+          routerLinkActive="nav-active"
+          (click)="onNavigate()"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Properties' : ''"
+          matTooltipPosition="right"
+        >
+          <mat-icon class="nav-icon">meeting_room</mat-icon>
+          <span class="nav-label">Properties</span>
         </a>
         } @if (canManageTenants()) {
-        <a mat-list-item routerLink="/tenants" routerLinkActive="active" (click)="onNavigate()">
-          <mat-icon>people</mat-icon>
-          <span>Tenants</span>
+        <a
+          class="nav-item"
+          routerLink="/tenants"
+          routerLinkActive="nav-active"
+          (click)="onNavigate()"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Tenants' : ''"
+          matTooltipPosition="right"
+        >
+          <mat-icon class="nav-icon">people</mat-icon>
+          <span class="nav-label">Tenants</span>
         </a>
-
-        <a mat-list-item routerLink="/leases" routerLinkActive="active" (click)="onNavigate()">
-          <mat-icon>assignment</mat-icon>
-          <span>Leases</span>
+        <a
+          class="nav-item"
+          routerLink="/leases"
+          routerLinkActive="nav-active"
+          [routerLinkActiveOptions]="{exact: true}"
+          (click)="onNavigate()"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Leases' : ''"
+          matTooltipPosition="right"
+        >
+          <mat-icon class="nav-icon">assignment</mat-icon>
+          <span class="nav-label">Leases</span>
+        </a>
+        <a
+          class="nav-item"
+          routerLink="/leases/due"
+          routerLinkActive="nav-active"
+          (click)="onNavigate()"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Due List' : ''"
+          matTooltipPosition="right"
+        >
+          <mat-icon class="nav-icon">account_balance_wallet</mat-icon>
+          <span class="nav-label">Due List</span>
         </a>
         } @if (canViewPayments()) {
-        <a mat-list-item routerLink="/payments" routerLinkActive="active" (click)="onNavigate()">
-          <mat-icon>payment</mat-icon>
-          <span>Payments</span>
+        <a
+          class="nav-item"
+          routerLink="/payments"
+          routerLinkActive="nav-active"
+          (click)="onNavigate()"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Payments' : ''"
+          matTooltipPosition="right"
+        >
+          <mat-icon class="nav-icon">payment</mat-icon>
+          <span class="nav-label">Payments</span>
         </a>
         } @if (canViewReports()) {
-        <a mat-list-item routerLink="/reports" routerLinkActive="active" (click)="onNavigate()">
-          <mat-icon>assessment</mat-icon>
-          <span>Reports</span>
+        <a
+          class="nav-item"
+          routerLink="/reports"
+          routerLinkActive="nav-active"
+          (click)="onNavigate()"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Reports' : ''"
+          matTooltipPosition="right"
+        >
+          <mat-icon class="nav-icon">assessment</mat-icon>
+          <span class="nav-label">Reports</span>
         </a>
         } @if (canManageDocuments()) {
-        <a mat-list-item routerLink="/documents" routerLinkActive="active" (click)="onNavigate()">
-          <mat-icon>folder</mat-icon>
-          <span>Documents</span>
-        </a>
-        } @if (canManageUsers() || isSuperAdmin() || isOrgAdmin()) {
-        <mat-divider></mat-divider>
-        } @if (canManageOrganizations()) {
         <a
-          mat-list-item
-          routerLink="/admin/organizations"
-          routerLinkActive="active"
+          class="nav-item"
+          routerLink="/documents"
+          routerLinkActive="nav-active"
           (click)="onNavigate()"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Documents' : ''"
+          matTooltipPosition="right"
         >
-          <mat-icon>apartment</mat-icon>
-          <span>Organizations</span>
+          <mat-icon class="nav-icon">folder</mat-icon>
+          <span class="nav-label">Documents</span>
+        </a>
+        } } @if (hasAdminNav()) {
+        <div class="nav-section-header">
+          <span class="nav-section-label">Admin</span>
+          <div class="nav-section-line"></div>
+        </div>
+
+        @if (canManageOrganizations()) {
+        <a
+          class="nav-item"
+          routerLink="/admin/organizations"
+          routerLinkActive="nav-active"
+          (click)="onNavigate()"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Organizations' : ''"
+          matTooltipPosition="right"
+        >
+          <mat-icon class="nav-icon">apartment</mat-icon>
+          <span class="nav-label">Organizations</span>
         </a>
         } @if (canInviteUsers()) {
         <a
-          mat-list-item
+          class="nav-item"
           routerLink="/admin/invitations"
-          routerLinkActive="active"
+          routerLinkActive="nav-active"
           (click)="onNavigate()"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Invitations' : ''"
+          matTooltipPosition="right"
         >
-          <mat-icon>mail_outline</mat-icon>
-          <span>Invitations</span>
+          <mat-icon class="nav-icon">mail_outline</mat-icon>
+          <span class="nav-label">Invitations</span>
         </a>
         } @if (isOrgAdmin() || isSuperAdmin()) {
         <a
-          mat-list-item
+          class="nav-item"
           routerLink="/admin/audit-logs"
-          routerLinkActive="active"
+          routerLinkActive="nav-active"
           (click)="onNavigate()"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Audit Logs' : ''"
+          matTooltipPosition="right"
         >
-          <mat-icon>history</mat-icon>
-          <span>Audit Logs</span>
+          <mat-icon class="nav-icon">history</mat-icon>
+          <span class="nav-label">Audit Logs</span>
         </a>
         } @if (canManageUsers()) {
-        <a mat-list-item routerLink="/users" routerLinkActive="active" (click)="onNavigate()">
-          <mat-icon>admin_panel_settings</mat-icon>
-          <span>Users</span>
+        <a
+          class="nav-item"
+          routerLink="/users"
+          routerLinkActive="nav-active"
+          (click)="onNavigate()"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Users' : ''"
+          matTooltipPosition="right"
+        >
+          <mat-icon class="nav-icon">admin_panel_settings</mat-icon>
+          <span class="nav-label">Users</span>
         </a>
-        }
-      </mat-nav-list>
+        } }
+      </nav>
     </mat-sidenav>
 
     <mat-sidenav-content class="main-content">

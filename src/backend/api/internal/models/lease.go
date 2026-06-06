@@ -31,9 +31,11 @@ type CreateLeaseRequest struct {
 	TenantID        int       `json:"tenant_id" binding:"required"`
 	LeaseType       LeaseType `json:"lease_type" binding:"required,oneof=Residential Commercial"`
 	StartDate       string    `json:"start_date" binding:"required"`
+	EndDate         *string   `json:"end_date" binding:"omitempty"` // Optional for open-ended leases
 	DurationMonths  int       `json:"duration_months" binding:"required,min=1"`
 	MonthlyRent     float64   `json:"monthly_rent" binding:"required,gt=0"`
 	SecurityDeposit float64   `json:"security_deposit" binding:"omitempty,gte=0"`
+	OrganizationID  int       `json:"-"`
 }
 
 type UpdateLeaseRequest struct {
@@ -58,4 +60,19 @@ type LeaseWithDetails struct {
 	TenantPhone   string `json:"tenant_phone" db:"tenant_phone"`
 	IsExpired     bool   `json:"is_expired"`
 	DaysRemaining int    `json:"days_remaining"`
+}
+
+// LeaseListResponse represents a paginated list of leases
+type LeaseListResponse struct {
+	Leases     []*LeaseWithDetails `json:"leases"`
+	Pagination *PaginationInfo     `json:"pagination"`
+}
+
+// LeaseDetailResponse represents a lease with full details including payment history
+type LeaseDetailResponse struct {
+	LeaseWithDetails
+	PaymentHistory  []*Payment `json:"payment_history,omitempty"`
+	TotalPayments   float64    `json:"total_payments,omitempty"`
+	Status          string     `json:"status"` // Active, Expired, Terminated
+	TerminationDate *time.Time `json:"termination_date,omitempty"`
 }

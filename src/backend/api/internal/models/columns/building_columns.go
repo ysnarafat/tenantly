@@ -23,6 +23,7 @@ const (
 func BuildingAllColumns() string {
 	return BuildingID + ", " +
 		BuildingPropertyID + ", " +
+		BuildingOrganizationID + ", " +
 		BuildingName + ", " +
 		BuildingCode + ", " +
 		BuildingType + ", " +
@@ -43,6 +44,7 @@ func BuildingSelectWithAlias(alias string) string {
 	}
 	return alias + "." + BuildingID + ", " +
 		alias + "." + BuildingPropertyID + ", " +
+		alias + "." + BuildingOrganizationID + ", " +
 		alias + "." + BuildingName + ", " +
 		alias + "." + BuildingCode + ", " +
 		alias + "." + BuildingType + ", " +

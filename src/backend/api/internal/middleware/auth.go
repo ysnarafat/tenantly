@@ -212,6 +212,11 @@ func RequireAdminOrPropertyManager() gin.HandlerFunc {
 	return RequireRole(RoleAdmin, RolePropertyManager)
 }
 
+// RequireAdminOrPropertyManagerOrAccountant middleware for admin, property manager, or accountant endpoints
+func RequireAdminOrPropertyManagerOrAccountant() gin.HandlerFunc {
+	return RequireRole(RoleAdmin, RolePropertyManager, RoleAccountant)
+}
+
 // RequireSuperAdminOrAdmin allows SUPER_ADMIN, ORG_ADMIN, or Admin
 func RequireSuperAdminOrAdmin() gin.HandlerFunc {
 	return RequireRole(RoleSuperAdmin, RoleOrgAdmin, RoleAdmin)

@@ -38,6 +38,9 @@ func (h *PaymentHandler) CreatePayment(c *gin.Context) {
 		return
 	}
 
+	// Log successful payment creation
+	h.paymentService.LogPaymentAccess(userID, "CREATE", payment.ID, true)
+
 	c.JSON(http.StatusCreated, payment)
 }
 
@@ -49,11 +52,25 @@ func (h *PaymentHandler) GetPayment(c *gin.Context) {
 		return
 	}
 
+	userID := c.GetInt("userID")
+	userRole := c.GetString("role")
+	orgID := c.GetInt("org_id")
+
 	payment, err := h.paymentService.GetPayment(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Verify user has access to this payment
+	if !h.paymentService.CanUserAccessPayment(userID, userRole, payment, orgID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions to access this payment"})
+		h.paymentService.LogPaymentAccess(userID, "GET", id, false)
+		return
+	}
+
+	// Log successful access
+	h.paymentService.LogPaymentAccess(userID, "GET", id, true)
 
 	c.JSON(http.StatusOK, payment)
 }
@@ -73,11 +90,38 @@ func (h *PaymentHandler) UpdatePayment(c *gin.Context) {
 	}
 
 	userID := c.GetInt("userID")
+	userRole := c.GetString("role")
+	orgID := c.GetInt("org_id")
+
+	// Get existing payment for access verification
+	existingPayment, err := h.paymentService.GetPayment(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "payment not found"})
+		return
+	}
+
+	// Verify user has access to update this payment
+	if !h.paymentService.CanUserAccessPayment(userID, userRole, existingPayment, orgID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions to update this payment"})
+		h.paymentService.LogPaymentAccess(userID, "UPDATE", id, false)
+		return
+	}
+
+	// Additional: Accountants should not be able to update (read-only)
+	if userRole == "Accountant" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "accountants have read-only access to payments"})
+		h.paymentService.LogPaymentAccess(userID, "UPDATE", id, false)
+		return
+	}
+
 	payment, err := h.paymentService.UpdatePayment(id, &req, userID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	// Log successful update
+	h.paymentService.LogPaymentAccess(userID, "UPDATE", id, true)
 
 	c.JSON(http.StatusOK, payment)
 }
@@ -85,6 +129,7 @@ func (h *PaymentHandler) UpdatePayment(c *gin.Context) {
 // GetPayments handles GET /payments with query filters
 // Query params: building_id, property_id, status, month, year, page, page_size
 func (h *PaymentHandler) GetPayments(c *gin.Context) {
+	userID := c.GetInt("userID")
 	orgID := c.GetInt("org_id")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
@@ -138,6 +183,9 @@ func (h *PaymentHandler) GetPayments(c *gin.Context) {
 	if pageSize > 0 && total > 0 {
 		totalPages = (total + pageSize - 1) / pageSize
 	}
+
+	// Log payment list access with filters for audit trail
+	h.paymentService.LogPaymentAccess(userID, "LIST", 0, true)
 
 	c.JSON(http.StatusOK, models.PaymentListResponse{
 		Payments:   payments,
@@ -227,6 +275,9 @@ func (h *PaymentHandler) BulkCreatePayments(c *gin.Context) {
 		errMessages = append(errMessages, e.Error())
 	}
 
+	// Log bulk operation
+	h.paymentService.LogPaymentAccess(userID, "BULK_CREATE", 0, len(errs) == 0)
+
 	c.JSON(http.StatusMultiStatus, gin.H{
 		"created": payments,
 		"errors":  errMessages,
@@ -234,6 +285,25 @@ func (h *PaymentHandler) BulkCreatePayments(c *gin.Context) {
 		"success": len(payments),
 		"failed":  len(errs),
 	})
+}
+
+// SearchLeases handles GET /payments/search for autocomplete and lease discovery
+func (h *PaymentHandler) SearchLeases(c *gin.Context) {
+	orgID := c.GetInt("org_id")
+	query := c.Query("q")
+
+	if query == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "search query parameter 'q' is required"})
+		return
+	}
+
+	result, err := h.paymentService.SearchLeases(orgID, query)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
 }
 
 func parseDateRange(c *gin.Context) (time.Time, time.Time, error) {

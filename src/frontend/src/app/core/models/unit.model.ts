@@ -56,11 +56,10 @@ export interface Unit {
   floor?: number;
   section?: string;
   unit_type: UnitType;
-  monthly_rent: number;
   metadata?: UnitMetadata;
   active: boolean;
-  created_at: string; // ISO 8601 UTC timestamp
-  updated_at: string; // ISO 8601 UTC timestamp
+  created_at: string;
+  updated_at: string;
 }
 
 export interface UnitWithDetails extends Unit {
@@ -79,7 +78,6 @@ export interface CreateUnitRequest {
   floor?: number;
   section?: string;
   unit_type: UnitType;
-  monthly_rent: number;
   metadata?: UnitMetadata;
 }
 
@@ -88,7 +86,6 @@ export interface UpdateUnitRequest {
   floor?: number;
   section?: string;
   unit_type?: UnitType;
-  monthly_rent?: number;
   metadata?: UnitMetadata;
   active?: boolean;
 }

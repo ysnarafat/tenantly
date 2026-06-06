@@ -52,6 +52,11 @@ func (m *TenantRepositoryInterface) GetAll(page, pageSize, orgID int) ([]*models
 	return args.Get(0).([]*models.Tenant), args.Int(1), args.Error(2)
 }
 
+func (m *TenantRepositoryInterface) Update(id int, updates map[string]interface{}) error {
+	args := m.Called(id, updates)
+	return args.Error(0)
+}
+
 // AuditServiceInterface is a mock of AuditServiceInterface
 type AuditServiceInterface struct {
 	mock.Mock

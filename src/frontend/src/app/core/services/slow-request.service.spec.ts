@@ -13,10 +13,7 @@ describe('SlowRequestService', () => {
     snackBarSpy.open.and.returnValue(snackBarRefSpy as any);
 
     TestBed.configureTestingModule({
-      providers: [
-        SlowRequestService,
-        { provide: MatSnackBar, useValue: snackBarSpy },
-      ],
+      providers: [SlowRequestService, { provide: MatSnackBar, useValue: snackBarSpy }],
     });
 
     service = TestBed.inject(SlowRequestService);

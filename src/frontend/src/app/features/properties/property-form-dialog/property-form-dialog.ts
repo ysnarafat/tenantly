@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
+import { TranslateModule } from '@ngx-translate/core';
 import { Property, PropertyType } from '../../../core/models';
 
 export interface PropertyFormDialogData {
@@ -26,6 +27,7 @@ export interface PropertyFormDialogData {
     MatButtonModule,
     MatSelectModule,
     MatIconModule,
+    TranslateModule,
   ],
   templateUrl: './property-form-dialog.html',
   styleUrls: ['./property-form-dialog.scss'],

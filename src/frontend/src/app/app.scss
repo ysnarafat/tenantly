@@ -1,3 +1,7 @@
+$nav-expanded-width: 260px;
+$nav-collapsed-width: 64px;
+$nav-transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+
 .app-container {
   height: 100vh;
   display: flex;
@@ -6,111 +10,60 @@
 
 .sidenav-container {
   flex: 1;
-  height: calc(100vh - 64px); // Account for toolbar height
+  height: calc(100vh - 64px);
 }
 
+// ── Sidenav ───────────────────────────────────────────────────────────────────
 .sidenav {
-  width: 260px;
-  border-right: 1px solid rgba(0, 0, 0, 0.12);
+  width: $nav-expanded-width;
+  border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
+  transition: width $nav-transition !important;
+  overflow-x: hidden !important;
 
-  @media (max-width: 768px) {
-    width: 280px; // Slightly wider on mobile for better touch targets
-  }
-}
+  &.collapsed {
+    width: $nav-collapsed-width;
 
-.main-content {
-  padding: 20px;
-  overflow-y: auto;
-
-  @media (max-width: 768px) {
-    padding: 16px;
-  }
-
-  @media (max-width: 480px) {
-    padding: 12px;
-  }
-}
-
-.spacer {
-  flex: 1 1 auto;
-}
-
-.app-toolbar {
-  position: relative;
-  z-index: 2;
-}
-
-.app-branding {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-
-  @media (max-width: 768px) {
-    gap: 0;
-  }
-}
-
-.app-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  line-height: 1.2;
-  letter-spacing: -0.5px;
-
-  @media (max-width: 768px) {
-    font-size: 1.25rem;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 1.1rem;
-  }
-}
-
-.app-subtitle {
-  font-size: 0.75rem;
-  font-weight: 400;
-  opacity: 0.85;
-  line-height: 1;
-
-  @media (max-width: 768px) {
-    font-size: 0.7rem;
-  }
-
-  @media (max-width: 480px) {
-    display: none;
-  }
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  .user-details {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 2px;
-
-    @media (max-width: 768px) {
+    .nav-section-header {
+      padding: 16px 0 4px;
+      justify-content: center;
+    }
+    .nav-section-label,
+    .nav-section-line {
       display: none;
     }
 
-    .user-name {
-      font-size: 0.875rem;
-      font-weight: 500;
-      line-height: 1;
-    }
+    .nav-item {
+      justify-content: center;
+      padding: 0;
 
-    .user-role {
-      font-size: 0.75rem;
-      opacity: 0.8;
-      line-height: 1;
+      .nav-label {
+        display: none;
+      }
+
+      &.nav-active::after {
+        display: none;
+      }
     }
   }
+
+  @media (max-width: 768px) {
+    width: 280px !important;
+  }
+}
+
+// ── Toolbar ───────────────────────────────────────────────────────────────────
+.app-toolbar {
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
 }
 
 .menu-button {
   margin-right: 8px;
+}
+
+.spacer {
+  flex: 1 1 auto;
 }
 
 // Organization selector styling
@@ -131,168 +84,222 @@ app-organization-selector {
 // Navigation list styling
 mat-nav-list {
   padding: 0;
+}
 
-  h3[matSubheader] {
-    font-size: 0.6875rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: rgba(0, 0, 0, 0.54);
-    padding: 16px 16px 8px 16px;
-    margin: 0;
-    line-height: 1.2;
-    height: auto;
-    min-height: auto;
+.app-branding {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  @media (max-width: 768px) {
+    gap: 0;
   }
+}
 
-  mat-divider {
-    margin: 8px 0;
+.app-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.4px;
+  @media (max-width: 768px) {
+    font-size: 1.2rem;
   }
+  @media (max-width: 480px) {
+    font-size: 1rem;
+  }
+}
 
-  a[mat-list-item] {
-    height: 48px !important;
-    padding: 0 16px !important;
-    transition: all 0.2s ease;
-    position: relative;
+.app-subtitle {
+  font-size: 0.68rem;
+  font-weight: 400;
+  opacity: 0.78;
+  line-height: 1;
+  @media (max-width: 480px) {
+    display: none;
+  }
+}
 
-    // Force inline layout
-    &::ng-deep,
-    & {
-      .mdc-list-item__content {
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
-        gap: 16px !important;
-        padding: 0 !important;
-        height: 48px !important;
-      }
+// ── User avatar ───────────────────────────────────────────────────────────────
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 
-      .mat-mdc-list-item-unscoped-content {
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
-        gap: 16px !important;
-        width: 100% !important;
-      }
+  .user-details {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    @media (max-width: 768px) {
+      display: none;
     }
 
-    mat-icon {
-      width: 24px !important;
-      height: 24px !important;
-      font-size: 24px !important;
-      line-height: 24px !important;
-      color: rgba(0, 0, 0, 0.54);
-      transition: color 0.2s ease;
-      flex-shrink: 0 !important;
-      display: inline-flex !important;
-      align-items: center;
-      justify-content: center;
-      margin: 0 !important;
+    .user-name {
+      font-size: 0.85rem;
+      font-weight: 500;
+      line-height: 1;
     }
-
-    span {
-      font-size: 0.875rem;
-      font-weight: 400;
-      color: rgba(0, 0, 0, 0.87);
-      transition: color 0.2s ease;
-      line-height: 1.5;
-      flex: 1;
-      display: inline-block;
-      vertical-align: middle;
-    }
-
-    &.active {
-      background-color: rgba(25, 118, 210, 0.08);
-
-      &::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 3px;
-        background-color: var(--mdc-theme-primary, #1976d2);
-      }
-
-      mat-icon {
-        color: var(--mdc-theme-primary, #1976d2);
-      }
-
-      span {
-        color: var(--mdc-theme-primary, #1976d2);
-        font-weight: 500;
-      }
-    }
-
-    &:hover:not(.active) {
-      background-color: rgba(0, 0, 0, 0.04);
-
-      mat-icon {
-        color: rgba(0, 0, 0, 0.87);
-      }
+    .user-role {
+      font-size: 0.68rem;
+      opacity: 0.78;
+      line-height: 1;
     }
   }
 }
 
-// Mobile-specific adjustments
-@media (max-width: 768px) {
-  .sidenav-container {
-    height: calc(100vh - 56px); // Smaller toolbar on mobile
+.avatar-btn.mat-mdc-icon-button {
+  width: 36px !important;
+  height: 36px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.5px;
+  user-select: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+// ── Nav list ──────────────────────────────────────────────────────────────────
+.nav-list {
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+// Section dividers
+.nav-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 18px 12px 4px;
+  overflow: hidden;
+}
+
+.nav-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.nav-section-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.07);
+}
+
+// ── Nav items ─────────────────────────────────────────────────────────────────
+.nav-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  height: 44px;
+  padding: 0 12px;
+  margin: 1px 8px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: rgba(0, 0, 0, 0.7);
+  font-size: 0.875rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition:
+    background $nav-transition,
+    color $nav-transition;
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+
+  .nav-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    color: rgba(0, 0, 0, 0.45);
+    flex-shrink: 0;
+    transition: color $nav-transition;
   }
 
+  .nav-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1;
+  }
+
+  &:hover:not(.nav-active) {
+    background: rgba(0, 0, 0, 0.05);
+    color: rgba(0, 0, 0, 0.87);
+
+    .nav-icon {
+      color: rgba(0, 0, 0, 0.7);
+    }
+  }
+
+  // Pill active style
+  &.nav-active {
+    background: rgba(25, 118, 210, 0.1);
+    color: #1565c0;
+    font-weight: 600;
+
+    .nav-icon {
+      color: #1565c0;
+    }
+
+    // Right-side accent bar
+    &::after {
+      content: '';
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 20px;
+      background: #1565c0;
+      border-radius: 2px;
+    }
+  }
+}
+
+// ── Main content ──────────────────────────────────────────────────────────────
+.main-content {
+  padding: 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
+  @media (max-width: 480px) {
+    padding: 12px;
+  }
+}
+
+// ── Mobile ────────────────────────────────────────────────────────────────────
+@media (max-width: 768px) {
+  .sidenav-container {
+    height: calc(100vh - 56px);
+  }
   mat-toolbar {
     height: 56px;
     padding: 0 16px;
   }
 }
 
-// Backdrop for mobile sidenav
 .mat-drawer-backdrop.mat-drawer-shown {
-  background-color: rgba(0, 0, 0, 0.6);
-}
-
-// Fix Material list item alignment issues
-.mat-mdc-list-item {
-  &.mat-mdc-list-item-interactive {
-    cursor: pointer;
-  }
-
-  .mat-mdc-list-item-unscoped-content {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    width: 100% !important;
-    gap: 16px !important;
-  }
-}
-
-// Ensure icons and text are properly aligned
-.mdc-list-item__content {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  width: 100% !important;
-  gap: 16px !important;
-}
-
-// Fix for Material 3 list items
-mat-list-item {
-  &.mdc-list-item {
-    height: 48px !important;
-    padding: 0 !important;
-  }
-}
-
-// Force inline layout for nav list items
-mat-nav-list {
-  .mat-mdc-list-item {
-    height: 48px !important;
-
-    .mdc-list-item__primary-text {
-      display: flex !important;
-      flex-direction: row !important;
-      align-items: center !important;
-      gap: 16px !important;
-    }
-  }
+  background-color: rgba(0, 0, 0, 0.55);
 }

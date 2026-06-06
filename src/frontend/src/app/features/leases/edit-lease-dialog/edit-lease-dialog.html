@@ -1,0 +1,94 @@
+<h2 mat-dialog-title>{{ 'EDIT_LEASE_DIALOG.TITLE' | translate }}</h2>
+
+<mat-dialog-content class="dialog-content">
+  <!-- Context info (read-only) -->
+  <div class="context-card">
+    <div class="context-row">
+      <mat-icon>apartment</mat-icon>
+      <div>
+        <div class="context-label">Unit</div>
+        <div class="context-value">
+          {{ lease.unit_number }} — {{ lease.building_name }} · {{ lease.property_name }}
+        </div>
+      </div>
+    </div>
+    <div class="context-row">
+      <mat-icon>person</mat-icon>
+      <div>
+        <div class="context-label">Tenant</div>
+        <div class="context-value">
+          {{ lease.tenant_name }}<span *ngIf="lease.tenant_phone"> · {{ lease.tenant_phone }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="context-row">
+      <mat-icon>date_range</mat-icon>
+      <div>
+        <div class="context-label">Duration</div>
+        <div class="context-value">
+          {{ lease.start_date | date:'mediumDate' }} → {{ lease.end_date | date:'mediumDate' }} ({{
+          lease.duration_months }} months)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Editable fields -->
+  <form [formGroup]="editForm" class="edit-form">
+    <mat-form-field appearance="outline">
+      <mat-label>{{ 'EDIT_LEASE_DIALOG.FIELDS.LEASE_TYPE' | translate }}</mat-label>
+      <mat-select formControlName="lease_type">
+        <mat-option value="Residential">Residential</mat-option>
+        <mat-option value="Commercial">Commercial</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <div class="row-fields">
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'EDIT_LEASE_DIALOG.FIELDS.MONTHLY_RENT' | translate }}</mat-label>
+        <mat-icon matPrefix>payments</mat-icon>
+        <input matInput type="number" formControlName="monthly_rent" min="1" />
+        <mat-error *ngIf="editForm.get('monthly_rent')?.hasError('required')">Required</mat-error>
+        <mat-error *ngIf="editForm.get('monthly_rent')?.hasError('min')"
+          >Must be greater than 0</mat-error
+        >
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'EDIT_LEASE_DIALOG.FIELDS.SECURITY_DEPOSIT' | translate }}</mat-label>
+        <mat-icon matPrefix>savings</mat-icon>
+        <input matInput type="number" formControlName="security_deposit" min="0" />
+      </mat-form-field>
+    </div>
+
+    <div class="toggle-row">
+      <mat-slide-toggle formControlName="active" color="primary">
+        {{ 'EDIT_LEASE_DIALOG.TOGGLE.ACTIVE' | translate }}
+      </mat-slide-toggle>
+      <span class="toggle-hint" *ngIf="!editForm.get('active')?.value">
+        Deactivating will mark this lease as inactive
+      </span>
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="onCancel()" [disabled]="submitLoading">
+    {{ 'COMMON.BUTTONS.CANCEL' | translate }}
+  </button>
+  <button
+    mat-raised-button
+    color="primary"
+    type="button"
+    (click)="onSubmit()"
+    [disabled]="submitLoading || editForm.invalid"
+  >
+    <mat-spinner
+      *ngIf="submitLoading"
+      diameter="18"
+      style="display: inline-block; margin-right: 8px"
+    ></mat-spinner>
+    {{ submitLoading ? ('EDIT_LEASE_DIALOG.BUTTONS.SAVING' | translate) :
+    ('EDIT_LEASE_DIALOG.BUTTONS.SAVE' | translate) }}
+  </button>
+</mat-dialog-actions>

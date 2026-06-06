@@ -1,0 +1,467 @@
+{
+  "COMMON": {
+    "BUTTONS": {
+      "CANCEL": "বাতিল",
+      "SAVE": "সংরক্ষণ করুন",
+      "CREATE": "তৈরি করুন",
+      "UPDATE": "আপডেট করুন",
+      "DELETE": "মুছুন",
+      "EDIT": "সম্পাদনা",
+      "CLOSE": "বন্ধ করুন",
+      "RETRY": "পুনরায় চেষ্টা করুন",
+      "ADD": "যোগ করুন"
+    },
+    "ERRORS": {
+      "REQUIRED": "প্রয়োজনীয়",
+      "MIN_VALUE": "ন্যূনতম মান",
+      "MAX_VALUE": "সর্বাধিক মান",
+      "MAX_LENGTH": "সর্বাধিক দৈর্ঘ্য",
+      "MIN_LENGTH": "ন্যূনতম দৈর্ঘ্য",
+      "PATTERN": "অবৈধ বিন্যাস"
+    },
+    "STATUS": {
+      "ACTIVE": "সক্রিয়",
+      "INACTIVE": "নিষ্ক্রিয়",
+      "LOADING": "লোড হচ্ছে..."
+    },
+    "ACTIONS": {
+      "VIEW_DETAILS": "বিস্তারিত দেখুন",
+      "MORE": "আরও বিকল্প",
+      "CLEAR": "সাফ করুন"
+    },
+    "PAGINATION": {
+      "RESULT": "ফলাফল",
+      "RESULTS": "ফলাফল"
+    },
+    "EMPTY_STATE": {
+      "TRY_ADJUST": "আপনার অনুসন্ধান বা ফিল্টার সামঞ্জস্য করার চেষ্টা করুন।",
+      "NO_ITEMS": "কোনো আইটেম পাওয়া যায়নি"
+    },
+    "HINTS": {
+      "OPTIONAL": "ঐচ্ছিক"
+    }
+  },
+  "DUE_LIST": {
+    "PAGE_TITLE": "ভাড়া বাকি তালিকা",
+    "REFRESH": "রিফ্রেশ",
+    "LOADING": "লোড হচ্ছে...",
+    "EMPTY_TITLE": "সবাই ভাড়া দিয়েছে ✓",
+    "EMPTY_DESCRIPTION": "এই মাসে কোনো বাকি ভাড়া নেই",
+    "TOTAL_DUE": "মোট বাকি টাকা",
+    "TENANTS_DUE": "বাকি ভাড়াদার",
+    "COLUMNS": {
+      "TENANT_NAME": "ভাড়াদারের নাম",
+      "PROPERTY": "সম্পত্তি",
+      "BUILDING": "ভবন",
+      "UNIT": "ইউনিট",
+      "MONTHLY_RENT": "মাসিক ভাড়া",
+      "DAYS_OVERDUE": "দিন বাকি"
+    },
+    "DAYS": "দিন",
+    "ERROR_LOADING": "ভাড়া তালিকা লোড করতে সমস্যা হয়েছে"
+  },
+  "LEASE_LIST": {
+    "PAGE_TITLE": "লীজ ব্যবস্থাপনা",
+    "STATS": {
+      "TOTAL": "মোট",
+      "ACTIVE": "সক্রিয়",
+      "EXPIRING": "শেষ হতে চলেছে",
+      "EXPIRED": "শেষ হয়েছে",
+      "INACTIVE": "নিষ্ক্রিয়"
+    },
+    "BUTTONS": {
+      "NEW_LEASE": "নতুন লীজ",
+      "EDIT_LEASE": "লীজ সম্পাদনা"
+    },
+    "FILTERS": {
+      "SEARCH_LABEL": "লীজ খুঁজুন",
+      "SEARCH_PLACEHOLDER": "ভাড়াটে, ইউনিট, ভবন বা সম্পত্তি…",
+      "STATUS_LABEL": "অবস্থা",
+      "TYPE_LABEL": "ধরন",
+      "RESIDENTIAL": "আবাসিক",
+      "COMMERCIAL": "বাণিজ্যিক",
+      "ALL": "সব"
+    },
+    "LOADING": "লীজ লোড হচ্ছে…",
+    "TABLE": {
+      "UNIT": "ইউনিট",
+      "TENANT": "ভাড়াটে",
+      "TYPE": "ধরন",
+      "MONTHLY_RENT": "মাসিক ভাড়া",
+      "DURATION": "মেয়াদ",
+      "DURATION_MONTHS": "মাস",
+      "STATUS": "অবস্থা",
+      "ACTIONS": "অ্যাকশন"
+    },
+    "DETAIL": {
+      "PROPERTY": "সম্পত্তি",
+      "BUILDING": "ভবন",
+      "UNIT_TYPE": "ইউনিট ধরন",
+      "SECURITY_DEPOSIT": "নিরাপত্তা জমা",
+      "LEASE_ID": "লীজ আইডি",
+      "DAYS_REMAINING": "বাকি দিন",
+      "EXPIRED": "শেষ হয়েছে"
+    },
+    "TOOLTIPS": {
+      "COLLAPSE": "সংকোচন"
+    },
+    "EMPTY_STATE": {
+      "NO_MATCHING": "কোনো মেলে এমন লীজ নেই",
+      "NO_LEASES": "এখনও কোনো লীজ নেই",
+      "CREATE_FIRST": "শুরু করতে আপনার প্রথম লীজ চুক্তি তৈরি করুন।"
+    }
+  },
+  "TENANT_LIST": {
+    "PAGE_TITLE": "ভাড়াটেরা",
+    "STATS": {
+      "TOTAL": "মোট",
+      "ACTIVE": "সক্রিয়",
+      "INACTIVE": "নিষ্ক্রিয়"
+    },
+    "BUTTONS": {
+      "ADD_TENANT": "নতুন ভাড়াটে যোগ করুন"
+    },
+    "FILTERS": {
+      "SEARCH_LABEL": "ভাড়াটে খুঁজুন",
+      "SEARCH_PLACEHOLDER": "নাম, ফোন, ইমেল বা নাগরিকত্ব নম্বর…",
+      "STATUS_LABEL": "অবস্থা",
+      "TYPE_LABEL": "ধরন",
+      "INDIVIDUAL": "ব্যক্তিগত",
+      "BUSINESS": "ব্যবসা",
+      "ALL": "সব"
+    },
+    "LOADING": "ভাড়াটে লোড হচ্ছে…",
+    "TABLE": {
+      "TENANT": "ভাড়াটে",
+      "TYPE": "ধরন",
+      "CONTACT": "যোগাযোগ",
+      "NID": "নাগরিকত্ব / রেজ. নম্বর",
+      "JOINED": "যোগদান করা হয়েছে",
+      "EMPTY_VALUE": "—",
+      "STATUS": "অবস্থা",
+      "ACTIVE": "সক্রিয়",
+      "INACTIVE": "নিষ্ক্রিয়",
+      "ACTIONS": "অ্যাকশন"
+    },
+    "EMPTY_STATE": {
+      "NO_MATCHING": "কোনো মেলে এমন ভাড়াটে নেই",
+      "NO_TENANTS": "এখনও কোনো ভাড়াটে নেই",
+      "ADD_FIRST": "শুরু করতে আপনার প্রথম ভাড়াটে যোগ করুন।"
+    }
+  },
+  "DASHBOARD": {
+    "PAGE_TITLE": "ড্যাশবোর্ড",
+    "STATS": {
+      "TOTAL_RENT_DUE": "মোট বাকি ভাড়া",
+      "COLLECTED_THIS_MONTH": "এই মাসে সংগৃহীত",
+      "PENDING_PAYMENTS": "অপেক্ষমাণ পেমেন্ট",
+      "OVERDUE_SHOPS": "বাকি দোকান",
+      "ACTIVE_LEASES": "সক্রিয় লীজ",
+      "EXPIRING_SOON": "শীঘ্রই শেষ হবে",
+      "TOTAL_ATTACHMENTS": "মোট সংযুক্তি",
+      "RECENT_FILES": "সাম্প্রতিক ফাইল"
+    },
+    "SECTIONS": {
+      "EXPIRING_LEASES": "শীঘ্রই শেষ হওয়া লীজ",
+      "RECENT_LEASES": "সাম্প্রতিক লীজ",
+      "RECENT_ATTACHMENTS": "সাম্প্রতিক সংযুক্তি"
+    },
+    "BUTTONS": {
+      "VIEW_ALL": "সব দেখুন"
+    },
+    "SUFFIXES": {
+      "DAYS_LEFT": "দিন বাকি",
+      "PER_MONTH": "/মাস"
+    },
+    "EMPTY_STATE": {
+      "NO_RECENT_LEASES": "কোনো সাম্প্রতিক লীজ পাওয়া যায়নি।",
+      "NO_RECENT_ATTACHMENTS": "কোনো সাম্প্রতিক সংযুক্তি পাওয়া যায়নি।"
+    },
+    "LOADING": "ড্যাশবোর্ড ডেটা লোড হচ্ছে..."
+  },
+  "CREATE_LEASE_DIALOG": {
+    "TITLE": "নতুন লীজ তৈরি করুন",
+    "LOADING": "ডেটা লোড হচ্ছে...",
+    "FIELDS": {
+      "TENANT": "ভাড়াটে",
+      "PROPERTY": "সম্পত্তি",
+      "BUILDING": "ভবন",
+      "UNIT": "ইউনিট",
+      "LEASE_TYPE": "লীজ ধরন",
+      "START_DATE": "শুরু তারিখ",
+      "DURATION_MONTHS": "মেয়াদ (মাস)",
+      "MONTHLY_RENT": "মাসিক ভাড়া (টাকা)",
+      "SECURITY_DEPOSIT": "নিরাপত্তা জমা (টাকা) - ঐচ্ছিক"
+    },
+    "ERRORS": {
+      "NO_PHONE": "ফোন নেই"
+    },
+    "INFO": {
+      "END_DATE": "শেষ তারিখ:"
+    },
+    "BUTTONS": {
+      "CREATE": "লীজ তৈরি করুন",
+      "CREATING": "তৈরি হচ্ছে..."
+    }
+  },
+  "EDIT_LEASE_DIALOG": {
+    "TITLE": "লীজ সম্পাদনা করুন",
+    "CONTEXT": {
+      "UNIT": "ইউনিট",
+      "TENANT": "ভাড়াটে",
+      "DURATION": "মেয়াদ"
+    },
+    "FIELDS": {
+      "LEASE_TYPE": "লীজ ধরন",
+      "MONTHLY_RENT": "মাসিক ভাড়া (টাকা)",
+      "SECURITY_DEPOSIT": "নিরাপত্তা জমা (টাকা)"
+    },
+    "TOGGLE": {
+      "ACTIVE": "লীজ সক্রিয়",
+      "HINT": "নিষ্ক্রিয় করলে এই লীজ নিষ্ক্রিয় হিসাবে চিহ্নিত হবে"
+    },
+    "BUTTONS": {
+      "SAVE": "পরিবর্তন সংরক্ষণ করুন",
+      "SAVING": "সংরক্ষণ হচ্ছে…"
+    }
+  },
+  "PROPERTY_FORM_DIALOG": {
+    "TITLE_CREATE": "সম্পত্তি তৈরি করুন",
+    "TITLE_EDIT": "সম্পত্তি আপডেট করুন",
+    "FIELDS": {
+      "PROPERTY_NAME": "সম্পত্তির নাম",
+      "PROPERTY_CODE": "সম্পত্তি কোড",
+      "PROPERTY_TYPE": "সম্পত্তির ধরন",
+      "ADDRESS": "ঠিকানা",
+      "CITY": "শহর",
+      "POSTAL_CODE": "পোস্টাল কোড"
+    },
+    "PLACEHOLDERS": {
+      "PROPERTY_NAME": "যেমন, সানসেট অ্যাপার্টমেন্ট",
+      "PROPERTY_CODE": "যেমন, PROP-001",
+      "ADDRESS": "যেমন, ১২৩ মেইন স্ট্রিট",
+      "CITY": "যেমন, ঢাকা",
+      "POSTAL_CODE": "যেমন, 1212"
+    },
+    "HINTS": {
+      "PROPERTY_CODE": "এই সম্পত্তির জন্য অনন্য সনাক্তকারী",
+      "POSTAL_CODE": "4-অঙ্কের কোড"
+    },
+    "BUTTONS": {
+      "CREATE": "সম্পত্তি তৈরি করুন",
+      "UPDATE": "সম্পত্তি আপডেট করুন"
+    }
+  },
+  "TENANT_FORM_DIALOG": {
+    "TITLE_ADD": "ভাড়াটে যোগ করুন",
+    "TITLE_EDIT": "ভাড়াটে সম্পাদনা করুন",
+    "TITLE_VIEW": "ভাড়াটে দেখুন",
+    "FIELDS": {
+      "NAME": "সম্পূর্ণ নাম",
+      "TENANT_TYPE": "ভাড়াটে ধরন",
+      "NID": "নাগরিকত্ব / রেজ. নম্বর",
+      "PHONE": "ফোন নম্বর",
+      "EMAIL": "ইমেল ঠিকানা",
+      "ADDRESS": "ঠিকানা"
+    },
+    "PLACEHOLDERS": {
+      "NAME": "ভাড়াটে নাম লিখুন",
+      "NID": "নাগরিকত্ব লিখুন",
+      "PHONE": "ফোন লিখুন",
+      "EMAIL": "উদাহরণ@mail.com",
+      "ADDRESS": "সম্পূর্ণ ঠিকানা লিখুন"
+    },
+    "BUTTONS": {
+      "ADD": "ভাড়াটে যোগ করুন",
+      "UPDATE": "ভাড়াটে আপডেট করুন"
+    }
+  },
+  "LOGIN": {
+    "TITLE": "ট্যানেন্টলি লগইন",
+    "FIELDS": {
+      "USERNAME": "ব্যবহারকারীর নাম",
+      "PASSWORD": "পাসওয়ার্ড"
+    },
+    "BUTTONS": {
+      "LOGIN": "লগইন"
+    },
+    "DEMO": {
+      "LABEL": "ডেমো প্রমাণপত্র:",
+      "USERNAME_TEXT": "ব্যবহারকারীর নাম: demo",
+      "PASSWORD_TEXT": "পাসওয়ার্ড: demo123"
+    }
+  },
+  "BUILDING_FORM_DIALOG": {
+    "TITLE_CREATE": "নতুন ভবন যোগ করুন",
+    "TITLE_EDIT": "ভবন সম্পাদনা করুন",
+    "FIELDS": {
+      "BUILDING_NAME": "ভবনের নাম",
+      "BUILDING_CODE": "ভবন কোড",
+      "BUILDING_TYPE": "ভবনের ধরন",
+      "TOTAL_FLOORS": "মোট তল",
+      "CONSTRUCTION_YEAR": "নির্মাণ বছর",
+      "HAS_ELEVATOR": "লিফট আছে"
+    },
+    "PLACEHOLDERS": {
+      "BUILDING_NAME": "যেমন, টাওয়ার A",
+      "BUILDING_CODE": "যেমন, BLD-001"
+    },
+    "HINTS": {
+      "BUILDING_CODE": "এই ভবনের জন্য অনন্য সনাক্তকারী",
+      "TOTAL_FLOORS": "ঐচ্ছিক",
+      "CONSTRUCTION_YEAR": "ঐচ্ছিক"
+    },
+    "ERRORS": {
+      "MIN_LENGTH": "ন্যূনতম দৈর্ঘ্য",
+      "MAX_LENGTH": "সর্বাধিক দৈর্ঘ্য",
+      "PATTERN": "শুধুমাত্র বড় অক্ষর, সংখ্যা এবং হাইফেন অনুমতিযুক্ত",
+      "MIN_VALUE": "ন্যূনতম মান",
+      "MAX_VALUE": "সর্বাধিক মান"
+    },
+    "BUTTONS": {
+      "CREATE": "ভবন তৈরি করুন",
+      "UPDATE": "ভবন আপডেট করুন"
+    }
+  },
+  "UNIT_FORM_DIALOG": {
+    "TITLE_CREATE": "নতুন ইউনিট যোগ করুন",
+    "TITLE_EDIT": "ইউনিট সম্পাদনা করুন",
+    "FIELDS": {
+      "UNIT_NUMBER": "ইউনিট নম্বর",
+      "UNIT_NAME": "ইউনিটের নাম (ঐচ্ছিক)",
+      "UNIT_TYPE": "ইউনিটের ধরন",
+      "FLOOR": "তল",
+      "SECTION": "বিভাগ",
+      "MONTHLY_RENT": "মাসিক ভাড়া"
+    },
+    "PLACEHOLDERS": {
+      "UNIT_NUMBER": "যেমন, 101, A-1, দোকান-5",
+      "UNIT_NAME": "যেমন, কর্নার অফিস, মাস্টার স্যুট",
+      "FLOOR": "যেমন, 3",
+      "SECTION": "যেমন, A, উত্তর উইং",
+      "MONTHLY_RENT": "যেমন, 15000"
+    },
+    "HINTS": {
+      "UNIT_NUMBER": "এই ইউনিটের জন্য অনন্য সনাক্তকারী",
+      "FLOOR": "ঐচ্ছিক",
+      "SECTION": "ঐচ্ছিক"
+    },
+    "ERRORS": {
+      "MAX_LENGTH": "সর্বাধিক দৈর্ঘ্য",
+      "MIN_VALUE": "ন্যূনতম মান",
+      "MAX_VALUE": "সর্বাধিক মান"
+    },
+    "BUTTONS": {
+      "CREATE": "ইউনিট তৈরি করুন",
+      "UPDATE": "ইউনিট আপডেট করুন"
+    }
+  },
+  "PROPERTY_LIST": {
+    "PAGE_TITLE": "সম্পত্তি",
+    "BUTTONS": {
+      "ADD_PROPERTY": "সম্পত্তি যোগ করুন"
+    },
+    "LOADING": "সম্পত্তি লোড হচ্ছে...",
+    "EMPTY_STATE": {
+      "TITLE": "এখনও কোনো সম্পত্তি নেই",
+      "DESCRIPTION": "আপনার প্রথম সম্পত্তি যোগ করে শুরু করুন"
+    },
+    "DIALOGS": {
+      "DELETE_PROPERTY": "আপনি কি এটি মুছতে চান",
+      "DELETE_BUILDING": "আপনি কি এটি মুছতে চান",
+      "DELETE_UNIT": "আপনি কি ইউনিট মুছতে চান"
+    }
+  },
+  "PAYMENT_LIST": {
+    "PAGE_TITLE": "পেমেন্ট",
+    "SUMMARY": {
+      "TOTAL_DUE": "মোট বকেয়া",
+      "TOTAL_COLLECTED": "মোট সংগৃহীত",
+      "PENDING": "অপেক্ষমাণ",
+      "OVERDUE": "নির্ধারিত সময় অতিক্রম করেছে",
+      "COLLECTION_RATE": "সংগ্রহের হার"
+    },
+    "BUTTONS": {
+      "NEW_PAYMENT": "নতুন পেমেন্ট",
+      "APPLY": "প্রয়োগ করুন",
+      "CLEAR": "সাফ করুন",
+      "UPDATE": "আপডেট করুন"
+    },
+    "FILTERS": {
+      "STATUS": "স্থিতি",
+      "MONTH": "মাস",
+      "YEAR": "বছর",
+      "ALL": "সব"
+    },
+    "TABLE": {
+      "TENANT_UNIT": "ভাড়াটে / ইউনিট",
+      "PROPERTY": "সম্পত্তি",
+      "PERIOD": "সময়কাল",
+      "AMOUNT_DUE": "বকেয়া (৳)",
+      "AMOUNT_PAID": "পরিশোধিত (৳)",
+      "STATUS": "স্থিতি"
+    },
+    "STATUS": {
+      "PAID": "পরিশোধিত",
+      "DUE": "বকেয়া",
+      "PARTIAL": "আংশিক",
+      "OVERDUE": "নির্ধারিত সময় অতিক্রম করেছে"
+    },
+    "MONTHS": {
+      "JANUARY": "জানুয়ারি",
+      "FEBRUARY": "ফেব্রুয়ারি",
+      "MARCH": "মার্চ",
+      "APRIL": "এপ্রিল",
+      "MAY": "মে",
+      "JUNE": "জুন",
+      "JULY": "জুলাই",
+      "AUGUST": "অগাস্ট",
+      "SEPTEMBER": "সেপ্টেম্বর",
+      "OCTOBER": "অক্টোবর",
+      "NOVEMBER": "নভেম্বর",
+      "DECEMBER": "ডিসেম্বর"
+    },
+    "EMPTY_STATE": "কোনো পেমেন্ট পাওয়া যায়নি",
+    "LOADING": "পেমেন্ট লোড হচ্ছে..."
+  },
+  "CREATE_PAYMENT_DIALOG": {
+    "TITLE": "নতুন পেমেন্ট তৈরি করুন",
+    "FIELDS": {
+      "TENANT": "ভাড়াটে",
+      "UNIT": "ইউনিট",
+      "BUILDING": "বিল্ডিং",
+      "PROPERTY": "সম্পত্তি",
+      "MONTH": "মাস",
+      "YEAR": "বছর",
+      "AMOUNT_DUE": "বকেয়া পরিমাণ (৳)",
+      "DUE_DATE": "পরিশোধের তারিখ"
+    },
+    "ERRORS": {
+      "REQUIRED": "এই ক্ষেত্র প্রয়োজন",
+      "INVALID_AMOUNT": "দয়া করে একটি বৈধ পরিমাণ প্রবেশ করুন",
+      "INVALID_DATE": "দয়া করে একটি বৈধ তারিখ প্রবেশ করুন"
+    },
+    "BUTTONS": {
+      "CREATE": "তৈরি করুন",
+      "CANCEL": "বাতিল করুন"
+    }
+  },
+  "UPDATE_PAYMENT_DIALOG": {
+    "TITLE": "পেমেন্ট আপডেট করুন",
+    "FIELDS": {
+      "AMOUNT_PAID": "পরিশোধিত পরিমাণ (৳)",
+      "STATUS": "স্থিতি",
+      "PAYMENT_METHOD": "পেমেন্ট পদ্ধতি",
+      "PAYMENT_DATE": "পেমেন্টের তারিখ",
+      "NOTES": "নোট"
+    },
+    "ERRORS": {
+      "REQUIRED": "এই ক্ষেত্র প্রয়োজন",
+      "INVALID_AMOUNT": "দয়া করে একটি বৈধ পরিমাণ প্রবেশ করুন"
+    },
+    "BUTTONS": {
+      "UPDATE": "আপডেট করুন",
+      "CANCEL": "বাতিল করুন"
+    }
+  }
+}

@@ -94,8 +94,8 @@ describe('PaymentList', () => {
         { provide: MatSnackBar, useValue: snackBarSpy },
       ],
     })
-    .overrideProvider(MatDialog, { useValue: dialogSpy })
-    .compileComponents();
+      .overrideProvider(MatDialog, { useValue: dialogSpy })
+      .compileComponents();
 
     fixture = TestBed.createComponent(PaymentList);
     component = fixture.componentInstance;
@@ -117,7 +117,13 @@ describe('PaymentList', () => {
 
     it('should expose the required displayedColumns', () => {
       expect(component.displayedColumns).toEqual([
-        'tenant', 'unit', 'period', 'amount_due', 'amount_paid', 'status', 'actions',
+        'tenant',
+        'unit',
+        'period',
+        'amount_due',
+        'amount_paid',
+        'status',
+        'actions',
       ]);
     });
 
@@ -147,9 +153,7 @@ describe('PaymentList', () => {
     });
 
     it('should set loading to false after a failed fetch', () => {
-      paymentServiceSpy.getPayments.and.returnValue(
-        throwError(() => ({ status: 500 }))
-      );
+      paymentServiceSpy.getPayments.and.returnValue(throwError(() => ({ status: 500 })));
 
       component.loadPayments();
 
@@ -235,9 +239,7 @@ describe('PaymentList', () => {
     });
 
     it('should be false after an error response', () => {
-      paymentServiceSpy.getPayments.and.returnValue(
-        throwError(() => ({ status: 500 }))
-      );
+      paymentServiceSpy.getPayments.and.returnValue(throwError(() => ({ status: 500 })));
 
       component.loadPayments();
 
@@ -457,8 +459,13 @@ describe('PaymentList', () => {
 
     it('should call createPayment and reload when dialog returns a request', () => {
       const createReq = {
-        unit_id: 11, tenant_id: 6, building_id: 2,
-        property_id: 3, month: 6, year: 2026, amount_due: 12000,
+        unit_id: 11,
+        tenant_id: 6,
+        building_id: 2,
+        property_id: 3,
+        month: 6,
+        year: 2026,
+        amount_due: 12000,
       };
       dialogSpy.open.and.returnValue({ afterClosed: () => of(createReq) } as any);
       paymentServiceSpy.createPayment.and.returnValue(of({} as any));
