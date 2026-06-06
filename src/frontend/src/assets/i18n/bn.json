@@ -9,8 +9,13 @@
       "EDIT": "সম্পাদনা",
       "CLOSE": "বন্ধ করুন",
       "RETRY": "পুনরায় চেষ্টা করুন",
-      "ADD": "যোগ করুন"
+      "ADD": "যোগ করুন",
+      "GENERATE": "তৈরি করুন",
+      "RESET": "রিসেট করুন"
     },
+    "START_DATE": "শুরুর তারিখ",
+    "END_DATE": "শেষের তারিখ",
+    "ALL": "সব",
     "ERRORS": {
       "REQUIRED": "প্রয়োজনীয়",
       "MIN_VALUE": "ন্যূনতম মান",
@@ -463,5 +468,30 @@
       "UPDATE": "আপডেট করুন",
       "CANCEL": "বাতিল করুন"
     }
+  },
+  "REPORTS": {
+    "PAGE_TITLE": "রিপোর্ট এবং বিশ্লেষণ",
+    "SUBTITLE": "ব্যাপক রিপোর্ট তৈরি করুন এবং সম্পত্তির কর্মক্ষমতা বিশ্লেষণ করুন",
+    "CATALOG": "রিপোর্ট ক্যাটালগ",
+    "GENERATE": "রিপোর্ট তৈরি করুন",
+    "ANALYTICS": "বিশ্লেষণ",
+    "CATEGORY_FINANCIAL": "আর্থিক রিপোর্ট",
+    "CATEGORY_OPERATIONAL": "অপারেশনাল রিপোর্ট",
+    "CATEGORY_COLLECTIONS": "সংগ্রহ রিপোর্ট",
+    "CATEGORY_TENANT": "ভাড়াটিয়া রিপোর্ট",
+    "REPORT_TYPE": "রিপোর্টের ধরন নির্বাচন করুন",
+    "REPORT_SETTINGS": "রিপোর্ট সেটিংস",
+    "PROPERTY_FILTER": "সম্পত্তি অনুযায়ী ফিল্টার করুন",
+    "BUILDING_FILTER": "ভবন অনুযায়ী ফিল্টার করুন",
+    "EXPORT_FORMAT": "রপ্তানি ফরম্যাট",
+    "GENERATE_REPORT": "রিপোর্ট তৈরি করুন",
+    "GENERATING": "তৈরি হচ্ছে...",
+    "PREVIEW": "রিপোর্ট প্রিভিউ",
+    "REQUIREMENTS": "প্রয়োজনীয়তা",
+    "SELECT_REPORT_HINT": "শুরু করতে ক্যাটালগ থেকে একটি রিপোর্ট নির্বাচন করুন",
+    "COLLECTION_TREND": "সংগ্রহ ট্রেন্ড (৬ মাস)",
+    "REVENUE_BY_PROPERTY": "সম্পত্তি অনুযায়ী রাজস্ব",
+    "OCCUPANCY_RATE": "দখল হার",
+    "PAYMENT_METHODS": "পেমেন্ট পদ্ধতি বিতরণ"
   }
 }

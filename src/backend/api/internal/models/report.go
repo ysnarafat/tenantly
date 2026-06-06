@@ -1,0 +1,49 @@
+package models
+
+import "time"
+
+// FinancialLedgerReport complete transaction history with balances
+type FinancialLedgerReport struct {
+	OrganizationID int                   `json:"organization_id"`
+	Payments       []*PaymentWithDetails `json:"payments"`
+	Total          int                   `json:"total"`
+	TotalDue       int64                 `json:"total_due"`
+	TotalPaid      int64                 `json:"total_paid"`
+	TotalPending   int64                 `json:"total_pending"`
+	TotalOverdue   int64                 `json:"total_overdue"`
+	CollectionRate float64               `json:"collection_rate"`
+	GeneratedAt    time.Time             `json:"generated_at"`
+}
+
+// CollectionSummaryReport returns collection rates, aging analysis, trends
+type CollectionSummaryReport struct {
+	OrganizationID    int                       `json:"organization_id"`
+	CollectionRate    float64                   `json:"collection_rate"`
+	TotalDue          int64                     `json:"total_due"`
+	TotalCollected    int64                     `json:"total_collected"`
+	TotalPending      int64                     `json:"total_pending"`
+	TotalOverdue      int64                     `json:"total_overdue"`
+	AgingBuckets      map[string]int64          `json:"aging_buckets"`
+	MonthlyTrend      []*MonthlyCollectionTrend `json:"monthly_trend"`
+	ReportPeriod      string                    `json:"report_period"`
+	GeneratedAt       time.Time                 `json:"generated_at"`
+}
+
+// MonthlyCollectionTrend represents collection data for a month
+type MonthlyCollectionTrend struct {
+	Month           time.Time `json:"month"`
+	CollectionRate  float64   `json:"collection_rate"`
+	AmountDue       int64     `json:"amount_due"`
+	AmountCollected int64     `json:"amount_collected"`
+}
+
+// PaymentAnalysisReport returns payment analysis data
+type PaymentAnalysisReport struct {
+	OrganizationID     int              `json:"organization_id"`
+	PaymentMethods     map[string]int   `json:"payment_methods"`
+	StatusDistribution map[string]int64 `json:"status_distribution"`
+	DailyTrend         map[string]int64 `json:"daily_trend"`
+	TotalPayments      int64            `json:"total_payments"`
+	ReportPeriod       string           `json:"report_period"`
+	GeneratedAt        time.Time        `json:"generated_at"`
+}

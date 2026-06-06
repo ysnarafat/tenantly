@@ -9,8 +9,13 @@
       "EDIT": "Edit",
       "CLOSE": "Close",
       "RETRY": "Retry",
-      "ADD": "Add"
+      "ADD": "Add",
+      "GENERATE": "Generate",
+      "RESET": "Reset"
     },
+    "START_DATE": "Start Date",
+    "END_DATE": "End Date",
+    "ALL": "All",
     "ERRORS": {
       "REQUIRED": "Required",
       "MIN_VALUE": "Minimum value is",
@@ -463,5 +468,30 @@
       "UPDATE": "Update",
       "CANCEL": "Cancel"
     }
+  },
+  "REPORTS": {
+    "PAGE_TITLE": "Reports & Analysis",
+    "SUBTITLE": "Generate comprehensive reports and analyze property performance",
+    "CATALOG": "Report Catalog",
+    "GENERATE": "Generate Report",
+    "ANALYTICS": "Analytics",
+    "CATEGORY_FINANCIAL": "Financial Reports",
+    "CATEGORY_OPERATIONAL": "Operational Reports",
+    "CATEGORY_COLLECTIONS": "Collections Reports",
+    "CATEGORY_TENANT": "Tenant Reports",
+    "REPORT_TYPE": "Select Report Type",
+    "REPORT_SETTINGS": "Report Settings",
+    "PROPERTY_FILTER": "Filter by Property",
+    "BUILDING_FILTER": "Filter by Building",
+    "EXPORT_FORMAT": "Export Format",
+    "GENERATE_REPORT": "Generate Report",
+    "GENERATING": "Generating...",
+    "PREVIEW": "Report Preview",
+    "REQUIREMENTS": "Requirements",
+    "SELECT_REPORT_HINT": "Select a report from the catalog to get started",
+    "COLLECTION_TREND": "Collection Trend (6 months)",
+    "REVENUE_BY_PROPERTY": "Revenue by Property",
+    "OCCUPANCY_RATE": "Occupancy Rate",
+    "PAYMENT_METHODS": "Payment Methods Distribution"
   }
 }
