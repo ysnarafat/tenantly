@@ -230,6 +230,14 @@ export class PaymentList implements OnInit {
 }
 
 // ── Create Dialog ──────────────────────────────────────────────────────────────
+export interface PaymentCreatePrefill {
+  unit_id: number;
+  unit_number: string;
+  building_name: string;
+  property_name: string;
+  lease: LeaseSearchResult | null;
+}
+
 @Component({
   selector: 'app-payment-create-dialog',
   standalone: true,
@@ -243,9 +251,20 @@ export class PaymentList implements OnInit {
     MatDialogModule,
     MatAutocompleteModule,
     MatProgressSpinnerModule,
+    MatIconModule,
   ],
   template: `
     <h2 mat-dialog-title>New Payment</h2>
+    @if (prefill) {
+      <div class="unit-context-bar">
+        <mat-icon>apartment</mat-icon>
+        <span>{{ prefill.property_name }}</span>
+        <span class="ctx-sep">›</span>
+        <span>{{ prefill.building_name }}</span>
+        <span class="ctx-sep">›</span>
+        <strong>Unit {{ prefill.unit_number }}</strong>
+      </div>
+    }
     <mat-dialog-content>
       <form [formGroup]="form" class="dialog-form">
         <!-- Lease search -->
@@ -380,6 +399,26 @@ export class PaymentList implements OnInit {
   `,
   styles: [
     `
+      .unit-context-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: #555;
+        background: var(--bg-secondary, #e8f5e9);
+        border-radius: 6px;
+        padding: 6px 16px 8px;
+        margin: -8px 16px 0;
+      }
+      .unit-context-bar mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        color: #2196f3;
+      }
+      .ctx-sep {
+        color: #aaa;
+      }
       .dialog-form {
         display: flex;
         flex-direction: column;
@@ -435,6 +474,7 @@ export class PaymentCreateDialog implements OnInit {
   private fb = inject(FormBuilder);
   private dialogRef = inject(MatDialogRef<PaymentCreateDialog>);
   private paymentService = inject(PaymentService);
+  readonly prefill: PaymentCreatePrefill | null = inject(MAT_DIALOG_DATA, { optional: true });
 
   filteredLeases = signal<LeaseSearchResult[]>([]);
   selectedLease = signal<LeaseSearchResult | null>(null);
@@ -474,6 +514,15 @@ export class PaymentCreateDialog implements OnInit {
   });
 
   ngOnInit(): void {
+    // Lease pre-fetched by caller — skip search, apply immediately and lock the field
+    if (this.prefill?.lease) {
+      this.onLeaseSelected(this.prefill.lease);
+      this.leaseSearch.setValue(this.leaseDisplay(this.prefill.lease), { emitEvent: false });
+      this.leaseSearch.disable({ emitEvent: false });
+      return;
+    }
+
+    // Normal search flow
     this.leaseSearch.valueChanges
       .pipe(
         debounceTime(300),

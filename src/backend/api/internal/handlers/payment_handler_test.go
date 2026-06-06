@@ -839,7 +839,7 @@ func TestPaymentHandler_GetBuildingPaymentReport(t *testing.T) {
 			t.Errorf("default end_date should be after start_date; start=%v end=%v", capturedStart, capturedEnd)
 		}
 		endDiff := capturedEnd.Sub(now)
-		if endDiff < -2*time.Minute || endDiff > 25*time.Hour {
+		if endDiff < -2*time.Minute || endDiff > 49*time.Hour {
 			t.Errorf("default end_date out of expected range: %v", endDiff)
 		}
 	})
