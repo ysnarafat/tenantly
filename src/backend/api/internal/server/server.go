@@ -94,6 +94,7 @@ func (s *Server) setupRoutes() {
 	tenantService := services.NewTenantService(tenantRepo, leaseRepo, auditService)
 	leaseService := services.NewLeaseService(leaseRepo, tenantRepo, unitRepo, auditService)
 	paymentService := services.NewPaymentService(paymentRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
+	reportService := services.NewReportService(paymentRepo)
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService)
 	propertyHandler := handlers.NewPropertyHandler(propertyService)
@@ -103,6 +104,7 @@ func (s *Server) setupRoutes() {
 	leaseHandler := handlers.NewLeaseHandler(leaseService)
 	paymentHandler := handlers.NewPaymentHandler(paymentService)
 	organizationHandler := handlers.NewOrganizationHandler(organizationService)
+	reportHandler := handlers.NewReportHandler(reportService)
 
 	// Health check endpoint
 	s.router.GET("/health", func(c *gin.Context) {
@@ -290,9 +292,12 @@ func (s *Server) setupRoutes() {
 			}
 
 			reports := protected.Group("/reports")
+			reports.Use(middleware.RequireOrgContext())
 			{
-				reports.GET("/ledger", s.handlePlaceholder("Ledger report"))
-				reports.GET("/export", s.handlePlaceholder("Export report"))
+				reports.GET("/ledger", middleware.RequireAnyRole(), reportHandler.GetFinancialLedger)
+				reports.GET("/collection-summary", middleware.RequireAnyRole(), reportHandler.GetCollectionSummary)
+				reports.GET("/payment-analysis", middleware.RequireAnyRole(), reportHandler.GetPaymentAnalysis)
+				reports.GET("/dashboard-metrics", middleware.RequireAnyRole(), reportHandler.GetDashboardMetrics)
 			}
 		}
 	}

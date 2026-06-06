@@ -379,3 +379,10 @@ type LeaseServiceInterface interface {
 	GetLeasesDue(orgID int) ([]models.LeaseDue, error)
 	GetDueSummary(orgID int) (*models.DueSummary, error)
 }
+
+// ReportServiceInterface defines the interface for report service operations
+type ReportServiceInterface interface {
+	FinancialLedgerReport(orgID int, filters map[string]interface{}, limit, offset int) (*models.FinancialLedgerReport, error)
+	CollectionSummaryReport(orgID int, startDate, endDate time.Time) (*models.CollectionSummaryReport, error)
+	PaymentAnalysisReport(orgID int, startDate, endDate time.Time) (*models.PaymentAnalysisReport, error)
+}

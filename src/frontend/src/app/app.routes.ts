@@ -74,7 +74,7 @@ export const routes: Routes = [
   {
     path: 'reports',
     loadComponent: () =>
-      import('./features/reports/report-list/report-list').then((m) => m.ReportList),
+      import('./features/reports/report-analysis').then((m) => m.ReportAnalysis),
     canActivate: [AuthGuard],
   },
   {
