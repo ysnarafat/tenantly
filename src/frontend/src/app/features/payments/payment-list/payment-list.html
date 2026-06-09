@@ -6,10 +6,22 @@
         <h1 class="page-title">{{ 'PAYMENT_LIST.PAGE_TITLE' | translate }}</h1>
         <p class="page-subtitle">Manage and track all payment transactions</p>
       </div>
-      <button mat-raised-button color="primary" (click)="openCreateDialog()" class="create-btn">
-        <mat-icon>add</mat-icon>
-        <span class="btn-text">{{ 'PAYMENT_LIST.BUTTONS.NEW_PAYMENT' | translate }}</span>
-      </button>
+      <div class="header-actions">
+        <button
+          mat-stroked-button
+          color="primary"
+          (click)="openGenerateDialog()"
+          class="generate-btn"
+          matTooltip="Auto-generate Due records for all active leases"
+        >
+          <mat-icon>bolt</mat-icon>
+          <span class="btn-text">Generate Monthly</span>
+        </button>
+        <button mat-raised-button color="primary" (click)="openCreateDialog()" class="create-btn">
+          <mat-icon>add</mat-icon>
+          <span class="btn-text">{{ 'PAYMENT_LIST.BUTTONS.NEW_PAYMENT' | translate }}</span>
+        </button>
+      </div>
     </div>
   </header>
 

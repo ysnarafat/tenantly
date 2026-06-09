@@ -416,6 +416,86 @@ func (s *PaymentService) LogPaymentAccess(userID int, action string, paymentID i
 	}
 }
 
+// GenerateMonthlyPayments creates Due payment records for every active lease in the given month/year.
+// Leases that already have a payment record for that unit/month/year are skipped.
+func (s *PaymentService) GenerateMonthlyPayments(req *models.GenerateMonthlyPaymentsRequest, orgID, userID int) (*models.GenerateMonthlyPaymentsResult, error) {
+	now := time.Now().UTC()
+	currentYear, currentMonth := now.Year(), int(now.Month())
+
+	// Reject dates more than 1 month ahead of today.
+	reqMonths := req.Year*12 + req.Month
+	currentMonths := currentYear*12 + currentMonth
+	if reqMonths > currentMonths+1 {
+		return nil, fmt.Errorf("cannot generate payments more than 1 month in the future (requested %04d-%02d)", req.Year, req.Month)
+	}
+
+	// Reject dates older than 24 months to prevent mass back-generation.
+	if reqMonths < currentMonths-24 {
+		return nil, fmt.Errorf("cannot generate payments more than 24 months in the past (requested %04d-%02d)", req.Year, req.Month)
+	}
+
+	leases, err := s.paymentRepo.GetActiveLeasesForPeriod(orgID, req.Month, req.Year, req.BuildingID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch active leases: %w", err)
+	}
+
+	dueDay := req.DueDayOfMonth
+	if dueDay < 1 || dueDay > 28 {
+		dueDay = 7
+	}
+	lastDay := time.Date(req.Year, time.Month(req.Month+1), 0, 0, 0, 0, 0, time.UTC).Day()
+	if dueDay > lastDay {
+		dueDay = lastDay
+	}
+	dueDateStr := fmt.Sprintf("%04d-%02d-%02d", req.Year, req.Month, dueDay)
+
+	result := &models.GenerateMonthlyPaymentsResult{Errors: []string{}}
+
+	for _, lease := range leases {
+		exists, err := s.paymentRepo.CheckPaymentExists(lease.UnitID, req.Month, req.Year)
+		if err != nil {
+			result.Failed++
+			result.Errors = append(result.Errors, fmt.Sprintf("unit %d: existence check failed: %v", lease.UnitID, err))
+			continue
+		}
+		if exists {
+			result.Skipped++
+			continue
+		}
+
+		createReq := &models.CreatePaymentRequest{
+			UnitID:         lease.UnitID,
+			TenantID:       lease.TenantID,
+			BuildingID:     lease.BuildingID,
+			PropertyID:     lease.PropertyID,
+			OrganizationID: orgID,
+			Month:          req.Month,
+			Year:           req.Year,
+			AmountDue:      lease.MonthlyRent,
+			DueDate:        dueDateStr,
+		}
+
+		if _, err := s.paymentRepo.Create(createReq); err != nil {
+			result.Failed++
+			result.Errors = append(result.Errors, fmt.Sprintf("unit %d: %v", lease.UnitID, err))
+			continue
+		}
+		result.Generated++
+	}
+
+	s.auditService.LogUserAction(userID, "GENERATE_MONTHLY", "payments", nil, nil, map[string]interface{}{
+		"month":       req.Month,
+		"year":        req.Year,
+		"org_id":      orgID,
+		"generated":   result.Generated,
+		"skipped":     result.Skipped,
+		"failed":      result.Failed,
+		"building_id": req.BuildingID,
+	})
+
+	return result, nil
+}
+
 // SearchLeases searches for active leases by tenant name, property, building, unit, or lease ID
 func (s *PaymentService) SearchLeases(orgID int, query string) (*models.LeaseSearchResponse, error) {
 	if query == "" {

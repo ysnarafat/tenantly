@@ -186,6 +186,14 @@ func (m *MockPaymentRepo) SearchLeases(orgID int, query string) ([]*models.Lease
 	return make([]*models.LeaseSearchResult, 0), nil
 }
 
+func (m *MockPaymentRepo) GetActiveLeasesForPeriod(orgID, month, year int, buildingID *int) ([]*models.LeaseSearchResult, error) {
+	return make([]*models.LeaseSearchResult, 0), nil
+}
+
+func (m *MockPaymentRepo) CheckPaymentExists(unitID, month, year int) (bool, error) {
+	return false, nil
+}
+
 // ---------------------------------------------------------------------------
 // MockPaymentUnitRepo – implements interfaces.UnitRepositoryInterface
 // ---------------------------------------------------------------------------

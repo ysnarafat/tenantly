@@ -98,3 +98,17 @@ export interface LeaseSearchResponse {
   results: LeaseSearchResult[];
   total: number;
 }
+
+export interface GenerateMonthlyPaymentsRequest {
+  month: number;
+  year: number;
+  building_id?: number;
+  due_day_of_month?: number;
+}
+
+export interface GenerateMonthlyPaymentsResult {
+  generated: number;
+  skipped: number;
+  failed: number;
+  errors?: string[];
+}

@@ -306,6 +306,26 @@ func (h *PaymentHandler) SearchLeases(c *gin.Context) {
 	c.JSON(http.StatusOK, result)
 }
 
+// GenerateMonthlyPayments handles POST /payments/generate-monthly
+func (h *PaymentHandler) GenerateMonthlyPayments(c *gin.Context) {
+	var req models.GenerateMonthlyPaymentsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	orgID := c.GetInt("org_id")
+	userID := c.GetInt("userID")
+
+	result, err := h.paymentService.GenerateMonthlyPayments(&req, orgID, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 func parseDateRange(c *gin.Context) (time.Time, time.Time, error) {
 	now := time.Now()
 	startStr := c.DefaultQuery("start_date", now.AddDate(0, -1, 0).Format("2006-01-02"))

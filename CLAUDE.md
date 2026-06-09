@@ -445,6 +445,10 @@ New Angular components:
 
 ---
 
+## 🤖 Claude Code Behaviour
+
+- **Commits**: Never add a `Co-Authored-By` trailer to any commit.
+
 ## 📝 Key Project Files
 
 - `README.md` - Project overview and quick start

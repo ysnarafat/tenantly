@@ -136,6 +136,10 @@ func (m *mockPaymentService) SearchLeases(orgID int, query string) (*models.Leas
 	return m.searchLeasesFn(orgID, query)
 }
 
+func (m *mockPaymentService) GenerateMonthlyPayments(req *models.GenerateMonthlyPaymentsRequest, orgID, userID int) (*models.GenerateMonthlyPaymentsResult, error) {
+	return &models.GenerateMonthlyPaymentsResult{}, nil
+}
+
 // Ensure the mock satisfies the interface at compile time.
 var _ interfaces.PaymentServiceInterface = (*mockPaymentService)(nil)
 

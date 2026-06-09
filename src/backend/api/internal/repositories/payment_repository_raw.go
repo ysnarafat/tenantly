@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/ysnarafat/tenantly/internal/models"
 )
@@ -182,4 +183,93 @@ func (r *PaymentRepository) GetWithDetailsAndFilters(filters map[string]interfac
 	}
 
 	return payments, total, nil
+}
+
+// GetActiveLeasesForPeriod returns all active leases whose coverage overlaps with the given month/year.
+// Optionally scoped to a single building when buildingID is non-nil.
+func (r *PaymentRepository) GetActiveLeasesForPeriod(orgID, month, year int, buildingID *int) ([]*models.LeaseSearchResult, error) {
+	firstDay := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
+	lastDay := firstDay.AddDate(0, 1, -1)
+
+	args := []interface{}{orgID, firstDay, lastDay}
+	where := `l.organization_id = $1
+		AND l.active = true
+		AND l.start_date <= $3
+		AND (l.end_date IS NULL OR l.end_date >= $2)`
+
+	if buildingID != nil {
+		args = append(args, *buildingID)
+		where += fmt.Sprintf(" AND u.building_id = $%d", len(args))
+	}
+
+	query := fmt.Sprintf(`
+		SELECT
+			l.id AS lease_id,
+			COALESCE(t.id, 0) AS tenant_id,
+			COALESCE(t.name, '') AS tenant_name,
+			COALESCE(t.phone_number, '') AS tenant_phone,
+			COALESCE(u.property_id, 0) AS property_id,
+			COALESCE(pr.property_name, '') AS property_name,
+			COALESCE(u.building_id, 0) AS building_id,
+			COALESCE(b.building_name, '') AS building_name,
+			COALESCE(b.building_code, '') AS building_code,
+			l.unit_id,
+			COALESCE(u.unit_number, '') AS unit_number,
+			COALESCE(u.unit_type::text, '') AS unit_type,
+			l.start_date AS lease_start_date,
+			l.end_date AS lease_end_date,
+			l.monthly_rent,
+			l.active
+		FROM leases l
+		LEFT JOIN tenants t ON l.tenant_id = t.id
+		LEFT JOIN units u ON l.unit_id = u.id
+		LEFT JOIN buildings b ON u.building_id = b.id
+		LEFT JOIN properties pr ON u.property_id = pr.id
+		WHERE %s
+		ORDER BY b.building_name, u.unit_number`, where)
+
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query active leases for period: %w", err)
+	}
+	defer rows.Close()
+
+	var results []*models.LeaseSearchResult
+	for rows.Next() {
+		lr := &models.LeaseSearchResult{}
+		var endDate sql.NullTime
+		err := rows.Scan(
+			&lr.LeaseID, &lr.TenantID, &lr.TenantName, &lr.TenantPhone,
+			&lr.PropertyID, &lr.PropertyName,
+			&lr.BuildingID, &lr.BuildingName, &lr.BuildingCode,
+			&lr.UnitID, &lr.UnitNumber, &lr.UnitType,
+			&lr.LeaseStartDate, &endDate,
+			&lr.MonthlyRent, &lr.Active,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan lease row: %w", err)
+		}
+		if endDate.Valid {
+			lr.LeaseEndDate = endDate.Time
+		}
+		results = append(results, lr)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("lease rows error: %w", err)
+	}
+
+	return results, nil
+}
+
+// CheckPaymentExists returns true when a payment record already exists for the given unit/month/year.
+func (r *PaymentRepository) CheckPaymentExists(unitID, month, year int) (bool, error) {
+	var exists bool
+	err := r.db.QueryRow(
+		`SELECT EXISTS(SELECT 1 FROM payments WHERE unit_id = $1 AND month = $2 AND year = $3)`,
+		unitID, month, year,
+	).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check payment existence: %w", err)
+	}
+	return exists, nil
 }

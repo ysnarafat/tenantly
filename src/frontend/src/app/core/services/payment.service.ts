@@ -9,6 +9,8 @@ import {
   UpdatePaymentRequest,
   PaymentWithDetails,
   LeaseSearchResponse,
+  GenerateMonthlyPaymentsRequest,
+  GenerateMonthlyPaymentsResult,
 } from '../models/payment.model';
 import { environment } from '../../../environments/environment';
 
@@ -70,5 +72,11 @@ export class PaymentService {
   searchLeases(query: string): Observable<LeaseSearchResponse> {
     const params = new HttpParams().set('q', query);
     return this.http.get<LeaseSearchResponse>(`${this.apiUrl}/search`, { params });
+  }
+
+  generateMonthlyPayments(
+    req: GenerateMonthlyPaymentsRequest
+  ): Observable<GenerateMonthlyPaymentsResult> {
+    return this.http.post<GenerateMonthlyPaymentsResult>(`${this.apiUrl}/generate-monthly`, req);
   }
 }
