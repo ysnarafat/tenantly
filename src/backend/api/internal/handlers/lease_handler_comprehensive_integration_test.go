@@ -214,12 +214,11 @@ func (suite *LeaseIntegrationTestSuite) createTestData() {
 
 	// Create test unit
 	unitReq := &models.CreateUnitRequest{
-		BuildingID:  suite.testBuilding.ID,
-		PropertyID:  suite.testProperty.ID,
-		UnitNumber:  "101",
-		UnitType:    models.UnitTypeApartment,
-		Floor:       1,
-		MonthlyRent: 15000,
+		BuildingID: suite.testBuilding.ID,
+		PropertyID: suite.testProperty.ID,
+		UnitNumber: "101",
+		UnitType:   models.UnitTypeApartment,
+		Floor:      1,
 	}
 	suite.testUnit, err = suite.unitRepo.Create(unitReq, suite.testOrg.ID)
 	require.NoError(suite.T(), err)

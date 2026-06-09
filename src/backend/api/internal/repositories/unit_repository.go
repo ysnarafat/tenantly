@@ -24,13 +24,13 @@ func NewUnitRepository(db *sql.DB) *UnitRepository {
 func (r *UnitRepository) Create(req *models.CreateUnitRequest, organizationID int) (*models.Unit, error) {
 	query := fmt.Sprintf(`
 		INSERT INTO %s (
-			%s, %s, %s, %s, 
-			%s, %s, %s, %s, %s, %s, %s
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true)
+			%s, %s, %s, %s,
+			%s, %s, %s, %s, %s, %s
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
 		RETURNING %s, %s, %s`,
 		columns.UnitTable,
 		columns.UnitBuildingID, columns.UnitPropertyID, columns.UnitNumber, columns.UnitName,
-		columns.UnitFloor, columns.UnitSection, columns.UnitType, columns.UnitMonthlyRent, columns.UnitMetadata, columns.UnitOrganizationID, columns.UnitActive,
+		columns.UnitFloor, columns.UnitSection, columns.UnitType, columns.UnitMetadata, columns.UnitOrganizationID, columns.UnitActive,
 		columns.UnitID, columns.UnitCreatedAt, columns.UnitUpdatedAt)
 
 	unit := &models.Unit{
@@ -41,7 +41,6 @@ func (r *UnitRepository) Create(req *models.CreateUnitRequest, organizationID in
 		Floor:          req.Floor,
 		Section:        req.Section,
 		UnitType:       req.UnitType,
-		MonthlyRent:    req.MonthlyRent,
 		Metadata:       req.Metadata,
 		OrganizationID: organizationID,
 		Active:         true,
@@ -56,7 +55,6 @@ func (r *UnitRepository) Create(req *models.CreateUnitRequest, organizationID in
 		unit.Floor,
 		unit.Section,
 		unit.UnitType,
-		unit.MonthlyRent,
 		unit.Metadata,
 		unit.OrganizationID,
 	).Scan(&unit.ID, &unit.CreatedAt, &unit.UpdatedAt)
@@ -89,7 +87,6 @@ func (r *UnitRepository) GetByID(id int) (*models.Unit, error) {
 		&unit.Floor,
 		&unit.Section,
 		&unit.UnitType,
-		&unit.MonthlyRent,
 		&unit.Metadata,
 		&unit.Active,
 		&unit.CreatedAt,
@@ -109,8 +106,8 @@ func (r *UnitRepository) GetByID(id int) (*models.Unit, error) {
 // GetByIDWithDetails retrieves a unit by ID with property and building details
 func (r *UnitRepository) GetByIDWithDetails(id int) (*models.UnitWithDetails, error) {
 	query := `
-		SELECT u.id, u.building_id, u.property_id, u.unit_number, u.unit_name, 
-			   u.floor, u.section, u.unit_type, u.monthly_rent, u.metadata, u.active, 
+		SELECT u.id, u.building_id, u.property_id, u.unit_number, u.unit_name,
+			   u.floor, u.section, u.unit_type, u.metadata, u.active,
 			   u.created_at, u.updated_at,
 			   p.property_name as property_name,
 			   b.building_name, b.building_code,
@@ -133,7 +130,6 @@ func (r *UnitRepository) GetByIDWithDetails(id int) (*models.UnitWithDetails, er
 		&unit.Floor,
 		&unit.Section,
 		&unit.UnitType,
-		&unit.MonthlyRent,
 		&unit.Metadata,
 		&unit.Active,
 		&unit.CreatedAt,
@@ -182,11 +178,6 @@ func (r *UnitRepository) Update(id int, req *models.UpdateUnitRequest) (*models.
 		args = append(args, *req.UnitType)
 		argIdx++
 	}
-	if req.MonthlyRent != nil {
-		query += fmt.Sprintf(", monthly_rent = $%d", argIdx)
-		args = append(args, *req.MonthlyRent)
-		argIdx++
-	}
 	if req.Metadata != nil {
 		metadataJSON, err := json.Marshal(req.Metadata)
 		if err != nil {
@@ -202,7 +193,7 @@ func (r *UnitRepository) Update(id int, req *models.UpdateUnitRequest) (*models.
 		argIdx++
 	}
 
-	query += fmt.Sprintf(" WHERE id = $%d RETURNING id, building_id, property_id, unit_number, unit_name, floor, section, unit_type, monthly_rent, metadata, active, created_at, updated_at", argIdx)
+	query += fmt.Sprintf(" WHERE id = $%d RETURNING id, building_id, property_id, unit_number, unit_name, floor, section, unit_type, metadata, active, created_at, updated_at", argIdx)
 	args = append(args, id)
 
 	unit := &models.Unit{}
@@ -215,7 +206,6 @@ func (r *UnitRepository) Update(id int, req *models.UpdateUnitRequest) (*models.
 		&unit.Floor,
 		&unit.Section,
 		&unit.UnitType,
-		&unit.MonthlyRent,
 		&unit.Metadata,
 		&unit.Active,
 		&unit.CreatedAt,
@@ -306,7 +296,7 @@ func (r *UnitRepository) GetByBuildingWithDetails(buildingID int, limit, offset,
 	// Get units
 	query := fmt.Sprintf(`
 		SELECT u.id, u.building_id, u.property_id, u.unit_number, u.unit_name,
-			   u.floor, u.section, u.unit_type, u.monthly_rent, u.metadata, u.active,
+			   u.floor, u.section, u.unit_type, u.metadata, u.active,
 			   u.created_at, u.updated_at,
 			   p.property_name as property_name,
 			   b.building_name, b.building_code,
@@ -339,7 +329,6 @@ func (r *UnitRepository) GetByBuildingWithDetails(buildingID int, limit, offset,
 			&unit.Floor,
 			&unit.Section,
 			&unit.UnitType,
-			&unit.MonthlyRent,
 			&unit.Metadata,
 			&unit.Active,
 			&unit.CreatedAt,
@@ -372,7 +361,7 @@ func (r *UnitRepository) GetByPropertyWithDetails(propertyID int, limit, offset,
 	// Get units
 	query := `
 		SELECT u.id, u.building_id, u.property_id, u.unit_number, u.unit_name,
-			   u.floor, u.section, u.unit_type, u.monthly_rent, u.metadata, u.active,
+			   u.floor, u.section, u.unit_type, u.metadata, u.active,
 			   u.created_at, u.updated_at,
 			   p.property_name as property_name,
 			   b.building_name, b.building_code,
@@ -405,7 +394,6 @@ func (r *UnitRepository) GetByPropertyWithDetails(propertyID int, limit, offset,
 			&unit.Floor,
 			&unit.Section,
 			&unit.UnitType,
-			&unit.MonthlyRent,
 			&unit.Metadata,
 			&unit.Active,
 			&unit.CreatedAt,
@@ -482,7 +470,7 @@ func (r *UnitRepository) GetBuildingUnitTypeDistribution(buildingID int) (interf
 func (r *UnitRepository) GetByOrganizationID(orgID int) ([]*models.Unit, error) {
 	query := `
 		SELECT id, property_id, building_id, unit_number, unit_name, floor, section,
-		       unit_type, monthly_rent, metadata, active, created_at, updated_at
+		       unit_type, metadata, active, created_at, updated_at
 		FROM units
 		WHERE organization_id = $1 AND active = true
 		ORDER BY created_at DESC`
@@ -506,7 +494,6 @@ func (r *UnitRepository) GetByOrganizationID(orgID int) ([]*models.Unit, error) 
 			&unit.Floor,
 			&unit.Section,
 			&unit.UnitType,
-			&unit.MonthlyRent,
 			&metadataStr,
 			&unit.Active,
 			&unit.CreatedAt,

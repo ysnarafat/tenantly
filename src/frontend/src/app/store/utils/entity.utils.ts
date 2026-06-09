@@ -3,7 +3,7 @@ import { EntityAdapter, createEntityAdapter } from '@ngrx/entity';
 // Generic entity adapter factory
 export function createGenericEntityAdapter<T extends { id: number | string }>(): EntityAdapter<T> {
   return createEntityAdapter<T>({
-    selectId: (entity: T) => entity.id,
+    selectId: (entity: T) => String(entity.id),
     sortComparer: false,
   });
 }

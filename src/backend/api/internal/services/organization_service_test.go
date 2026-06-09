@@ -180,18 +180,18 @@ func (m *MockUserInvitationRepository) CleanupExpiredInvitations() error {
 	return nil
 }
 
-// MockAuditService is a mock implementation for testing
-type MockAuditService struct {
+// MockOrgAuditService is a mock implementation for testing
+type MockOrgAuditService struct {
 	logs []map[string]interface{}
 }
 
-func NewMockAuditService() *MockAuditService {
-	return &MockAuditService{
+func NewMockAuditForOrg() *MockOrgAuditService {
+	return &MockOrgAuditService{
 		logs: make([]map[string]interface{}, 0),
 	}
 }
 
-func (m *MockAuditService) LogUserAction(userID int, action, tableName string, recordID *int, oldValues, newValues interface{}) error {
+func (m *MockOrgAuditService) LogUserAction(userID int, action, tableName string, recordID *int, oldValues, newValues interface{}) error {
 	m.logs = append(m.logs, map[string]interface{}{
 		"user_id": userID,
 		"action":  action,
@@ -203,7 +203,7 @@ func (m *MockAuditService) LogUserAction(userID int, action, tableName string, r
 	return nil
 }
 
-func (m *MockAuditService) LogSystemAction(action, tableName string, recordID *int, oldValues, newValues interface{}) error {
+func (m *MockOrgAuditService) LogSystemAction(action, tableName string, recordID *int, oldValues, newValues interface{}) error {
 	m.logs = append(m.logs, map[string]interface{}{
 		"action": action,
 		"table":  tableName,
@@ -219,7 +219,7 @@ func (m *MockAuditService) LogSystemAction(action, tableName string, recordID *i
 func TestCreateOrganization(t *testing.T) {
 	mockOrgRepo := NewMockOrganizationRepository()
 	mockInvRepo := NewMockUserInvitationRepository()
-	mockAudit := NewMockAuditService()
+	mockAudit := NewMockAuditForOrg()
 
 	service := NewOrganizationService(mockOrgRepo, mockInvRepo, mockAudit)
 
@@ -247,7 +247,7 @@ func TestCreateOrganization(t *testing.T) {
 func TestGetOrganization(t *testing.T) {
 	mockOrgRepo := NewMockOrganizationRepository()
 	mockInvRepo := NewMockUserInvitationRepository()
-	mockAudit := NewMockAuditService()
+	mockAudit := NewMockAuditForOrg()
 
 	// Create an organization first
 	org := &models.Organization{
@@ -274,7 +274,7 @@ func TestGetOrganization(t *testing.T) {
 func TestListOrganizations(t *testing.T) {
 	mockOrgRepo := NewMockOrganizationRepository()
 	mockInvRepo := NewMockUserInvitationRepository()
-	mockAudit := NewMockAuditService()
+	mockAudit := NewMockAuditForOrg()
 
 	// Create test organizations
 	org1 := &models.Organization{
@@ -316,7 +316,7 @@ func TestListOrganizations(t *testing.T) {
 func TestUpdateOrganization(t *testing.T) {
 	mockOrgRepo := NewMockOrganizationRepository()
 	mockInvRepo := NewMockUserInvitationRepository()
-	mockAudit := NewMockAuditService()
+	mockAudit := NewMockAuditForOrg()
 
 	org := &models.Organization{
 		Name:             "Test Org",
@@ -348,7 +348,7 @@ func TestUpdateOrganization(t *testing.T) {
 func TestInviteUserToOrganization(t *testing.T) {
 	mockOrgRepo := NewMockOrganizationRepository()
 	mockInvRepo := NewMockUserInvitationRepository()
-	mockAudit := NewMockAuditService()
+	mockAudit := NewMockAuditForOrg()
 
 	org := &models.Organization{
 		Name:             "Test Org",

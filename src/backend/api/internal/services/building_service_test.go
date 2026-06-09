@@ -355,7 +355,6 @@ func (m *TestBuildingRepository) GetBuildingUnits(buildingID int, offset, limit 
 			Floor:       1,
 			Section:     "A",
 			UnitType:    "Shop",
-			MonthlyRent: 2500.0,
 			Active:      true,
 			TenantName:  "John Doe",
 			LeaseActive: true,
@@ -367,7 +366,6 @@ func (m *TestBuildingRepository) GetBuildingUnits(buildingID int, offset, limit 
 			Floor:       1,
 			Section:     "A",
 			UnitType:    "Shop",
-			MonthlyRent: 2000.0,
 			Active:      true,
 			TenantName:  "",
 			LeaseActive: false,
@@ -500,6 +498,8 @@ func createTestBuildingService() (*BuildingService, *TestBuildingRepository, *Te
 	// Create a minimal service for testing validation methods
 	service := &BuildingService{
 		buildingRepo:      buildingRepo,
+		propertyRepo:      propertyRepo,
+		auditService:      auditService,
 		metadataValidator: metadataValidator,
 	}
 
@@ -541,7 +541,7 @@ func TestBuildingService_ValidateBuildingCodeUniqueness(t *testing.T) {
 		BuildingCode: "B001",
 		ActiveStatus: true,
 	}
-	buildingRepo.buildings[1] = existingBuilding
+	buildingRepo.Create(existingBuilding)
 
 	// Test duplicate building code
 	err := service.ValidateBuildingCodeUniqueness(1, "B001", nil)
@@ -1799,6 +1799,8 @@ func createFullBuildingService() (*BuildingService, *TestBuildingRepository, *Te
 	// Create service with all dependencies for comprehensive testing
 	service := &BuildingService{
 		buildingRepo:      buildingRepo,
+		propertyRepo:      propertyRepo,
+		auditService:      auditService,
 		metadataValidator: metadataValidator,
 	}
 

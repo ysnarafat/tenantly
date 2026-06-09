@@ -54,7 +54,6 @@ CREATE TABLE units (
     floor INTEGER,
     section VARCHAR(50),
     unit_type VARCHAR(50) NOT NULL CHECK (unit_type IN ('Shop', 'Apartment', 'Office', 'Parking', 'Storage', 'Other')),
-    monthly_rent DECIMAL(10,2) NOT NULL,
     metadata JSONB, -- Type-specific attributes (area_sqft, bedrooms, etc.)
     active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC'),

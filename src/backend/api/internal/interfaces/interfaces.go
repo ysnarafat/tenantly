@@ -261,6 +261,9 @@ type PaymentRepositoryInterface interface {
 	GetDashboardSummary() (*models.DashboardSummary, error)
 	GetBuildingLevelSummary() (map[string]interface{}, error)
 	GetBuildingPaymentAnalytics(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentAnalytics, error)
+	SearchLeases(orgID int, query string) ([]*models.LeaseSearchResult, error)
+	GetActiveLeasesForPeriod(orgID, month, year int, buildingID *int) ([]*models.LeaseSearchResult, error)
+	CheckPaymentExists(unitID, month, year int) (bool, error)
 }
 
 // PaymentServiceInterface defines the interface for payment service operations
@@ -268,6 +271,7 @@ type PaymentServiceInterface interface {
 	CreatePayment(req *models.CreatePaymentRequest, userID int) (*models.Payment, error)
 	GetPayment(id int) (*models.PaymentWithDetails, error)
 	UpdatePayment(id int, req *models.UpdatePaymentRequest, userID int) (*models.Payment, error)
+	GetPayments(page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
 	GetPaymentsByBuilding(buildingID int, page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
 	GetPaymentsByProperty(propertyID int, page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
 	GenerateBuildingPaymentReport(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error)
@@ -275,6 +279,10 @@ type PaymentServiceInterface interface {
 	GetDashboardSummaryWithBuildingContext() (*models.DashboardSummary, error)
 	ProcessBulkPayments(requests []*models.CreatePaymentRequest, userID int) ([]*models.Payment, []error)
 	GetPaymentAnalyticsByBuilding(buildingID int, period string) (*models.BuildingPaymentAnalytics, error)
+	CanUserAccessPayment(userID int, userRole string, payment *models.PaymentWithDetails, userOrgID int) bool
+	LogPaymentAccess(userID int, action string, paymentID int, allowed bool)
+	SearchLeases(orgID int, query string) (*models.LeaseSearchResponse, error)
+	GenerateMonthlyPayments(req *models.GenerateMonthlyPaymentsRequest, orgID, userID int) (*models.GenerateMonthlyPaymentsResult, error)
 }
 
 // NotificationRepositoryInterface defines the interface for notification repository operations

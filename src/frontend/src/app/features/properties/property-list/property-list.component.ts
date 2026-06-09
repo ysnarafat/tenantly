@@ -25,6 +25,7 @@ import {
   Property,
   Building,
   Unit,
+  UnitWithDetails,
   BuildingListResponse,
   UnitListResponse,
 } from '../../../core/models';
@@ -32,6 +33,8 @@ import { DisplayedProperty, PropertyCardComponent } from '../property-card/prope
 import { PropertyFormDialogComponent } from '../property-form-dialog/property-form-dialog';
 import { BuildingFormDialogComponent } from '../building-form-dialog/building-form-dialog';
 import { UnitFormDialogComponent } from '../unit-form-dialog/unit-form-dialog';
+import { PaymentCreateDialog } from '../../payments/payment-list/payment-list';
+import { PaymentService } from '../../../core/services/payment.service';
 
 interface PropertyWithHierarchy extends Property {
   buildings?: BuildingWithUnits[];
@@ -39,7 +42,7 @@ interface PropertyWithHierarchy extends Property {
 }
 
 interface BuildingWithUnits extends Building {
-  units?: Unit[];
+  units?: UnitWithDetails[];
   expanded?: boolean;
 }
 
@@ -66,6 +69,7 @@ export class PropertyListComponent implements OnInit {
   private buildingService = inject(BuildingService);
   private unitService = inject(UnitService);
   private dialog = inject(MatDialog);
+  private paymentService = inject(PaymentService);
 
   // Store selectors
   properties = this.store.selectSignal(selectAllProperties);
@@ -112,7 +116,10 @@ export class PropertyListComponent implements OnInit {
   loadBuildings(propertyId: number) {
     this.buildingService.getBuildingsByProperty(propertyId).subscribe({
       next: (response: BuildingListResponse) => {
-        const buildings = response.buildings.map((b: Building) => ({ ...b, expanded: false }));
+        const buildings = (response.buildings ?? []).map((b: Building) => ({
+          ...b,
+          expanded: false,
+        }));
         this.loadedBuildings.update((map) => {
           const newMap = new Map(map);
           newMap.set(propertyId, buildings);
@@ -121,6 +128,11 @@ export class PropertyListComponent implements OnInit {
       },
       error: (err: unknown) => {
         console.error('Error loading buildings:', err);
+        this.loadedBuildings.update((map) => {
+          const newMap = new Map(map);
+          newMap.set(propertyId, []);
+          return newMap;
+        });
       },
     });
   }
@@ -136,7 +148,7 @@ export class PropertyListComponent implements OnInit {
   loadUnits(building: BuildingWithUnits) {
     this.unitService.getUnitsByBuilding(building.id).subscribe({
       next: (response: UnitListResponse) => {
-        building.units = response.units;
+        building.units = response.units as UnitWithDetails[];
       },
       error: (err: unknown) => {
         console.error('Error loading units:', err);
@@ -296,5 +308,37 @@ export class PropertyListComponent implements OnInit {
       // Reload units for this building after deletion
       setTimeout(() => this.loadUnits(building), 500);
     }
+  }
+
+  addPaymentForUnit(
+    unit: UnitWithDetails,
+    building: BuildingWithUnits,
+    property: DisplayedProperty
+  ) {
+    this.paymentService.searchLeases(unit.unit_number).subscribe({
+      next: (res) => {
+        const lease = res.results.find((l) => l.unit_id === unit.id) ?? null;
+        const ref = this.dialog.open(PaymentCreateDialog, {
+          width: '560px',
+          maxWidth: '95vw',
+          data: {
+            unit_id: unit.id,
+            unit_number: unit.unit_number,
+            building_name: building.building_name,
+            property_name: property.property_name,
+            lease,
+          },
+        });
+        ref.afterClosed().subscribe((req) => {
+          if (req) {
+            this.paymentService.createPayment(req).subscribe({
+              next: () => {},
+              error: (err: unknown) => console.error('Failed to create payment', err),
+            });
+          }
+        });
+      },
+      error: (err: unknown) => console.error('Failed to load lease', err),
+    });
   }
 }

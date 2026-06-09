@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export type LeaseType = 'Residential' | 'Commercial';
@@ -44,13 +44,15 @@ export interface Lease {
 }
 
 export interface LeaseWithDetails extends Lease {
+  building_id: number;
+  property_id: number;
   property_name: string;
   building_name: string;
   building_code: string;
   unit_number: string;
   unit_type: string;
   tenant_name: string;
-  tenant_phone: string;
+  tenant_phone?: string;
   is_expired: boolean;
   days_remaining: number;
 }
@@ -136,6 +138,8 @@ export class LeaseService {
       organization_id: 1,
       created_at: '2024-01-01T00:00:00Z',
       updated_at: '2024-01-01T00:00:00Z',
+      building_id: 1,
+      property_id: 1,
       property_name: 'Sunrise Apartments',
       building_name: 'Building A',
       building_code: 'BLD-A',
@@ -160,6 +164,8 @@ export class LeaseService {
       organization_id: 1,
       created_at: '2023-06-01T00:00:00Z',
       updated_at: '2023-06-01T00:00:00Z',
+      building_id: 2,
+      property_id: 1,
       property_name: 'Commercial Plaza',
       building_name: 'Building B',
       building_code: 'BLD-B',
@@ -237,6 +243,8 @@ export class LeaseService {
           organization_id: 1,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
+          building_id: 1,
+          property_id: 1,
           property_name: 'Demo Property',
           building_name: 'Demo Building',
           building_code: 'DEMO',
@@ -381,8 +389,9 @@ export class LeaseService {
       });
     }
 
-    const params = new HttpParams().set('active', 'true');
-    return this.http.get<LeaseWithDetails[]>(this.apiUrl, { params });
+    return this.http
+      .get<{ leases: LeaseWithDetails[] }>(this.apiUrl)
+      .pipe(map((res) => res.leases ?? []));
   }
 
   getExpiringLeases(days = 30): Observable<LeaseWithDetails[]> {

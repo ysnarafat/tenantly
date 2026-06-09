@@ -12,7 +12,6 @@ const (
 	UnitFloor          = "floor"
 	UnitSection        = "section"
 	UnitType           = "unit_type"
-	UnitMonthlyRent    = "monthly_rent"
 	UnitMetadata       = "metadata"
 	UnitActive         = "active"
 	UnitCreatedAt      = "created_at"
@@ -31,7 +30,6 @@ func UnitAllColumns() string {
 		UnitFloor + ", " +
 		UnitSection + ", " +
 		UnitType + ", " +
-		UnitMonthlyRent + ", " +
 		UnitMetadata + ", " +
 		UnitActive + ", " +
 		UnitCreatedAt + ", " +
@@ -53,7 +51,6 @@ func UnitSelectWithAlias(alias string) string {
 		alias + "." + UnitFloor + ", " +
 		alias + "." + UnitSection + ", " +
 		alias + "." + UnitType + ", " +
-		alias + "." + UnitMonthlyRent + ", " +
 		alias + "." + UnitMetadata + ", " +
 		alias + "." + UnitActive + ", " +
 		alias + "." + UnitCreatedAt + ", " +

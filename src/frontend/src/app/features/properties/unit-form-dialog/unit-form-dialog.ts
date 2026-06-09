@@ -1,6 +1,13 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  Validators,
+  ReactiveFormsModule,
+  AbstractControl,
+  ValidationErrors,
+} from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -8,7 +15,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslateModule } from '@ngx-translate/core';
-import { Unit, UnitType, Building, Property } from '../../../core/models';
+import { Unit, UnitType, Building, Property, BuildingType } from '../../../core/models';
 
 export interface UnitFormDialogData {
   unit?: Unit;
@@ -40,28 +47,56 @@ export class UnitFormDialogComponent implements OnInit {
   public data = inject<UnitFormDialogData>(MAT_DIALOG_DATA);
 
   unitForm!: FormGroup;
-  unitTypes: UnitType[] = ['Shop', 'Apartment', 'Office', 'Parking', 'Storage', 'Other'];
+  allowedUnitTypes: UnitType[] = [];
+
+  private readonly unitTypesByBuildingType: Record<BuildingType, UnitType[]> = {
+    Residential: ['Apartment', 'Parking', 'Storage'],
+    Commercial: ['Shop', 'Office', 'Parking', 'Storage'],
+    Mixed: ['Shop', 'Apartment', 'Office', 'Parking', 'Storage', 'Other'],
+  };
 
   ngOnInit() {
+    this.updateAllowedUnitTypes();
     this.initializeForm();
+  }
+
+  private updateAllowedUnitTypes() {
+    this.allowedUnitTypes = this.getUnitTypesForBuilding(this.data.building.building_type);
+  }
+
+  getUnitTypesForBuilding(buildingType: BuildingType): UnitType[] {
+    return this.unitTypesByBuildingType[buildingType] || [];
   }
 
   private initializeForm() {
     const unit = this.data.unit;
+    const defaultUnitType = this.allowedUnitTypes.includes(unit?.unit_type as UnitType)
+      ? unit?.unit_type
+      : this.allowedUnitTypes[0];
 
     this.unitForm = this.fb.group({
       unit_number: [unit?.unit_number || '', [Validators.required, Validators.maxLength(50)]],
       unit_name: [unit?.unit_name || '', [Validators.maxLength(100)]],
-      unit_type: [unit?.unit_type || 'Apartment', [Validators.required]],
+      unit_type: [
+        defaultUnitType || 'Apartment',
+        [Validators.required, this.unitTypeValidator.bind(this)],
+      ],
       floor: [unit?.floor || null, [Validators.min(0), Validators.max(200)]],
       section: [unit?.section || '', [Validators.maxLength(50)]],
-      monthly_rent: [unit?.monthly_rent || null, [Validators.required, Validators.min(0)]],
     });
 
     // Disable unit_number in edit mode (it's the identifier)
     if (this.data.mode === 'edit') {
       this.unitForm.get('unit_number')?.disable();
     }
+  }
+
+  private unitTypeValidator(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) {
+      return null;
+    }
+    const isAllowed = this.allowedUnitTypes.includes(control.value as UnitType);
+    return isAllowed ? null : { invalidUnitType: { value: control.value } };
   }
 
   onSubmit() {
@@ -111,6 +146,11 @@ export class UnitFormDialogComponent implements OnInit {
     if (control.errors['max']) {
       return `Maximum value is ${control.errors['max'].max}`;
     }
+    if (control.errors['invalidUnitType']) {
+      const buildingType = this.data.building.building_type;
+      const allowedTypes = this.allowedUnitTypes.join(', ');
+      return `${control.value} is not allowed in ${buildingType} buildings. Allowed types: ${allowedTypes}`;
+    }
     return 'Invalid value';
   }
 
@@ -121,7 +161,6 @@ export class UnitFormDialogComponent implements OnInit {
       unit_type: 'Unit Type',
       floor: 'Floor',
       section: 'Section',
-      monthly_rent: 'Monthly Rent',
     };
     return labels[fieldName] || fieldName;
   }

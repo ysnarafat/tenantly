@@ -7,6 +7,21 @@
       "Bash(git add *)",
       "Bash(git rebase *)",
       "Bash(go build *)",
+      "Bash(go vet *)",
+      "Bash(go test *)",
+      "Bash(go tool *)",
+      "Bash(npx tsc *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git reset *)",
+      "Bash(go mod *)",
+      "Bash(go get *)",
+      "Bash(GIT_EDITOR=true git rebase *)",
+      "Bash(git -c core.editor=true rebase --continue)",
+      "Bash(EDITOR=true git rebase --continue)",
+      "Bash(git am *)",
+      "Bash(git apply *)",
+      "Bash(git stash *)",
+      "Bash(git config *)"
     ]
   }
 }

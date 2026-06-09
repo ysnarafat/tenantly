@@ -1,6 +1,8 @@
 package config
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -67,12 +69,30 @@ func Load() (*Config, error) {
 		fmt.Printf("Warning: Error loading .env file: %v\n", err)
 	}
 
+	// Load and validate JWT secret
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		env := os.Getenv("ENVIRONMENT")
+		if env == "production" {
+			return nil, fmt.Errorf("CRITICAL: JWT_SECRET environment variable must be set in production")
+		}
+		// Development: generate secure random value
+		fmt.Println("⚠️  WARNING: JWT_SECRET not set. Generating cryptographically secure random value for development.")
+		jwtSecret = generateSecureRandom(32)
+		fmt.Printf("Generated JWT_SECRET: %s\n", jwtSecret)
+	}
+
+	// Validate JWT secret strength
+	if len(jwtSecret) < 32 {
+		return nil, fmt.Errorf("CRITICAL: JWT_SECRET must be at least 32 characters (current: %d). Use 'openssl rand -base64 32' to generate", len(jwtSecret))
+	}
+
 	jwtExpiration, _ := time.ParseDuration(getEnv("JWT_EXPIRATION", "8h"))
 	smtpPort, _ := strconv.Atoi(getEnv("SMTP_PORT", "587"))
 
 	config := &Config{
 		DatabaseURL:   getEnv("DATABASE_URL", "postgres://postgres:password@localhost:5432/tenantly?sslmode=disable"),
-		JWTSecret:     getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
+		JWTSecret:     jwtSecret,
 		JWTExpiration: jwtExpiration,
 		SMSProvider: SMSConfig{
 			Provider: getEnv("SMS_PROVIDER", "ssl_wireless"),
@@ -103,4 +123,14 @@ func getEnv(key, defaultValue string) string {
 	}
 
 	return defaultValue
+}
+
+// generateSecureRandom creates a cryptographically secure random string
+func generateSecureRandom(length int) string {
+	b := make([]byte, length)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(fmt.Sprintf("failed to generate random bytes: %v", err))
+	}
+	return base64.StdEncoding.EncodeToString(b)
 }

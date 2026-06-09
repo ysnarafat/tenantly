@@ -1,3 +1,4 @@
+import * as AuthSelectors from './auth.selectors';
 import {
   selectUserRole,
   selectUserOrganizationId,
@@ -8,6 +9,8 @@ import {
   selectCanInviteUsers,
 } from './auth.selectors';
 import { User } from '../../core/services/auth.service';
+import { AuthState } from './auth.reducer';
+import { AppState } from '../index';
 
 describe('Auth Selectors', () => {
   const mockUser: User = {
@@ -26,7 +29,16 @@ describe('Auth Selectors', () => {
   const mockOrg1 = {
     id: 10,
     organization_id: 100,
-    organization: { id: 100, name: 'Acme Corp', created_at: '', updated_at: '' },
+    organization: {
+      id: 100,
+      name: 'Acme Corp',
+      slug: 'acme-corp',
+      subscriptionTier: 'basic' as const,
+      maxUsers: 50,
+      active: true,
+      created_at: '',
+      updated_at: '',
+    },
     role: 'Admin',
     created_at: '',
     updated_at: '',
@@ -35,7 +47,16 @@ describe('Auth Selectors', () => {
   const mockOrg2 = {
     id: 11,
     organization_id: 101,
-    organization: { id: 101, name: 'Beta Ltd', created_at: '', updated_at: '' },
+    organization: {
+      id: 101,
+      name: 'Beta Ltd',
+      slug: 'beta-ltd',
+      subscriptionTier: 'professional' as const,
+      maxUsers: 100,
+      active: true,
+      created_at: '',
+      updated_at: '',
+    },
     role: 'PropertyManager',
     created_at: '',
     updated_at: '',

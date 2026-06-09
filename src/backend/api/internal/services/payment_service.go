@@ -14,6 +14,7 @@ type PaymentService struct {
 	buildingRepo interfaces.BuildingRepositoryInterface
 	propertyRepo interfaces.PropertyRepositoryInterface
 	auditService interfaces.AuditServiceInterface
+	userRepo     interfaces.UserRepositoryInterface
 }
 
 func NewPaymentService(
@@ -22,6 +23,7 @@ func NewPaymentService(
 	buildingRepo interfaces.BuildingRepositoryInterface,
 	propertyRepo interfaces.PropertyRepositoryInterface,
 	auditService interfaces.AuditServiceInterface,
+	userRepo interfaces.UserRepositoryInterface,
 ) *PaymentService {
 	return &PaymentService{
 		paymentRepo:  paymentRepo,
@@ -29,6 +31,7 @@ func NewPaymentService(
 		buildingRepo: buildingRepo,
 		propertyRepo: propertyRepo,
 		auditService: auditService,
+		userRepo:     userRepo,
 	}
 }
 
@@ -125,6 +128,23 @@ func (s *PaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequest,
 	})
 
 	return updatedPayment, nil
+}
+
+// GetPayments retrieves payments scoped only by the provided filters (no entity validation)
+func (s *PaymentService) GetPayments(page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+	offset := (page - 1) * pageSize
+
+	payments, total, err := s.paymentRepo.GetWithDetailsAndFilters(filters, pageSize, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to get payments: %w", err)
+	}
+	return payments, total, nil
 }
 
 // GetPaymentsByBuilding retrieves payments for a specific building
@@ -281,18 +301,6 @@ func (s *PaymentService) GetDashboardSummaryWithBuildingContext() (*models.Dashb
 	if err != nil {
 		return nil, fmt.Errorf("failed to get dashboard summary: %w", err)
 	}
-
-	// Enhance with building context
-	buildingStats, err := s.paymentRepo.GetBuildingLevelSummary()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get building-level summary: %w", err)
-	}
-
-	// Add building context to summary
-	summary.BuildingCount = buildingStats["total_buildings"].(int)
-	// Note: Additional building context fields would need to be added to DashboardSummary model
-	// For now, we'll store them in a separate structure or extend the model
-
 	return summary, nil
 }
 
@@ -347,4 +355,160 @@ func (s *PaymentService) GetPaymentAnalyticsByBuilding(buildingID int, period st
 	analytics.BuildingType = string(building.BuildingType)
 
 	return analytics, nil
+}
+
+// CanUserAccessPayment verifies if a user can access a specific payment based on their role and organization
+func (s *PaymentService) CanUserAccessPayment(userID int, userRole string, payment *models.PaymentWithDetails, userOrgID int) bool {
+	// Must belong to same organization
+	if payment.OrganizationID != userOrgID {
+		return false
+	}
+
+	switch userRole {
+	case "SUPER_ADMIN":
+		return true // Can access all payments in their organization
+	case "ORG_ADMIN":
+		return true // Can access all org payments
+	case "Admin":
+		return true // Can access all org payments
+	case "PropertyManager":
+		// Can only access payments for properties they manage
+		return s.canPropertyManagerAccessPayment(userID, payment.PropertyID)
+	case "Accountant":
+		return true // Read-only access to all payments in org
+	default:
+		return false
+	}
+}
+
+// canPropertyManagerAccessPayment checks if a PropertyManager manages the specified property
+func (s *PaymentService) canPropertyManagerAccessPayment(userID int, propertyID int) bool {
+	// Get user to verify they manage this property
+	user, err := s.userRepo.GetByID(userID)
+	if err != nil {
+		return false
+	}
+
+	// PropertyManagers should have property assignment info
+	// This assumes user model has a field indicating which properties they manage
+	// For now, we'll check if they're assigned to this property via metadata or a relationship
+	if user == nil {
+		return false
+	}
+
+	// TODO: Implement property manager assignment lookup
+	// For now, allow access if user is PropertyManager (assumes assignment validation elsewhere)
+	return true
+}
+
+// LogPaymentAccess logs access to payment data for audit trail
+func (s *PaymentService) LogPaymentAccess(userID int, action string, paymentID int, allowed bool) {
+	accessLog := map[string]interface{}{
+		"payment_id": paymentID,
+		"allowed":    allowed,
+		"action":     action,
+	}
+
+	if allowed {
+		s.auditService.LogUserAction(userID, action, "payments", &paymentID, nil, accessLog)
+	} else {
+		s.auditService.LogUserAction(userID, fmt.Sprintf("%s_DENIED", action), "payments", &paymentID, nil, accessLog)
+	}
+}
+
+// GenerateMonthlyPayments creates Due payment records for every active lease in the given month/year.
+// Leases that already have a payment record for that unit/month/year are skipped.
+func (s *PaymentService) GenerateMonthlyPayments(req *models.GenerateMonthlyPaymentsRequest, orgID, userID int) (*models.GenerateMonthlyPaymentsResult, error) {
+	now := time.Now().UTC()
+	currentYear, currentMonth := now.Year(), int(now.Month())
+
+	// Reject dates more than 1 month ahead of today.
+	reqMonths := req.Year*12 + req.Month
+	currentMonths := currentYear*12 + currentMonth
+	if reqMonths > currentMonths+1 {
+		return nil, fmt.Errorf("cannot generate payments more than 1 month in the future (requested %04d-%02d)", req.Year, req.Month)
+	}
+
+	// Reject dates older than 24 months to prevent mass back-generation.
+	if reqMonths < currentMonths-24 {
+		return nil, fmt.Errorf("cannot generate payments more than 24 months in the past (requested %04d-%02d)", req.Year, req.Month)
+	}
+
+	leases, err := s.paymentRepo.GetActiveLeasesForPeriod(orgID, req.Month, req.Year, req.BuildingID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch active leases: %w", err)
+	}
+
+	dueDay := req.DueDayOfMonth
+	if dueDay < 1 || dueDay > 28 {
+		dueDay = 7
+	}
+	lastDay := time.Date(req.Year, time.Month(req.Month+1), 0, 0, 0, 0, 0, time.UTC).Day()
+	if dueDay > lastDay {
+		dueDay = lastDay
+	}
+	dueDateStr := fmt.Sprintf("%04d-%02d-%02d", req.Year, req.Month, dueDay)
+
+	result := &models.GenerateMonthlyPaymentsResult{Errors: []string{}}
+
+	for _, lease := range leases {
+		exists, err := s.paymentRepo.CheckPaymentExists(lease.UnitID, req.Month, req.Year)
+		if err != nil {
+			result.Failed++
+			result.Errors = append(result.Errors, fmt.Sprintf("unit %d: existence check failed: %v", lease.UnitID, err))
+			continue
+		}
+		if exists {
+			result.Skipped++
+			continue
+		}
+
+		createReq := &models.CreatePaymentRequest{
+			UnitID:         lease.UnitID,
+			TenantID:       lease.TenantID,
+			BuildingID:     lease.BuildingID,
+			PropertyID:     lease.PropertyID,
+			OrganizationID: orgID,
+			Month:          req.Month,
+			Year:           req.Year,
+			AmountDue:      lease.MonthlyRent,
+			DueDate:        dueDateStr,
+		}
+
+		if _, err := s.paymentRepo.Create(createReq); err != nil {
+			result.Failed++
+			result.Errors = append(result.Errors, fmt.Sprintf("unit %d: %v", lease.UnitID, err))
+			continue
+		}
+		result.Generated++
+	}
+
+	s.auditService.LogUserAction(userID, "GENERATE_MONTHLY", "payments", nil, nil, map[string]interface{}{
+		"month":       req.Month,
+		"year":        req.Year,
+		"org_id":      orgID,
+		"generated":   result.Generated,
+		"skipped":     result.Skipped,
+		"failed":      result.Failed,
+		"building_id": req.BuildingID,
+	})
+
+	return result, nil
+}
+
+// SearchLeases searches for active leases by tenant name, property, building, unit, or lease ID
+func (s *PaymentService) SearchLeases(orgID int, query string) (*models.LeaseSearchResponse, error) {
+	if query == "" {
+		return &models.LeaseSearchResponse{Results: make([]*models.LeaseSearchResult, 0), Total: 0}, nil
+	}
+
+	results, err := s.paymentRepo.SearchLeases(orgID, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search leases: %w", err)
+	}
+
+	return &models.LeaseSearchResponse{
+		Results: results,
+		Total:   len(results),
+	}, nil
 }

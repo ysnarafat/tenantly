@@ -134,7 +134,7 @@ describe('Login Component', () => {
   });
 
   it('should have error signal updated from authService', () => {
-    const error = { message: 'Test error' };
+    const error = 'Test error';
     errorSubject.next(error);
     expect(component.error()).toBe(error);
   });

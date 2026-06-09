@@ -6,7 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Property, Building, Unit, UnitType } from '../../../core/models';
+import { Property, Building, Unit, UnitType, UnitWithDetails } from '../../../core/models';
 
 export interface DisplayedProperty extends Property {
   expanded: boolean;
@@ -15,7 +15,7 @@ export interface DisplayedProperty extends Property {
 
 export interface BuildingWithUnits extends Building {
   expanded: boolean;
-  units?: Unit[];
+  units?: UnitWithDetails[];
 }
 
 @Component({
@@ -46,11 +46,16 @@ export class PropertyCardComponent {
     property: DisplayedProperty;
   }>();
   @Output() editUnit = new EventEmitter<{
-    unit: Unit;
+    unit: UnitWithDetails;
     building: BuildingWithUnits;
     property: DisplayedProperty;
   }>();
-  @Output() deleteUnit = new EventEmitter<{ unit: Unit; building: BuildingWithUnits }>();
+  @Output() deleteUnit = new EventEmitter<{ unit: UnitWithDetails; building: BuildingWithUnits }>();
+  @Output() addPayment = new EventEmitter<{
+    unit: UnitWithDetails;
+    building: BuildingWithUnits;
+    property: DisplayedProperty;
+  }>();
 
   onToggleProperty() {
     this.toggleProperty.emit(this.property);
@@ -76,12 +81,16 @@ export class PropertyCardComponent {
     this.addUnit.emit({ building, property: this.property });
   }
 
-  onEditUnit(unit: Unit, building: BuildingWithUnits) {
+  onEditUnit(unit: UnitWithDetails, building: BuildingWithUnits) {
     this.editUnit.emit({ unit, building, property: this.property });
   }
 
-  onDeleteUnit(unit: Unit, building: BuildingWithUnits) {
+  onDeleteUnit(unit: UnitWithDetails, building: BuildingWithUnits) {
     this.deleteUnit.emit({ unit, building });
+  }
+
+  onAddPayment(unit: UnitWithDetails, building: BuildingWithUnits) {
+    this.addPayment.emit({ unit, building, property: this.property });
   }
 
   getPropertyTypeColor(type: string): string {

@@ -198,16 +198,15 @@ type MetadataSchemaResponse struct {
 
 // BuildingUnitSummary represents unit summary for a building
 type BuildingUnitSummary struct {
-	UnitID      int     `json:"unit_id"`
-	UnitNumber  string  `json:"unit_number"`
-	UnitName    string  `json:"unit_name"`
-	Floor       int     `json:"floor"`
-	Section     string  `json:"section"`
-	UnitType    string  `json:"unit_type"`
-	MonthlyRent float64 `json:"monthly_rent"`
-	Active      bool    `json:"active"`
-	TenantName  string  `json:"tenant_name,omitempty"`
-	LeaseActive bool    `json:"lease_active"`
+	UnitID      int    `json:"unit_id"`
+	UnitNumber  string `json:"unit_number"`
+	UnitName    string `json:"unit_name"`
+	Floor       int    `json:"floor"`
+	Section     string `json:"section"`
+	UnitType    string `json:"unit_type"`
+	Active      bool   `json:"active"`
+	TenantName  string `json:"tenant_name,omitempty"`
+	LeaseActive bool   `json:"lease_active"`
 }
 
 // BuildingUnitsResponse represents response for building units endpoint

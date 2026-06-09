@@ -39,7 +39,7 @@
     <mat-form-field appearance="outline" class="full-width">
       <mat-label>{{ 'UNIT_FORM_DIALOG.FIELDS.UNIT_TYPE' | translate }}</mat-label>
       <mat-select formControlName="unit_type" required>
-        @for (type of unitTypes; track type) {
+        @for (type of allowedUnitTypes; track type) {
         <mat-option [value]="type">
           <mat-icon>{{ getUnitTypeIcon(type) }}</mat-icon>
           {{ type }}
@@ -47,6 +47,9 @@
         }
       </mat-select>
       <mat-icon matPrefix>category</mat-icon>
+      <mat-hint *ngIf="allowedUnitTypes.length > 0">
+        Valid types for {{ data.building.building_type }} buildings
+      </mat-hint>
       <mat-error>{{ getErrorMessage('unit_type') }}</mat-error>
     </mat-form-field>
 
@@ -76,20 +79,6 @@
         <mat-error>{{ getErrorMessage('section') }}</mat-error>
       </mat-form-field>
     </div>
-
-    <mat-form-field appearance="outline" class="full-width">
-      <mat-label>{{ 'UNIT_FORM_DIALOG.FIELDS.MONTHLY_RENT' | translate }}</mat-label>
-      <input
-        matInput
-        type="number"
-        formControlName="monthly_rent"
-        [placeholder]="'UNIT_FORM_DIALOG.PLACEHOLDERS.MONTHLY_RENT' | translate"
-        required
-      />
-      <mat-icon matPrefix>attach_money</mat-icon>
-      <span matTextPrefix>৳&nbsp;</span>
-      <mat-error>{{ getErrorMessage('monthly_rent') }}</mat-error>
-    </mat-form-field>
   </form>
 </mat-dialog-content>
 

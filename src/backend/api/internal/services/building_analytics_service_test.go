@@ -180,7 +180,6 @@ func (m *MockAnalyticsBuildingRepository) GetBuildingUnits(buildingID int, offse
 			Floor:       1,
 			Section:     "A",
 			UnitType:    "Shop",
-			MonthlyRent: 2500,
 			Active:      true,
 			TenantName:  "John Doe",
 			LeaseActive: true,
