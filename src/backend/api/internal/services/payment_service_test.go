@@ -194,6 +194,18 @@ func (m *MockPaymentRepo) CheckPaymentExists(unitID, month, year int) (bool, err
 	return false, nil
 }
 
+func (m *MockPaymentRepo) GetAgingBuckets(orgID int) (map[string]int64, error) {
+	return map[string]int64{"current": 0, "30d": 0, "60d": 0, "90d+": 0}, nil
+}
+
+func (m *MockPaymentRepo) GetMonthlyCollectionTrend(orgID int, months int) ([]*models.MonthlyCollectionTrend, error) {
+	return make([]*models.MonthlyCollectionTrend, 0), nil
+}
+
+func (m *MockPaymentRepo) GetTenantPaymentSummary(orgID int) ([]*models.TenantReportEntry, error) {
+	return make([]*models.TenantReportEntry, 0), nil
+}
+
 // ---------------------------------------------------------------------------
 // MockPaymentUnitRepo – implements interfaces.UnitRepositoryInterface
 // ---------------------------------------------------------------------------

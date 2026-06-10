@@ -554,3 +554,62 @@ mat-chip-set {
     grid-template-columns: 1fr;
   }
 }
+
+
+.ledger-results {
+  margin-top: 24px;
+  padding: 24px;
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
+
+  h3 {
+    margin: 0 0 16px;
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 600;
+  }
+}
+
+.ledger-summary {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+
+  .summary-item {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px 16px;
+    min-width: 140px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .summary-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .summary-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+
+    &.paid { color: var(--color-success); }
+    &.pending { color: #f57c00; }
+    &.overdue { color: var(--color-accent); }
+  }
+}
+
+.ledger-table {
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+
+  .status-paid { background-color: #e8f5e9; color: #2e7d32; }
+  .status-due { background-color: #fff3e0; color: #e65100; }
+  .status-overdue { background-color: #ffebee; color: #c62828; }
+  .status-partial { background-color: #e3f2fd; color: #1565c0; }
+}

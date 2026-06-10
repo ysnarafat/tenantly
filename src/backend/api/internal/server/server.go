@@ -94,7 +94,7 @@ func (s *Server) setupRoutes() {
 	tenantService := services.NewTenantService(tenantRepo, leaseRepo, auditService)
 	leaseService := services.NewLeaseService(leaseRepo, tenantRepo, unitRepo, auditService)
 	paymentService := services.NewPaymentService(paymentRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
-	reportService := services.NewReportService(paymentRepo)
+	reportService := services.NewReportService(paymentRepo, propertyRepo)
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService)
 	propertyHandler := handlers.NewPropertyHandler(propertyService)
@@ -298,6 +298,8 @@ func (s *Server) setupRoutes() {
 				reports.GET("/collection-summary", middleware.RequireAnyRole(), reportHandler.GetCollectionSummary)
 				reports.GET("/payment-analysis", middleware.RequireAnyRole(), reportHandler.GetPaymentAnalysis)
 				reports.GET("/dashboard-metrics", middleware.RequireAnyRole(), reportHandler.GetDashboardMetrics)
+				reports.GET("/tenant-summary", middleware.RequireAnyRole(), reportHandler.GetTenantSummary)
+				reports.GET("/property-analytics", middleware.RequireAnyRole(), reportHandler.GetPropertyAnalytics)
 			}
 		}
 	}

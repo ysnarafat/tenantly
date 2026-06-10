@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, JsonPipe } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -21,7 +21,10 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { TranslateModule } from '@ngx-translate/core';
 import { PermissionService } from '../../core/services/permission.service';
-import { ReportService, DashboardMetrics, CollectionSummaryReport, PaymentAnalysisReport } from '../../core/services/report.service';
+import { ReportService, DashboardMetrics, CollectionSummaryReport, PaymentAnalysisReport, FinancialLedgerReport, TenantSummaryReport, PropertyAnalyticsReport } from '../../core/services/report.service';
+import { PaymentService } from '../../core/services/payment.service';
+import { BuildingService } from '../../core/services/building.service';
+import { Building } from '../../core/models';
 
 export interface ReportTemplate {
   id: string;
@@ -64,6 +67,7 @@ export interface QuickMetric {
     MatProgressSpinnerModule,
     MatTooltipModule,
     TranslateModule,
+    JsonPipe,
   ],
   templateUrl: './report-analysis.html',
   styleUrls: ['./report-analysis.scss'],
@@ -74,6 +78,8 @@ export class ReportAnalysis implements OnInit {
   private snackBar = inject(MatSnackBar);
   private dialog = inject(MatDialog);
   private reportService = inject(ReportService);
+  private paymentService = inject(PaymentService);
+  private buildingService = inject(BuildingService);
 
   reportForm!: FormGroup;
   selectedReport: ReportTemplate | null = null;
@@ -87,6 +93,12 @@ export class ReportAnalysis implements OnInit {
   dashboardMetrics: DashboardMetrics | null = null;
   collectionReport: CollectionSummaryReport | null = null;
   paymentReport: PaymentAnalysisReport | null = null;
+  ledgerReport: FinancialLedgerReport | null = null;
+  tenantReport: TenantSummaryReport | null = null;
+  propertyAnalyticsReport: PropertyAnalyticsReport | null = null;
+  buildingReport: unknown | null = null;
+
+  buildings: Building[] = [];
 
   reports: ReportTemplate[] = [
     {
@@ -139,36 +151,44 @@ export class ReportAnalysis implements OnInit {
     },
   ];
 
-  quickMetrics: QuickMetric[] = [
-    {
-      label: 'Total Revenue',
-      value: '৳ 2,450,000',
-      trend: 12,
-      icon: 'attach_money',
-    },
-    {
-      label: 'Collection Rate',
-      value: '94.5%',
-      trend: 2.3,
-      icon: 'percent',
-    },
-    {
-      label: 'Outstanding Due',
-      value: '৳ 145,000',
-      trend: -8,
-      icon: 'warning',
-    },
-    {
-      label: 'Occupancy Rate',
-      value: '87%',
-      trend: 0,
-      icon: 'domain',
-    },
-  ];
+  get quickMetrics(): QuickMetric[] {
+    const c = this.dashboardMetrics?.collection_summary;
+    const p = this.dashboardMetrics?.payment_analysis;
+    return [
+      {
+        label: 'Total Revenue',
+        value: c ? `৳ ${c.total_collected.toLocaleString()}` : '—',
+        icon: 'attach_money',
+      },
+      {
+        label: 'Collection Rate',
+        value: c ? `${c.collection_rate.toFixed(1)}%` : '—',
+        icon: 'percent',
+      },
+      {
+        label: 'Outstanding Due',
+        value: c ? `৳ ${(c.total_due - c.total_collected).toLocaleString()}` : '—',
+        icon: 'warning',
+      },
+      {
+        label: 'Total Payments',
+        value: p ? p.total_payments.toString() : '—',
+        icon: 'payments',
+      },
+    ];
+  }
 
   ngOnInit() {
     this.initForm();
     this.loadDashboardMetrics();
+    this.loadBuildings();
+  }
+
+  loadBuildings() {
+    this.buildingService.getBuildings({ active: true }).subscribe({
+      next: (res) => { this.buildings = res.buildings ?? []; },
+      error: () => {},
+    });
   }
 
   initForm() {
@@ -195,6 +215,94 @@ export class ReportAnalysis implements OnInit {
         console.error('Error loading dashboard metrics:', error);
         this.snackBar.open('Error loading report data', 'Close', { duration: 3000 });
         this.loadingMetrics = false;
+      },
+    });
+  }
+
+  loadLedgerReport() {
+    const filters: Record<string, any> = {};
+    if (this.reportForm.get('startDate')?.value) {
+      const d = new Date(this.reportForm.get('startDate')!.value);
+      filters['month'] = d.getMonth() + 1;
+      filters['year'] = d.getFullYear();
+    }
+
+    this.generatingReport = true;
+    this.reportService.getFinancialLedger(1, 50, filters).subscribe({
+      next: (report) => {
+        this.ledgerReport = report;
+        this.generatingReport = false;
+        this.snackBar.open('Ledger report generated', 'Close', { duration: 2000 });
+      },
+      error: (error) => {
+        console.error('Error generating ledger report:', error);
+        this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+        this.generatingReport = false;
+      },
+    });
+  }
+
+  loadTenantSummary() {
+    this.generatingReport = true;
+    this.reportService.getTenantSummary().subscribe({
+      next: (report) => {
+        this.tenantReport = report;
+        this.generatingReport = false;
+        this.snackBar.open('Tenant report generated', 'Close', { duration: 2000 });
+      },
+      error: (error) => {
+        console.error('Error generating tenant report:', error);
+        this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+        this.generatingReport = false;
+      },
+    });
+  }
+
+  loadPropertyAnalytics() {
+    const startDate = this.reportForm.get('startDate')?.value;
+    const endDate = this.reportForm.get('endDate')?.value;
+    const start = startDate ? new Date(startDate).toISOString().split('T')[0] : undefined;
+    const end = endDate ? new Date(endDate).toISOString().split('T')[0] : undefined;
+
+    this.generatingReport = true;
+    this.reportService.getPropertyAnalytics(start, end).subscribe({
+      next: (report) => {
+        this.propertyAnalyticsReport = report;
+        this.generatingReport = false;
+        this.snackBar.open('Property analytics generated', 'Close', { duration: 2000 });
+      },
+      error: (error) => {
+        console.error('Error generating property analytics:', error);
+        this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+        this.generatingReport = false;
+      },
+    });
+  }
+
+  loadBuildingPerformance() {
+    const buildingIdStr = this.reportForm.get('buildingFilter')?.value;
+    const buildingId = parseInt(buildingIdStr, 10);
+    if (!buildingId) {
+      this.snackBar.open('Please select a building first', 'Close', { duration: 3000 });
+      return;
+    }
+
+    const startDate = this.reportForm.get('startDate')?.value;
+    const endDate = this.reportForm.get('endDate')?.value;
+    const start = startDate ? new Date(startDate).toISOString().split('T')[0] : new Date(new Date().setDate(1)).toISOString().split('T')[0];
+    const end = endDate ? new Date(endDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+
+    this.generatingReport = true;
+    this.paymentService.getBuildingReport(buildingId, start, end).subscribe({
+      next: (report) => {
+        this.buildingReport = report;
+        this.generatingReport = false;
+        this.snackBar.open('Building performance report generated', 'Close', { duration: 2000 });
+      },
+      error: (error) => {
+        console.error('Error generating building report:', error);
+        this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+        this.generatingReport = false;
       },
     });
   }
@@ -257,11 +365,23 @@ export class ReportAnalysis implements OnInit {
     const reportType = this.reportForm.get('reportType')?.value;
 
     switch (reportType) {
+      case 'ledger':
+        this.loadLedgerReport();
+        break;
       case 'collection_summary':
         this.loadCollectionSummary();
         break;
       case 'payment_analysis':
         this.loadPaymentAnalysis();
+        break;
+      case 'tenant_report':
+        this.loadTenantSummary();
+        break;
+      case 'property_analytics':
+        this.loadPropertyAnalytics();
+        break;
+      case 'building_performance':
+        this.loadBuildingPerformance();
         break;
       default:
         this.snackBar.open('Report type not yet implemented', 'Close', { duration: 3000 });

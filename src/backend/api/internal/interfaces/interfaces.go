@@ -259,6 +259,9 @@ type PaymentRepositoryInterface interface {
 	GetSystemPaymentStats(startDate, endDate time.Time) (interface{}, error)
 	GetBuildingPaymentsInPeriod(buildingID int, startDate, endDate time.Time, limit, offset int) ([]*models.PaymentWithDetails, int, error)
 	GetDashboardSummary() (*models.DashboardSummary, error)
+	GetAgingBuckets(orgID int) (map[string]int64, error)
+	GetMonthlyCollectionTrend(orgID int, months int) ([]*models.MonthlyCollectionTrend, error)
+	GetTenantPaymentSummary(orgID int) ([]*models.TenantReportEntry, error)
 	GetBuildingLevelSummary() (map[string]interface{}, error)
 	GetBuildingPaymentAnalytics(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentAnalytics, error)
 	SearchLeases(orgID int, query string) ([]*models.LeaseSearchResult, error)
@@ -385,4 +388,6 @@ type ReportServiceInterface interface {
 	FinancialLedgerReport(orgID int, filters map[string]interface{}, limit, offset int) (*models.FinancialLedgerReport, error)
 	CollectionSummaryReport(orgID int, startDate, endDate time.Time) (*models.CollectionSummaryReport, error)
 	PaymentAnalysisReport(orgID int, startDate, endDate time.Time) (*models.PaymentAnalysisReport, error)
+	TenantSummaryReport(orgID int) (*models.TenantSummaryReport, error)
+	PropertyAnalyticsReport(orgID int, startDate, endDate time.Time) (*models.PropertyAnalyticsReport, error)
 }
