@@ -287,6 +287,7 @@ func (s *Server) setupRoutes() {
 			}
 
 			dashboard := protected.Group("/dashboard")
+			dashboard.Use(middleware.RequireOrgContext())
 			{
 				dashboard.GET("/summary", middleware.RequireAnyRole(), paymentHandler.GetDashboardSummary)
 			}

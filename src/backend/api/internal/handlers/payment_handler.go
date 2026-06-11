@@ -198,7 +198,8 @@ func (h *PaymentHandler) GetPayments(c *gin.Context) {
 
 // GetDashboardSummary handles GET /dashboard/summary
 func (h *PaymentHandler) GetDashboardSummary(c *gin.Context) {
-	summary, err := h.paymentService.GetDashboardSummaryWithBuildingContext()
+	orgID := c.GetInt("org_id")
+	summary, err := h.paymentService.GetDashboardSummaryWithBuildingContext(orgID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

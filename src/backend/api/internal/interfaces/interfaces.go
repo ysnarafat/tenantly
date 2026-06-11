@@ -258,7 +258,7 @@ type PaymentRepositoryInterface interface {
 	GetPropertyPaymentStats(propertyID int, startDate, endDate time.Time) (interface{}, error)
 	GetSystemPaymentStats(startDate, endDate time.Time) (interface{}, error)
 	GetBuildingPaymentsInPeriod(buildingID int, startDate, endDate time.Time, limit, offset int) ([]*models.PaymentWithDetails, int, error)
-	GetDashboardSummary() (*models.DashboardSummary, error)
+	GetDashboardSummary(orgID int) (*models.DashboardSummary, error)
 	GetAgingBuckets(orgID int) (map[string]int64, error)
 	GetMonthlyCollectionTrend(orgID int, months int) ([]*models.MonthlyCollectionTrend, error)
 	GetTenantPaymentSummary(orgID int) ([]*models.TenantReportEntry, error)
@@ -280,7 +280,7 @@ type PaymentServiceInterface interface {
 	GetPaymentsByProperty(propertyID int, page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
 	GenerateBuildingPaymentReport(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error)
 	GeneratePropertyPaymentReport(propertyID int, startDate, endDate time.Time) (*models.PropertyPaymentReport, error)
-	GetDashboardSummaryWithBuildingContext() (*models.DashboardSummary, error)
+	GetDashboardSummaryWithBuildingContext(orgID int) (*models.DashboardSummary, error)
 	ProcessBulkPayments(requests []*models.CreatePaymentRequest, userID int) ([]*models.Payment, []error)
 	GetPaymentAnalyticsByBuilding(buildingID int, period string) (*models.BuildingPaymentAnalytics, error)
 	CanUserAccessPayment(userID int, userRole string, payment *models.PaymentWithDetails, userOrgID int) bool

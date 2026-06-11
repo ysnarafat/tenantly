@@ -159,7 +159,7 @@ func (m *MockPaymentRepo) GetBuildingPaymentsInPeriod(buildingID int, startDate,
 	return result, len(result), nil
 }
 
-func (m *MockPaymentRepo) GetDashboardSummary() (*models.DashboardSummary, error) {
+func (m *MockPaymentRepo) GetDashboardSummary(orgID int) (*models.DashboardSummary, error) {
 	if m.shouldFailDashboard {
 		return nil, errors.New("dashboard summary failed")
 	}
@@ -1519,7 +1519,7 @@ func TestGetDashboardSummaryWithBuildingContext(t *testing.T) {
 				}
 			}
 
-			summary, err := svc.GetDashboardSummaryWithBuildingContext()
+			summary, err := svc.GetDashboardSummaryWithBuildingContext(1)
 
 			if tc.wantErr {
 				if err == nil {

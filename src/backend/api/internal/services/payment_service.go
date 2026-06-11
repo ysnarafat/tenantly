@@ -295,9 +295,9 @@ func (s *PaymentService) GeneratePropertyPaymentReport(propertyID int, startDate
 	return report, nil
 }
 
-// GetDashboardSummaryWithBuildingContext returns dashboard summary with building-level context
-func (s *PaymentService) GetDashboardSummaryWithBuildingContext() (*models.DashboardSummary, error) {
-	summary, err := s.paymentRepo.GetDashboardSummary()
+// GetDashboardSummaryWithBuildingContext returns dashboard summary scoped to the given org.
+func (s *PaymentService) GetDashboardSummaryWithBuildingContext(orgID int) (*models.DashboardSummary, error) {
+	summary, err := s.paymentRepo.GetDashboardSummary(orgID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get dashboard summary: %w", err)
 	}

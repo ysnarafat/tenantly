@@ -553,7 +553,7 @@ func TestPaymentRepository_GetDashboardSummary(t *testing.T) {
 			t.Fatalf("failed to create payment: %v", err)
 		}
 
-		summary, err := repo.GetDashboardSummary()
+		summary, err := repo.GetDashboardSummary(orgID)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 			return

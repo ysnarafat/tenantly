@@ -95,7 +95,7 @@ func (m *mockPaymentService) GeneratePropertyPaymentReport(propertyID int, start
 	return m.generatePropertyReportFn(propertyID, startDate, endDate)
 }
 
-func (m *mockPaymentService) GetDashboardSummaryWithBuildingContext() (*models.DashboardSummary, error) {
+func (m *mockPaymentService) GetDashboardSummaryWithBuildingContext(orgID int) (*models.DashboardSummary, error) {
 	if m.getDashboardSummaryFn == nil {
 		return nil, errors.New("get dashboard summary not mocked")
 	}

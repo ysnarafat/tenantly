@@ -29,7 +29,7 @@ func (s *ReportService) FinancialLedgerReport(orgID int, filters map[string]inte
 		return nil, fmt.Errorf("failed to fetch payment ledger: %w", err)
 	}
 
-	summary, err := s.paymentRepo.GetDashboardSummary()
+	summary, err := s.paymentRepo.GetDashboardSummary(orgID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get summary: %w", err)
 	}
@@ -49,7 +49,7 @@ func (s *ReportService) FinancialLedgerReport(orgID int, filters map[string]inte
 
 // CollectionSummaryReport returns collection rates and payment summary
 func (s *ReportService) CollectionSummaryReport(orgID int, startDate, endDate time.Time) (*models.CollectionSummaryReport, error) {
-	summary, err := s.paymentRepo.GetDashboardSummary()
+	summary, err := s.paymentRepo.GetDashboardSummary(orgID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get collection summary: %w", err)
 	}

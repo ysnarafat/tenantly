@@ -191,9 +191,9 @@ func (r *PaymentRepository) GetSystemPaymentStats(startDate, endDate time.Time) 
 	return toSystemPaymentStats(row), nil
 }
 
-// GetDashboardSummary returns overall payment summary across the system
-func (r *PaymentRepository) GetDashboardSummary() (*models.DashboardSummary, error) {
-	row, err := r.queries.GetDashboardSummary(context.Background())
+// GetDashboardSummary returns payment summary scoped to the given organisation.
+func (r *PaymentRepository) GetDashboardSummary(orgID int) (*models.DashboardSummary, error) {
+	row, err := r.queries.GetDashboardSummary(context.Background(), int32(orgID))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get dashboard summary: %w", err)
 	}
