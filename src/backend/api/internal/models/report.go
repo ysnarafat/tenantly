@@ -47,6 +47,15 @@ type PropertyAnalyticsReport struct {
 	GeneratedAt    time.Time                 `json:"generated_at"`
 }
 
+// PaymentAnalyticsResult holds DB-aggregated counts for PaymentAnalysisReport.
+// Produced by a repository query; consumed by ReportService.
+type PaymentAnalyticsResult struct {
+	MethodCounts  map[string]int
+	StatusCounts  map[string]int64
+	DailyTrend    map[string]int64
+	TotalPayments int64
+}
+
 // FinancialLedgerReport complete transaction history with balances
 type FinancialLedgerReport struct {
 	OrganizationID int                   `json:"organization_id"`

@@ -206,6 +206,15 @@ func (m *MockPaymentRepo) GetTenantPaymentSummary(orgID int) ([]*models.TenantRe
 	return make([]*models.TenantReportEntry, 0), nil
 }
 
+func (m *MockPaymentRepo) GetPaymentAnalyticsByPeriod(orgID int, startDate, endDate time.Time) (*models.PaymentAnalyticsResult, error) {
+	return &models.PaymentAnalyticsResult{
+		MethodCounts:  map[string]int{},
+		StatusCounts:  map[string]int64{},
+		DailyTrend:    map[string]int64{},
+		TotalPayments: 0,
+	}, nil
+}
+
 // ---------------------------------------------------------------------------
 // MockPaymentUnitRepo – implements interfaces.UnitRepositoryInterface
 // ---------------------------------------------------------------------------

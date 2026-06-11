@@ -389,8 +389,89 @@ export class ReportAnalysis implements OnInit {
   }
 
   exportReport(format: 'pdf' | 'csv' | 'xlsx') {
-    this.snackBar.open(`Exporting as ${format.toUpperCase()}...`, 'Close', { duration: 2000 });
-    // Call export service
+    if (format !== 'csv') {
+      this.snackBar.open(`${format.toUpperCase()} export coming soon`, 'Close', { duration: 2000 });
+      return;
+    }
+
+    const reportType = this.selectedReport?.id ?? this.reportForm.get('reportType')?.value;
+    let csv = '';
+    let filename = 'report.csv';
+
+    if (reportType === 'ledger' && this.ledgerReport?.payments?.length) {
+      filename = 'financial-ledger.csv';
+      csv = this.toCsv(
+        ['Tenant', 'Unit', 'Building', 'Period', 'Due (৳)', 'Paid (৳)', 'Status'],
+        this.ledgerReport.payments.map((p: any) => [
+          p.tenant_name, p.unit_number, p.building_name,
+          `${p.month}/${p.year}`, p.amount_due, p.amount_paid, p.status,
+        ])
+      );
+    } else if (reportType === 'tenant_report' && this.tenantReport?.tenants?.length) {
+      filename = 'tenant-report.csv';
+      csv = this.toCsv(
+        ['Tenant', 'Phone', 'Email', 'Unit', 'Building', 'Property', 'Monthly Rent', 'Total Due', 'Total Paid', 'Balance', 'Lease Active'],
+        this.tenantReport.tenants.map(t => [
+          t.tenant_name, t.phone_number, t.email,
+          t.unit_number, t.building_name, t.property_name,
+          t.monthly_rent, t.total_due, t.total_paid, t.balance_due,
+          t.lease_active ? 'Yes' : 'No',
+        ])
+      );
+    } else if (reportType === 'building_performance' && this.buildingReport) {
+      filename = 'building-performance.csv';
+      const payments = (this.buildingReport as any).payments ?? [];
+      csv = this.toCsv(
+        ['Tenant', 'Unit', 'Period', 'Due (৳)', 'Paid (৳)', 'Status'],
+        payments.map((p: any) => [
+          p.tenant_name, p.unit_number, `${p.month}/${p.year}`,
+          p.amount_due, p.amount_paid, p.status,
+        ])
+      );
+    } else if (reportType === 'collection_summary' && this.collectionReport) {
+      filename = 'collection-summary.csv';
+      csv = this.toCsv(
+        ['Metric', 'Value'],
+        [
+          ['Collection Rate (%)', this.collectionReport.collection_rate.toFixed(2)],
+          ['Total Due', this.collectionReport.total_due],
+          ['Total Collected', this.collectionReport.total_collected],
+          ['Total Pending', this.collectionReport.total_pending],
+          ['Total Overdue', this.collectionReport.total_overdue],
+          ['Period', this.collectionReport.report_period],
+        ]
+      );
+    } else if (reportType === 'property_analytics' && this.propertyAnalyticsReport?.properties?.length) {
+      filename = 'property-analytics.csv';
+      csv = this.toCsv(
+        ['Property', 'Code', 'Type'],
+        this.propertyAnalyticsReport.properties.map(p => [p.property_name, p.property_code, p.property_type])
+      );
+    } else {
+      this.snackBar.open('Generate a report first before exporting', 'Close', { duration: 3000 });
+      return;
+    }
+
+    this.downloadCsv(csv, filename);
+    this.snackBar.open('CSV downloaded', 'Close', { duration: 2000 });
+  }
+
+  private toCsv(headers: string[], rows: any[][]): string {
+    const escape = (v: any) => {
+      const s = String(v ?? '');
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    return [headers, ...rows].map(row => row.map(escape).join(',')).join('\r\n');
+  }
+
+  private downloadCsv(csv: string, filename: string): void {
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   getReportsByCategory(category: string) {

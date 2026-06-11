@@ -135,42 +135,20 @@ func (s *ReportService) PropertyAnalyticsReport(orgID int, startDate, endDate ti
 	}, nil
 }
 
-// PaymentAnalysisReport returns payment methods and status distribution
+// PaymentAnalysisReport returns payment methods and status distribution.
+// All aggregations run in the database; no in-memory row scanning.
 func (s *ReportService) PaymentAnalysisReport(orgID int, startDate, endDate time.Time) (*models.PaymentAnalysisReport, error) {
-	filters := map[string]interface{}{
-		"organization_id": orgID,
-	}
-
-	payments, _, err := s.paymentRepo.GetWithDetailsAndFilters(filters, 10000, 0)
+	analytics, err := s.paymentRepo.GetPaymentAnalyticsByPeriod(orgID, startDate, endDate)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch payments: %w", err)
-	}
-
-	methodCounts := make(map[string]int)
-	statusCounts := make(map[string]int64)
-	dailyTrend := make(map[string]int64)
-
-	if payments != nil {
-		for _, p := range payments {
-			if p.CreatedAt.After(startDate) && p.CreatedAt.Before(endDate) {
-				method := "cash"
-				if p.PaymentMethod != "" {
-					method = p.PaymentMethod
-				}
-				methodCounts[method]++
-				statusCounts[string(p.Status)]++
-				day := p.CreatedAt.Format("2006-01-02")
-				dailyTrend[day]++
-			}
-		}
+		return nil, fmt.Errorf("failed to fetch payment analytics: %w", err)
 	}
 
 	return &models.PaymentAnalysisReport{
 		OrganizationID:     orgID,
-		PaymentMethods:     methodCounts,
-		StatusDistribution: statusCounts,
-		DailyTrend:         dailyTrend,
-		TotalPayments:      int64(len(payments)),
+		PaymentMethods:     analytics.MethodCounts,
+		StatusDistribution: analytics.StatusCounts,
+		DailyTrend:         analytics.DailyTrend,
+		TotalPayments:      analytics.TotalPayments,
 		ReportPeriod:       fmt.Sprintf("%s to %s", startDate.Format("2006-01-02"), endDate.Format("2006-01-02")),
 		GeneratedAt:        time.Now(),
 	}, nil

@@ -324,6 +324,93 @@ func (r *PaymentRepository) GetTenantPaymentSummary(orgID int) ([]*models.Tenant
 	return entries, nil
 }
 
+// GetPaymentAnalyticsByPeriod aggregates payment method, status, and daily counts
+// for the given org and date range using DB-level GROUP BY — O(rows) in Postgres,
+// not in Go memory.
+func (r *PaymentRepository) GetPaymentAnalyticsByPeriod(orgID int, startDate, endDate time.Time) (*models.PaymentAnalyticsResult, error) {
+	result := &models.PaymentAnalyticsResult{
+		MethodCounts: make(map[string]int),
+		StatusCounts: make(map[string]int64),
+		DailyTrend:   make(map[string]int64),
+	}
+
+	// Payment method distribution
+	methodRows, err := r.db.Query(`
+		SELECT COALESCE(NULLIF(payment_method, ''), 'cash') AS method, COUNT(*) AS cnt
+		FROM payments
+		WHERE organization_id = $1
+		  AND created_at >= $2 AND created_at <= $3
+		GROUP BY method`,
+		orgID, startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query payment methods: %w", err)
+	}
+	defer methodRows.Close()
+	for methodRows.Next() {
+		var method string
+		var cnt int
+		if err := methodRows.Scan(&method, &cnt); err != nil {
+			return nil, fmt.Errorf("failed to scan method row: %w", err)
+		}
+		result.MethodCounts[method] = cnt
+		result.TotalPayments += int64(cnt)
+	}
+	if err = methodRows.Err(); err != nil {
+		return nil, fmt.Errorf("method rows error: %w", err)
+	}
+
+	// Status distribution
+	statusRows, err := r.db.Query(`
+		SELECT status, COUNT(*) AS cnt
+		FROM payments
+		WHERE organization_id = $1
+		  AND created_at >= $2 AND created_at <= $3
+		GROUP BY status`,
+		orgID, startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query status distribution: %w", err)
+	}
+	defer statusRows.Close()
+	for statusRows.Next() {
+		var status string
+		var cnt int64
+		if err := statusRows.Scan(&status, &cnt); err != nil {
+			return nil, fmt.Errorf("failed to scan status row: %w", err)
+		}
+		result.StatusCounts[status] = cnt
+	}
+	if err = statusRows.Err(); err != nil {
+		return nil, fmt.Errorf("status rows error: %w", err)
+	}
+
+	// Daily trend (payment date if set, otherwise created_at)
+	dailyRows, err := r.db.Query(`
+		SELECT TO_CHAR(COALESCE(payment_date, created_at), 'YYYY-MM-DD') AS day, COUNT(*) AS cnt
+		FROM payments
+		WHERE organization_id = $1
+		  AND created_at >= $2 AND created_at <= $3
+		GROUP BY day
+		ORDER BY day`,
+		orgID, startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query daily trend: %w", err)
+	}
+	defer dailyRows.Close()
+	for dailyRows.Next() {
+		var day string
+		var cnt int64
+		if err := dailyRows.Scan(&day, &cnt); err != nil {
+			return nil, fmt.Errorf("failed to scan daily row: %w", err)
+		}
+		result.DailyTrend[day] = cnt
+	}
+	if err = dailyRows.Err(); err != nil {
+		return nil, fmt.Errorf("daily rows error: %w", err)
+	}
+
+	return result, nil
+}
+
 // GetAgingBuckets returns outstanding balances bucketed by how many months overdue they are.
 func (r *PaymentRepository) GetAgingBuckets(orgID int) (map[string]int64, error) {
 	now := time.Now()
