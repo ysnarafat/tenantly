@@ -24,7 +24,8 @@ import { PermissionService } from '../../core/services/permission.service';
 import { ReportService, DashboardMetrics, CollectionSummaryReport, PaymentAnalysisReport, FinancialLedgerReport, TenantSummaryReport, PropertyAnalyticsReport } from '../../core/services/report.service';
 import { PaymentService } from '../../core/services/payment.service';
 import { BuildingService } from '../../core/services/building.service';
-import { Building } from '../../core/models';
+import { PropertyService } from '../../core/services/property.service';
+import { Building, Property } from '../../core/models';
 
 export interface ReportTemplate {
   id: string;
@@ -80,6 +81,7 @@ export class ReportAnalysis implements OnInit {
   private reportService = inject(ReportService);
   private paymentService = inject(PaymentService);
   private buildingService = inject(BuildingService);
+  private propertyService = inject(PropertyService);
 
   reportForm!: FormGroup;
   selectedReport: ReportTemplate | null = null;
@@ -99,6 +101,7 @@ export class ReportAnalysis implements OnInit {
   buildingReport: unknown | null = null;
 
   buildings: Building[] = [];
+  properties: Property[] = [];
 
   reports: ReportTemplate[] = [
     {
@@ -182,11 +185,19 @@ export class ReportAnalysis implements OnInit {
     this.initForm();
     this.loadDashboardMetrics();
     this.loadBuildings();
+    this.loadProperties();
   }
 
   loadBuildings() {
     this.buildingService.getBuildings({ active: true }).subscribe({
       next: (res) => { this.buildings = res.buildings ?? []; },
+      error: () => {},
+    });
+  }
+
+  loadProperties() {
+    this.propertyService.getProperties({ active: true }).subscribe({
+      next: (res) => { this.properties = res.properties ?? []; },
       error: () => {},
     });
   }

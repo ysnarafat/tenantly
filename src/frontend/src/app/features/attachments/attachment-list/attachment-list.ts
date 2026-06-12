@@ -12,6 +12,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule } from '@ngx-translate/core';
 import {
   AttachmentService,
   Attachment,
@@ -33,6 +34,7 @@ import { AuthService } from '../../../core/services/auth.service';
     MatSelectModule,
     MatInputModule,
     FormsModule,
+    TranslateModule,
   ],
   templateUrl: './attachment-list.html',
   styleUrls: ['./attachment-list.scss'],

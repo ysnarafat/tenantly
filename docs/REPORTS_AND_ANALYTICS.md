@@ -43,6 +43,8 @@ ReportAnalysis component (Angular)
   │     getCollectionSummary()      → GET /reports/collection-summary
   │     getPaymentAnalysis()        → GET /reports/payment-analysis
   │     getDashboardMetrics()       → GET /reports/dashboard-metrics
+  │     getTenantSummary()          → GET /reports/tenant-summary
+  │     getPropertyAnalytics()      → GET /reports/property-analytics
   │
   └── PaymentService         → /api/v1/payments/*
         getBuildingReport()         → GET /payments/building/:id/report
@@ -58,10 +60,13 @@ PaymentHandler              (handlers/payment_handler.go)
 ReportService               (services/report_service.go)
   └── PaymentRepositoryInterface
         GetWithDetailsAndFilters()
-        GetDashboardSummary()
-
-ReportingService            (services/reporting_service.go)
-  └── PaymentRepositoryInterface + BuildingRepositoryInterface
+        GetDashboardSummary(orgID)      ← org-scoped
+        GetAgingBuckets(orgID)
+        GetMonthlyCollectionTrend(orgID, months)
+        GetTenantPaymentSummary(orgID)
+        GetPaymentAnalyticsByPeriod(orgID, start, end)
+  └── PropertyRepositoryInterface
+        List(filters, limit, offset)
 
 BuildingAnalyticsService    (services/building_analytics_service.go)
   └── BuildingRepositoryInterface (with in-memory cache)
@@ -86,9 +91,7 @@ FinancialLedgerReport
   total_overdue      int64
   collection_rate    float64                 percentage (0–100)
   generated_at       time.Time
-```
 
-```
 CollectionSummaryReport
   organization_id    int
   collection_rate    float64
@@ -97,26 +100,58 @@ CollectionSummaryReport
   total_pending      int64
   total_overdue      int64
   aging_buckets      map[string]int64        keys: "current", "30d", "60d", "90d+"
-  monthly_trend      []*MonthlyCollectionTrend
+                                            values: outstanding balance (amount_due - amount_paid)
+                                            bucketed by months overdue (year*12+month arithmetic)
+  monthly_trend      []*MonthlyCollectionTrend   real per-month DB aggregation, last 6 months
   report_period      string                  "YYYY-MM-DD to YYYY-MM-DD"
   generated_at       time.Time
 
 MonthlyCollectionTrend
   month              time.Time
-  collection_rate    float64
+  collection_rate    float64                 computed from amount_collected / amount_due * 100
   amount_due         int64
   amount_collected   int64
-```
 
-```
 PaymentAnalysisReport
   organization_id       int
-  payment_methods       map[string]int      e.g. {"Cash":12,"bKash":8}
+  payment_methods       map[string]int      e.g. {"cash":12,"bKash":8}  — DB GROUP BY, not in-memory
   status_distribution   map[string]int64    e.g. {"Paid":20,"Due":5}
-  daily_trend           map[string]int64    key: "YYYY-MM-DD"
+  daily_trend           map[string]int64    key: "YYYY-MM-DD", uses payment_date if set else created_at
   total_payments        int64
   report_period         string
   generated_at          time.Time
+
+TenantReportEntry
+  tenant_id, tenant_name, phone_number, email
+  unit_number, building_name, property_name
+  lease_start *string, lease_end *string    ISO date or null
+  monthly_rent float64
+  lease_active bool
+  total_due, total_paid, balance_due float64
+
+TenantSummaryReport
+  organization_id    int
+  tenants            []*TenantReportEntry
+  total              int
+  active_tenants     int
+  generated_at       time.Time
+
+PropertyAnalyticsEntry
+  property_id, property_name, property_code, property_type
+  payment_stats      interface{}    raw stats from GetPropertyPaymentStats
+
+PropertyAnalyticsReport
+  organization_id    int
+  properties         []*PropertyAnalyticsEntry
+  total              int
+  report_period      string
+  generated_at       time.Time
+
+PaymentAnalyticsResult   (intermediate, not exposed directly in API)
+  MethodCounts    map[string]int
+  StatusCounts    map[string]int64
+  DailyTrend      map[string]int64
+  TotalPayments   int64
 ```
 
 #### `models/reports.go` — Hierarchical / analytics types
@@ -135,24 +170,15 @@ DashboardReport              dashboard view with property/building/type grouping
 
 #### `ReportService` — `services/report_service.go`
 
-Thin orchestration layer. Depends only on `PaymentRepositoryInterface`.
+Depends on `PaymentRepositoryInterface` + `PropertyRepositoryInterface`.
 
 | Method | What it does |
 |---|---|
-| `FinancialLedgerReport(orgID, filters, limit, offset)` | Paginates payments and attaches summary totals |
-| `CollectionSummaryReport(orgID, startDate, endDate)` | Returns collection rate, aging buckets, 6-month trend |
-| `PaymentAnalysisReport(orgID, startDate, endDate)` | Groups payments by method, status, and day |
-
-> **Note:** `CollectionSummaryReport` currently returns the same `CollectionRate` for every month in the trend (uses the all-time summary). Per-month trending from the DB is a future improvement.
-
-#### `ReportingService` — `services/reporting_service.go`
-
-Comprehensive multi-level reports. Depends on payment and building repositories.
-
-| Method | Scope |
-|---|---|
-| `GenerateComprehensiveReport(scope, id, start, end)` | `"building"`, `"property"`, or `"system"` |
-| `GenerateDashboardReport(orgID, groupBy, buildingID?)` | Grouped by `"property"`, `"building"`, or `"type"` |
+| `FinancialLedgerReport(orgID, filters, limit, offset)` | Paginates payments; summary totals from org-scoped `GetDashboardSummary` |
+| `CollectionSummaryReport(orgID, startDate, endDate)` | Collection rate, real aging buckets via `GetAgingBuckets`, real monthly trend via `GetMonthlyCollectionTrend` |
+| `PaymentAnalysisReport(orgID, startDate, endDate)` | All aggregations in DB via `GetPaymentAnalyticsByPeriod` — no in-memory row scanning |
+| `TenantSummaryReport(orgID)` | Single JOIN query across tenants/leases/payments via `GetTenantPaymentSummary` |
+| `PropertyAnalyticsReport(orgID, startDate, endDate)` | Lists org's properties then calls `GetPropertyPaymentStats` per property |
 
 #### `BuildingAnalyticsService` — `services/building_analytics_service.go`
 
@@ -171,7 +197,7 @@ Live building performance metrics with an **in-memory cache** to avoid repeated 
 
 ### API Endpoints
 
-All endpoints require a valid JWT. `org_id` is extracted from the token — never passed as a query parameter.
+All endpoints require a valid JWT. `org_id` is extracted from the token via `RequireOrgContext()` middleware — never passed as a query parameter.
 
 #### Reports (`/api/v1/reports/*`)
 
@@ -181,6 +207,8 @@ All endpoints require a valid JWT. `org_id` is extracted from the token — neve
 | `GET` | `/reports/collection-summary` | `start_date`, `end_date` (YYYY-MM-DD) | `CollectionSummaryReport` |
 | `GET` | `/reports/payment-analysis` | `start_date`, `end_date` | `PaymentAnalysisReport` |
 | `GET` | `/reports/dashboard-metrics` | — | `{ collection_summary, payment_analysis, generated_at }` |
+| `GET` | `/reports/tenant-summary` | — | `TenantSummaryReport` |
+| `GET` | `/reports/property-analytics` | `start_date`, `end_date` | `PropertyAnalyticsReport` |
 
 #### Payment reports (`/api/v1/payments/*`)
 
@@ -206,32 +234,17 @@ All endpoints require a valid JWT. `org_id` is extracted from the token — neve
 `src/frontend/src/app/core/services/report.service.ts`
 
 ```typescript
-// Inject anywhere needed
 private reportService = inject(ReportService);
 
-// Paginated transaction list
 getFinancialLedger(page?, pageSize?, filters?): Observable<FinancialLedgerReport>
-
-// Collection metrics for a date range
 getCollectionSummary(startDate?, endDate?): Observable<CollectionSummaryReport>
-
-// Payment method and status breakdown
 getPaymentAnalysis(startDate?, endDate?): Observable<PaymentAnalysisReport>
-
-// Combined current-month snapshot (used by dashboard tab)
 getDashboardMetrics(): Observable<DashboardMetrics>
+getTenantSummary(): Observable<TenantSummaryReport>
+getPropertyAnalytics(startDate?, endDate?): Observable<PropertyAnalyticsReport>
 ```
 
-All methods return `Observable` — subscribe in the component or use `async` pipe in the template.
-
-**Interfaces** (defined in `report.service.ts`, not a separate model file):
-
-```typescript
-FinancialLedgerReport    — mirrors backend model exactly
-CollectionSummaryReport  — aging_buckets: Record<string, number>
-PaymentAnalysisReport    — payment_methods / status_distribution / daily_trend as Record<string, number>
-DashboardMetrics         — { collection_summary, payment_analysis, generated_at }
-```
+All methods return `Observable`. Interfaces are defined in `report.service.ts`.
 
 ---
 
@@ -239,55 +252,54 @@ DashboardMetrics         — { collection_summary, payment_analysis, generated_a
 
 `src/frontend/src/app/features/reports/report-analysis.ts`
 
-Standalone component. Route: `/reports` (verify in `app.routes.ts`).
+Standalone component. Route: `/reports`.
 
 **State:**
 
-| Signal / property | Purpose |
-|---|---|
-| `selectedReport` | Currently active `ReportTemplate` |
-| `dashboardMetrics` | Loaded on `ngOnInit` from `getDashboardMetrics()` |
-| `collectionReport` | Extracted from `dashboardMetrics.collection_summary` |
-| `paymentReport` | Extracted from `dashboardMetrics.payment_analysis` |
-| `reportForm` | `reportType`, `startDate`, `endDate`, `propertyFilter`, `buildingFilter`, `exportFormat` |
-| `activeTab` | Tab index (0 = Overview, 1 = Generate, ...) |
+| Property | Type | Purpose |
+|---|---|---|
+| `dashboardMetrics` | `DashboardMetrics \| null` | Loaded on init; feeds Overview tab |
+| `collectionReport` | `CollectionSummaryReport \| null` | From dashboard or generated |
+| `paymentReport` | `PaymentAnalysisReport \| null` | From dashboard or generated |
+| `ledgerReport` | `FinancialLedgerReport \| null` | Set after ledger generation |
+| `tenantReport` | `TenantSummaryReport \| null` | Set after tenant report generation |
+| `propertyAnalyticsReport` | `PropertyAnalyticsReport \| null` | Set after property analytics generation |
+| `buildingReport` | `unknown \| null` | Set after building performance generation |
+| `buildings` | `Building[]` | Loaded on init for building filter dropdown |
+| `properties` | `Property[]` | Loaded on init for property filter dropdown |
+| `quickMetrics` | getter | Computed live from `dashboardMetrics` |
 
 **Lifecycle:**
-
 ```
 ngOnInit
-  └── initForm()            build reactive form with defaults
-  └── loadDashboardMetrics()
-        └── reportService.getDashboardMetrics()
-              → sets dashboardMetrics, collectionReport, paymentReport
+  ├── initForm()
+  ├── loadDashboardMetrics()   → getDashboardMetrics()
+  ├── loadBuildings()          → BuildingService.getBuildings({ active: true })
+  └── loadProperties()         → PropertyService.getProperties({ active: true })
 ```
+
+**CSV export** — `exportReport('csv')` produces a browser download for: ledger, tenant, collection summary, property analytics, building performance. PDF/XLSX show "coming soon".
 
 ---
 
 ### Report Templates
 
-Defined as `ReportTemplate[]` inside the component. Each template maps to a `ReportService` call.
-
-| id | Name | Category | Required params | Backend call |
-|---|---|---|---|---|
-| `ledger` | Financial Ledger | `financial` | `org_id` | `getFinancialLedger()` |
-| `collection_summary` | Collection Summary | `collections` | `org_id`, date range | `getCollectionSummary()` |
-| `property_analytics` | Property Analytics | `operational` | `org_id`, date range | *(not yet wired)* |
-| `tenant_report` | Tenant Report | `tenant` | `org_id` | *(not yet wired)* |
-| `building_performance` | Building Performance | `operational` | `org_id`, date range | `getBuildingReport()` via `PaymentService` |
-| `payment_analysis` | Payment Analysis | `financial` | `org_id`, date range | `getPaymentAnalysis()` |
-
-> `property_analytics` and `tenant_report` templates exist in the UI but do not yet call a backend endpoint — they are placeholders for future implementation.
+| id | Name | Category | Backend call |
+|---|---|---|---|
+| `ledger` | Financial Ledger | `financial` | `getFinancialLedger()` |
+| `collection_summary` | Collection Summary | `collections` | `getCollectionSummary()` |
+| `property_analytics` | Property Analytics | `operational` | `getPropertyAnalytics()` |
+| `tenant_report` | Tenant Report | `tenant` | `getTenantSummary()` |
+| `building_performance` | Building Performance | `operational` | `PaymentService.getBuildingReport(buildingId, ...)` |
+| `payment_analysis` | Payment Analysis | `financial` | `getPaymentAnalysis()` |
 
 ---
 
 ## Adding a New Report — End-to-End Checklist
 
-Follow this order to add a report cleanly through all layers.
-
 ### 1. Backend — Model
 
-Add a new struct to `internal/models/report.go` (financial) or `internal/models/reports.go` (hierarchical/analytics):
+Add a struct to `internal/models/report.go`:
 
 ```go
 type MyNewReport struct {
@@ -298,43 +310,48 @@ type MyNewReport struct {
 }
 ```
 
-### 2. Backend — Repository (if new DB query needed)
+### 2. Backend — Repository
 
-Add the query method to the appropriate repository file:
-- Simple payment aggregation → `payment_repository_raw.go`
-- Building-level analytics → `building_repository_analytics.go`
-- New entity → create `{entity}_repository_analytics.go`
+For aggregation queries, add to `payment_repository_raw.go` (or create `{entity}_repository_analytics.go`). Use DB-level `GROUP BY` — never fetch all rows and aggregate in Go.
 
-Add the method signature to `interfaces/interfaces.go` under the relevant repository interface.
+Add the method signature to `interfaces/interfaces.go`. **Important:** also add a stub to `MockPaymentRepo` in `internal/services/payment_service_test.go` or the build breaks immediately.
 
 ### 3. Backend — Service
 
-Add the method to `ReportService` (financial) or `ReportingService` (hierarchical):
+Add to `ReportService`:
 
 ```go
 func (s *ReportService) MyNewReport(orgID int, startDate, endDate time.Time) (*models.MyNewReport, error) {
-    // fetch from repository
-    // build and return report struct
+    // call repo, build struct
 }
 ```
 
-Add the signature to `ReportServiceInterface` in `interfaces/interfaces.go`.
+Add to `ReportServiceInterface` in `interfaces/interfaces.go`.
 
 ### 4. Backend — Handler
 
-Add a handler method to `report_handler.go`:
+Add to `report_handler.go`:
 
 ```go
 func (h *ReportHandler) GetMyNewReport(c *gin.Context) {
     orgID := c.GetInt("org_id")
-    startDate, endDate, err := parseDateRange(c)
-    // call service, return JSON
+    startDate, endDate, err := parseDateRange(c)  // defined in payment_handler.go
+    if err != nil {
+        c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+        return
+    }
+    report, err := h.reportService.MyNewReport(orgID, startDate, endDate)
+    if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+        return
+    }
+    c.JSON(http.StatusOK, report)
 }
 ```
 
 ### 5. Backend — Route
 
-Register in `server.go` under the `reports` group:
+In `server.go` under the `reports` group (which already has `RequireOrgContext()`):
 
 ```go
 reports.GET("/my-new-report", middleware.RequireAnyRole(), reportHandler.GetMyNewReport)
@@ -342,13 +359,10 @@ reports.GET("/my-new-report", middleware.RequireAnyRole(), reportHandler.GetMyNe
 
 ### 6. Frontend — Service
 
-Add the interface and method to `report.service.ts`:
+Add interface + method to `report.service.ts`:
 
 ```typescript
-export interface MyNewReport {
-  organization_id: number;
-  // ...
-}
+export interface MyNewReport { organization_id: number; /* ... */ }
 
 getMyNewReport(startDate?: string, endDate?: string): Observable<MyNewReport> {
   let params = new HttpParams();
@@ -360,22 +374,24 @@ getMyNewReport(startDate?: string, endDate?: string): Observable<MyNewReport> {
 
 ### 7. Frontend — Report Template
 
-Add an entry to the `reports` array in `report-analysis.ts`:
+Add to the `reports` array in `report-analysis.ts`:
 
 ```typescript
 {
   id: 'my_new_report',
   name: 'My New Report',
-  description: 'One-line description of what this shows',
-  icon: 'insert_chart',              // Material icon name
-  category: 'financial',            // financial | operational | tenant | collections
+  description: 'One-line description',
+  icon: 'insert_chart',
+  category: 'financial',   // financial | operational | tenant | collections
   requires: ['org_id', 'date_range'],
 }
 ```
 
-### 8. Frontend — Wire the generation
+### 8. Frontend — Wire generation and display
 
-In the `generateReport()` method (or equivalent) in `report-analysis.ts`, add a `case` for the new template id that calls `reportService.getMyNewReport()` and binds the result to a component property for display.
+In `generateReport()` add a `case 'my_new_report': this.loadMyNewReport(); break;`
+
+Add a `loadMyNewReport()` method and a result section in `report-analysis.html` (follow the `ledger-results` pattern already in the template).
 
 ---
 
@@ -383,11 +399,14 @@ In the `generateReport()` method (or equivalent) in `report-analysis.ts`, add a 
 
 | Layer | File |
 |---|---|
-| Model | `internal/models/report.go` or `reports.go` |
-| Repository (if needed) | `internal/repositories/{entity}_repository_raw.go` or `_analytics.go` |
-| Interface | `internal/interfaces/interfaces.go` |
-| Service | `internal/services/report_service.go` |
+| Model | `internal/models/report.go` |
+| Repository method | `internal/repositories/payment_repository_raw.go` |
+| Repository interface | `internal/interfaces/interfaces.go` |
+| Repository mock | `internal/services/payment_service_test.go` (MockPaymentRepo stub) |
+| Service method | `internal/services/report_service.go` |
+| Service interface | `internal/interfaces/interfaces.go` (ReportServiceInterface) |
 | Handler | `internal/handlers/report_handler.go` |
 | Route | `internal/server/server.go` |
-| Frontend service | `src/frontend/src/app/core/services/report.service.ts` |
+| Frontend interface+method | `src/frontend/src/app/core/services/report.service.ts` |
 | Frontend component | `src/frontend/src/app/features/reports/report-analysis.ts` |
+| Frontend template | `src/frontend/src/app/features/reports/report-analysis.html` |

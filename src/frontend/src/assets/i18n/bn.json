@@ -493,5 +493,112 @@
     "REVENUE_BY_PROPERTY": "সম্পত্তি অনুযায়ী রাজস্ব",
     "OCCUPANCY_RATE": "দখল হার",
     "PAYMENT_METHODS": "পেমেন্ট পদ্ধতি বিতরণ"
+  },
+  "USER_LIST": {
+    "PAGE_TITLE": "ব্যবহারকারী ব্যবস্থাপনা",
+    "BUTTONS": {
+      "CREATE_USER": "ব্যবহারকারী তৈরি করুন",
+      "INVITE_USER": "ব্যবহারকারী আমন্ত্রণ করুন"
+    },
+    "FILTERS": {
+      "SEARCH_LABEL": "ব্যবহারকারী খুঁজুন",
+      "SEARCH_PLACEHOLDER": "নাম বা ইমেইল দিয়ে খুঁজুন...",
+      "ROLE_LABEL": "ভূমিকা অনুযায়ী ফিল্টার করুন",
+      "ALL_ROLES": "সব ভূমিকা",
+      "SHOW_INACTIVE": "নিষ্ক্রিয় দেখুন"
+    },
+    "TABLE": {
+      "NAME": "নাম",
+      "EMAIL": "ইমেইল",
+      "ROLE": "ভূমিকা",
+      "STATUS": "স্থিতি",
+      "CREATED": "তৈরির তারিখ",
+      "ACTIONS": "কার্যক্রম"
+    },
+    "STATUS": {
+      "ACTIVE": "সক্রিয়",
+      "INACTIVE": "নিষ্ক্রিয়"
+    },
+    "TOOLTIPS": {
+      "PROMOTE": "পদোন্নতি/পদাবনতি",
+      "DEACTIVATE": "নিষ্ক্রিয় করুন",
+      "ACTIVATE": "সক্রিয় করুন",
+      "DELETE": "মুছুন"
+    }
+  },
+  "ORG_LIST": {
+    "PAGE_TITLE": "সংগঠনসমূহ",
+    "BUTTONS": { "NEW": "নতুন সংগঠন" },
+    "FILTERS": {
+      "SEARCH_LABEL": "সংগঠন খুঁজুন",
+      "SEARCH_PLACEHOLDER": "নাম বা স্লাগ দিয়ে খুঁজুন..."
+    },
+    "TABLE": {
+      "NAME": "নাম",
+      "SLUG": "স্লাগ",
+      "TIER": "স্তর",
+      "MAX_USERS": "সর্বোচ্চ ব্যবহারকারী",
+      "ACTIVE": "সক্রিয়",
+      "ACTIONS": "কার্যক্রম"
+    },
+    "TOOLTIPS": { "VIEW": "দেখুন", "EDIT": "সম্পাদনা করুন", "DELETE": "মুছুন" }
+  },
+  "ORG_CREATE": {
+    "PAGE_TITLE": "নতুন সংগঠন তৈরি করুন",
+    "FIELDS": {
+      "NAME": "সংগঠনের নাম",
+      "SLUG": "স্লাগ",
+      "SLUG_HINT": "নাম থেকে স্বয়ংক্রিয়ভাবে তৈরি হবে",
+      "TIER": "সাবস্ক্রিপশন স্তর",
+      "MAX_USERS": "সর্বোচ্চ ব্যবহারকারী"
+    },
+    "TIERS": {
+      "BASIC": "বেসিক",
+      "PROFESSIONAL": "প্রফেশনাল",
+      "ENTERPRISE": "এন্টারপ্রাইজ"
+    },
+    "ERRORS": {
+      "NAME_REQUIRED": "নাম প্রয়োজন",
+      "NAME_MIN": "নাম কমপক্ষে ৩ অক্ষরের হতে হবে",
+      "SLUG_REQUIRED": "স্লাগ প্রয়োজন",
+      "MAX_USERS_REQUIRED": "সর্বোচ্চ ব্যবহারকারী সংখ্যা প্রয়োজন",
+      "MAX_USERS_MIN": "সর্বোচ্চ ব্যবহারকারী কমপক্ষে ১ হতে হবে"
+    },
+    "BUTTONS": {
+      "CREATING": "তৈরি হচ্ছে...",
+      "CREATE": "সংগঠন তৈরি করুন",
+      "CANCEL": "বাতিল করুন"
+    }
+  },
+  "ATTACHMENT_LIST": {
+    "PAGE_TITLE": "সংযুক্তিসমূহ",
+    "BUTTONS": { "UPLOAD": "ফাইল আপলোড করুন" },
+    "FILTERS": {
+      "TYPE_LABEL": "ধরন অনুযায়ী ফিল্টার করুন",
+      "ALL_TYPES": "সব ধরন",
+      "SEARCH_LABEL": "খুঁজুন",
+      "SEARCH_PLACEHOLDER": "ফাইলের নাম, বিবরণ বা ট্যাগ দিয়ে খুঁজুন"
+    },
+    "TABLE": {
+      "FILE": "ফাইল",
+      "TYPE": "ধরন",
+      "SIZE": "আকার",
+      "DESCRIPTION": "বিবরণ",
+      "UPLOADED": "আপলোড তারিখ",
+      "ACTIONS": "কার্যক্রম"
+    },
+    "MENU": {
+      "VIEW": "দেখুন",
+      "DOWNLOAD": "ডাউনলোড করুন",
+      "EDIT": "সম্পাদনা করুন",
+      "DELETE": "মুছুন"
+    },
+    "EMPTY": {
+      "TITLE": "কোনো সংযুক্তি পাওয়া যায়নি",
+      "TRY_ADJUST": "আপনার ফিল্টার বা অনুসন্ধান পরিবর্তন করে দেখুন।",
+      "START_UPLOAD": "প্রথম ফাইল আপলোড করে শুরু করুন।"
+    },
+    "LOADING": "সংযুক্তি লোড হচ্ছে...",
+    "NO_DESCRIPTION": "কোনো বিবরণ নেই"
   }
 }

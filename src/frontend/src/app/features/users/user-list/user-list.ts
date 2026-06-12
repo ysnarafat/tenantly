@@ -21,6 +21,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { TranslateModule } from '@ngx-translate/core';
 import { Router } from '@angular/router';
 import { User } from '../../../core/services/auth.service';
 import { UserService } from '../../../core/services/user.service';
@@ -44,6 +45,7 @@ import { PermissionService } from '../../../core/services/permission.service';
     MatSnackBarModule,
     MatTooltipModule,
     MatSlideToggleModule,
+    TranslateModule,
   ],
   templateUrl: './user-list.html',
   styleUrls: ['./user-list.scss'],

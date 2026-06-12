@@ -226,8 +226,9 @@
                 <mat-label>{{ 'REPORTS.PROPERTY_FILTER' | translate }}</mat-label>
                 <mat-select formControlName="propertyFilter">
                   <mat-option value="">{{ 'COMMON.ALL' | translate }}</mat-option>
-                  <mat-option value="prop1">Property 1</mat-option>
-                  <mat-option value="prop2">Property 2</mat-option>
+                  <mat-option *ngFor="let p of properties" [value]="p.id.toString()">
+                    {{ p.property_name }} ({{ p.property_code }})
+                  </mat-option>
                 </mat-select>
               </mat-form-field>
 
