@@ -149,10 +149,10 @@ type BuildingValidationServiceInterface interface {
 type BuildingServiceInterface interface {
 	// Core CRUD operations
 	CreateBuilding(req *models.CreateBuildingRequest) (*models.Building, error)
-	GetBuilding(id int) (*models.Building, error)
-	GetBuildingWithStats(id int) (*models.BuildingWithStats, error)
-	UpdateBuilding(id int, req *models.UpdateBuildingRequest) (*models.Building, error)
-	DeleteBuilding(id int) error
+	GetBuilding(id, orgID int) (*models.Building, error)
+	GetBuildingWithStats(id, orgID int) (*models.BuildingWithStats, error)
+	UpdateBuilding(id int, req *models.UpdateBuildingRequest, orgID int) (*models.Building, error)
+	DeleteBuilding(id, orgID int) error
 
 	// Property-building relationship operations
 	GetBuildingsByProperty(propertyID int) ([]*models.Building, error)
@@ -236,9 +236,9 @@ type UnitRepositoryInterface interface {
 // UnitServiceInterface defines the interface for unit service operations
 type UnitServiceInterface interface {
 	CreateUnit(req *models.CreateUnitRequest, userID int) (*models.Unit, error)
-	GetUnit(id int) (*models.UnitWithDetails, error)
-	UpdateUnit(id int, req *models.UpdateUnitRequest, userID int) (*models.Unit, error)
-	DeleteUnit(id int, userID int) error
+	GetUnit(id, orgID int) (*models.UnitWithDetails, error)
+	UpdateUnit(id int, req *models.UpdateUnitRequest, userID, orgID int) (*models.Unit, error)
+	DeleteUnit(id, userID, orgID int) error
 	ValidateBuildingUnitRelationship(buildingID, propertyID int) error
 	ValidateUnitTypeForBuilding(buildingID int, unitType models.UnitType) error
 	GetUnitsByBuilding(buildingID int, page, pageSize, orgID int) ([]*models.UnitWithDetails, int, error)
@@ -273,8 +273,8 @@ type PaymentRepositoryInterface interface {
 // PaymentServiceInterface defines the interface for payment service operations
 type PaymentServiceInterface interface {
 	CreatePayment(req *models.CreatePaymentRequest, userID int) (*models.Payment, error)
-	GetPayment(id int) (*models.PaymentWithDetails, error)
-	UpdatePayment(id int, req *models.UpdatePaymentRequest, userID int) (*models.Payment, error)
+	GetPayment(id, orgID int) (*models.PaymentWithDetails, error)
+	UpdatePayment(id int, req *models.UpdatePaymentRequest, userID, orgID int) (*models.Payment, error)
 	GetPayments(page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
 	GetPaymentsByBuilding(buildingID int, page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
 	GetPaymentsByProperty(propertyID int, page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)

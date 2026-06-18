@@ -1,4 +1,4 @@
-package handlers
+﻿package handlers
 
 import (
 	"bytes"
@@ -87,7 +87,7 @@ func TestBuildingHandler_EndpointRouting(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			setupMock: func() {
 				building := &models.Building{ID: 1, BuildingName: "Test Building"}
-				mockService.On("GetBuilding", 1).Return(building, nil)
+				mockService.On("GetBuilding", 1, 0).Return(building, nil)
 			},
 		},
 		{
@@ -201,3 +201,4 @@ func TestBuildingHandler_CreateBuildingEndpoint(t *testing.T) {
 
 	mockService.AssertExpectations(t)
 }
+

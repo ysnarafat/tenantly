@@ -88,20 +88,26 @@ func (s *PaymentService) CreatePayment(req *models.CreatePaymentRequest, userID 
 }
 
 // GetPayment retrieves a payment with building and property context
-func (s *PaymentService) GetPayment(id int) (*models.PaymentWithDetails, error) {
+func (s *PaymentService) GetPayment(id, orgID int) (*models.PaymentWithDetails, error) {
 	payment, err := s.paymentRepo.GetByIDWithDetails(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get payment with details: %w", err)
+	}
+	if payment.OrganizationID != orgID {
+		return nil, fmt.Errorf("payment not found")
 	}
 	return payment, nil
 }
 
 // UpdatePayment updates a payment record with building context logging
-func (s *PaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequest, userID int) (*models.Payment, error) {
+func (s *PaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequest, userID, orgID int) (*models.Payment, error) {
 	// Get existing payment for audit and building context
 	existingPayment, err := s.paymentRepo.GetByIDWithDetails(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get existing payment: %w", err)
+	}
+	if existingPayment.OrganizationID != orgID {
+		return nil, fmt.Errorf("payment not found")
 	}
 
 	// Update payment

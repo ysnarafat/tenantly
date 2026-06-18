@@ -1,4 +1,4 @@
-package services
+﻿package services
 
 import (
 	"database/sql"
@@ -269,7 +269,7 @@ func TestPropertyService_GetProperty(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			property, err := service.GetProperty(tt.propertyID)
+			property, err := service.GetProperty(tt.propertyID, 0)
 
 			if tt.expectError {
 				if err == nil {
@@ -489,7 +489,7 @@ func TestPropertyService_UpdateProperty(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			property, err := service.UpdateProperty(tt.propertyID, tt.request, tt.userID)
+			property, err := service.UpdateProperty(tt.propertyID, tt.request, tt.userID, 0)
 
 			if tt.expectError {
 				if err == nil {
@@ -565,7 +565,7 @@ func TestPropertyService_DeleteProperty(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := service.DeleteProperty(tt.propertyID, tt.userID)
+			err := service.DeleteProperty(tt.propertyID, tt.userID, 0)
 
 			if tt.expectError {
 				if err == nil {
@@ -580,7 +580,7 @@ func TestPropertyService_DeleteProperty(t *testing.T) {
 			}
 
 			// Verify property is marked as inactive
-			property, err := service.GetProperty(tt.propertyID)
+			property, err := service.GetProperty(tt.propertyID, 0)
 			if err == nil && property.Active {
 				t.Errorf("Expected property to be inactive after deletion")
 			}
@@ -645,3 +645,4 @@ func TestPropertyService_ValidatePropertyType(t *testing.T) {
 		})
 	}
 }
+

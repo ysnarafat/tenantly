@@ -1,4 +1,4 @@
-package handlers
+﻿package handlers
 
 import (
 	"bytes"
@@ -20,8 +20,8 @@ import (
 
 type mockPaymentService struct {
 	createPaymentFn          func(req *models.CreatePaymentRequest, userID int) (*models.Payment, error)
-	getPaymentFn             func(id int) (*models.PaymentWithDetails, error)
-	updatePaymentFn          func(id int, req *models.UpdatePaymentRequest, userID int) (*models.Payment, error)
+	getPaymentFn             func(id, orgID int) (*models.PaymentWithDetails, error)
+	updatePaymentFn          func(id int, req *models.UpdatePaymentRequest, userID, orgID int) (*models.Payment, error)
 	getPaymentsFn            func(page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
 	getPaymentsByBuildingFn  func(buildingID int, page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
 	getPaymentsByPropertyFn  func(propertyID int, page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
@@ -42,7 +42,7 @@ func (m *mockPaymentService) CreatePayment(req *models.CreatePaymentRequest, use
 	return m.createPaymentFn(req, userID)
 }
 
-func (m *mockPaymentService) GetPayment(id int) (*models.PaymentWithDetails, error) {
+func (m *mockPaymentService) GetPayment(id, orgID int) (*models.PaymentWithDetails, error) {
 	if m.getPaymentFn == nil {
 		return &models.PaymentWithDetails{
 			Payment: models.Payment{
@@ -50,14 +50,14 @@ func (m *mockPaymentService) GetPayment(id int) (*models.PaymentWithDetails, err
 			},
 		}, nil
 	}
-	return m.getPaymentFn(id)
+	return m.getPaymentFn(id, orgID)
 }
 
-func (m *mockPaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequest, userID int) (*models.Payment, error) {
+func (m *mockPaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequest, userID, orgID int) (*models.Payment, error) {
 	if m.updatePaymentFn == nil {
 		return nil, errors.New("update payment not mocked")
 	}
-	return m.updatePaymentFn(id, req, userID)
+	return m.updatePaymentFn(id, req, userID, orgID)
 }
 
 func (m *mockPaymentService) GetPayments(page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error) {
@@ -289,7 +289,7 @@ func TestPaymentHandler_CreatePayment(t *testing.T) {
 		svc := &mockPaymentService{}
 		router := setupPaymentTestRouter(svc)
 
-		// Empty object — all required fields absent.
+		// Empty object â€” all required fields absent.
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/payments", toJSON(t, map[string]interface{}{}))
 		req.Header.Set("Content-Type", "application/json")
@@ -349,7 +349,7 @@ func TestPaymentHandler_CreatePayment(t *testing.T) {
 func TestPaymentHandler_GetPayment(t *testing.T) {
 	t.Run("success returns 200 with payment details", func(t *testing.T) {
 		svc := &mockPaymentService{
-			getPaymentFn: func(id int) (*models.PaymentWithDetails, error) {
+			getPaymentFn: func(id, orgID int) (*models.PaymentWithDetails, error) {
 				return samplePaymentWithDetails(), nil
 			},
 		}
@@ -384,7 +384,7 @@ func TestPaymentHandler_GetPayment(t *testing.T) {
 
 	t.Run("not found returns 404", func(t *testing.T) {
 		svc := &mockPaymentService{
-			getPaymentFn: func(id int) (*models.PaymentWithDetails, error) {
+			getPaymentFn: func(id, orgID int) (*models.PaymentWithDetails, error) {
 				return nil, errors.New("payment not found")
 			},
 		}
@@ -420,10 +420,10 @@ func TestPaymentHandler_UpdatePayment(t *testing.T) {
 		existing := samplePaymentWithDetails()
 
 		svc := &mockPaymentService{
-			getPaymentFn: func(id int) (*models.PaymentWithDetails, error) {
+			getPaymentFn: func(id, orgID int) (*models.PaymentWithDetails, error) {
 				return existing, nil
 			},
-			updatePaymentFn: func(id int, req *models.UpdatePaymentRequest, userID int) (*models.Payment, error) {
+			updatePaymentFn: func(id int, req *models.UpdatePaymentRequest, userID, orgID int) (*models.Payment, error) {
 				return updated, nil
 			},
 		}
@@ -469,7 +469,7 @@ func TestPaymentHandler_UpdatePayment(t *testing.T) {
 
 	t.Run("service error returns 400", func(t *testing.T) {
 		svc := &mockPaymentService{
-			updatePaymentFn: func(id int, req *models.UpdatePaymentRequest, userID int) (*models.Payment, error) {
+			updatePaymentFn: func(id int, req *models.UpdatePaymentRequest, userID, orgID int) (*models.Payment, error) {
 				return nil, errors.New("payment already finalised")
 			},
 		}
@@ -829,7 +829,7 @@ func TestPaymentHandler_GetBuildingPaymentReport(t *testing.T) {
 
 		// parseDateRange formats now-1month as YYYY-MM-DD then re-parses it,
 		// so the result is midnight of that day. Compare against the truncated
-		// expected value and allow ±1 day to handle month-boundary rounding.
+		// expected value and allow Â±1 day to handle month-boundary rounding.
 		expectedStartDate := now.AddDate(0, -1, 0).Format("2006-01-02")
 		expectedStart, _ := time.Parse("2006-01-02", expectedStartDate)
 		diff := capturedStart.Sub(expectedStart)
@@ -1104,3 +1104,4 @@ func TestPaymentHandler_BulkCreatePayments(t *testing.T) {
 		}
 	})
 }
+

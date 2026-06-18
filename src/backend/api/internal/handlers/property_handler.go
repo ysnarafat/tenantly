@@ -125,9 +125,10 @@ func (h *PropertyHandler) GetProperty(c *gin.Context) {
 	// Check if stats are requested
 	includeStats := c.Query("include_stats") == "true"
 	includeBuildings := c.Query("include_buildings") == "true"
+	orgID := c.GetInt("org_id")
 
 	if includeStats {
-		property, err := h.propertyService.GetPropertyWithStats(id)
+		property, err := h.propertyService.GetPropertyWithStats(id, orgID)
 		if err != nil {
 			if err.Error() == "property not found" {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Property not found"})
@@ -152,7 +153,7 @@ func (h *PropertyHandler) GetProperty(c *gin.Context) {
 
 		c.JSON(http.StatusOK, response)
 	} else {
-		property, err := h.propertyService.GetProperty(id)
+		property, err := h.propertyService.GetProperty(id, orgID)
 		if err != nil {
 			if err.Error() == "property not found" {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Property not found"})
@@ -204,7 +205,8 @@ func (h *PropertyHandler) UpdateProperty(c *gin.Context) {
 		return
 	}
 
-	property, err := h.propertyService.UpdateProperty(id, &req, userID.(int))
+	orgID := c.GetInt("org_id")
+	property, err := h.propertyService.UpdateProperty(id, &req, userID.(int), orgID)
 	if err != nil {
 		if err.Error() == "property not found" {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Property not found"})
@@ -240,7 +242,8 @@ func (h *PropertyHandler) DeleteProperty(c *gin.Context) {
 		return
 	}
 
-	err = h.propertyService.DeleteProperty(id, userID.(int))
+	orgID := c.GetInt("org_id")
+	err = h.propertyService.DeleteProperty(id, userID.(int), orgID)
 	if err != nil {
 		if err.Error() == "property not found" {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Property not found"})

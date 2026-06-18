@@ -1,4 +1,4 @@
-package handlers
+﻿package handlers
 
 import (
 	"encoding/json"
@@ -21,7 +21,7 @@ import (
 func TestPaymentHandler_GetPayment_AccessDenied(t *testing.T) {
 	t.Run("forbidden when user lacks access to payment", func(t *testing.T) {
 		svc := &mockPaymentService{
-			getPaymentFn: func(id int) (*models.PaymentWithDetails, error) {
+			getPaymentFn: func(id, orgID int) (*models.PaymentWithDetails, error) {
 				return &models.PaymentWithDetails{
 					Payment: models.Payment{
 						ID:             id,
@@ -52,7 +52,7 @@ func TestPaymentHandler_GetPayment_AccessDenied(t *testing.T) {
 
 	t.Run("allows access when user has permission", func(t *testing.T) {
 		svc := &mockPaymentService{
-			getPaymentFn: func(id int) (*models.PaymentWithDetails, error) {
+			getPaymentFn: func(id, orgID int) (*models.PaymentWithDetails, error) {
 				return &models.PaymentWithDetails{
 					Payment: models.Payment{ID: id, OrganizationID: 1},
 				}, nil
@@ -77,7 +77,7 @@ func TestPaymentHandler_GetPayment_AccessDenied(t *testing.T) {
 func TestPaymentHandler_UpdatePayment_AccessDenied(t *testing.T) {
 	t.Run("forbidden when user cannot access payment for update", func(t *testing.T) {
 		svc := &mockPaymentService{
-			getPaymentFn: func(id int) (*models.PaymentWithDetails, error) {
+			getPaymentFn: func(id, orgID int) (*models.PaymentWithDetails, error) {
 				return &models.PaymentWithDetails{
 					Payment: models.Payment{ID: id, OrganizationID: 99},
 				}, nil
@@ -102,7 +102,7 @@ func TestPaymentHandler_UpdatePayment_AccessDenied(t *testing.T) {
 
 	t.Run("accountants cannot update payments (read-only)", func(t *testing.T) {
 		svc := &mockPaymentService{
-			getPaymentFn: func(id int) (*models.PaymentWithDetails, error) {
+			getPaymentFn: func(id, orgID int) (*models.PaymentWithDetails, error) {
 				return &models.PaymentWithDetails{
 					Payment: models.Payment{ID: id, OrganizationID: 1},
 				}, nil
@@ -160,7 +160,7 @@ func TestPaymentHandler_RoleBasedAccess(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.description, func(t *testing.T) {
 			svc := &mockPaymentService{
-				getPaymentFn: func(id int) (*models.PaymentWithDetails, error) {
+				getPaymentFn: func(id, orgID int) (*models.PaymentWithDetails, error) {
 					return &models.PaymentWithDetails{
 						Payment: models.Payment{ID: id, OrganizationID: 1, PropertyID: 1},
 					}, nil
@@ -238,7 +238,7 @@ func TestPaymentHandler_AuditLogging(t *testing.T) {
 		var capturedAllowed *bool
 
 		svc := &mockPaymentService{
-			getPaymentFn: func(id int) (*models.PaymentWithDetails, error) {
+			getPaymentFn: func(id, orgID int) (*models.PaymentWithDetails, error) {
 				return &models.PaymentWithDetails{
 					Payment: models.Payment{ID: id, OrganizationID: 99},
 				}, nil
@@ -546,3 +546,4 @@ func TestPaymentHandler_SearchLeases(t *testing.T) {
 		}
 	})
 }
+

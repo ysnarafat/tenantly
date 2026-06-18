@@ -1,4 +1,4 @@
-package handlers
+﻿package handlers
 
 import (
 	"bytes"
@@ -631,7 +631,7 @@ func (suite *BuildingAPIIntegrationTestSuite) TestUpdateBuildingStatus() {
 
 // Test Error Handling and Validation
 func (suite *BuildingAPIIntegrationTestSuite) TestErrorHandling_NotFound() {
-	suite.mockService.On("GetBuilding", 999).Return((*models.Building)(nil), fmt.Errorf("failed to get building: building not found"))
+	suite.mockService.On("GetBuilding", 999, 0).Return((*models.Building)(nil), fmt.Errorf("failed to get building: building not found"))
 
 	w := suite.makeRequest("GET", "/api/v1/buildings/999", nil)
 
@@ -757,3 +757,4 @@ func intPtr(i int) *int {
 func TestBuildingAPIIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(BuildingAPIIntegrationTestSuite))
 }
+

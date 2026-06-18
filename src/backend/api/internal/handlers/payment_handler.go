@@ -56,7 +56,7 @@ func (h *PaymentHandler) GetPayment(c *gin.Context) {
 	userRole := c.GetString("role")
 	orgID := c.GetInt("org_id")
 
-	payment, err := h.paymentService.GetPayment(id)
+	payment, err := h.paymentService.GetPayment(id, orgID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -94,7 +94,7 @@ func (h *PaymentHandler) UpdatePayment(c *gin.Context) {
 	orgID := c.GetInt("org_id")
 
 	// Get existing payment for access verification
-	existingPayment, err := h.paymentService.GetPayment(id)
+	existingPayment, err := h.paymentService.GetPayment(id, orgID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "payment not found"})
 		return
@@ -114,7 +114,7 @@ func (h *PaymentHandler) UpdatePayment(c *gin.Context) {
 		return
 	}
 
-	payment, err := h.paymentService.UpdatePayment(id, &req, userID)
+	payment, err := h.paymentService.UpdatePayment(id, &req, userID, orgID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

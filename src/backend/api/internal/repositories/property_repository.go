@@ -62,7 +62,7 @@ func (r *PropertyRepository) GetByID(id int) (*models.Property, error) {
 	query := `
 		SELECT id, property_name, property_code, address, city, postal_code, property_type,
 		       (SELECT COUNT(*) FROM buildings b WHERE b.property_id = properties.id AND b.active_status = true) as total_buildings,
-		       metadata, active, created_at, updated_at
+		       metadata, active, created_at, updated_at, organization_id
 		FROM properties
 		WHERE id = $1`
 
@@ -80,6 +80,7 @@ func (r *PropertyRepository) GetByID(id int) (*models.Property, error) {
 		&property.Active,
 		&property.CreatedAt,
 		&property.UpdatedAt,
+		&property.OrganizationID,
 	)
 
 	if err != nil {
@@ -95,9 +96,10 @@ func (r *PropertyRepository) GetByID(id int) (*models.Property, error) {
 // GetByIDWithStats retrieves a property with aggregated statistics
 func (r *PropertyRepository) GetByIDWithStats(id int) (*models.PropertyWithStats, error) {
 	query := `
-		SELECT 
-			p.id, p.property_name, p.property_code, p.address, p.city, p.postal_code, 
+		SELECT
+			p.id, p.property_name, p.property_code, p.address, p.city, p.postal_code,
 			p.property_type, p.total_buildings, p.metadata, p.active, p.created_at, p.updated_at,
+			p.organization_id,
 			COALESCE(COUNT(DISTINCT b.id), 0) as building_count,
 			COALESCE(COUNT(DISTINCT u.id), 0) as unit_count,
 			COALESCE(COUNT(DISTINCT CASE WHEN l.active = true THEN u.id END), 0) as occupied_units,
@@ -109,7 +111,8 @@ func (r *PropertyRepository) GetByIDWithStats(id int) (*models.PropertyWithStats
 		LEFT JOIN payments pay ON u.id = pay.unit_id
 		WHERE p.id = $1
 		GROUP BY p.id, p.property_name, p.property_code, p.address, p.city, p.postal_code,
-		         p.property_type, p.total_buildings, p.metadata, p.active, p.created_at, p.updated_at`
+		         p.property_type, p.total_buildings, p.metadata, p.active, p.created_at, p.updated_at,
+		         p.organization_id`
 
 	var property models.PropertyWithStats
 	err := r.db.QueryRow(query, id).Scan(
@@ -125,6 +128,7 @@ func (r *PropertyRepository) GetByIDWithStats(id int) (*models.PropertyWithStats
 		&property.Active,
 		&property.CreatedAt,
 		&property.UpdatedAt,
+		&property.OrganizationID,
 		&property.BuildingCount,
 		&property.UnitCount,
 		&property.OccupiedUnits,

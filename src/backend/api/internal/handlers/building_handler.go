@@ -157,9 +157,10 @@ func (h *BuildingHandler) GetBuilding(c *gin.Context) {
 
 	// Check if stats are requested
 	includeStats := c.Query("include_stats") == "true"
+	orgID := c.GetInt("org_id")
 
 	if includeStats {
-		building, err := h.buildingService.GetBuildingWithStats(id)
+		building, err := h.buildingService.GetBuildingWithStats(id, orgID)
 		if err != nil {
 			if err.Error() == "failed to get building with stats: building not found" {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Building not found"})
@@ -174,7 +175,7 @@ func (h *BuildingHandler) GetBuilding(c *gin.Context) {
 
 		c.JSON(http.StatusOK, gin.H{"building": building})
 	} else {
-		building, err := h.buildingService.GetBuilding(id)
+		building, err := h.buildingService.GetBuilding(id, orgID)
 		if err != nil {
 			if err.Error() == "failed to get building: building not found" {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Building not found"})
@@ -209,11 +210,13 @@ func (h *BuildingHandler) UpdateBuilding(c *gin.Context) {
 		return
 	}
 
-	building, err := h.buildingService.UpdateBuilding(id, &req)
+	orgID := c.GetInt("org_id")
+	building, err := h.buildingService.UpdateBuilding(id, &req, orgID)
 	if err != nil {
 		// Handle specific error types
 		switch {
-		case err.Error() == "failed to get existing building: building not found":
+		case err.Error() == "failed to get existing building: building not found",
+			err.Error() == "building not found":
 			c.JSON(http.StatusNotFound, gin.H{"error": "Building not found"})
 			return
 		case err.Error() == "metadata validation failed":
@@ -243,11 +246,13 @@ func (h *BuildingHandler) DeleteBuilding(c *gin.Context) {
 		return
 	}
 
-	err = h.buildingService.DeleteBuilding(id)
+	orgID := c.GetInt("org_id")
+	err = h.buildingService.DeleteBuilding(id, orgID)
 	if err != nil {
 		// Handle specific error types
 		switch {
-		case err.Error() == "failed to get existing building: building not found":
+		case err.Error() == "failed to get existing building: building not found",
+			err.Error() == "building not found":
 			c.JSON(http.StatusNotFound, gin.H{"error": "Building not found"})
 			return
 		case err.Error() == "failed to delete building: cannot delete building with active units":
