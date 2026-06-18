@@ -307,6 +307,13 @@ func (s *PaymentService) GetDashboardSummaryWithBuildingContext(orgID int) (*mod
 	if err != nil {
 		return nil, fmt.Errorf("failed to get dashboard summary: %w", err)
 	}
+	buildingLevel, err := s.paymentRepo.GetBuildingLevelSummary()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get building-level summary: %w", err)
+	}
+	if count, ok := buildingLevel["total_buildings"].(int); ok {
+		summary.BuildingCount = count
+	}
 	return summary, nil
 }
 

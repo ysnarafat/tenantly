@@ -197,7 +197,7 @@ func (s *UserService) Login(req *models.LoginRequest, clientIP, userAgent string
 
 	user, err := s.userRepo.GetByUsername(username)
 	if err != nil {
-		return nil, fmt.Errorf("no user found with that username")
+		return nil, fmt.Errorf("invalid credentials")
 	}
 
 	// Check if user is active

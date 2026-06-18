@@ -227,7 +227,7 @@ func (suite *BuildingAPIIntegrationTestSuite) TestGetBuilding_WithStats() {
 		OccupancyRate: 75.0,
 	}
 
-	suite.mockService.On("GetBuildingWithStats", 1).Return(buildingWithStats, nil)
+	suite.mockService.On("GetBuildingWithStats", 1, 0).Return(buildingWithStats, nil)
 
 	w := suite.makeRequest("GET", "/api/v1/buildings/1?include_stats=true", nil)
 

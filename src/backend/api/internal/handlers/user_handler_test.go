@@ -130,15 +130,20 @@ func TestUserHandler_CreateUser(t *testing.T) {
 	mockService := new(MockUserService)
 	handler := NewUserHandler(mockService)
 	router := setupTestRouter()
-
+	router.Use(func(c *gin.Context) {
+		c.Set("role", "SUPER_ADMIN")
+		c.Next()
+	})
 	router.POST("/users", handler.CreateUser)
 
 	t.Run("Success", func(t *testing.T) {
 		req := &models.CreateUserRequest{
-			Username: "testuser",
-			Email:    "test@example.com",
-			Password: "ValidPass123!",
-			Role:     "Admin",
+			Username:  "testuser",
+			Email:     "test@example.com",
+			Password:  "ValidPass123!",
+			FirstName: "Test",
+			LastName:  "User",
+			Role:      "Admin",
 		}
 
 		user := &models.User{
@@ -486,7 +491,10 @@ func TestUserHandler_GetUsers(t *testing.T) {
 	mockService := new(MockUserService)
 	handler := NewUserHandler(mockService)
 	router := setupTestRouter()
-
+	router.Use(func(c *gin.Context) {
+		c.Set("role", "SUPER_ADMIN")
+		c.Next()
+	})
 	router.GET("/users", handler.GetUsers)
 
 	t.Run("Success", func(t *testing.T) {

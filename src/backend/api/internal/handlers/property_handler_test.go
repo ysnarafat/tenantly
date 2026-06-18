@@ -24,6 +24,11 @@ func setupPropertyHandlerTestDB(t *testing.T) (*sql.DB, func()) {
 		t.Skip("Skipping test: PostgreSQL not available")
 	}
 
+	if err := db.Ping(); err != nil {
+		db.Close()
+		t.Skipf("Skipping test: PostgreSQL not available: %v", err)
+	}
+
 	// Create test tables
 	createPropertyHandlerTestTables(t, db)
 

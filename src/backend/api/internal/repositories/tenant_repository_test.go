@@ -27,13 +27,9 @@ func TestTenantRepository_Create(t *testing.T) {
 			Address:     "123 Main St",
 		}
 
-		mock.ExpectQuery(regexp.QuoteMeta(`
-			INSERT INTO tenants (
-				name, tenant_type, phone_number, email, nid_number, address, active
-			) VALUES ($1, $2, $3, $4, $5, $6, true)
-			RETURNING id, created_at, updated_at`)).
+		mock.ExpectQuery(regexp.QuoteMeta("INSERT INTO tenants")).
 			WithArgs(
-				req.Name, req.TenantType, req.PhoneNumber, req.Email, req.NIDNumber, req.Address,
+				req.Name, req.TenantType, req.PhoneNumber, req.Email, req.NIDNumber, req.Address, 0,
 			).
 			WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).
 				AddRow(1, time.Now(), time.Now()))

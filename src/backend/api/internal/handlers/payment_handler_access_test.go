@@ -120,7 +120,7 @@ func TestPaymentHandler_UpdatePayment_AccessDenied(t *testing.T) {
 		r.Use(func(c *gin.Context) {
 			c.Set("userID", 1)
 			c.Set("org_id", 1)
-			c.Set("userRole", "Accountant")
+			c.Set("role", "Accountant")
 			c.Next()
 		})
 
