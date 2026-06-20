@@ -4,14 +4,15 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/models"
 )
 
 type UserOrganizationRoleRepository struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
-func NewUserOrganizationRoleRepository(db *sql.DB) *UserOrganizationRoleRepository {
+func NewUserOrganizationRoleRepository(db *sqlx.DB) *UserOrganizationRoleRepository {
 	return &UserOrganizationRoleRepository{db: db}
 }
 

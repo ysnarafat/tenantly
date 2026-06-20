@@ -207,10 +207,13 @@ func (s *PropertyService) validatePropertyType(propertyType string) error {
 }
 
 // GetPropertyAggregations returns property-level aggregations with building breakdowns
-func (s *PropertyService) GetPropertyAggregations(id int) (map[string]interface{}, error) {
+func (s *PropertyService) GetPropertyAggregations(id, orgID int) (map[string]interface{}, error) {
 	property, err := s.propertyRepo.GetByIDWithStats(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get property aggregations: %w", err)
+	}
+	if property.OrganizationID != orgID {
+		return nil, fmt.Errorf("property not found")
 	}
 
 	occupancyRate := 0.0

@@ -1,9 +1,9 @@
 ﻿package services
 
 import (
-	"database/sql"
 	"testing"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/database"
 	"github.com/ysnarafat/tenantly/internal/models"
 	"github.com/ysnarafat/tenantly/internal/repositories"
@@ -11,8 +11,8 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func setupPropertyTestDB(t *testing.T) (*sql.DB, func()) {
-	db, err := sql.Open("postgres", "postgres://postgres:password@localhost:5432/tenantly_test?sslmode=disable")
+func setupPropertyTestDB(t *testing.T) (*sqlx.DB, func()) {
+	db, err := sqlx.Open("postgres", "postgres://postgres:password@localhost:5432/tenantly_test?sslmode=disable")
 	if err != nil {
 		t.Skip("Skipping test: PostgreSQL not available")
 	}
@@ -33,7 +33,7 @@ func setupPropertyTestDB(t *testing.T) (*sql.DB, func()) {
 	return db, cleanup
 }
 
-func createTestTables(t *testing.T, db *sql.DB) {
+func createTestTables(t *testing.T, db *sqlx.DB) {
 	// Create properties table for testing
 	_, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS properties (
@@ -118,7 +118,7 @@ func createTestTables(t *testing.T, db *sql.DB) {
 	}
 }
 
-func dropTestTables(t *testing.T, db *sql.DB) {
+func dropTestTables(t *testing.T, db *sqlx.DB) {
 	tables := []string{"units", "buildings", "properties", "audit_log"}
 	for _, table := range tables {
 		_, err := db.Exec("DROP TABLE IF EXISTS " + table + " CASCADE")

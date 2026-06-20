@@ -1,18 +1,18 @@
 package database
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/models"
 )
 
 type AuditService struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
-func NewAuditService(db *sql.DB) *AuditService {
+func NewAuditService(db *sqlx.DB) *AuditService {
 	return &AuditService{db: db}
 }
 

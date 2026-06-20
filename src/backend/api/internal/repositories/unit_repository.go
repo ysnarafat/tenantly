@@ -6,17 +6,18 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/models"
 	"github.com/ysnarafat/tenantly/internal/models/columns"
 )
 
 // UnitRepository implements the UnitRepositoryInterface
 type UnitRepository struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
 // NewUnitRepository creates a new UnitRepository
-func NewUnitRepository(db *sql.DB) *UnitRepository {
+func NewUnitRepository(db *sqlx.DB) *UnitRepository {
 	return &UnitRepository{db: db}
 }
 

@@ -1346,7 +1346,8 @@ func TestBuildingService_GetBuildingAnalytics_Success(t *testing.T) {
 	}
 	buildingRepo.Create(building)
 
-	analytics, err := service.GetBuildingAnalytics(1)
+	building.OrganizationID = 1
+	analytics, err := service.GetBuildingAnalytics(1, 1)
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -1380,7 +1381,7 @@ func TestBuildingService_GetBuildingAnalytics_Success(t *testing.T) {
 func TestBuildingService_GetBuildingAnalytics_BuildingNotFound(t *testing.T) {
 	service, _, _, _, _ := createFullBuildingService()
 
-	analytics, err := service.GetBuildingAnalytics(999)
+	analytics, err := service.GetBuildingAnalytics(999, 1)
 
 	if err == nil {
 		t.Fatal("Expected error for non-existent building")

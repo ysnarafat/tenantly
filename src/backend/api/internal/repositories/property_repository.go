@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/models"
 )
 
 type PropertyRepository struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
-func NewPropertyRepository(db *sql.DB) *PropertyRepository {
+func NewPropertyRepository(db *sqlx.DB) *PropertyRepository {
 	return &PropertyRepository{db: db}
 }
 

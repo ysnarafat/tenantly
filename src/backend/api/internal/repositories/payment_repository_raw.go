@@ -11,7 +11,8 @@ import (
 
 const paymentWithDetailsCols = `
 	p.id, p.unit_id, p.tenant_id, p.building_id, p.property_id, p.organization_id,
-	p.month, p.year, p.amount_due, p.amount_paid, p.status,
+	p.month, p.year, p.amount_due,
+	COALESCE(p.amount_paid, 0), COALESCE(p.status, 'Due'),
 	COALESCE(p.payment_method, ''), COALESCE(p.notes, ''), COALESCE(p.receipt_number, ''),
 	p.payment_date, p.due_date, p.created_at, p.updated_at,
 	COALESCE(pr.property_name, ''), COALESCE(b.building_name, ''),

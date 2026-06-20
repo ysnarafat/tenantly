@@ -97,7 +97,7 @@ func TestBuildingHandler_EndpointRouting(t *testing.T) {
 			expectedStatus: http.StatusOK,
 			setupMock: func() {
 				analytics := &models.BuildingAnalytics{BuildingID: 1}
-				mockService.On("GetBuildingAnalytics", 1).Return(analytics, nil)
+				mockService.On("GetBuildingAnalytics", 1, 0).Return(analytics, nil)
 			},
 		},
 		{

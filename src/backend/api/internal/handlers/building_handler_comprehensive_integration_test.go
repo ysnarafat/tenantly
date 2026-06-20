@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -27,7 +27,7 @@ import (
 // BuildingIntegrationTestSuite provides comprehensive integration testing for building management API
 type BuildingIntegrationTestSuite struct {
 	suite.Suite
-	db              *sql.DB
+	db              *sqlx.DB
 	router          *gin.Engine
 	config          *config.Config
 	buildingHandler *BuildingHandler

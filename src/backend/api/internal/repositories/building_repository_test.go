@@ -1,10 +1,10 @@
 package repositories
 
 import (
-	"database/sql"
 	"fmt"
 	"testing"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/models"
 	"github.com/ysnarafat/tenantly/internal/testutil"
 
@@ -12,18 +12,18 @@ import (
 )
 
 // setupBuildingRepositoryTestDB creates a test DB using migrations.
-func setupBuildingRepositoryTestDB(t *testing.T) (*sql.DB, func()) {
+func setupBuildingRepositoryTestDB(t *testing.T) (*sqlx.DB, func()) {
 	db, cleanup := testutil.SetupTestDB(t)
 	return db, cleanup
 }
 
-func setupBuildingRepository(t *testing.T) (*BuildingRepository, *sql.DB, func()) {
+func setupBuildingRepository(t *testing.T) (*BuildingRepository, *sqlx.DB, func()) {
 	db, cleanup := setupBuildingRepositoryTestDB(t)
 	repo := NewBuildingRepository(db)
 	return repo, db, cleanup
 }
 
-func createTestProperty(t *testing.T, db *sql.DB) int {
+func createTestProperty(t *testing.T, db *sqlx.DB) int {
 	return testutil.CreateTestProperty(t, db)
 }
 

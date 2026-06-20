@@ -63,8 +63,8 @@ func (m *MockBuildingService) SearchBuildings(filters *models.BuildingSearchFilt
 	return args.Get(0).([]*models.Building), args.Error(1)
 }
 
-func (m *MockBuildingService) GetBuildingAnalytics(id int) (*models.BuildingAnalytics, error) {
-	args := m.Called(id)
+func (m *MockBuildingService) GetBuildingAnalytics(id, orgID int) (*models.BuildingAnalytics, error) {
+	args := m.Called(id, orgID)
 	return args.Get(0).(*models.BuildingAnalytics), args.Error(1)
 }
 

@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_DB: tenantly
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-this-in-production}
     # NO PORTS EXPOSED - Database is internal only
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -72,7 +72,7 @@ services:
         BUILDKIT_INLINE_CACHE: 1
     container_name: tenantly-notification-service
     environment:
-      Database__ConnectionString: Host=postgres;Database=tenantly;Username=postgres;Password=password
+      Database__ConnectionString: Host=postgres;Database=tenantly;Username=postgres;Password=${POSTGRES_PASSWORD:-change-this-in-production}
       Notifications__ProcessingIntervalSeconds: 30
     depends_on:
       - postgres

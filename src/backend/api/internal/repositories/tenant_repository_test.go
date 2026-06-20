@@ -6,14 +6,21 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/ysnarafat/tenantly/internal/models"
 )
 
-func TestTenantRepository_Create(t *testing.T) {
-	db, mock, err := sqlmock.New()
+func newSqlxMock(t *testing.T) (*sqlx.DB, sqlmock.Sqlmock) {
+	t.Helper()
+	sqlDB, mock, err := sqlmock.New()
 	assert.NoError(t, err)
-	defer db.Close()
+	t.Cleanup(func() { sqlDB.Close() })
+	return sqlx.NewDb(sqlDB, "postgres"), mock
+}
+
+func TestTenantRepository_Create(t *testing.T) {
+	db, mock := newSqlxMock(t)
 
 	repo := NewTenantRepository(db)
 
@@ -54,9 +61,7 @@ func TestTenantRepository_Create(t *testing.T) {
 }
 
 func TestTenantRepository_CheckEmailExists(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	assert.NoError(t, err)
-	defer db.Close()
+	db, mock := newSqlxMock(t)
 
 	repo := NewTenantRepository(db)
 
@@ -84,9 +89,7 @@ func TestTenantRepository_CheckEmailExists(t *testing.T) {
 }
 
 func TestTenantRepository_CheckNIDExists(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	assert.NoError(t, err)
-	defer db.Close()
+	db, mock := newSqlxMock(t)
 
 	repo := NewTenantRepository(db)
 

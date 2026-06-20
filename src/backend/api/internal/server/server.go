@@ -2,12 +2,12 @@ package server
 
 import (
 	"crypto/tls"
-	"database/sql"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/config"
 	"github.com/ysnarafat/tenantly/internal/database"
 	"github.com/ysnarafat/tenantly/internal/handlers"
@@ -18,11 +18,11 @@ import (
 
 type Server struct {
 	config *config.Config
-	db     *sql.DB
+	db     *sqlx.DB
 	router *gin.Engine
 }
 
-func New(cfg *config.Config, db *sql.DB) *Server {
+func New(cfg *config.Config, db *sqlx.DB) *Server {
 	s := &Server{
 		config: cfg,
 		db:     db,
@@ -118,9 +118,10 @@ func (s *Server) setupRoutes() {
 	v1 := s.router.Group("/api/v1")
 	{
 		// Authentication routes (public)
+		loginRateLimiter := middleware.NewRateLimiter(10, time.Minute)
 		auth := v1.Group("/auth")
 		{
-			auth.POST("/login", userHandler.Login)
+			auth.POST("/login", middleware.RateLimitMiddleware(loginRateLimiter, auditService), userHandler.Login)
 			auth.POST("/refresh", userHandler.RefreshToken)
 			auth.POST("/reset-password", userHandler.ResetPassword)
 			auth.POST("/confirm-reset-password", userHandler.ConfirmPasswordReset)
@@ -299,11 +300,8 @@ func (s *Server) setupRoutes() {
 				reports.GET("/collection-summary", middleware.RequireAnyRole(), reportHandler.GetCollectionSummary)
 				reports.GET("/payment-analysis", middleware.RequireAnyRole(), reportHandler.GetPaymentAnalysis)
 				reports.GET("/dashboard-metrics", middleware.RequireAnyRole(), reportHandler.GetDashboardMetrics)
-<<<<<<< HEAD
-=======
 				reports.GET("/tenant-summary", middleware.RequireAnyRole(), reportHandler.GetTenantSummary)
 				reports.GET("/property-analytics", middleware.RequireAnyRole(), reportHandler.GetPropertyAnalytics)
->>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
 			}
 		}
 	}

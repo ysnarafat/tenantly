@@ -166,7 +166,7 @@ type BuildingServiceInterface interface {
 	SearchBuildings(filters *models.BuildingSearchFilters) ([]*models.Building, error)
 
 	// Building-level aggregation and analytics
-	GetBuildingAnalytics(id int) (*models.BuildingAnalytics, error)
+	GetBuildingAnalytics(id, orgID int) (*models.BuildingAnalytics, error)
 	GetPropertyBuildingAnalytics(propertyID int) ([]*models.BuildingAnalytics, error)
 	CalculateBuildingOccupancyRate(id int) (float64, error)
 	CalculateBuildingRevenue(id int) (float64, error)

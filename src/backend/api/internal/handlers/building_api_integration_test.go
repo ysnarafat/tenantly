@@ -461,7 +461,7 @@ func (suite *BuildingAPIIntegrationTestSuite) TestGetBuildingAnalytics() {
 		TotalArea:      5000.0,
 	}
 
-	suite.mockService.On("GetBuildingAnalytics", 1).Return(analytics, nil)
+	suite.mockService.On("GetBuildingAnalytics", 1, 0).Return(analytics, nil)
 
 	w := suite.makeRequest("GET", "/api/v1/buildings/1/analytics", nil)
 

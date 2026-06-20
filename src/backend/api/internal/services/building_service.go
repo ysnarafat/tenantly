@@ -364,11 +364,13 @@ func (s *BuildingService) SearchBuildings(filters *models.BuildingSearchFilters)
 }
 
 // GetBuildingAnalytics retrieves building performance metrics
-func (s *BuildingService) GetBuildingAnalytics(id int) (*models.BuildingAnalytics, error) {
-	// Validate building exists
-	_, err := s.buildingRepo.GetByID(id)
+func (s *BuildingService) GetBuildingAnalytics(id, orgID int) (*models.BuildingAnalytics, error) {
+	building, err := s.buildingRepo.GetByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("building validation failed: %w", err)
+	}
+	if building.OrganizationID != orgID {
+		return nil, fmt.Errorf("building validation failed: building not found")
 	}
 
 	analytics, err := s.buildingRepo.GetAnalytics(id)
@@ -406,9 +408,9 @@ func (s *BuildingService) GetPropertyBuildingAnalytics(propertyID int) ([]*model
 
 // CalculateBuildingOccupancyRate calculates the occupancy rate for a building
 func (s *BuildingService) CalculateBuildingOccupancyRate(id int) (float64, error) {
-	analytics, err := s.GetBuildingAnalytics(id)
+	analytics, err := s.buildingRepo.GetAnalytics(id)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("building validation failed: %w", err)
 	}
 
 	return analytics.OccupancyRate, nil
@@ -416,9 +418,9 @@ func (s *BuildingService) CalculateBuildingOccupancyRate(id int) (float64, error
 
 // CalculateBuildingRevenue calculates the monthly revenue for a building
 func (s *BuildingService) CalculateBuildingRevenue(id int) (float64, error) {
-	analytics, err := s.GetBuildingAnalytics(id)
+	analytics, err := s.buildingRepo.GetAnalytics(id)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("building validation failed: %w", err)
 	}
 
 	return analytics.MonthlyRevenue, nil
@@ -426,9 +428,9 @@ func (s *BuildingService) CalculateBuildingRevenue(id int) (float64, error) {
 
 // GetBuildingUnitCounts returns unit counts for a building
 func (s *BuildingService) GetBuildingUnitCounts(id int) (total int, occupied int, vacant int, err error) {
-	analytics, err := s.GetBuildingAnalytics(id)
+	analytics, err := s.buildingRepo.GetAnalytics(id)
 	if err != nil {
-		return 0, 0, 0, err
+		return 0, 0, 0, fmt.Errorf("building validation failed: %w", err)
 	}
 
 	return analytics.UnitCount, analytics.OccupiedUnits, analytics.VacantUnits, nil
