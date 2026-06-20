@@ -149,10 +149,10 @@ type BuildingValidationServiceInterface interface {
 type BuildingServiceInterface interface {
 	// Core CRUD operations
 	CreateBuilding(req *models.CreateBuildingRequest) (*models.Building, error)
-	GetBuilding(id int) (*models.Building, error)
-	GetBuildingWithStats(id int) (*models.BuildingWithStats, error)
-	UpdateBuilding(id int, req *models.UpdateBuildingRequest) (*models.Building, error)
-	DeleteBuilding(id int) error
+	GetBuilding(id, orgID int) (*models.Building, error)
+	GetBuildingWithStats(id, orgID int) (*models.BuildingWithStats, error)
+	UpdateBuilding(id int, req *models.UpdateBuildingRequest, orgID int) (*models.Building, error)
+	DeleteBuilding(id, orgID int) error
 
 	// Property-building relationship operations
 	GetBuildingsByProperty(propertyID int) ([]*models.Building, error)
@@ -236,9 +236,9 @@ type UnitRepositoryInterface interface {
 // UnitServiceInterface defines the interface for unit service operations
 type UnitServiceInterface interface {
 	CreateUnit(req *models.CreateUnitRequest, userID int) (*models.Unit, error)
-	GetUnit(id int) (*models.UnitWithDetails, error)
-	UpdateUnit(id int, req *models.UpdateUnitRequest, userID int) (*models.Unit, error)
-	DeleteUnit(id int, userID int) error
+	GetUnit(id, orgID int) (*models.UnitWithDetails, error)
+	UpdateUnit(id int, req *models.UpdateUnitRequest, userID, orgID int) (*models.Unit, error)
+	DeleteUnit(id, userID, orgID int) error
 	ValidateBuildingUnitRelationship(buildingID, propertyID int) error
 	ValidateUnitTypeForBuilding(buildingID int, unitType models.UnitType) error
 	GetUnitsByBuilding(buildingID int, page, pageSize, orgID int) ([]*models.UnitWithDetails, int, error)
@@ -258,28 +258,35 @@ type PaymentRepositoryInterface interface {
 	GetPropertyPaymentStats(propertyID int, startDate, endDate time.Time) (interface{}, error)
 	GetSystemPaymentStats(startDate, endDate time.Time) (interface{}, error)
 	GetBuildingPaymentsInPeriod(buildingID int, startDate, endDate time.Time, limit, offset int) ([]*models.PaymentWithDetails, int, error)
-	GetDashboardSummary() (*models.DashboardSummary, error)
+	GetDashboardSummary(orgID int) (*models.DashboardSummary, error)
+	GetAgingBuckets(orgID int) (map[string]int64, error)
+	GetMonthlyCollectionTrend(orgID int, months int) ([]*models.MonthlyCollectionTrend, error)
+	GetTenantPaymentSummary(orgID int) ([]*models.TenantReportEntry, error)
+	GetPaymentAnalyticsByPeriod(orgID int, startDate, endDate time.Time) (*models.PaymentAnalyticsResult, error)
 	GetBuildingLevelSummary() (map[string]interface{}, error)
 	GetBuildingPaymentAnalytics(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentAnalytics, error)
 	SearchLeases(orgID int, query string) ([]*models.LeaseSearchResult, error)
+	GetActiveLeasesForPeriod(orgID, month, year int, buildingID *int) ([]*models.LeaseSearchResult, error)
+	CheckPaymentExists(unitID, month, year int) (bool, error)
 }
 
 // PaymentServiceInterface defines the interface for payment service operations
 type PaymentServiceInterface interface {
 	CreatePayment(req *models.CreatePaymentRequest, userID int) (*models.Payment, error)
-	GetPayment(id int) (*models.PaymentWithDetails, error)
-	UpdatePayment(id int, req *models.UpdatePaymentRequest, userID int) (*models.Payment, error)
+	GetPayment(id, orgID int) (*models.PaymentWithDetails, error)
+	UpdatePayment(id int, req *models.UpdatePaymentRequest, userID, orgID int) (*models.Payment, error)
 	GetPayments(page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
 	GetPaymentsByBuilding(buildingID int, page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
 	GetPaymentsByProperty(propertyID int, page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
 	GenerateBuildingPaymentReport(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error)
 	GeneratePropertyPaymentReport(propertyID int, startDate, endDate time.Time) (*models.PropertyPaymentReport, error)
-	GetDashboardSummaryWithBuildingContext() (*models.DashboardSummary, error)
+	GetDashboardSummaryWithBuildingContext(orgID int) (*models.DashboardSummary, error)
 	ProcessBulkPayments(requests []*models.CreatePaymentRequest, userID int) ([]*models.Payment, []error)
 	GetPaymentAnalyticsByBuilding(buildingID int, period string) (*models.BuildingPaymentAnalytics, error)
 	CanUserAccessPayment(userID int, userRole string, payment *models.PaymentWithDetails, userOrgID int) bool
 	LogPaymentAccess(userID int, action string, paymentID int, allowed bool)
 	SearchLeases(orgID int, query string) (*models.LeaseSearchResponse, error)
+	GenerateMonthlyPayments(req *models.GenerateMonthlyPaymentsRequest, orgID, userID int) (*models.GenerateMonthlyPaymentsResult, error)
 }
 
 // NotificationRepositoryInterface defines the interface for notification repository operations
@@ -382,4 +389,6 @@ type ReportServiceInterface interface {
 	FinancialLedgerReport(orgID int, filters map[string]interface{}, limit, offset int) (*models.FinancialLedgerReport, error)
 	CollectionSummaryReport(orgID int, startDate, endDate time.Time) (*models.CollectionSummaryReport, error)
 	PaymentAnalysisReport(orgID int, startDate, endDate time.Time) (*models.PaymentAnalysisReport, error)
+	TenantSummaryReport(orgID int) (*models.TenantSummaryReport, error)
+	PropertyAnalyticsReport(orgID int, startDate, endDate time.Time) (*models.PropertyAnalyticsReport, error)
 }

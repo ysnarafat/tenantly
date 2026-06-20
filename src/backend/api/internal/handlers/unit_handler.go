@@ -45,7 +45,8 @@ func (h *UnitHandler) GetUnit(c *gin.Context) {
 		return
 	}
 
-	unit, err := h.unitService.GetUnit(id)
+	orgID := c.GetInt("org_id")
+	unit, err := h.unitService.GetUnit(id, orgID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -69,7 +70,8 @@ func (h *UnitHandler) UpdateUnit(c *gin.Context) {
 	}
 
 	userID := c.GetInt("userID")
-	unit, err := h.unitService.UpdateUnit(id, &req, userID)
+	orgID := c.GetInt("org_id")
+	unit, err := h.unitService.UpdateUnit(id, &req, userID, orgID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -87,7 +89,8 @@ func (h *UnitHandler) DeleteUnit(c *gin.Context) {
 	}
 
 	userID := c.GetInt("userID")
-	if err := h.unitService.DeleteUnit(id, userID); err != nil {
+	orgID := c.GetInt("org_id")
+	if err := h.unitService.DeleteUnit(id, userID, orgID); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

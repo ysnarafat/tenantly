@@ -493,5 +493,112 @@
     "REVENUE_BY_PROPERTY": "Revenue by Property",
     "OCCUPANCY_RATE": "Occupancy Rate",
     "PAYMENT_METHODS": "Payment Methods Distribution"
+  },
+  "USER_LIST": {
+    "PAGE_TITLE": "User Management",
+    "BUTTONS": {
+      "CREATE_USER": "Create User",
+      "INVITE_USER": "Invite User"
+    },
+    "FILTERS": {
+      "SEARCH_LABEL": "Search users",
+      "SEARCH_PLACEHOLDER": "Search by name or email...",
+      "ROLE_LABEL": "Filter by role",
+      "ALL_ROLES": "All Roles",
+      "SHOW_INACTIVE": "Show inactive"
+    },
+    "TABLE": {
+      "NAME": "Name",
+      "EMAIL": "Email",
+      "ROLE": "Role",
+      "STATUS": "Status",
+      "CREATED": "Created",
+      "ACTIONS": "Actions"
+    },
+    "STATUS": {
+      "ACTIVE": "Active",
+      "INACTIVE": "Inactive"
+    },
+    "TOOLTIPS": {
+      "PROMOTE": "Promote/Demote",
+      "DEACTIVATE": "Deactivate",
+      "ACTIVATE": "Activate",
+      "DELETE": "Delete"
+    }
+  },
+  "ORG_LIST": {
+    "PAGE_TITLE": "Organizations",
+    "BUTTONS": { "NEW": "New Organization" },
+    "FILTERS": {
+      "SEARCH_LABEL": "Search organizations",
+      "SEARCH_PLACEHOLDER": "Search by name or slug..."
+    },
+    "TABLE": {
+      "NAME": "Name",
+      "SLUG": "Slug",
+      "TIER": "Tier",
+      "MAX_USERS": "Max Users",
+      "ACTIVE": "Active",
+      "ACTIONS": "Actions"
+    },
+    "TOOLTIPS": { "VIEW": "View", "EDIT": "Edit", "DELETE": "Delete" }
+  },
+  "ORG_CREATE": {
+    "PAGE_TITLE": "Create New Organization",
+    "FIELDS": {
+      "NAME": "Organization Name",
+      "SLUG": "Slug",
+      "SLUG_HINT": "Auto-generated from name",
+      "TIER": "Subscription Tier",
+      "MAX_USERS": "Max Users"
+    },
+    "TIERS": {
+      "BASIC": "Basic",
+      "PROFESSIONAL": "Professional",
+      "ENTERPRISE": "Enterprise"
+    },
+    "ERRORS": {
+      "NAME_REQUIRED": "Name is required",
+      "NAME_MIN": "Name must be at least 3 characters",
+      "SLUG_REQUIRED": "Slug is required",
+      "MAX_USERS_REQUIRED": "Max users is required",
+      "MAX_USERS_MIN": "Max users must be at least 1"
+    },
+    "BUTTONS": {
+      "CREATING": "Creating...",
+      "CREATE": "Create Organization",
+      "CANCEL": "Cancel"
+    }
+  },
+  "ATTACHMENT_LIST": {
+    "PAGE_TITLE": "Attachments",
+    "BUTTONS": { "UPLOAD": "Upload File" },
+    "FILTERS": {
+      "TYPE_LABEL": "Filter by Type",
+      "ALL_TYPES": "All Types",
+      "SEARCH_LABEL": "Search",
+      "SEARCH_PLACEHOLDER": "Search by filename, description, or tags"
+    },
+    "TABLE": {
+      "FILE": "File",
+      "TYPE": "Type",
+      "SIZE": "Size",
+      "DESCRIPTION": "Description",
+      "UPLOADED": "Uploaded",
+      "ACTIONS": "Actions"
+    },
+    "MENU": {
+      "VIEW": "View",
+      "DOWNLOAD": "Download",
+      "EDIT": "Edit",
+      "DELETE": "Delete"
+    },
+    "EMPTY": {
+      "TITLE": "No attachments found",
+      "TRY_ADJUST": "Try adjusting your filters or search terms.",
+      "START_UPLOAD": "Start by uploading your first file."
+    },
+    "LOADING": "Loading attachments...",
+    "NO_DESCRIPTION": "No description"
   }
 }

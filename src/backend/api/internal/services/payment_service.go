@@ -88,20 +88,26 @@ func (s *PaymentService) CreatePayment(req *models.CreatePaymentRequest, userID 
 }
 
 // GetPayment retrieves a payment with building and property context
-func (s *PaymentService) GetPayment(id int) (*models.PaymentWithDetails, error) {
+func (s *PaymentService) GetPayment(id, orgID int) (*models.PaymentWithDetails, error) {
 	payment, err := s.paymentRepo.GetByIDWithDetails(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get payment with details: %w", err)
+	}
+	if payment.OrganizationID != orgID {
+		return nil, fmt.Errorf("payment not found")
 	}
 	return payment, nil
 }
 
 // UpdatePayment updates a payment record with building context logging
-func (s *PaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequest, userID int) (*models.Payment, error) {
+func (s *PaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequest, userID, orgID int) (*models.Payment, error) {
 	// Get existing payment for audit and building context
 	existingPayment, err := s.paymentRepo.GetByIDWithDetails(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get existing payment: %w", err)
+	}
+	if existingPayment.OrganizationID != orgID {
+		return nil, fmt.Errorf("payment not found")
 	}
 
 	// Update payment
@@ -295,11 +301,18 @@ func (s *PaymentService) GeneratePropertyPaymentReport(propertyID int, startDate
 	return report, nil
 }
 
-// GetDashboardSummaryWithBuildingContext returns dashboard summary with building-level context
-func (s *PaymentService) GetDashboardSummaryWithBuildingContext() (*models.DashboardSummary, error) {
-	summary, err := s.paymentRepo.GetDashboardSummary()
+// GetDashboardSummaryWithBuildingContext returns dashboard summary scoped to the given org.
+func (s *PaymentService) GetDashboardSummaryWithBuildingContext(orgID int) (*models.DashboardSummary, error) {
+	summary, err := s.paymentRepo.GetDashboardSummary(orgID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get dashboard summary: %w", err)
+	}
+	buildingLevel, err := s.paymentRepo.GetBuildingLevelSummary()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get building-level summary: %w", err)
+	}
+	if count, ok := buildingLevel["total_buildings"].(int); ok {
+		summary.BuildingCount = count
 	}
 	return summary, nil
 }
@@ -414,6 +427,86 @@ func (s *PaymentService) LogPaymentAccess(userID int, action string, paymentID i
 	} else {
 		s.auditService.LogUserAction(userID, fmt.Sprintf("%s_DENIED", action), "payments", &paymentID, nil, accessLog)
 	}
+}
+
+// GenerateMonthlyPayments creates Due payment records for every active lease in the given month/year.
+// Leases that already have a payment record for that unit/month/year are skipped.
+func (s *PaymentService) GenerateMonthlyPayments(req *models.GenerateMonthlyPaymentsRequest, orgID, userID int) (*models.GenerateMonthlyPaymentsResult, error) {
+	now := time.Now().UTC()
+	currentYear, currentMonth := now.Year(), int(now.Month())
+
+	// Reject dates more than 1 month ahead of today.
+	reqMonths := req.Year*12 + req.Month
+	currentMonths := currentYear*12 + currentMonth
+	if reqMonths > currentMonths+1 {
+		return nil, fmt.Errorf("cannot generate payments more than 1 month in the future (requested %04d-%02d)", req.Year, req.Month)
+	}
+
+	// Reject dates older than 24 months to prevent mass back-generation.
+	if reqMonths < currentMonths-24 {
+		return nil, fmt.Errorf("cannot generate payments more than 24 months in the past (requested %04d-%02d)", req.Year, req.Month)
+	}
+
+	leases, err := s.paymentRepo.GetActiveLeasesForPeriod(orgID, req.Month, req.Year, req.BuildingID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch active leases: %w", err)
+	}
+
+	dueDay := req.DueDayOfMonth
+	if dueDay < 1 || dueDay > 28 {
+		dueDay = 7
+	}
+	lastDay := time.Date(req.Year, time.Month(req.Month+1), 0, 0, 0, 0, 0, time.UTC).Day()
+	if dueDay > lastDay {
+		dueDay = lastDay
+	}
+	dueDateStr := fmt.Sprintf("%04d-%02d-%02d", req.Year, req.Month, dueDay)
+
+	result := &models.GenerateMonthlyPaymentsResult{Errors: []string{}}
+
+	for _, lease := range leases {
+		exists, err := s.paymentRepo.CheckPaymentExists(lease.UnitID, req.Month, req.Year)
+		if err != nil {
+			result.Failed++
+			result.Errors = append(result.Errors, fmt.Sprintf("unit %d: existence check failed: %v", lease.UnitID, err))
+			continue
+		}
+		if exists {
+			result.Skipped++
+			continue
+		}
+
+		createReq := &models.CreatePaymentRequest{
+			UnitID:         lease.UnitID,
+			TenantID:       lease.TenantID,
+			BuildingID:     lease.BuildingID,
+			PropertyID:     lease.PropertyID,
+			OrganizationID: orgID,
+			Month:          req.Month,
+			Year:           req.Year,
+			AmountDue:      lease.MonthlyRent,
+			DueDate:        dueDateStr,
+		}
+
+		if _, err := s.paymentRepo.Create(createReq); err != nil {
+			result.Failed++
+			result.Errors = append(result.Errors, fmt.Sprintf("unit %d: %v", lease.UnitID, err))
+			continue
+		}
+		result.Generated++
+	}
+
+	s.auditService.LogUserAction(userID, "GENERATE_MONTHLY", "payments", nil, nil, map[string]interface{}{
+		"month":       req.Month,
+		"year":        req.Year,
+		"org_id":      orgID,
+		"generated":   result.Generated,
+		"skipped":     result.Skipped,
+		"failed":      result.Failed,
+		"building_id": req.BuildingID,
+	})
+
+	return result, nil
 }
 
 // SearchLeases searches for active leases by tenant name, property, building, unit, or lease ID

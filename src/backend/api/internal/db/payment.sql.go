@@ -420,11 +420,12 @@ SELECT
     COALESCE(SUM(amount_paid), 0) AS total_paid,
     COALESCE(SUM(CASE WHEN status != 'Paid' THEN amount_due - amount_paid ELSE 0 END), 0) AS total_pending,
     COALESCE(SUM(CASE WHEN status='Overdue' THEN amount_due - amount_paid ELSE 0 END), 0) AS total_overdue,
-    (SELECT COUNT(DISTINCT id) FROM properties) AS property_count,
-    (SELECT COUNT(DISTINCT id) FROM buildings) AS building_count,
-    (SELECT COUNT(DISTINCT id) FROM units WHERE active = true) AS unit_count,
-    (SELECT COUNT(DISTINCT id) FROM tenants WHERE active = true) AS tenant_count
+    (SELECT COUNT(DISTINCT id) FROM properties WHERE organization_id = $1) AS property_count,
+    (SELECT COUNT(DISTINCT id) FROM buildings WHERE organization_id = $1) AS building_count,
+    (SELECT COUNT(DISTINCT id) FROM units WHERE active = true AND organization_id = $1) AS unit_count,
+    (SELECT COUNT(DISTINCT id) FROM tenants WHERE active = true AND organization_id = $1) AS tenant_count
 FROM payments
+WHERE organization_id = $1
 `
 
 type GetDashboardSummaryRow struct {
@@ -438,8 +439,8 @@ type GetDashboardSummaryRow struct {
 	TenantCount   int64       `db:"tenant_count" json:"tenant_count"`
 }
 
-func (q *Queries) GetDashboardSummary(ctx context.Context) (GetDashboardSummaryRow, error) {
-	row := q.db.QueryRowContext(ctx, getDashboardSummary)
+func (q *Queries) GetDashboardSummary(ctx context.Context, organizationID int32) (GetDashboardSummaryRow, error) {
+	row := q.db.QueryRowContext(ctx, getDashboardSummary, organizationID)
 	var i GetDashboardSummaryRow
 	err := row.Scan(
 		&i.TotalDue,

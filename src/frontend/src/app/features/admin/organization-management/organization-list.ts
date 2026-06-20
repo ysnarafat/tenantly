@@ -20,6 +20,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { TranslateModule } from '@ngx-translate/core';
 import { Organization } from '../../../core/models';
 import { OrganizationService } from '../../../core/services/organization.service';
 
@@ -39,6 +40,7 @@ import { OrganizationService } from '../../../core/services/organization.service
     MatSnackBarModule,
     MatChipsModule,
     MatTooltipModule,
+    TranslateModule,
   ],
   templateUrl: './organization-list.html',
   styleUrls: ['./organization-list.scss'],

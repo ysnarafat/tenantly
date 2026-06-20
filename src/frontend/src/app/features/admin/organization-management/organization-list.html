@@ -1,18 +1,18 @@
 <div class="organization-list-container">
   <div class="header">
-    <h1>Organizations</h1>
+    <h1>{{ 'ORG_LIST.PAGE_TITLE' | translate }}</h1>
     <button mat-raised-button color="primary" (click)="createOrganization()">
       <mat-icon>add</mat-icon>
-      New Organization
+      {{ 'ORG_LIST.BUTTONS.NEW' | translate }}
     </button>
   </div>
 
   <div class="search-bar">
     <mat-form-field appearance="outline">
-      <mat-label>Search organizations</mat-label>
+      <mat-label>{{ 'ORG_LIST.FILTERS.SEARCH_LABEL' | translate }}</mat-label>
       <input
         matInput
-        placeholder="Search by name or slug..."
+        [placeholder]="'ORG_LIST.FILTERS.SEARCH_PLACEHOLDER' | translate"
         (input)="onSearchChange($event.target.value)"
       />
       <mat-icon matSuffix>search</mat-icon>
@@ -26,21 +26,18 @@
   } @else {
   <div class="table-container">
     <table mat-table [dataSource]="filteredData()" matSort class="organization-table">
-      <!-- Name Column -->
       <ng-container matColumnDef="name">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'ORG_LIST.TABLE.NAME' | translate }}</th>
         <td mat-cell *matCellDef="let org">{{ org.name }}</td>
       </ng-container>
 
-      <!-- Slug Column -->
       <ng-container matColumnDef="slug">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Slug</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'ORG_LIST.TABLE.SLUG' | translate }}</th>
         <td mat-cell *matCellDef="let org">{{ org.slug }}</td>
       </ng-container>
 
-      <!-- Subscription Tier Column -->
       <ng-container matColumnDef="subscriptionTier">
-        <th mat-header-cell *matHeaderCellDef>Tier</th>
+        <th mat-header-cell *matHeaderCellDef>{{ 'ORG_LIST.TABLE.TIER' | translate }}</th>
         <td mat-cell *matCellDef="let org">
           <mat-chip [color]="getSubscriptionTierColor(org.subscriptionTier)" selected>
             {{ org.subscriptionTier | uppercase }}
@@ -48,15 +45,13 @@
         </td>
       </ng-container>
 
-      <!-- Max Users Column -->
       <ng-container matColumnDef="maxUsers">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Max Users</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'ORG_LIST.TABLE.MAX_USERS' | translate }}</th>
         <td mat-cell *matCellDef="let org">{{ org.maxUsers }}</td>
       </ng-container>
 
-      <!-- Active Column -->
       <ng-container matColumnDef="active">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>Active</th>
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'ORG_LIST.TABLE.ACTIVE' | translate }}</th>
         <td mat-cell *matCellDef="let org">
           <mat-icon [color]="org.active ? 'accent' : 'warn'">
             {{ org.active ? 'check_circle' : 'cancel' }}
@@ -64,19 +59,18 @@
         </td>
       </ng-container>
 
-      <!-- Actions Column -->
       <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <th mat-header-cell *matHeaderCellDef>{{ 'ORG_LIST.TABLE.ACTIONS' | translate }}</th>
         <td mat-cell *matCellDef="let org">
-          <button mat-icon-button matTooltip="View" (click)="viewOrganization(org)">
+          <button mat-icon-button [matTooltip]="'ORG_LIST.TOOLTIPS.VIEW' | translate" (click)="viewOrganization(org)">
             <mat-icon>visibility</mat-icon>
           </button>
-          <button mat-icon-button matTooltip="Edit" (click)="editOrganization(org)">
+          <button mat-icon-button [matTooltip]="'ORG_LIST.TOOLTIPS.EDIT' | translate" (click)="editOrganization(org)">
             <mat-icon>edit</mat-icon>
           </button>
           <button
             mat-icon-button
-            matTooltip="Delete"
+            [matTooltip]="'ORG_LIST.TOOLTIPS.DELETE' | translate"
             color="warn"
             (click)="deleteOrganization(org)"
           >
@@ -92,7 +86,7 @@
     <mat-paginator
       [pageSizeOptions]="[10, 25, 50]"
       showFirstLastButtons
-      aria-label="Select page of organizations"
+      [aria-label]="'ORG_LIST.PAGE_TITLE' | translate"
     >
     </mat-paginator>
   </div>

@@ -74,7 +74,14 @@ func (s *UnitService) CreateUnit(req *models.CreateUnitRequest, userID int) (*mo
 }
 
 // GetUnit retrieves a unit with building and property context
-func (s *UnitService) GetUnit(id int) (*models.UnitWithDetails, error) {
+func (s *UnitService) GetUnit(id, orgID int) (*models.UnitWithDetails, error) {
+	existing, err := s.unitRepo.GetByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get unit with details: %w", err)
+	}
+	if existing.OrganizationID != orgID {
+		return nil, fmt.Errorf("failed to get unit with details: unit not found")
+	}
 	unit, err := s.unitRepo.GetByIDWithDetails(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get unit with details: %w", err)
@@ -83,11 +90,14 @@ func (s *UnitService) GetUnit(id int) (*models.UnitWithDetails, error) {
 }
 
 // UpdateUnit updates a unit with building relationship validation
-func (s *UnitService) UpdateUnit(id int, req *models.UpdateUnitRequest, userID int) (*models.Unit, error) {
+func (s *UnitService) UpdateUnit(id int, req *models.UpdateUnitRequest, userID, orgID int) (*models.Unit, error) {
 	// Get existing unit for validation and audit
 	existingUnit, err := s.unitRepo.GetByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get existing unit: %w", err)
+	}
+	if existingUnit.OrganizationID != orgID {
+		return nil, fmt.Errorf("unit not found")
 	}
 
 	// Validate unit type change against building type if provided
@@ -110,11 +120,14 @@ func (s *UnitService) UpdateUnit(id int, req *models.UpdateUnitRequest, userID i
 }
 
 // DeleteUnit soft deletes a unit with constraint validation
-func (s *UnitService) DeleteUnit(id int, userID int) error {
+func (s *UnitService) DeleteUnit(id, userID, orgID int) error {
 	// Get existing unit for audit
 	existingUnit, err := s.unitRepo.GetByID(id)
 	if err != nil {
 		return fmt.Errorf("failed to get existing unit: %w", err)
+	}
+	if existingUnit.OrganizationID != orgID {
+		return fmt.Errorf("unit not found")
 	}
 
 	// Check if unit has active leases

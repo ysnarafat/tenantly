@@ -23,23 +23,23 @@ func (m *MockBuildingService) CreateBuilding(req *models.CreateBuildingRequest) 
 	return args.Get(0).(*models.Building), args.Error(1)
 }
 
-func (m *MockBuildingService) GetBuilding(id int) (*models.Building, error) {
-	args := m.Called(id)
+func (m *MockBuildingService) GetBuilding(id, orgID int) (*models.Building, error) {
+	args := m.Called(id, orgID)
 	return args.Get(0).(*models.Building), args.Error(1)
 }
 
-func (m *MockBuildingService) GetBuildingWithStats(id int) (*models.BuildingWithStats, error) {
-	args := m.Called(id)
+func (m *MockBuildingService) GetBuildingWithStats(id, orgID int) (*models.BuildingWithStats, error) {
+	args := m.Called(id, orgID)
 	return args.Get(0).(*models.BuildingWithStats), args.Error(1)
 }
 
-func (m *MockBuildingService) UpdateBuilding(id int, req *models.UpdateBuildingRequest) (*models.Building, error) {
-	args := m.Called(id, req)
+func (m *MockBuildingService) UpdateBuilding(id int, req *models.UpdateBuildingRequest, orgID int) (*models.Building, error) {
+	args := m.Called(id, req, orgID)
 	return args.Get(0).(*models.Building), args.Error(1)
 }
 
-func (m *MockBuildingService) DeleteBuilding(id int) error {
-	args := m.Called(id)
+func (m *MockBuildingService) DeleteBuilding(id, orgID int) error {
+	args := m.Called(id, orgID)
 	return args.Error(0)
 }
 
@@ -225,7 +225,7 @@ func TestBuildingHandler_GetBuilding_Success(t *testing.T) {
 		ActiveStatus: true,
 	}
 
-	mockService.On("GetBuilding", 1).Return(expectedBuilding, nil)
+	mockService.On("GetBuilding", 1, 0).Return(expectedBuilding, nil)
 
 	// Create request
 	w := httptest.NewRecorder()
@@ -253,7 +253,7 @@ func TestBuildingHandler_GetBuilding_NotFound(t *testing.T) {
 	mockService := new(MockBuildingService)
 	handler := NewBuildingHandler(mockService)
 
-	mockService.On("GetBuilding", 999).Return((*models.Building)(nil), assert.AnError)
+	mockService.On("GetBuilding", 999, 0).Return((*models.Building)(nil), assert.AnError)
 
 	// Create request
 	w := httptest.NewRecorder()
@@ -276,7 +276,7 @@ func TestBuildingHandler_DeleteBuilding_Success(t *testing.T) {
 	mockService := new(MockBuildingService)
 	handler := NewBuildingHandler(mockService)
 
-	mockService.On("DeleteBuilding", 1).Return(nil)
+	mockService.On("DeleteBuilding", 1, 0).Return(nil)
 
 	// Create request
 	w := httptest.NewRecorder()

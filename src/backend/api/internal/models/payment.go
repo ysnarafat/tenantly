@@ -131,3 +131,19 @@ type LeaseSearchResponse struct {
 	Results []*LeaseSearchResult `json:"results"`
 	Total   int                  `json:"total"`
 }
+
+// GenerateMonthlyPaymentsRequest is the input for auto-generating payments for a given month
+type GenerateMonthlyPaymentsRequest struct {
+	Month         int  `json:"month" binding:"required,min=1,max=12"`
+	Year          int  `json:"year" binding:"required,min=2020"`
+	BuildingID    *int `json:"building_id,omitempty"`
+	DueDayOfMonth int  `json:"due_day_of_month,omitempty"` // default 7
+}
+
+// GenerateMonthlyPaymentsResult summarises the outcome of auto-generation
+type GenerateMonthlyPaymentsResult struct {
+	Generated int      `json:"generated"`
+	Skipped   int      `json:"skipped"`
+	Failed    int      `json:"failed"`
+	Errors    []string `json:"errors,omitempty"`
+}

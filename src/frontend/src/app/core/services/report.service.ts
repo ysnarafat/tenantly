@@ -49,6 +49,47 @@ export interface DashboardMetrics {
   generated_at: string;
 }
 
+export interface TenantReportEntry {
+  tenant_id: number;
+  tenant_name: string;
+  phone_number: string;
+  email: string;
+  unit_number: string;
+  building_name: string;
+  property_name: string;
+  lease_start: string | null;
+  lease_end: string | null;
+  monthly_rent: number;
+  lease_active: boolean;
+  total_due: number;
+  total_paid: number;
+  balance_due: number;
+}
+
+export interface TenantSummaryReport {
+  organization_id: number;
+  tenants: TenantReportEntry[];
+  total: number;
+  active_tenants: number;
+  generated_at: string;
+}
+
+export interface PropertyAnalyticsEntry {
+  property_id: number;
+  property_name: string;
+  property_code: string;
+  property_type: string;
+  payment_stats: Record<string, any> | null;
+}
+
+export interface PropertyAnalyticsReport {
+  organization_id: number;
+  properties: PropertyAnalyticsEntry[];
+  total: number;
+  report_period: string;
+  generated_at: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -119,4 +160,18 @@ export class ReportService {
   getDashboardMetrics(): Observable<DashboardMetrics> {
     return this.http.get<DashboardMetrics>(`${this.apiUrl}/dashboard-metrics`);
   }
+<<<<<<< HEAD
+=======
+
+  getTenantSummary(): Observable<TenantSummaryReport> {
+    return this.http.get<TenantSummaryReport>(`${this.apiUrl}/tenant-summary`);
+  }
+
+  getPropertyAnalytics(startDate?: string, endDate?: string): Observable<PropertyAnalyticsReport> {
+    let params = new HttpParams();
+    if (startDate) params = params.set('start_date', startDate);
+    if (endDate) params = params.set('end_date', endDate);
+    return this.http.get<PropertyAnalyticsReport>(`${this.apiUrl}/property-analytics`, { params });
+  }
+>>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
 }

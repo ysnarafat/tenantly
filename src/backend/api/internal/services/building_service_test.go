@@ -1,4 +1,4 @@
-package services
+﻿package services
 
 import (
 	"fmt"
@@ -910,7 +910,7 @@ func TestBuildingService_UpdateBuilding_Success(t *testing.T) {
 		HasElevator:  &newElevator,
 	}
 
-	updatedBuilding, err := service.UpdateBuilding(1, req)
+	updatedBuilding, err := service.UpdateBuilding(1, req, 0)
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -941,7 +941,7 @@ func TestBuildingService_UpdateBuilding_NotFound(t *testing.T) {
 		BuildingName: &newName,
 	}
 
-	updatedBuilding, err := service.UpdateBuilding(999, req)
+	updatedBuilding, err := service.UpdateBuilding(999, req, 0)
 
 	if err == nil {
 		t.Fatal("Expected error for non-existent building")
@@ -978,7 +978,7 @@ func TestBuildingService_UpdateBuilding_InvalidMetadata(t *testing.T) {
 		Metadata: &invalidMetadata,
 	}
 
-	updatedBuilding, err := service.UpdateBuilding(1, req)
+	updatedBuilding, err := service.UpdateBuilding(1, req, 0)
 
 	if err == nil {
 		t.Fatal("Expected error for invalid metadata")
@@ -1015,7 +1015,7 @@ func TestBuildingService_UpdateBuilding_RepositoryFailure(t *testing.T) {
 		BuildingName: &newName,
 	}
 
-	updatedBuilding, err := service.UpdateBuilding(1, req)
+	updatedBuilding, err := service.UpdateBuilding(1, req, 0)
 
 	if err == nil {
 		t.Fatal("Expected error for repository failure")
@@ -1046,7 +1046,7 @@ func TestBuildingService_DeleteBuilding_Success(t *testing.T) {
 	}
 	buildingRepo.Create(building)
 
-	err := service.DeleteBuilding(1)
+	err := service.DeleteBuilding(1, 0)
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -1079,7 +1079,7 @@ func TestBuildingService_DeleteBuilding_WithActiveUnits(t *testing.T) {
 	buildingRepo.Create(building)
 	buildingRepo.SetHasActiveUnits(1, true)
 
-	err := service.DeleteBuilding(1)
+	err := service.DeleteBuilding(1, 0)
 
 	if err == nil {
 		t.Fatal("Expected error for building with active units")
@@ -1103,7 +1103,7 @@ func TestBuildingService_DeleteBuilding_WithActiveUnits(t *testing.T) {
 func TestBuildingService_DeleteBuilding_NotFound(t *testing.T) {
 	service, _, _, _, _ := createFullBuildingService()
 
-	err := service.DeleteBuilding(999)
+	err := service.DeleteBuilding(999, 0)
 
 	if err == nil {
 		t.Fatal("Expected error for non-existent building")
@@ -1131,7 +1131,7 @@ func TestBuildingService_DeleteBuilding_RepositoryFailure(t *testing.T) {
 
 	buildingRepo.SetShouldFailDelete(true)
 
-	err := service.DeleteBuilding(1)
+	err := service.DeleteBuilding(1, 0)
 
 	if err == nil {
 		t.Fatal("Expected error for repository failure")
@@ -1727,7 +1727,7 @@ func TestBuildingService_AuditLogging_UpdateBuilding(t *testing.T) {
 		BuildingName: &newName,
 	}
 
-	updatedBuilding, err := service.UpdateBuilding(1, req)
+	updatedBuilding, err := service.UpdateBuilding(1, req, 0)
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -1758,7 +1758,7 @@ func TestBuildingService_AuditLogging_DeleteBuilding(t *testing.T) {
 	}
 	buildingRepo.Create(building)
 
-	err := service.DeleteBuilding(1)
+	err := service.DeleteBuilding(1, 0)
 
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
@@ -1806,3 +1806,4 @@ func createFullBuildingService() (*BuildingService, *TestBuildingRepository, *Te
 
 	return service, buildingRepo, propertyRepo, auditService, metadataValidator
 }
+

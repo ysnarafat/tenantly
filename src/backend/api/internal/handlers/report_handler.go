@@ -99,6 +99,38 @@ func (h *ReportHandler) GetPaymentAnalysis(c *gin.Context) {
 	c.JSON(http.StatusOK, report)
 }
 
+// GetTenantSummary handles GET /reports/tenant-summary
+func (h *ReportHandler) GetTenantSummary(c *gin.Context) {
+	orgID := c.GetInt("org_id")
+
+	report, err := h.reportService.TenantSummaryReport(orgID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, report)
+}
+
+// GetPropertyAnalytics handles GET /reports/property-analytics
+func (h *ReportHandler) GetPropertyAnalytics(c *gin.Context) {
+	orgID := c.GetInt("org_id")
+
+	startDate, endDate, err := parseDateRange(c)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	report, err := h.reportService.PropertyAnalyticsReport(orgID, startDate, endDate)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, report)
+}
+
 // GetDashboardMetrics handles GET /reports/dashboard-metrics
 func (h *ReportHandler) GetDashboardMetrics(c *gin.Context) {
 	now := time.Now()

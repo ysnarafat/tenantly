@@ -73,13 +73,25 @@
   font-weight: 500;
 }
 
-.create-btn {
-  white-space: nowrap;
-  min-height: 48px;
-  padding: 0 24px;
+.header-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.generate-btn {
+  white-space: nowrap;
+
+  .btn-text {
+    @media (max-width: 480px) {
+      display: none;
+    }
+  }
+}
+
+.create-btn {
+  white-space: nowrap;
 
   .btn-text {
     @media (max-width: 480px) {
@@ -229,18 +241,15 @@
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+  // Compensate for Material outlined form field's subscript wrapper (~20px)
+  // so buttons visually align with the bottom of the input, not the cell floor
+  padding-bottom: 20px;
 }
 
 .action-btn {
   flex: 1;
   min-width: 120px;
   white-space: nowrap;
-  padding: 0 16px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────

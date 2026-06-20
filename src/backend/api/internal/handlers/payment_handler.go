@@ -56,7 +56,7 @@ func (h *PaymentHandler) GetPayment(c *gin.Context) {
 	userRole := c.GetString("role")
 	orgID := c.GetInt("org_id")
 
-	payment, err := h.paymentService.GetPayment(id)
+	payment, err := h.paymentService.GetPayment(id, orgID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return
@@ -94,7 +94,7 @@ func (h *PaymentHandler) UpdatePayment(c *gin.Context) {
 	orgID := c.GetInt("org_id")
 
 	// Get existing payment for access verification
-	existingPayment, err := h.paymentService.GetPayment(id)
+	existingPayment, err := h.paymentService.GetPayment(id, orgID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "payment not found"})
 		return
@@ -114,7 +114,7 @@ func (h *PaymentHandler) UpdatePayment(c *gin.Context) {
 		return
 	}
 
-	payment, err := h.paymentService.UpdatePayment(id, &req, userID)
+	payment, err := h.paymentService.UpdatePayment(id, &req, userID, orgID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -198,7 +198,8 @@ func (h *PaymentHandler) GetPayments(c *gin.Context) {
 
 // GetDashboardSummary handles GET /dashboard/summary
 func (h *PaymentHandler) GetDashboardSummary(c *gin.Context) {
-	summary, err := h.paymentService.GetDashboardSummaryWithBuildingContext()
+	orgID := c.GetInt("org_id")
+	summary, err := h.paymentService.GetDashboardSummaryWithBuildingContext(orgID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -298,6 +299,26 @@ func (h *PaymentHandler) SearchLeases(c *gin.Context) {
 	}
 
 	result, err := h.paymentService.SearchLeases(orgID, query)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
+// GenerateMonthlyPayments handles POST /payments/generate-monthly
+func (h *PaymentHandler) GenerateMonthlyPayments(c *gin.Context) {
+	var req models.GenerateMonthlyPaymentsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	orgID := c.GetInt("org_id")
+	userID := c.GetInt("userID")
+
+	result, err := h.paymentService.GenerateMonthlyPayments(&req, orgID, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

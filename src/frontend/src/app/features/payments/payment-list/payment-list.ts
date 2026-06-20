@@ -40,6 +40,8 @@ import {
   DashboardSummary,
   CreatePaymentRequest,
   LeaseSearchResult,
+  GenerateMonthlyPaymentsRequest,
+  GenerateMonthlyPaymentsResult,
 } from '../../../core/models/payment.model';
 import { debounceTime, switchMap, startWith } from 'rxjs/operators';
 import { of } from 'rxjs';
@@ -162,6 +164,32 @@ export class PaymentList implements OnInit {
     this.filterYear = new Date().getFullYear().toString();
     this.page.set(1);
     this.loadPayments();
+  }
+
+  openGenerateDialog(): void {
+    const ref = this.dialog.open(GeneratePaymentsDialog, { width: '420px', maxWidth: '95vw' });
+    ref.afterClosed().subscribe((req: GenerateMonthlyPaymentsRequest | undefined) => {
+      if (req) {
+        this.loading.set(true);
+        this.paymentService.generateMonthlyPayments(req).subscribe({
+          next: (result: GenerateMonthlyPaymentsResult) => {
+            this.loading.set(false);
+            const msg = `Generated ${result.generated} · Skipped ${result.skipped} · Failed ${result.failed}`;
+            if (result.failed > 0) {
+              this.showError(msg);
+            } else {
+              this.showSuccess(msg);
+            }
+            this.loadPayments();
+            this.loadSummary();
+          },
+          error: (err) => {
+            this.loading.set(false);
+            this.showError(err?.error?.error ?? 'Failed to generate payments');
+          },
+        });
+      }
+    });
   }
 
   openCreateDialog(): void {
@@ -593,6 +621,117 @@ export class PaymentCreateDialog implements OnInit {
         receipt_number: val.receipt_number || undefined,
         notes: val.notes || undefined,
       };
+      this.dialogRef.close(req);
+    }
+  }
+}
+
+// ── Generate Monthly Payments Dialog ──────────────────────────────────────────
+@Component({
+  selector: 'app-generate-payments-dialog',
+  standalone: true,
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatIconModule,
+  ],
+  template: `
+    <h2 mat-dialog-title>Generate Monthly Payments</h2>
+    <mat-dialog-content>
+      <p class="info-text">
+        Creates a <strong>Due</strong> payment record for every active lease in the selected month.
+        Leases that already have a payment record are skipped.
+      </p>
+      <form [formGroup]="form" class="dialog-form">
+        <div class="row-2">
+          <mat-form-field appearance="outline">
+            <mat-label>Month</mat-label>
+            <mat-select formControlName="month">
+              @for (m of months; track m.value) {
+                <mat-option [value]="m.value">{{ m.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Year</mat-label>
+            <mat-select formControlName="year">
+              @for (y of years; track y) {
+                <mat-option [value]="y">{{ y }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Due Day of Month</mat-label>
+          <input matInput type="number" formControlName="due_day_of_month" min="1" max="28" />
+          <mat-hint>Day of the month rent is due (1–28, default 7)</mat-hint>
+        </mat-form-field>
+      </form>
+    </mat-dialog-content>
+    <mat-dialog-actions align="end">
+      <button mat-button mat-dialog-close>Cancel</button>
+      <button mat-raised-button color="primary" [disabled]="form.invalid" (click)="submit()">
+        <mat-icon>bolt</mat-icon>
+        Generate
+      </button>
+    </mat-dialog-actions>
+  `,
+  styles: [
+    `
+      .info-text {
+        font-size: 13px;
+        color: var(--text-secondary, #666);
+        margin: 0 0 16px;
+        line-height: 1.5;
+      }
+      .dialog-form {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .row-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+    `,
+  ],
+})
+export class GeneratePaymentsDialog {
+  private fb = inject(FormBuilder);
+  private dialogRef = inject(MatDialogRef<GeneratePaymentsDialog>);
+
+  months = [
+    { value: 1, label: 'January' },
+    { value: 2, label: 'February' },
+    { value: 3, label: 'March' },
+    { value: 4, label: 'April' },
+    { value: 5, label: 'May' },
+    { value: 6, label: 'June' },
+    { value: 7, label: 'July' },
+    { value: 8, label: 'August' },
+    { value: 9, label: 'September' },
+    { value: 10, label: 'October' },
+    { value: 11, label: 'November' },
+    { value: 12, label: 'December' },
+  ];
+  years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + 1 - i);
+
+  form: FormGroup = this.fb.group({
+    month: [new Date().getMonth() + 1, Validators.required],
+    year: [new Date().getFullYear(), Validators.required],
+    due_day_of_month: [7, [Validators.min(1), Validators.max(28)]],
+  });
+
+  submit(): void {
+    if (this.form.valid) {
+      const { month, year, due_day_of_month } = this.form.value;
+      const req: GenerateMonthlyPaymentsRequest = { month, year, due_day_of_month };
       this.dialogRef.close(req);
     }
   }

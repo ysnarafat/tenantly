@@ -62,7 +62,10 @@ func (suite *LeaseIntegrationTestSuite) SetupSuite() {
 	// Initialize test database
 	var err error
 	suite.db, err = database.Connect(suite.config.DatabaseURL)
-	require.NoError(suite.T(), err, "Failed to connect to test database")
+	if err != nil {
+		suite.T().Skipf("Skipping integration test: PostgreSQL not available: %v", err)
+		return
+	}
 
 	// Run migrations
 	err = database.RunMigrations(suite.config.DatabaseURL)

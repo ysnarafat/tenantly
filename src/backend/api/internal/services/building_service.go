@@ -90,16 +90,26 @@ func (s *BuildingService) CreateBuilding(req *models.CreateBuildingRequest) (*mo
 }
 
 // GetBuilding retrieves a building by ID with proper error handling
-func (s *BuildingService) GetBuilding(id int) (*models.Building, error) {
+func (s *BuildingService) GetBuilding(id, orgID int) (*models.Building, error) {
 	building, err := s.buildingRepo.GetByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get building: %w", err)
+	}
+	if building.OrganizationID != orgID {
+		return nil, fmt.Errorf("failed to get building: building not found")
 	}
 	return building, nil
 }
 
 // GetBuildingWithStats retrieves a building with aggregated statistics and data enrichment
-func (s *BuildingService) GetBuildingWithStats(id int) (*models.BuildingWithStats, error) {
+func (s *BuildingService) GetBuildingWithStats(id, orgID int) (*models.BuildingWithStats, error) {
+	building, err := s.buildingRepo.GetByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get building with stats: %w", err)
+	}
+	if building.OrganizationID != orgID {
+		return nil, fmt.Errorf("failed to get building with stats: building not found")
+	}
 	buildingStats, err := s.buildingRepo.GetWithStats(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get building with stats: %w", err)
@@ -108,11 +118,14 @@ func (s *BuildingService) GetBuildingWithStats(id int) (*models.BuildingWithStat
 }
 
 // UpdateBuilding updates a building with metadata validation and audit logging
-func (s *BuildingService) UpdateBuilding(id int, req *models.UpdateBuildingRequest) (*models.Building, error) {
+func (s *BuildingService) UpdateBuilding(id int, req *models.UpdateBuildingRequest, orgID int) (*models.Building, error) {
 	// Get existing building for audit logging
 	existingBuilding, err := s.buildingRepo.GetByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get existing building: %w", err)
+	}
+	if existingBuilding.OrganizationID != orgID {
+		return nil, fmt.Errorf("building not found")
 	}
 
 	// Validate building update request
@@ -173,11 +186,14 @@ func (s *BuildingService) UpdateBuilding(id int, req *models.UpdateBuildingReque
 }
 
 // DeleteBuilding performs soft delete with active unit constraint validation
-func (s *BuildingService) DeleteBuilding(id int) error {
+func (s *BuildingService) DeleteBuilding(id, orgID int) error {
 	// Get existing building for audit logging
 	existingBuilding, err := s.buildingRepo.GetByID(id)
 	if err != nil {
 		return fmt.Errorf("failed to get existing building: %w", err)
+	}
+	if existingBuilding.OrganizationID != orgID {
+		return fmt.Errorf("building not found")
 	}
 
 	// Validate building deletion constraints

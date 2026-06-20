@@ -226,8 +226,14 @@
                 <mat-label>{{ 'REPORTS.PROPERTY_FILTER' | translate }}</mat-label>
                 <mat-select formControlName="propertyFilter">
                   <mat-option value="">{{ 'COMMON.ALL' | translate }}</mat-option>
+<<<<<<< HEAD
                   <mat-option value="prop1">Property 1</mat-option>
                   <mat-option value="prop2">Property 2</mat-option>
+=======
+                  <mat-option *ngFor="let p of properties" [value]="p.id.toString()">
+                    {{ p.property_name }} ({{ p.property_code }})
+                  </mat-option>
+>>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
                 </mat-select>
               </mat-form-field>
 
@@ -235,8 +241,14 @@
                 <mat-label>{{ 'REPORTS.BUILDING_FILTER' | translate }}</mat-label>
                 <mat-select formControlName="buildingFilter">
                   <mat-option value="">{{ 'COMMON.ALL' | translate }}</mat-option>
+<<<<<<< HEAD
                   <mat-option value="bld1">Building A</mat-option>
                   <mat-option value="bld2">Building B</mat-option>
+=======
+                  <mat-option *ngFor="let b of buildings" [value]="b.id.toString()">
+                    {{ b.building_name }} ({{ b.building_code }})
+                  </mat-option>
+>>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
                 </mat-select>
               </mat-form-field>
 
@@ -320,6 +332,180 @@
             </p>
           </div>
         </div>
+<<<<<<< HEAD
+=======
+
+        <!-- Ledger Results -->
+        <div class="ledger-results" *ngIf="ledgerReport">
+          <h3>Financial Ledger — {{ ledgerReport.total }} records</h3>
+
+          <div class="ledger-summary">
+            <div class="summary-item">
+              <span class="summary-label">Total Due</span>
+              <span class="summary-value">৳ {{ ledgerReport.total_due | number }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Total Paid</span>
+              <span class="summary-value paid">৳ {{ ledgerReport.total_paid | number }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Pending</span>
+              <span class="summary-value pending">৳ {{ ledgerReport.total_pending | number }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Overdue</span>
+              <span class="summary-value overdue">৳ {{ ledgerReport.total_overdue | number }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Collection Rate</span>
+              <span class="summary-value">{{ ledgerReport.collection_rate | number: '1.1-2' }}%</span>
+            </div>
+          </div>
+
+          <mat-table [dataSource]="ledgerReport.payments" class="ledger-table">
+            <ng-container matColumnDef="tenant">
+              <mat-header-cell *matHeaderCellDef>Tenant</mat-header-cell>
+              <mat-cell *matCellDef="let p">{{ p.tenant_name || '—' }}</mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="unit">
+              <mat-header-cell *matHeaderCellDef>Unit</mat-header-cell>
+              <mat-cell *matCellDef="let p">{{ p.unit_number }}</mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="period">
+              <mat-header-cell *matHeaderCellDef>Period</mat-header-cell>
+              <mat-cell *matCellDef="let p">{{ p.month }}/{{ p.year }}</mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="due">
+              <mat-header-cell *matHeaderCellDef>Due</mat-header-cell>
+              <mat-cell *matCellDef="let p">৳ {{ p.amount_due | number }}</mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="paid">
+              <mat-header-cell *matHeaderCellDef>Paid</mat-header-cell>
+              <mat-cell *matCellDef="let p">৳ {{ p.amount_paid | number }}</mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="status">
+              <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
+              <mat-cell *matCellDef="let p">
+                <mat-chip [class]="'status-' + p.status?.toLowerCase()">{{ p.status }}</mat-chip>
+              </mat-cell>
+            </ng-container>
+            <mat-header-row *matHeaderRowDef="['tenant','unit','period','due','paid','status']"></mat-header-row>
+            <mat-row *matRowDef="let row; columns: ['tenant','unit','period','due','paid','status']"></mat-row>
+          </mat-table>
+        </div>
+        <!-- Tenant Report Results -->
+        <div class="ledger-results" *ngIf="tenantReport">
+          <h3>Tenant Report — {{ tenantReport.total }} tenants ({{ tenantReport.active_tenants }} active)</h3>
+
+          <mat-table [dataSource]="tenantReport.tenants" class="ledger-table">
+            <ng-container matColumnDef="name">
+              <mat-header-cell *matHeaderCellDef>Tenant</mat-header-cell>
+              <mat-cell *matCellDef="let t">{{ t.tenant_name }}</mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="contact">
+              <mat-header-cell *matHeaderCellDef>Phone</mat-header-cell>
+              <mat-cell *matCellDef="let t">{{ t.phone_number || '—' }}</mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="unit">
+              <mat-header-cell *matHeaderCellDef>Unit / Building</mat-header-cell>
+              <mat-cell *matCellDef="let t">
+                {{ t.unit_number || '—' }}
+                <span *ngIf="t.building_name" class="secondary-text"> · {{ t.building_name }}</span>
+              </mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="rent">
+              <mat-header-cell *matHeaderCellDef>Monthly Rent</mat-header-cell>
+              <mat-cell *matCellDef="let t">{{ t.monthly_rent ? '৳ ' + (t.monthly_rent | number) : '—' }}</mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="balance">
+              <mat-header-cell *matHeaderCellDef>Balance Due</mat-header-cell>
+              <mat-cell *matCellDef="let t" [class.overdue-text]="t.balance_due > 0">
+                ৳ {{ t.balance_due | number }}
+              </mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="status">
+              <mat-header-cell *matHeaderCellDef>Lease</mat-header-cell>
+              <mat-cell *matCellDef="let t">
+                <mat-chip [class]="t.lease_active ? 'status-paid' : 'status-due'">
+                  {{ t.lease_active ? 'Active' : 'Inactive' }}
+                </mat-chip>
+              </mat-cell>
+            </ng-container>
+            <mat-header-row *matHeaderRowDef="['name','contact','unit','rent','balance','status']"></mat-header-row>
+            <mat-row *matRowDef="let row; columns: ['name','contact','unit','rent','balance','status']"></mat-row>
+          </mat-table>
+        </div>
+
+        <!-- Property Analytics Results -->
+        <div class="ledger-results" *ngIf="propertyAnalyticsReport">
+          <h3>Property Analytics — {{ propertyAnalyticsReport.total }} properties · {{ propertyAnalyticsReport.report_period }}</h3>
+
+          <mat-table [dataSource]="propertyAnalyticsReport.properties" class="ledger-table">
+            <ng-container matColumnDef="name">
+              <mat-header-cell *matHeaderCellDef>Property</mat-header-cell>
+              <mat-cell *matCellDef="let p">{{ p.property_name }} <span class="secondary-text">({{ p.property_code }})</span></mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="type">
+              <mat-header-cell *matHeaderCellDef>Type</mat-header-cell>
+              <mat-cell *matCellDef="let p">{{ p.property_type }}</mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="stats">
+              <mat-header-cell *matHeaderCellDef>Payment Stats</mat-header-cell>
+              <mat-cell *matCellDef="let p">
+                <span *ngIf="p.payment_stats">{{ p.payment_stats | json }}</span>
+                <span *ngIf="!p.payment_stats" class="secondary-text">No data</span>
+              </mat-cell>
+            </ng-container>
+            <mat-header-row *matHeaderRowDef="['name','type','stats']"></mat-header-row>
+            <mat-row *matRowDef="let row; columns: ['name','type','stats']"></mat-row>
+          </mat-table>
+        </div>
+
+        <!-- Building Performance Results -->
+        <div class="ledger-results" *ngIf="buildingReport">
+          <h3>Building Performance Report</h3>
+          <div class="ledger-summary">
+            <div class="summary-item">
+              <span class="summary-label">Building</span>
+              <span class="summary-value">{{ $any(buildingReport).building_name }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Period</span>
+              <span class="summary-value">{{ $any(buildingReport).report_period }}</span>
+            </div>
+          </div>
+          <mat-table [dataSource]="$any(buildingReport).payments || []" class="ledger-table">
+            <ng-container matColumnDef="tenant">
+              <mat-header-cell *matHeaderCellDef>Tenant</mat-header-cell>
+              <mat-cell *matCellDef="let p">{{ p.tenant_name || '—' }}</mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="unit">
+              <mat-header-cell *matHeaderCellDef>Unit</mat-header-cell>
+              <mat-cell *matCellDef="let p">{{ p.unit_number }}</mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="period">
+              <mat-header-cell *matHeaderCellDef>Period</mat-header-cell>
+              <mat-cell *matCellDef="let p">{{ p.month }}/{{ p.year }}</mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="due">
+              <mat-header-cell *matHeaderCellDef>Due</mat-header-cell>
+              <mat-cell *matCellDef="let p">৳ {{ p.amount_due | number }}</mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="paid">
+              <mat-header-cell *matHeaderCellDef>Paid</mat-header-cell>
+              <mat-cell *matCellDef="let p">৳ {{ p.amount_paid | number }}</mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="status">
+              <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
+              <mat-cell *matCellDef="let p">
+                <mat-chip [class]="'status-' + p.status?.toLowerCase()">{{ p.status }}</mat-chip>
+              </mat-cell>
+            </ng-container>
+            <mat-header-row *matHeaderRowDef="['tenant','unit','period','due','paid','status']"></mat-header-row>
+            <mat-row *matRowDef="let row; columns: ['tenant','unit','period','due','paid','status']"></mat-row>
+          </mat-table>
+        </div>
+>>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
       </div>
     </mat-tab>
 
