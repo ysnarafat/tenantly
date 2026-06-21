@@ -100,6 +100,9 @@ project.fragment.lock.json
 # DotNet Secrets / Config
 secrets.json
 
+# Claude Code agent runtime state
+.claude/agent-memory/
+
 # Others
 *.dbmdl
 *.bak
