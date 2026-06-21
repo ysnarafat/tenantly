@@ -21,8 +21,8 @@ type CreateAuditLogRequest struct {
 	Action    string      `json:"action" binding:"required"`
 	TableName string      `json:"table_name" binding:"required"`
 	RecordID  *int        `json:"record_id"`
-	OldValues interface{} `json:"old_values"`
-	NewValues interface{} `json:"new_values"`
+	OldValues any `json:"old_values"`
+	NewValues any `json:"new_values"`
 }
 
 // AuditAction constants for consistent audit logging
@@ -37,7 +37,6 @@ const (
 // TableName constants for audit logging
 const (
 	TableUsers         = "users"
-	TableShops         = "shops"
 	TableTenants       = "tenants"
 	TableLeases        = "leases"
 	TablePayments      = "payments"

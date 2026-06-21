@@ -14,7 +14,7 @@ type UserRepositoryInterface interface {
 	GetByEmail(email string) (*models.User, error)
 	GetAll(activeOnly bool) ([]*models.User, error)
 	GetByOrganizationID(orgID int, activeOnly bool) ([]*models.User, error)
-	Update(id int, updates map[string]interface{}) error
+	Update(id int, updates map[string]any) error
 	Delete(id int) error
 	CreateResetToken(token *models.ResetPasswordToken) error
 	GetResetToken(token string) (*models.ResetPasswordToken, error)
@@ -24,8 +24,8 @@ type UserRepositoryInterface interface {
 
 // AuditServiceInterface defines the interface for audit service operations
 type AuditServiceInterface interface {
-	LogUserAction(userID int, action, tableName string, recordID *int, oldValues, newValues interface{}) error
-	LogSystemAction(action, tableName string, recordID *int, oldValues, newValues interface{}) error
+	LogUserAction(userID int, action, tableName string, recordID *int, oldValues, newValues any) error
+	LogSystemAction(action, tableName string, recordID *int, oldValues, newValues any) error
 }
 
 // OrganizationRepositoryInterface defines the interface for organization repository operations
@@ -34,7 +34,7 @@ type OrganizationRepositoryInterface interface {
 	GetByID(id int) (*models.Organization, error)
 	GetBySlug(slug string) (*models.Organization, error)
 	GetAll(activeOnly bool) ([]*models.Organization, error)
-	Update(id int, updates map[string]interface{}) error
+	Update(id int, updates map[string]any) error
 	Delete(id int) error
 }
 
@@ -78,7 +78,7 @@ type BuildingRepositoryInterface interface {
 	GetByID(id int) (*models.Building, error)
 	GetByPropertyID(propertyID int) ([]*models.Building, error)
 	GetByPropertyAndCode(propertyID int, code string) (*models.Building, error)
-	Update(id int, updates map[string]interface{}) error
+	Update(id int, updates map[string]any) error
 	SoftDelete(id int) error
 	GetWithStats(id int) (*models.BuildingWithStats, error)
 	BulkCreate(buildings []*models.Building) error
@@ -119,7 +119,7 @@ type MetadataValidatorInterface interface {
 	ValidateResidentialMetadata(metadata models.BuildingMetadata) error
 	ValidateCommercialMetadata(metadata models.BuildingMetadata) error
 	ValidateMixedMetadata(metadata models.BuildingMetadata) error
-	GetMetadataSchema(buildingType models.BuildingType) map[string]interface{}
+	GetMetadataSchema(buildingType models.BuildingType) map[string]any
 }
 
 // BuildingValidationServiceInterface defines the interface for building validation operations
@@ -191,31 +191,6 @@ type BuildingServiceInterface interface {
 	UpdateBuildingStatus(buildingID int, req *models.BuildingStatusRequest) (*models.Building, error)
 }
 
-// BuildingAnalyticsServiceInterface defines the interface for building analytics operations
-type BuildingAnalyticsServiceInterface interface {
-	// Core analytics methods
-	GetBuildingMetrics(buildingID int) (*models.BuildingMetrics, error)
-	GetOccupancyAnalytics(buildingID int) (*models.OccupancyAnalytics, error)
-	GetRevenueAnalytics(buildingID int, period string) (*models.RevenueAnalytics, error)
-	CompareBuildingPerformance(propertyID int) (*models.BuildingPerformanceComparison, error)
-
-	// Trend analysis and forecasting
-	CalculatePerformanceScore(buildingID int) (float64, error)
-	GenerateTrendAnalysis(buildingID int, period string) (*models.BuildingTrends, error)
-	GenerateOccupancyForecast(buildingID int) (*models.OccupancyForecast, error)
-	GenerateRevenueProjections(buildingID int) (*models.RevenueProjections, error)
-
-	// Comparison and benchmarking
-	CompareWithPropertyAverage(buildingID int) (*models.BuildingComparisons, error)
-	CompareWithTypeAverage(buildingID, propertyID int, buildingType models.BuildingType) (*models.BuildingComparisons, error)
-	GetPropertyBuildingRankings(propertyID int) ([]*models.BuildingRanking, error)
-
-	// Caching and performance
-	RefreshAnalyticsCache(buildingID int) error
-	GetCachedMetrics(buildingID int) (*models.BuildingMetrics, bool)
-	InvalidateCache(buildingID int) error
-}
-
 // UnitRepositoryInterface defines the interface for unit repository operations
 type UnitRepositoryInterface interface {
 	Create(req *models.CreateUnitRequest, organizationID int) (*models.Unit, error)
@@ -227,10 +202,10 @@ type UnitRepositoryInterface interface {
 	HasActiveLeases(unitID int) (bool, error)
 	GetByBuildingWithDetails(buildingID int, limit, offset, orgID int) ([]*models.UnitWithDetails, int, error)
 	GetByPropertyWithDetails(propertyID int, limit, offset, orgID int) ([]*models.UnitWithDetails, int, error)
-	GetBuildingOccupancyStats(buildingID int, startDate, endDate time.Time) (interface{}, error)
-	GetPropertyOccupancyStats(propertyID int, startDate, endDate time.Time) (interface{}, error)
-	GetSystemOccupancyStats(startDate, endDate time.Time) (interface{}, error)
-	GetBuildingUnitTypeDistribution(buildingID int) (interface{}, error)
+	GetBuildingOccupancyStats(buildingID int, startDate, endDate time.Time) (any, error)
+	GetPropertyOccupancyStats(propertyID int, startDate, endDate time.Time) (any, error)
+	GetSystemOccupancyStats(startDate, endDate time.Time) (any, error)
+	GetBuildingUnitTypeDistribution(buildingID int) (any, error)
 }
 
 // UnitServiceInterface defines the interface for unit service operations
@@ -244,7 +219,7 @@ type UnitServiceInterface interface {
 	GetUnitsByBuilding(buildingID int, page, pageSize, orgID int) ([]*models.UnitWithDetails, int, error)
 	GetUnitsByProperty(propertyID int, page, pageSize, orgID int) ([]*models.UnitWithDetails, int, error)
 	ValidateHierarchyIntegrity(unitID int) error
-	GetUnitHierarchyContext(unitID int) (map[string]interface{}, error)
+	GetUnitHierarchyContext(unitID int) (map[string]any, error)
 }
 
 // PaymentRepositoryInterface defines the interface for payment repository operations
@@ -253,17 +228,17 @@ type PaymentRepositoryInterface interface {
 	GetByID(id int) (*models.Payment, error)
 	GetByIDWithDetails(id int) (*models.PaymentWithDetails, error)
 	Update(id int, req *models.UpdatePaymentRequest) (*models.Payment, error)
-	GetWithDetailsAndFilters(filters map[string]interface{}, limit, offset int) ([]*models.PaymentWithDetails, int, error)
-	GetBuildingPaymentStats(buildingID int, startDate, endDate time.Time) (interface{}, error)
-	GetPropertyPaymentStats(propertyID int, startDate, endDate time.Time) (interface{}, error)
-	GetSystemPaymentStats(startDate, endDate time.Time) (interface{}, error)
+	GetWithDetailsAndFilters(filters map[string]any, limit, offset int) ([]*models.PaymentWithDetails, int, error)
+	GetBuildingPaymentStats(buildingID int, startDate, endDate time.Time) (any, error)
+	GetPropertyPaymentStats(propertyID int, startDate, endDate time.Time) (any, error)
+	GetSystemPaymentStats(startDate, endDate time.Time) (any, error)
 	GetBuildingPaymentsInPeriod(buildingID int, startDate, endDate time.Time, limit, offset int) ([]*models.PaymentWithDetails, int, error)
 	GetDashboardSummary(orgID int) (*models.DashboardSummary, error)
 	GetAgingBuckets(orgID int) (map[string]int64, error)
 	GetMonthlyCollectionTrend(orgID int, months int) ([]*models.MonthlyCollectionTrend, error)
 	GetTenantPaymentSummary(orgID int) ([]*models.TenantReportEntry, error)
 	GetPaymentAnalyticsByPeriod(orgID int, startDate, endDate time.Time) (*models.PaymentAnalyticsResult, error)
-	GetBuildingLevelSummary() (map[string]interface{}, error)
+	GetBuildingLevelSummary() (map[string]any, error)
 	GetBuildingPaymentAnalytics(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentAnalytics, error)
 	SearchLeases(orgID int, query string) ([]*models.LeaseSearchResult, error)
 	GetActiveLeasesForPeriod(orgID, month, year int, buildingID *int) ([]*models.LeaseSearchResult, error)
@@ -275,9 +250,9 @@ type PaymentServiceInterface interface {
 	CreatePayment(req *models.CreatePaymentRequest, userID int) (*models.Payment, error)
 	GetPayment(id, orgID int) (*models.PaymentWithDetails, error)
 	UpdatePayment(id int, req *models.UpdatePaymentRequest, userID, orgID int) (*models.Payment, error)
-	GetPayments(page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
-	GetPaymentsByBuilding(buildingID int, page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
-	GetPaymentsByProperty(propertyID int, page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
+	GetPayments(page, pageSize int, filters map[string]any) ([]*models.PaymentWithDetails, int, error)
+	GetPaymentsByBuilding(buildingID int, page, pageSize int, filters map[string]any) ([]*models.PaymentWithDetails, int, error)
+	GetPaymentsByProperty(propertyID int, page, pageSize int, filters map[string]any) ([]*models.PaymentWithDetails, int, error)
 	GenerateBuildingPaymentReport(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error)
 	GeneratePropertyPaymentReport(propertyID int, startDate, endDate time.Time) (*models.PropertyPaymentReport, error)
 	GetDashboardSummaryWithBuildingContext(orgID int) (*models.DashboardSummary, error)
@@ -289,30 +264,6 @@ type PaymentServiceInterface interface {
 	GenerateMonthlyPayments(req *models.GenerateMonthlyPaymentsRequest, orgID, userID int) (*models.GenerateMonthlyPaymentsResult, error)
 }
 
-// NotificationRepositoryInterface defines the interface for notification repository operations
-type NotificationRepositoryInterface interface {
-	Create(req *models.CreateNotificationRequest) (*models.NotificationQueue, error)
-	GetByID(id int) (*models.NotificationQueue, error)
-	GetByIDWithDetails(id int) (*models.NotificationWithDetails, error)
-	Update(id int, req *models.UpdateNotificationRequest) (*models.NotificationQueue, error)
-	GetByBuildingWithDetails(buildingID int, limit, offset int) ([]*models.NotificationWithDetails, int, error)
-	GetByPropertyWithDetails(propertyID int, limit, offset int) ([]*models.NotificationWithDetails, int, error)
-	GetBuildingNotificationStats(buildingID int, startDate, endDate time.Time) (interface{}, error)
-	GetPropertyNotificationStats(propertyID int, startDate, endDate time.Time) (interface{}, error)
-	GetSystemNotificationStats(startDate, endDate time.Time) (interface{}, error)
-}
-
-// NotificationServiceInterface defines the interface for notification service operations
-type NotificationServiceInterface interface {
-	CreateNotification(req *models.CreateNotificationRequest, userID int) (*models.NotificationQueue, error)
-	SendBuildingWideNotification(buildingID int, message string, notificationType string, userID int) ([]*models.NotificationQueue, []error)
-	SendPropertyWideNotification(propertyID int, message string, notificationType string, userID int) ([]*models.NotificationQueue, []error)
-	GetNotificationsByBuilding(buildingID int, page, pageSize int) ([]*models.NotificationWithDetails, int, error)
-	GetNotificationsByProperty(propertyID int, page, pageSize int) ([]*models.NotificationWithDetails, int, error)
-	UpdateNotification(id int, req *models.UpdateNotificationRequest, userID int) (*models.NotificationQueue, error)
-	GenerateNotificationReport(propertyID *int, buildingID *int, startDate, endDate time.Time) (*models.NotificationReport, error)
-}
-
 // TenantRepositoryInterface defines the interface for tenant repository operations
 type TenantRepositoryInterface interface {
 	Create(req *models.CreateTenantRequest) (*models.Tenant, error)
@@ -321,7 +272,7 @@ type TenantRepositoryInterface interface {
 	GetByID(id int) (*models.Tenant, error)
 	GetByUnitID(unitID int) (*models.Tenant, error)
 	GetAll(page, pageSize, orgID int) ([]*models.Tenant, int, error)
-	Update(id int, updates map[string]interface{}) error
+	Update(id int, updates map[string]any) error
 }
 
 // TenantServiceInterface defines the interface for tenant service operations
@@ -337,20 +288,14 @@ type TenantServiceInterface interface {
 type PropertyRepositoryInterface interface {
 	GetByID(id int) (*models.Property, error)
 	GetByIDWithStats(id int) (*models.PropertyWithStats, error)
-	List(filters map[string]interface{}, limit, offset int) ([]*models.Property, int, error)
-	GetBuildingAggregations(propertyID int) (map[string]interface{}, error)
-	GetBuildingBreakdowns(propertyID int) (interface{}, error)
-	GetBuildingTypeDistribution(propertyID int) (interface{}, error)
+	List(filters map[string]any, limit, offset int) ([]*models.Property, int, error)
+	GetBuildingAggregations(propertyID int) (map[string]any, error)
+	GetBuildingBreakdowns(propertyID int) (any, error)
+	GetBuildingTypeDistribution(propertyID int) (any, error)
 	GetBuildingCount(propertyID int) (int, error)
-	GetBuildingSummary(propertyID int) (map[string]interface{}, error)
+	GetBuildingSummary(propertyID int) (map[string]any, error)
 	HasActiveBuildings(propertyID int) (bool, error)
 	HasActiveUnits(propertyID int) (bool, error)
-}
-
-// ReportingServiceInterface defines the interface for reporting service operations
-type ReportingServiceInterface interface {
-	GenerateComprehensiveReport(propertyID *int, buildingID *int, startDate, endDate time.Time, userID int) (*models.ComprehensiveReport, error)
-	GenerateDashboardReport(filters map[string]interface{}, groupBy string, userID int) (*models.DashboardReport, error)
 }
 
 // LeaseRepositoryInterface defines the interface for lease repository operations
@@ -386,7 +331,7 @@ type LeaseServiceInterface interface {
 
 // ReportServiceInterface defines the interface for report service operations
 type ReportServiceInterface interface {
-	FinancialLedgerReport(orgID int, filters map[string]interface{}, limit, offset int) (*models.FinancialLedgerReport, error)
+	FinancialLedgerReport(orgID int, filters map[string]any, limit, offset int) (*models.FinancialLedgerReport, error)
 	CollectionSummaryReport(orgID int, startDate, endDate time.Time) (*models.CollectionSummaryReport, error)
 	PaymentAnalysisReport(orgID int, startDate, endDate time.Time) (*models.PaymentAnalysisReport, error)
 	TenantSummaryReport(orgID int) (*models.TenantSummaryReport, error)
