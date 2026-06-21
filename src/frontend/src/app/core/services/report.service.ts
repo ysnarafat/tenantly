@@ -160,8 +160,6 @@ export class ReportService {
   getDashboardMetrics(): Observable<DashboardMetrics> {
     return this.http.get<DashboardMetrics>(`${this.apiUrl}/dashboard-metrics`);
   }
-<<<<<<< HEAD
-=======
 
   getTenantSummary(): Observable<TenantSummaryReport> {
     return this.http.get<TenantSummaryReport>(`${this.apiUrl}/tenant-summary`);
@@ -173,5 +171,4 @@ export class ReportService {
     if (endDate) params = params.set('end_date', endDate);
     return this.http.get<PropertyAnalyticsReport>(`${this.apiUrl}/property-analytics`, { params });
   }
->>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
 }

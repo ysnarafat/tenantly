@@ -95,8 +95,6 @@ export class ReportAnalysis implements OnInit {
   dashboardMetrics: DashboardMetrics | null = null;
   collectionReport: CollectionSummaryReport | null = null;
   paymentReport: PaymentAnalysisReport | null = null;
-<<<<<<< HEAD
-=======
   ledgerReport: FinancialLedgerReport | null = null;
   tenantReport: TenantSummaryReport | null = null;
   propertyAnalyticsReport: PropertyAnalyticsReport | null = null;
@@ -104,7 +102,6 @@ export class ReportAnalysis implements OnInit {
 
   buildings: Building[] = [];
   properties: Property[] = [];
->>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
 
   reports: ReportTemplate[] = [
     {
@@ -157,34 +154,6 @@ export class ReportAnalysis implements OnInit {
     },
   ];
 
-<<<<<<< HEAD
-  quickMetrics: QuickMetric[] = [
-    {
-      label: 'Total Revenue',
-      value: '৳ 2,450,000',
-      trend: 12,
-      icon: 'attach_money',
-    },
-    {
-      label: 'Collection Rate',
-      value: '94.5%',
-      trend: 2.3,
-      icon: 'percent',
-    },
-    {
-      label: 'Outstanding Due',
-      value: '৳ 145,000',
-      trend: -8,
-      icon: 'warning',
-    },
-    {
-      label: 'Occupancy Rate',
-      value: '87%',
-      trend: 0,
-      icon: 'domain',
-    },
-  ];
-=======
   get quickMetrics(): QuickMetric[] {
     const c = this.dashboardMetrics?.collection_summary;
     const p = this.dashboardMetrics?.payment_analysis;
@@ -211,13 +180,10 @@ export class ReportAnalysis implements OnInit {
       },
     ];
   }
->>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
 
   ngOnInit() {
     this.initForm();
     this.loadDashboardMetrics();
-<<<<<<< HEAD
-=======
     this.loadBuildings();
     this.loadProperties();
   }
@@ -234,7 +200,6 @@ export class ReportAnalysis implements OnInit {
       next: (res) => { this.properties = res.properties ?? []; },
       error: () => {},
     });
->>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
   }
 
   initForm() {
@@ -265,8 +230,6 @@ export class ReportAnalysis implements OnInit {
     });
   }
 
-<<<<<<< HEAD
-=======
   loadLedgerReport() {
     const filters: Record<string, any> = {};
     if (this.reportForm.get('startDate')?.value) {
@@ -355,7 +318,6 @@ export class ReportAnalysis implements OnInit {
     });
   }
 
->>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
   loadCollectionSummary() {
     const startDate = this.reportForm.get('startDate')?.value;
     const endDate = this.reportForm.get('endDate')?.value;
@@ -414,20 +376,15 @@ export class ReportAnalysis implements OnInit {
     const reportType = this.reportForm.get('reportType')?.value;
 
     switch (reportType) {
-<<<<<<< HEAD
-=======
       case 'ledger':
         this.loadLedgerReport();
         break;
->>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
       case 'collection_summary':
         this.loadCollectionSummary();
         break;
       case 'payment_analysis':
         this.loadPaymentAnalysis();
         break;
-<<<<<<< HEAD
-=======
       case 'tenant_report':
         this.loadTenantSummary();
         break;
@@ -437,17 +394,12 @@ export class ReportAnalysis implements OnInit {
       case 'building_performance':
         this.loadBuildingPerformance();
         break;
->>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
       default:
         this.snackBar.open('Report type not yet implemented', 'Close', { duration: 3000 });
     }
   }
 
   exportReport(format: 'pdf' | 'csv' | 'xlsx') {
-<<<<<<< HEAD
-    this.snackBar.open(`Exporting as ${format.toUpperCase()}...`, 'Close', { duration: 2000 });
-    // Call export service
-=======
     if (format !== 'csv') {
       this.snackBar.open(`${format.toUpperCase()} export coming soon`, 'Close', { duration: 2000 });
       return;
@@ -531,7 +483,6 @@ export class ReportAnalysis implements OnInit {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
->>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
   }
 
   getReportsByCategory(category: string) {
@@ -539,7 +490,6 @@ export class ReportAnalysis implements OnInit {
   }
 
   canAccessReport(report: ReportTemplate): boolean {
-    // Role-based access control
     if (this.permissionService.isAdmin()) return true;
     if (this.permissionService.isPropertyManager() && report.category !== 'financial') return true;
     if (this.permissionService.isAccountant() && report.category === 'financial') return true;

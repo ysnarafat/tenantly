@@ -226,14 +226,9 @@
                 <mat-label>{{ 'REPORTS.PROPERTY_FILTER' | translate }}</mat-label>
                 <mat-select formControlName="propertyFilter">
                   <mat-option value="">{{ 'COMMON.ALL' | translate }}</mat-option>
-<<<<<<< HEAD
-                  <mat-option value="prop1">Property 1</mat-option>
-                  <mat-option value="prop2">Property 2</mat-option>
-=======
                   <mat-option *ngFor="let p of properties" [value]="p.id.toString()">
                     {{ p.property_name }} ({{ p.property_code }})
                   </mat-option>
->>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
                 </mat-select>
               </mat-form-field>
 
@@ -241,14 +236,9 @@
                 <mat-label>{{ 'REPORTS.BUILDING_FILTER' | translate }}</mat-label>
                 <mat-select formControlName="buildingFilter">
                   <mat-option value="">{{ 'COMMON.ALL' | translate }}</mat-option>
-<<<<<<< HEAD
-                  <mat-option value="bld1">Building A</mat-option>
-                  <mat-option value="bld2">Building B</mat-option>
-=======
                   <mat-option *ngFor="let b of buildings" [value]="b.id.toString()">
                     {{ b.building_name }} ({{ b.building_code }})
                   </mat-option>
->>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
                 </mat-select>
               </mat-form-field>
 
@@ -332,8 +322,6 @@
             </p>
           </div>
         </div>
-<<<<<<< HEAD
-=======
 
         <!-- Ledger Results -->
         <div class="ledger-results" *ngIf="ledgerReport">
@@ -505,7 +493,6 @@
             <mat-row *matRowDef="let row; columns: ['tenant','unit','period','due','paid','status']"></mat-row>
           </mat-table>
         </div>
->>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
       </div>
     </mat-tab>
 
