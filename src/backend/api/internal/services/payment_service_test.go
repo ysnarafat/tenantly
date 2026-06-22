@@ -1,4 +1,4 @@
-﻿package services
+package services
 
 import (
 	"errors"
@@ -213,6 +213,10 @@ func (m *MockPaymentRepo) GetPaymentAnalyticsByPeriod(orgID int, startDate, endD
 		DailyTrend:    map[string]int64{},
 		TotalPayments: 0,
 	}, nil
+}
+
+func (m *MockPaymentRepo) GetBatchPropertyPaymentStats(propertyIDs []int, startDate, endDate time.Time) (map[int]any, error) {
+	return map[int]any{}, nil
 }
 
 // ---------------------------------------------------------------------------
@@ -1918,5 +1922,3 @@ func paymentTestContains(s, substr string) bool {
 	}
 	return false
 }
-
-

@@ -1,6 +1,16 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule, JsonPipe } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {
+  FormsModule,
+  ReactiveFormsModule,
+  FormBuilder,
+  FormGroup,
+  Validators,
+  AbstractControl,
+  ValidationErrors,
+} from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -21,7 +31,15 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { TranslateModule } from '@ngx-translate/core';
 import { PermissionService } from '../../core/services/permission.service';
-import { ReportService, DashboardMetrics, CollectionSummaryReport, PaymentAnalysisReport, FinancialLedgerReport, TenantSummaryReport, PropertyAnalyticsReport } from '../../core/services/report.service';
+import {
+  ReportService,
+  DashboardMetrics,
+  CollectionSummaryReport,
+  PaymentAnalysisReport,
+  FinancialLedgerReport,
+  TenantSummaryReport,
+  PropertyAnalyticsReport,
+} from '../../core/services/report.service';
 import { PaymentService } from '../../core/services/payment.service';
 import { BuildingService } from '../../core/services/building.service';
 import { PropertyService } from '../../core/services/property.service';
@@ -73,7 +91,18 @@ export interface QuickMetric {
   templateUrl: './report-analysis.html',
   styleUrls: ['./report-analysis.scss'],
 })
-export class ReportAnalysis implements OnInit {
+function dateRangeValidator(fg: AbstractControl): ValidationErrors | null {
+  const start = fg.get('startDate')?.value;
+  const end = fg.get('endDate')?.value;
+  if (start && end && new Date(end) < new Date(start)) {
+    return { endBeforeStart: true };
+  }
+  return null;
+}
+
+export class ReportAnalysis implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+  private cancelPending$ = new Subject<void>();
   private fb = inject(FormBuilder);
   private permissionService = inject(PermissionService);
   private snackBar = inject(MatSnackBar);
@@ -95,8 +124,6 @@ export class ReportAnalysis implements OnInit {
   dashboardMetrics: DashboardMetrics | null = null;
   collectionReport: CollectionSummaryReport | null = null;
   paymentReport: PaymentAnalysisReport | null = null;
-<<<<<<< HEAD
-=======
   ledgerReport: FinancialLedgerReport | null = null;
   tenantReport: TenantSummaryReport | null = null;
   propertyAnalyticsReport: PropertyAnalyticsReport | null = null;
@@ -104,7 +131,6 @@ export class ReportAnalysis implements OnInit {
 
   buildings: Building[] = [];
   properties: Property[] = [];
->>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
 
   reports: ReportTemplate[] = [
     {
@@ -157,34 +183,6 @@ export class ReportAnalysis implements OnInit {
     },
   ];
 
-<<<<<<< HEAD
-  quickMetrics: QuickMetric[] = [
-    {
-      label: 'Total Revenue',
-      value: '৳ 2,450,000',
-      trend: 12,
-      icon: 'attach_money',
-    },
-    {
-      label: 'Collection Rate',
-      value: '94.5%',
-      trend: 2.3,
-      icon: 'percent',
-    },
-    {
-      label: 'Outstanding Due',
-      value: '৳ 145,000',
-      trend: -8,
-      icon: 'warning',
-    },
-    {
-      label: 'Occupancy Rate',
-      value: '87%',
-      trend: 0,
-      icon: 'domain',
-    },
-  ];
-=======
   get quickMetrics(): QuickMetric[] {
     const c = this.dashboardMetrics?.collection_summary;
     const p = this.dashboardMetrics?.payment_analysis;
@@ -211,41 +209,49 @@ export class ReportAnalysis implements OnInit {
       },
     ];
   }
->>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
 
   ngOnInit() {
     this.initForm();
     this.loadDashboardMetrics();
-<<<<<<< HEAD
-=======
     this.loadBuildings();
     this.loadProperties();
   }
 
   loadBuildings() {
     this.buildingService.getBuildings({ active: true }).subscribe({
-      next: (res) => { this.buildings = res.buildings ?? []; },
+      next: (res) => {
+        this.buildings = res.buildings ?? [];
+      },
       error: () => {},
     });
   }
 
   loadProperties() {
     this.propertyService.getProperties({ active: true }).subscribe({
-      next: (res) => { this.properties = res.properties ?? []; },
+      next: (res) => {
+        this.properties = res.properties ?? [];
+      },
       error: () => {},
     });
->>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   initForm() {
-    this.reportForm = this.fb.group({
-      reportType: ['ledger', Validators.required],
-      propertyFilter: [''],
-      buildingFilter: [''],
-      startDate: [''],
-      endDate: [''],
-      exportFormat: ['pdf'],
-    });
+    this.reportForm = this.fb.group(
+      {
+        reportType: ['ledger', Validators.required],
+        propertyFilter: [''],
+        buildingFilter: [''],
+        startDate: [''],
+        endDate: [''],
+        exportFormat: ['pdf'],
+      },
+      { validators: dateRangeValidator },
+    );
   }
 
   loadDashboardMetrics() {
@@ -265,8 +271,6 @@ export class ReportAnalysis implements OnInit {
     });
   }
 
-<<<<<<< HEAD
-=======
   loadLedgerReport() {
     const filters: Record<string, any> = {};
     if (this.reportForm.get('startDate')?.value) {
@@ -276,34 +280,40 @@ export class ReportAnalysis implements OnInit {
     }
 
     this.generatingReport = true;
-    this.reportService.getFinancialLedger(1, 50, filters).subscribe({
-      next: (report) => {
-        this.ledgerReport = report;
-        this.generatingReport = false;
-        this.snackBar.open('Ledger report generated', 'Close', { duration: 2000 });
-      },
-      error: (error) => {
-        console.error('Error generating ledger report:', error);
-        this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
-        this.generatingReport = false;
-      },
-    });
+    this.reportService
+      .getFinancialLedger(1, 50, filters)
+      .pipe(takeUntil(this.cancelPending$), takeUntil(this.destroy$))
+      .subscribe({
+        next: (report) => {
+          this.ledgerReport = report;
+          this.generatingReport = false;
+          this.snackBar.open('Ledger report generated', 'Close', { duration: 2000 });
+        },
+        error: (error) => {
+          console.error('Error generating ledger report:', error);
+          this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+          this.generatingReport = false;
+        },
+      });
   }
 
   loadTenantSummary() {
     this.generatingReport = true;
-    this.reportService.getTenantSummary().subscribe({
-      next: (report) => {
-        this.tenantReport = report;
-        this.generatingReport = false;
-        this.snackBar.open('Tenant report generated', 'Close', { duration: 2000 });
-      },
-      error: (error) => {
-        console.error('Error generating tenant report:', error);
-        this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
-        this.generatingReport = false;
-      },
-    });
+    this.reportService
+      .getTenantSummary()
+      .pipe(takeUntil(this.cancelPending$), takeUntil(this.destroy$))
+      .subscribe({
+        next: (report) => {
+          this.tenantReport = report;
+          this.generatingReport = false;
+          this.snackBar.open('Tenant report generated', 'Close', { duration: 2000 });
+        },
+        error: (error) => {
+          console.error('Error generating tenant report:', error);
+          this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+          this.generatingReport = false;
+        },
+      });
   }
 
   loadPropertyAnalytics() {
@@ -313,18 +323,21 @@ export class ReportAnalysis implements OnInit {
     const end = endDate ? new Date(endDate).toISOString().split('T')[0] : undefined;
 
     this.generatingReport = true;
-    this.reportService.getPropertyAnalytics(start, end).subscribe({
-      next: (report) => {
-        this.propertyAnalyticsReport = report;
-        this.generatingReport = false;
-        this.snackBar.open('Property analytics generated', 'Close', { duration: 2000 });
-      },
-      error: (error) => {
-        console.error('Error generating property analytics:', error);
-        this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
-        this.generatingReport = false;
-      },
-    });
+    this.reportService
+      .getPropertyAnalytics(start, end)
+      .pipe(takeUntil(this.cancelPending$), takeUntil(this.destroy$))
+      .subscribe({
+        next: (report) => {
+          this.propertyAnalyticsReport = report;
+          this.generatingReport = false;
+          this.snackBar.open('Property analytics generated', 'Close', { duration: 2000 });
+        },
+        error: (error) => {
+          console.error('Error generating property analytics:', error);
+          this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+          this.generatingReport = false;
+        },
+      });
   }
 
   loadBuildingPerformance() {
@@ -337,25 +350,31 @@ export class ReportAnalysis implements OnInit {
 
     const startDate = this.reportForm.get('startDate')?.value;
     const endDate = this.reportForm.get('endDate')?.value;
-    const start = startDate ? new Date(startDate).toISOString().split('T')[0] : new Date(new Date().setDate(1)).toISOString().split('T')[0];
-    const end = endDate ? new Date(endDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+    const start = startDate
+      ? new Date(startDate).toISOString().split('T')[0]
+      : new Date(new Date().setDate(1)).toISOString().split('T')[0];
+    const end = endDate
+      ? new Date(endDate).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0];
 
     this.generatingReport = true;
-    this.paymentService.getBuildingReport(buildingId, start, end).subscribe({
-      next: (report) => {
-        this.buildingReport = report;
-        this.generatingReport = false;
-        this.snackBar.open('Building performance report generated', 'Close', { duration: 2000 });
-      },
-      error: (error) => {
-        console.error('Error generating building report:', error);
-        this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
-        this.generatingReport = false;
-      },
-    });
+    this.paymentService
+      .getBuildingReport(buildingId, start, end)
+      .pipe(takeUntil(this.cancelPending$), takeUntil(this.destroy$))
+      .subscribe({
+        next: (report) => {
+          this.buildingReport = report;
+          this.generatingReport = false;
+          this.snackBar.open('Building performance report generated', 'Close', { duration: 2000 });
+        },
+        error: (error) => {
+          console.error('Error generating building report:', error);
+          this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+          this.generatingReport = false;
+        },
+      });
   }
 
->>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
   loadCollectionSummary() {
     const startDate = this.reportForm.get('startDate')?.value;
     const endDate = this.reportForm.get('endDate')?.value;
@@ -364,18 +383,21 @@ export class ReportAnalysis implements OnInit {
     const end = endDate ? new Date(endDate).toISOString().split('T')[0] : undefined;
 
     this.generatingReport = true;
-    this.reportService.getCollectionSummary(start, end).subscribe({
-      next: (report) => {
-        this.collectionReport = report;
-        this.generatingReport = false;
-        this.snackBar.open('Report generated', 'Close', { duration: 2000 });
-      },
-      error: (error) => {
-        console.error('Error generating report:', error);
-        this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
-        this.generatingReport = false;
-      },
-    });
+    this.reportService
+      .getCollectionSummary(start, end)
+      .pipe(takeUntil(this.cancelPending$), takeUntil(this.destroy$))
+      .subscribe({
+        next: (report) => {
+          this.collectionReport = report;
+          this.generatingReport = false;
+          this.snackBar.open('Report generated', 'Close', { duration: 2000 });
+        },
+        error: (error) => {
+          console.error('Error generating report:', error);
+          this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+          this.generatingReport = false;
+        },
+      });
   }
 
   loadPaymentAnalysis() {
@@ -386,18 +408,21 @@ export class ReportAnalysis implements OnInit {
     const end = endDate ? new Date(endDate).toISOString().split('T')[0] : undefined;
 
     this.generatingReport = true;
-    this.reportService.getPaymentAnalysis(start, end).subscribe({
-      next: (report) => {
-        this.paymentReport = report;
-        this.generatingReport = false;
-        this.snackBar.open('Report generated', 'Close', { duration: 2000 });
-      },
-      error: (error) => {
-        console.error('Error generating report:', error);
-        this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
-        this.generatingReport = false;
-      },
-    });
+    this.reportService
+      .getPaymentAnalysis(start, end)
+      .pipe(takeUntil(this.cancelPending$), takeUntil(this.destroy$))
+      .subscribe({
+        next: (report) => {
+          this.paymentReport = report;
+          this.generatingReport = false;
+          this.snackBar.open('Report generated', 'Close', { duration: 2000 });
+        },
+        error: (error) => {
+          console.error('Error generating report:', error);
+          this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+          this.generatingReport = false;
+        },
+      });
   }
 
   selectReport(report: ReportTemplate) {
@@ -406,28 +431,28 @@ export class ReportAnalysis implements OnInit {
   }
 
   generateReport() {
+    if (this.reportForm.hasError('endBeforeStart')) {
+      this.snackBar.open('End date must be after start date', 'Close', { duration: 3000 });
+      return;
+    }
     if (!this.reportForm.valid) {
       this.snackBar.open('Please fill required fields', 'Close', { duration: 3000 });
       return;
     }
 
+    this.cancelPending$.next();
     const reportType = this.reportForm.get('reportType')?.value;
 
     switch (reportType) {
-<<<<<<< HEAD
-=======
       case 'ledger':
         this.loadLedgerReport();
         break;
->>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
       case 'collection_summary':
         this.loadCollectionSummary();
         break;
       case 'payment_analysis':
         this.loadPaymentAnalysis();
         break;
-<<<<<<< HEAD
-=======
       case 'tenant_report':
         this.loadTenantSummary();
         break;
@@ -437,17 +462,12 @@ export class ReportAnalysis implements OnInit {
       case 'building_performance':
         this.loadBuildingPerformance();
         break;
->>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
       default:
         this.snackBar.open('Report type not yet implemented', 'Close', { duration: 3000 });
     }
   }
 
   exportReport(format: 'pdf' | 'csv' | 'xlsx') {
-<<<<<<< HEAD
-    this.snackBar.open(`Exporting as ${format.toUpperCase()}...`, 'Close', { duration: 2000 });
-    // Call export service
-=======
     if (format !== 'csv') {
       this.snackBar.open(`${format.toUpperCase()} export coming soon`, 'Close', { duration: 2000 });
       return;
@@ -462,18 +482,42 @@ export class ReportAnalysis implements OnInit {
       csv = this.toCsv(
         ['Tenant', 'Unit', 'Building', 'Period', 'Due (৳)', 'Paid (৳)', 'Status'],
         this.ledgerReport.payments.map((p: any) => [
-          p.tenant_name, p.unit_number, p.building_name,
-          `${p.month}/${p.year}`, p.amount_due, p.amount_paid, p.status,
+          p.tenant_name,
+          p.unit_number,
+          p.building_name,
+          `${p.month}/${p.year}`,
+          p.amount_due,
+          p.amount_paid,
+          p.status,
         ])
       );
     } else if (reportType === 'tenant_report' && this.tenantReport?.tenants?.length) {
       filename = 'tenant-report.csv';
       csv = this.toCsv(
-        ['Tenant', 'Phone', 'Email', 'Unit', 'Building', 'Property', 'Monthly Rent', 'Total Due', 'Total Paid', 'Balance', 'Lease Active'],
-        this.tenantReport.tenants.map(t => [
-          t.tenant_name, t.phone_number, t.email,
-          t.unit_number, t.building_name, t.property_name,
-          t.monthly_rent, t.total_due, t.total_paid, t.balance_due,
+        [
+          'Tenant',
+          'Phone',
+          'Email',
+          'Unit',
+          'Building',
+          'Property',
+          'Monthly Rent',
+          'Total Due',
+          'Total Paid',
+          'Balance',
+          'Lease Active',
+        ],
+        this.tenantReport.tenants.map((t) => [
+          t.tenant_name,
+          t.phone_number,
+          t.email,
+          t.unit_number,
+          t.building_name,
+          t.property_name,
+          t.monthly_rent,
+          t.total_due,
+          t.total_paid,
+          t.balance_due,
           t.lease_active ? 'Yes' : 'No',
         ])
       );
@@ -483,8 +527,12 @@ export class ReportAnalysis implements OnInit {
       csv = this.toCsv(
         ['Tenant', 'Unit', 'Period', 'Due (৳)', 'Paid (৳)', 'Status'],
         payments.map((p: any) => [
-          p.tenant_name, p.unit_number, `${p.month}/${p.year}`,
-          p.amount_due, p.amount_paid, p.status,
+          p.tenant_name,
+          p.unit_number,
+          `${p.month}/${p.year}`,
+          p.amount_due,
+          p.amount_paid,
+          p.status,
         ])
       );
     } else if (reportType === 'collection_summary' && this.collectionReport) {
@@ -500,11 +548,18 @@ export class ReportAnalysis implements OnInit {
           ['Period', this.collectionReport.report_period],
         ]
       );
-    } else if (reportType === 'property_analytics' && this.propertyAnalyticsReport?.properties?.length) {
+    } else if (
+      reportType === 'property_analytics' &&
+      this.propertyAnalyticsReport?.properties?.length
+    ) {
       filename = 'property-analytics.csv';
       csv = this.toCsv(
         ['Property', 'Code', 'Type'],
-        this.propertyAnalyticsReport.properties.map(p => [p.property_name, p.property_code, p.property_type])
+        this.propertyAnalyticsReport.properties.map((p) => [
+          p.property_name,
+          p.property_code,
+          p.property_type,
+        ])
       );
     } else {
       this.snackBar.open('Generate a report first before exporting', 'Close', { duration: 3000 });
@@ -518,9 +573,11 @@ export class ReportAnalysis implements OnInit {
   private toCsv(headers: string[], rows: any[][]): string {
     const escape = (v: any) => {
       const s = String(v ?? '');
-      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+      return s.includes(',') || s.includes('"') || s.includes('\n')
+        ? `"${s.replace(/"/g, '""')}"`
+        : s;
     };
-    return [headers, ...rows].map(row => row.map(escape).join(',')).join('\r\n');
+    return [headers, ...rows].map((row) => row.map(escape).join(',')).join('\r\n');
   }
 
   private downloadCsv(csv: string, filename: string): void {
@@ -531,7 +588,6 @@ export class ReportAnalysis implements OnInit {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
->>>>>>> 59feb3d3cdfa6ee0fcf9c596df9c556cdcd6fb3f
   }
 
   getReportsByCategory(category: string) {

@@ -330,7 +330,7 @@ func (r *PaymentRepository) GetTenantPaymentSummary(orgID int) ([]*models.Tenant
 // not in Go memory.
 func (r *PaymentRepository) GetPaymentAnalyticsByPeriod(orgID int, startDate, endDate time.Time) (*models.PaymentAnalyticsResult, error) {
 	result := &models.PaymentAnalyticsResult{
-		MethodCounts: make(map[string]int),
+		MethodCounts: make(map[string]int64),
 		StatusCounts: make(map[string]int64),
 		DailyTrend:   make(map[string]int64),
 	}
@@ -349,12 +349,12 @@ func (r *PaymentRepository) GetPaymentAnalyticsByPeriod(orgID int, startDate, en
 	defer methodRows.Close()
 	for methodRows.Next() {
 		var method string
-		var cnt int
+		var cnt int64
 		if err := methodRows.Scan(&method, &cnt); err != nil {
 			return nil, fmt.Errorf("failed to scan method row: %w", err)
 		}
 		result.MethodCounts[method] = cnt
-		result.TotalPayments += int64(cnt)
+		result.TotalPayments += cnt
 	}
 	if err = methodRows.Err(); err != nil {
 		return nil, fmt.Errorf("method rows error: %w", err)

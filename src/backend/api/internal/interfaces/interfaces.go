@@ -243,6 +243,7 @@ type PaymentRepositoryInterface interface {
 	SearchLeases(orgID int, query string) ([]*models.LeaseSearchResult, error)
 	GetActiveLeasesForPeriod(orgID, month, year int, buildingID *int) ([]*models.LeaseSearchResult, error)
 	CheckPaymentExists(unitID, month, year int) (bool, error)
+	GetBatchPropertyPaymentStats(propertyIDs []int, startDate, endDate time.Time) (map[int]any, error)
 }
 
 // PaymentServiceInterface defines the interface for payment service operations
