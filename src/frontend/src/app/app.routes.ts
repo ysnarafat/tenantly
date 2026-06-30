@@ -111,22 +111,6 @@ export const routes: Routes = [
         canActivate: [superAdminGuard],
       },
       {
-        path: 'organizations/:id',
-        loadComponent: () =>
-          import('./features/admin/organization-management/organization-detail').then(
-            (m) => m.OrganizationDetailComponent
-          ),
-        canActivate: [superAdminGuard],
-      },
-      {
-        path: 'organizations/:id/edit',
-        loadComponent: () =>
-          import('./features/admin/organization-management/organization-edit').then(
-            (m) => m.OrganizationEditComponent
-          ),
-        canActivate: [superAdminGuard],
-      },
-      {
         path: 'invitations',
         loadComponent: () =>
           import('./features/admin/user-onboarding/pending-invitations').then(
@@ -139,18 +123,6 @@ export const routes: Routes = [
           import('./features/admin/user-onboarding/invite-user').then((m) => m.InviteUserComponent),
       },
       {
-        path: 'invitations/bulk',
-        loadComponent: () =>
-          import('./features/admin/user-onboarding/bulk-import').then((m) => m.BulkImportComponent),
-      },
-      {
-        path: 'audit-logs',
-        loadComponent: () =>
-          import('./features/admin/audit-logs/audit-log-viewer').then(
-            (m) => m.AuditLogViewerComponent
-          ),
-      },
-      {
         path: 'users',
         loadComponent: () => import('./features/users/user-list/user-list').then((m) => m.UserList),
         canActivate: [userManagementGuard],
@@ -159,14 +131,6 @@ export const routes: Routes = [
         path: 'users/new',
         loadComponent: () =>
           import('./features/admin/user-management/create-user').then((m) => m.CreateUserComponent),
-        canActivate: [userManagementGuard],
-      },
-      {
-        path: 'users/promote',
-        loadComponent: () =>
-          import('./features/admin/user-management/admin-promotion').then(
-            (m) => m.AdminPromotionComponent
-          ),
         canActivate: [userManagementGuard],
       },
     ],

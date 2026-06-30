@@ -194,18 +194,6 @@
           <mat-icon class="nav-icon">mail_outline</mat-icon>
           <span class="nav-label">Invitations</span>
         </a>
-        } @if (isOrgAdmin() || isSuperAdmin()) {
-        <a
-          class="nav-item"
-          routerLink="/admin/audit-logs"
-          routerLinkActive="nav-active"
-          (click)="onNavigate()"
-          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Audit Logs' : ''"
-          matTooltipPosition="right"
-        >
-          <mat-icon class="nav-icon">history</mat-icon>
-          <span class="nav-label">Audit Logs</span>
-        </a>
         } @if (canManageUsers()) {
         <a
           class="nav-item"

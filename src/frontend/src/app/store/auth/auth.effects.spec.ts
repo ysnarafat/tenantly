@@ -93,10 +93,8 @@ describe('AuthEffects', () => {
   });
 
   describe('login$', () => {
-    it('should return loginSuccess action on successful demo login', (done) => {
-      spyOn<any>(effects as any, 'isDemoMode').and.returnValue(true);
-      spyOn<any>(effects as any, 'isDemoMode').and.returnValue(true);
-      const credentials = { username: 'demo', password: 'demo123' };
+    it('should return loginSuccess action on successful API login', (done) => {
+      const credentials = { username: 'testuser', password: 'password' };
       const action = AuthActions.login({ credentials });
 
       actions$ = of(action);
@@ -104,15 +102,17 @@ describe('AuthEffects', () => {
       effects.login$.subscribe((result) => {
         expect(result.type).toBe(AuthActions.loginSuccess.type);
         expect(
-          (result as unknown as { response: { user: { username: string } } }).response.user.username
-        ).toBe('demo');
+          (result as unknown as { response: typeof mockLoginResponse }).response
+        ).toEqual(mockLoginResponse);
         done();
       });
+
+      const req = httpMock.expectOne(`${environment.apiUrl}/auth/login`);
+      expect(req.request.method).toBe('POST');
+      req.flush(mockLoginResponse);
     });
 
-    it('should return loginFailure action on invalid demo credentials', (done) => {
-      spyOn<any>(effects as any, 'isDemoMode').and.returnValue(true);
-      spyOn<any>(effects as any, 'isDemoMode').and.returnValue(true);
+    it('should return loginFailure action on API error', (done) => {
       const credentials = { username: 'invalid', password: 'invalid' };
       const action = AuthActions.login({ credentials });
 
@@ -120,11 +120,11 @@ describe('AuthEffects', () => {
 
       effects.login$.subscribe((result) => {
         expect(result.type).toBe(AuthActions.loginFailure.type);
-        expect((result as unknown as { error: { error: string } }).error.error).toBe(
-          'Invalid demo credentials'
-        );
         done();
       });
+
+      const req = httpMock.expectOne(`${environment.apiUrl}/auth/login`);
+      req.flush({ error: 'Invalid credentials' }, { status: 401, statusText: 'Unauthorized' });
     });
   });
 
@@ -274,9 +274,7 @@ describe('AuthEffects', () => {
   });
 
   describe('logout$', () => {
-    it('should return logoutSuccess action in demo mode', (done) => {
-      spyOn<any>(effects as any, 'isDemoMode').and.returnValue(true);
-      spyOn<any>(effects as any, 'isDemoMode').and.returnValue(true);
+    it('should return logoutSuccess action on successful API logout', (done) => {
       const action = AuthActions.logout();
       actions$ = of(action);
 
@@ -284,6 +282,10 @@ describe('AuthEffects', () => {
         expect(result.type).toBe(AuthActions.logoutSuccess.type);
         done();
       });
+
+      const req = httpMock.expectOne(`${environment.apiUrl}/auth/logout`);
+      expect(req.request.method).toBe('POST');
+      req.flush({});
     });
   });
 
@@ -314,22 +316,21 @@ describe('AuthEffects', () => {
   });
 
   describe('refreshToken$', () => {
-    it('should return refreshTokenSuccess action in demo mode', (done) => {
-      spyOn<any>(effects as any, 'isDemoMode').and.returnValue(true);
-      spyOn<any>(effects as any, 'isDemoMode').and.returnValue(true);
+    it('should return refreshTokenSuccess action on successful API refresh', (done) => {
       localStorage.setItem('tenantly_refresh_token', 'test-refresh-token');
-      localStorage.setItem('tenantly_user', JSON.stringify(mockLoginResponse.user));
 
       const action = AuthActions.refreshToken();
       actions$ = of(action);
 
       effects.refreshToken$.subscribe((result) => {
         expect(result.type).toBe(AuthActions.refreshTokenSuccess.type);
-        expect(
-          (result as unknown as { response: { user: typeof mockLoginResponse.user } }).response.user
-        ).toEqual(mockLoginResponse.user);
         done();
       });
+
+      const req = httpMock.expectOne(`${environment.apiUrl}/auth/refresh`);
+      expect(req.request.method).toBe('POST');
+      expect(req.request.body).toEqual({ refresh_token: 'test-refresh-token' });
+      req.flush(mockLoginResponse);
     });
 
     it('should return refreshTokenFailure action when no refresh token', (done) => {
@@ -384,9 +385,7 @@ describe('AuthEffects', () => {
   });
 
   describe('changePassword$', () => {
-    it('should return changePasswordSuccess action in demo mode', (done) => {
-      spyOn<any>(effects as any, 'isDemoMode').and.returnValue(true);
-      spyOn<any>(effects as any, 'isDemoMode').and.returnValue(true);
+    it('should return changePasswordSuccess action on successful API call', (done) => {
       const request = { current_password: 'old', new_password: 'new' };
       const action = AuthActions.changePassword({ request });
       actions$ = of(action);
@@ -398,13 +397,15 @@ describe('AuthEffects', () => {
         );
         done();
       });
+
+      const req = httpMock.expectOne(`${environment.apiUrl}/auth/change-password`);
+      expect(req.request.method).toBe('POST');
+      req.flush({ message: 'Password changed successfully' });
     });
   });
 
   describe('resetPassword$', () => {
-    it('should return resetPasswordSuccess action in demo mode', (done) => {
-      spyOn<any>(effects as any, 'isDemoMode').and.returnValue(true);
-      spyOn<any>(effects as any, 'isDemoMode').and.returnValue(true);
+    it('should return resetPasswordSuccess action on successful API call', (done) => {
       const request = { email: 'test@example.com' };
       const action = AuthActions.resetPassword({ request });
       actions$ = of(action);
@@ -416,6 +417,10 @@ describe('AuthEffects', () => {
         );
         done();
       });
+
+      const req = httpMock.expectOne(`${environment.apiUrl}/auth/reset-password`);
+      expect(req.request.method).toBe('POST');
+      req.flush({ message: 'If the email exists, a password reset link has been sent' });
     });
   });
 });

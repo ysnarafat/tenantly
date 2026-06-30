@@ -6,7 +6,6 @@ import { of } from 'rxjs';
 import { map, exhaustMap, catchError, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import * as AuthActions from './auth.actions';
-import { LoginResponse } from '../../core/services/auth.service';
 import { SetOrganizationResponse } from '../../core/models/organization.model';
 
 @Injectable()
@@ -18,26 +17,13 @@ export class AuthEffects {
   login$ = createEffect(() =>
     this.actions$.pipe(
       ofType(AuthActions.login),
-      exhaustMap(({ credentials }) => {
-        // Handle demo mode
-        if (
-          this.isDemoMode() &&
-          credentials.username === 'demo' &&
-          credentials.password === 'demo123'
-        ) {
-          const demoResponse = this.createDemoResponse();
-          return of(AuthActions.loginSuccess({ response: demoResponse }));
-        } else if (this.isDemoMode()) {
-          return of(AuthActions.loginFailure({ error: { error: 'Invalid demo credentials' } }));
-        }
-
-        // Production API call
+      exhaustMap(({ credentials }) =>
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return this.http.post<any>(`${environment.apiUrl}/auth/login`, credentials).pipe(
+        this.http.post<any>(`${environment.apiUrl}/auth/login`, credentials).pipe(
           map((response) => AuthActions.loginSuccess({ response })),
           catchError((error) => of(AuthActions.loginFailure({ error })))
-        );
-      })
+        )
+      )
     )
   );
 
@@ -130,18 +116,12 @@ export class AuthEffects {
   logout$ = createEffect(() =>
     this.actions$.pipe(
       ofType(AuthActions.logout),
-      exhaustMap(() => {
-        // Handle demo mode
-        if (this.isDemoMode()) {
-          return of(AuthActions.logoutSuccess());
-        }
-
-        // Production API call
-        return this.http.post(`${environment.apiUrl}/auth/logout`, {}).pipe(
+      exhaustMap(() =>
+        this.http.post(`${environment.apiUrl}/auth/logout`, {}).pipe(
           map(() => AuthActions.logoutSuccess()),
           catchError((error) => of(AuthActions.logoutFailure({ error })))
-        );
-      })
+        )
+      )
     )
   );
 
@@ -175,13 +155,6 @@ export class AuthEffects {
           return of(AuthActions.refreshTokenFailure({ error: 'No refresh token available' }));
         }
 
-        // Handle demo mode
-        if (this.isDemoMode()) {
-          const demoResponse = this.createDemoResponse('refreshed');
-          return of(AuthActions.refreshTokenSuccess({ response: demoResponse }));
-        }
-
-        // Production API call
         const request = { refresh_token: refreshToken };
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return this.http.post<any>(`${environment.apiUrl}/auth/refresh`, request).pipe(
@@ -232,69 +205,26 @@ export class AuthEffects {
   changePassword$ = createEffect(() =>
     this.actions$.pipe(
       ofType(AuthActions.changePassword),
-      exhaustMap(({ request }) => {
-        // Handle demo mode
-        if (this.isDemoMode()) {
-          return of(
-            AuthActions.changePasswordSuccess({ message: 'Password changed successfully' })
-          );
-        }
-
-        // Production API call
+      exhaustMap(({ request }) =>
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return this.http.post<any>(`${environment.apiUrl}/auth/change-password`, request).pipe(
+        this.http.post<any>(`${environment.apiUrl}/auth/change-password`, request).pipe(
           map((response) => AuthActions.changePasswordSuccess({ message: response.message })),
           catchError((error) => of(AuthActions.changePasswordFailure({ error })))
-        );
-      })
+        )
+      )
     )
   );
 
   resetPassword$ = createEffect(() =>
     this.actions$.pipe(
       ofType(AuthActions.resetPassword),
-      exhaustMap(({ request }) => {
-        // Handle demo mode
-        if (this.isDemoMode()) {
-          return of(
-            AuthActions.resetPasswordSuccess({
-              message: 'If the email exists, a password reset link has been sent',
-            })
-          );
-        }
-
-        // Production API call
+      exhaustMap(({ request }) =>
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return this.http.post<any>(`${environment.apiUrl}/auth/reset-password`, request).pipe(
+        this.http.post<any>(`${environment.apiUrl}/auth/reset-password`, request).pipe(
           map((response) => AuthActions.resetPasswordSuccess({ message: response.message })),
           catchError((error) => of(AuthActions.resetPasswordFailure({ error })))
-        );
-      })
+        )
+      )
     )
   );
-
-  // Helper methods
-  private isDemoMode(): boolean {
-    return false; // Set to false for production
-  }
-
-  private createDemoResponse(suffix = ''): LoginResponse {
-    const user = localStorage.getItem('tenantly_user');
-    const existingUser = user ? JSON.parse(user) : null;
-
-    return {
-      token: `demo-token${suffix ? '-' + suffix : ''}`,
-      refresh_token: `demo-refresh-token${suffix ? '-' + suffix : ''}`,
-      user: existingUser || {
-        id: 1,
-        username: 'demo',
-        email: 'demo@tenantly.com',
-        role: 'Admin',
-        active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      expires_at: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString(), // 8 hours
-    };
-  }
 }

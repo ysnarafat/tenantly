@@ -59,9 +59,6 @@ export class AuthService {
   private readonly USER_KEY = 'tenantly_user';
   private readonly EXPIRES_AT_KEY = 'tenantly_expires_at';
 
-  // DEMO MODE: Set to true to enable demo login (disable for production)
-  private readonly DEMO_MODE = false; // <-- Set to false to disable demo login
-
   // NgRx store selectors for reactive access
   public isAuthenticated$ = this.store.select(AuthSelectors.selectIsAuthenticated);
   public user$ = this.store.select(AuthSelectors.selectUser);
