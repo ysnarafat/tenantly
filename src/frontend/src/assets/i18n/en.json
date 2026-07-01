@@ -379,6 +379,7 @@
   },
   "PAYMENT_LIST": {
     "PAGE_TITLE": "Payments",
+    "PAGE_SUBTITLE": "Manage and track all payment transactions",
     "SUMMARY": {
       "TOTAL_DUE": "Total Due",
       "TOTAL_COLLECTED": "Total Collected",
@@ -386,11 +387,17 @@
       "OVERDUE": "Overdue",
       "COLLECTION_RATE": "Collection Rate"
     },
+    "TABS": {
+      "ALL_PAYMENTS": "All Payments",
+      "BY_PROPERTY": "By Property"
+    },
     "BUTTONS": {
       "NEW_PAYMENT": "New Payment",
       "APPLY": "Apply",
       "CLEAR": "Clear",
-      "UPDATE": "Update"
+      "UPDATE": "Update",
+      "LOAD": "Load",
+      "GENERATE_MONTHLY": "Generate Monthly"
     },
     "FILTERS": {
       "STATUS": "Status",
@@ -401,6 +408,7 @@
     "TABLE": {
       "TENANT_UNIT": "Tenant / Unit",
       "PROPERTY": "Property",
+      "UNIT": "Unit",
       "PERIOD": "Period",
       "AMOUNT_DUE": "Due (৳)",
       "AMOUNT_PAID": "Paid (৳)",
@@ -425,6 +433,12 @@
       "OCTOBER": "October",
       "NOVEMBER": "November",
       "DECEMBER": "December"
+    },
+    "TREE": {
+      "EMPTY_TITLE": "No payments to display",
+      "EMPTY_HINT": "Select a period and click Load, or generate monthly payments first",
+      "LOADING": "Building tree...",
+      "PAYMENTS_SUFFIX": "payments"
     },
     "EMPTY_STATE": "No payments found",
     "LOADING": "Loading payments..."

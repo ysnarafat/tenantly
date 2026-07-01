@@ -2,12 +2,6 @@
   @if (showHeader) {
   <div class="header">
     <h1>{{ 'ATTACHMENT_LIST.PAGE_TITLE' | translate }}</h1>
-    @if (canUpload()) {
-    <button mat-raised-button color="primary" (click)="uploadAttachment()">
-      <mat-icon>cloud_upload</mat-icon>
-      {{ 'ATTACHMENT_LIST.BUTTONS.UPLOAD' | translate }}
-    </button>
-    }
   </div>
   }
 
@@ -105,12 +99,7 @@
                   <mat-icon>download</mat-icon>
                   <span>{{ 'ATTACHMENT_LIST.MENU.DOWNLOAD' | translate }}</span>
                 </button>
-                @if (canEdit()) {
-                <button mat-menu-item (click)="editAttachment(attachment)">
-                  <mat-icon>edit</mat-icon>
-                  <span>{{ 'ATTACHMENT_LIST.MENU.EDIT' | translate }}</span>
-                </button>
-                } @if (canDelete()) {
+                @if (canDelete()) {
                 <button mat-menu-item (click)="deleteAttachment(attachment)" class="delete-action">
                   <mat-icon>delete</mat-icon>
                   <span>{{ 'ATTACHMENT_LIST.MENU.DELETE' | translate }}</span>
@@ -136,11 +125,6 @@
           <p>{{ 'ATTACHMENT_LIST.EMPTY.TRY_ADJUST' | translate }}</p>
           } @if (!searchQuery && selectedType === 'ALL') {
           <p>{{ 'ATTACHMENT_LIST.EMPTY.START_UPLOAD' | translate }}</p>
-          } @if (canUpload()) {
-          <button mat-raised-button color="primary" (click)="uploadAttachment()">
-            <mat-icon>cloud_upload</mat-icon>
-            {{ 'ATTACHMENT_LIST.BUTTONS.UPLOAD' | translate }}
-          </button>
           }
         </div>
         }

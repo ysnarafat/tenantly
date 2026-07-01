@@ -246,9 +246,7 @@
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>{{ 'REPORTS.EXPORT_FORMAT' | translate }}</mat-label>
                 <mat-select formControlName="exportFormat">
-                  <mat-option value="pdf">PDF</mat-option>
                   <mat-option value="csv">CSV</mat-option>
-                  <mat-option value="xlsx">Excel</mat-option>
                 </mat-select>
               </mat-form-field>
 
@@ -302,17 +300,9 @@
               </mat-card-content>
 
               <mat-card-actions>
-                <button mat-button (click)="exportReport('pdf')">
-                  <mat-icon>picture_as_pdf</mat-icon>
-                  PDF
-                </button>
                 <button mat-button (click)="exportReport('csv')">
                   <mat-icon>table_chart</mat-icon>
                   CSV
-                </button>
-                <button mat-button (click)="exportReport('xlsx')">
-                  <mat-icon>insert_drive_file</mat-icon>
-                  Excel
                 </button>
               </mat-card-actions>
             </mat-card>

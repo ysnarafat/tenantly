@@ -379,6 +379,7 @@
   },
   "PAYMENT_LIST": {
     "PAGE_TITLE": "পেমেন্ট",
+    "PAGE_SUBTITLE": "সকল পেমেন্ট লেনদেন পরিচালনা ও ট্র্যাক করুন",
     "SUMMARY": {
       "TOTAL_DUE": "মোট বকেয়া",
       "TOTAL_COLLECTED": "মোট সংগৃহীত",
@@ -386,11 +387,17 @@
       "OVERDUE": "নির্ধারিত সময় অতিক্রম করেছে",
       "COLLECTION_RATE": "সংগ্রহের হার"
     },
+    "TABS": {
+      "ALL_PAYMENTS": "সকল পেমেন্ট",
+      "BY_PROPERTY": "সম্পত্তি অনুযায়ী"
+    },
     "BUTTONS": {
       "NEW_PAYMENT": "নতুন পেমেন্ট",
       "APPLY": "প্রয়োগ করুন",
       "CLEAR": "সাফ করুন",
-      "UPDATE": "আপডেট করুন"
+      "UPDATE": "আপডেট করুন",
+      "LOAD": "লোড করুন",
+      "GENERATE_MONTHLY": "মাসিক তৈরি করুন"
     },
     "FILTERS": {
       "STATUS": "স্থিতি",
@@ -401,6 +408,7 @@
     "TABLE": {
       "TENANT_UNIT": "ভাড়াটে / ইউনিট",
       "PROPERTY": "সম্পত্তি",
+      "UNIT": "ইউনিট",
       "PERIOD": "সময়কাল",
       "AMOUNT_DUE": "বকেয়া (৳)",
       "AMOUNT_PAID": "পরিশোধিত (৳)",
@@ -425,6 +433,12 @@
       "OCTOBER": "অক্টোবর",
       "NOVEMBER": "নভেম্বর",
       "DECEMBER": "ডিসেম্বর"
+    },
+    "TREE": {
+      "EMPTY_TITLE": "কোনো পেমেন্ট নেই",
+      "EMPTY_HINT": "একটি সময়কাল নির্বাচন করে লোড করুন, অথবা মাসিক পেমেন্ট তৈরি করুন",
+      "LOADING": "ট্রি তৈরি হচ্ছে...",
+      "PAYMENTS_SUFFIX": "পেমেন্ট"
     },
     "EMPTY_STATE": "কোনো পেমেন্ট পাওয়া যায়নি",
     "LOADING": "পেমেন্ট লোড হচ্ছে..."

@@ -62,12 +62,6 @@
       <ng-container matColumnDef="actions">
         <th mat-header-cell *matHeaderCellDef>{{ 'ORG_LIST.TABLE.ACTIONS' | translate }}</th>
         <td mat-cell *matCellDef="let org">
-          <button mat-icon-button [matTooltip]="'ORG_LIST.TOOLTIPS.VIEW' | translate" (click)="viewOrganization(org)">
-            <mat-icon>visibility</mat-icon>
-          </button>
-          <button mat-icon-button [matTooltip]="'ORG_LIST.TOOLTIPS.EDIT' | translate" (click)="editOrganization(org)">
-            <mat-icon>edit</mat-icon>
-          </button>
           <button
             mat-icon-button
             [matTooltip]="'ORG_LIST.TOOLTIPS.DELETE' | translate"
