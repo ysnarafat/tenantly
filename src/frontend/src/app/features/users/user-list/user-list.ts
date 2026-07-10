@@ -1,21 +1,17 @@
 import {
   Component,
   OnInit,
-  ViewChild,
   inject,
   signal,
   computed,
-  AfterViewInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
-import { MatPaginatorModule, MatPaginator } from '@angular/material/paginator';
-import { MatSortModule, MatSort } from '@angular/material/sort';
+import { MatSortModule } from '@angular/material/sort';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -26,6 +22,7 @@ import { Router } from '@angular/router';
 import { User } from '../../../core/services/auth.service';
 import { UserService } from '../../../core/services/user.service';
 import { PermissionService } from '../../../core/services/permission.service';
+import { DataTable } from '../../../shared/components/data-table/data-table';
 
 @Component({
   selector: 'app-user-list',
@@ -33,27 +30,23 @@ import { PermissionService } from '../../../core/services/permission.service';
   imports: [
     CommonModule,
     MatTableModule,
-    MatPaginatorModule,
     MatSortModule,
     MatButtonModule,
     MatIconModule,
     MatInputModule,
     MatFormFieldModule,
-    MatProgressSpinnerModule,
     MatChipsModule,
     MatSelectModule,
     MatSnackBarModule,
     MatTooltipModule,
     MatSlideToggleModule,
     TranslateModule,
+    DataTable,
   ],
   templateUrl: './user-list.html',
   styleUrls: ['./user-list.scss'],
 })
-export class UserList implements OnInit, AfterViewInit {
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
-
+export class UserList implements OnInit {
   private userService = inject(UserService);
   private permissionService = inject(PermissionService);
   private snackBar = inject(MatSnackBar);
@@ -85,15 +78,6 @@ export class UserList implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.loadUsers();
-  }
-
-  ngAfterViewInit(): void {
-    if (this.paginator) {
-      this.dataSource.paginator = this.paginator;
-    }
-    if (this.sort) {
-      this.dataSource.sort = this.sort;
-    }
   }
 
   loadUsers(): void {

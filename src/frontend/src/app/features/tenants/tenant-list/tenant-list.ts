@@ -18,6 +18,7 @@ import { TenantService } from '../../../core/services/tenant.service';
 import { TenantFormDialogComponent } from '../tenant-form-dialog/tenant-form-dialog';
 import { Tenant } from '../../../core/models/tenant.model';
 import { cleanEmptyFields } from '../../../shared/utils/object.utils';
+import { DataTable } from '../../../shared/components/data-table/data-table';
 
 @Component({
   selector: 'app-tenant-list',
@@ -37,6 +38,7 @@ import { cleanEmptyFields } from '../../../shared/utils/object.utils';
     MatProgressSpinnerModule,
     MatMenuModule,
     TranslateModule,
+    DataTable,
   ],
   templateUrl: './tenant-list.html',
   styleUrls: ['./tenant-list.scss'],

@@ -13,6 +13,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
 import { TranslateModule } from '@ngx-translate/core';
+import { DataTable } from '../../../shared/components/data-table/data-table';
 import {
   AttachmentService,
   Attachment,
@@ -35,6 +36,7 @@ import { AuthService } from '../../../core/services/auth.service';
     MatInputModule,
     FormsModule,
     TranslateModule,
+    DataTable,
   ],
   templateUrl: './attachment-list.html',
   styleUrls: ['./attachment-list.scss'],

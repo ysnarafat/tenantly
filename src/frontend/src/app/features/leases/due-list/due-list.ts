@@ -9,6 +9,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { DataTable } from '../../../shared/components/data-table/data-table';
 import { LeaseService, LeaseDue, DueSummary } from '../../../core/services/lease.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
@@ -26,6 +27,7 @@ import { LanguageService } from '../../../core/services/language.service';
     MatProgressSpinnerModule,
     MatTooltipModule,
     TranslateModule,
+    DataTable,
   ],
   templateUrl: './due-list.html',
   styleUrls: ['./due-list.scss'],

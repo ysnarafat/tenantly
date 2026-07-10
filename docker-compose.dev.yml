@@ -14,3 +14,8 @@ services:
     container_name: tenantly-frontend-dev
     environment:
       - NODE_ENV=development
+
+  nginx:
+    container_name: tenantly-nginx-dev
+    ports:
+      - "8081:80"
