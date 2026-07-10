@@ -1,0 +1,37 @@
+<div class="dt-wrapper">
+  @if (loading) {
+    <div class="dt-loading">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  }
+
+  <div class="dt-table-container" [class.dt-hidden]="isEmpty">
+    <table
+      mat-table
+      [dataSource]="internalDataSource"
+      matSort
+      (matSortChange)="sortChange.emit($event)"
+      class="dt-table"
+    >
+      <ng-content></ng-content>
+      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: stickyHeader"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns" class="dt-row"></tr>
+    </table>
+  </div>
+
+  @if (isEmpty) {
+    <div class="dt-empty">
+      <mat-icon>{{ emptyIcon }}</mat-icon>
+      <h3>{{ emptyMessage }}</h3>
+      <ng-content select="[dtEmptyAction]"></ng-content>
+    </div>
+  }
+
+  @if (showPaginator) {
+    <mat-paginator
+      [pageSizeOptions]="pageSizeOptions"
+      showFirstLastButtons
+      (page)="pageChange.emit($event)"
+    ></mat-paginator>
+  }
+</div>

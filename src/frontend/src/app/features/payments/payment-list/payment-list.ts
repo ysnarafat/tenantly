@@ -46,6 +46,7 @@ import {
 } from '../../../core/models/payment.model';
 import { debounceTime, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { DataTable } from '../../../shared/components/data-table/data-table';
 
 interface BuildingNode {
   building_id: number;
@@ -94,6 +95,7 @@ interface PropertyNode {
     MatDividerModule,
     MatTooltipModule,
     MatTabsModule,
+    DataTable,
   ],
   templateUrl: './payment-list.html',
   styleUrls: ['./payment-list.scss'],

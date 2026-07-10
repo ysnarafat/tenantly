@@ -19,70 +19,58 @@
     </mat-form-field>
   </div>
 
-  @if (loading()) {
-  <div class="loading">
-    <mat-spinner></mat-spinner>
-  </div>
-  } @else {
-  <div class="table-container">
-    <table mat-table [dataSource]="filteredData()" matSort class="organization-table">
-      <ng-container matColumnDef="name">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'ORG_LIST.TABLE.NAME' | translate }}</th>
-        <td mat-cell *matCellDef="let org">{{ org.name }}</td>
-      </ng-container>
+  <app-data-table
+    [dataSource]="filteredData()"
+    [displayedColumns]="displayedColumns"
+    [loading]="loading()"
+    emptyIcon="domain_disabled"
+    emptyMessage="No organizations found"
+  >
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'ORG_LIST.TABLE.NAME' | translate }}</th>
+      <td mat-cell *matCellDef="let org">{{ org.name }}</td>
+    </ng-container>
 
-      <ng-container matColumnDef="slug">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'ORG_LIST.TABLE.SLUG' | translate }}</th>
-        <td mat-cell *matCellDef="let org">{{ org.slug }}</td>
-      </ng-container>
+    <ng-container matColumnDef="slug">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'ORG_LIST.TABLE.SLUG' | translate }}</th>
+      <td mat-cell *matCellDef="let org">{{ org.slug }}</td>
+    </ng-container>
 
-      <ng-container matColumnDef="subscriptionTier">
-        <th mat-header-cell *matHeaderCellDef>{{ 'ORG_LIST.TABLE.TIER' | translate }}</th>
-        <td mat-cell *matCellDef="let org">
-          <mat-chip [color]="getSubscriptionTierColor(org.subscriptionTier)" selected>
-            {{ org.subscriptionTier | uppercase }}
-          </mat-chip>
-        </td>
-      </ng-container>
+    <ng-container matColumnDef="subscriptionTier">
+      <th mat-header-cell *matHeaderCellDef>{{ 'ORG_LIST.TABLE.TIER' | translate }}</th>
+      <td mat-cell *matCellDef="let org">
+        <mat-chip [color]="getSubscriptionTierColor(org.subscriptionTier)" selected>
+          {{ org.subscriptionTier | uppercase }}
+        </mat-chip>
+      </td>
+    </ng-container>
 
-      <ng-container matColumnDef="maxUsers">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'ORG_LIST.TABLE.MAX_USERS' | translate }}</th>
-        <td mat-cell *matCellDef="let org">{{ org.maxUsers }}</td>
-      </ng-container>
+    <ng-container matColumnDef="maxUsers">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'ORG_LIST.TABLE.MAX_USERS' | translate }}</th>
+      <td mat-cell *matCellDef="let org">{{ org.maxUsers }}</td>
+    </ng-container>
 
-      <ng-container matColumnDef="active">
-        <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'ORG_LIST.TABLE.ACTIVE' | translate }}</th>
-        <td mat-cell *matCellDef="let org">
-          <mat-icon [color]="org.active ? 'accent' : 'warn'">
-            {{ org.active ? 'check_circle' : 'cancel' }}
-          </mat-icon>
-        </td>
-      </ng-container>
+    <ng-container matColumnDef="active">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>{{ 'ORG_LIST.TABLE.ACTIVE' | translate }}</th>
+      <td mat-cell *matCellDef="let org">
+        <mat-icon [color]="org.active ? 'accent' : 'warn'">
+          {{ org.active ? 'check_circle' : 'cancel' }}
+        </mat-icon>
+      </td>
+    </ng-container>
 
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef>{{ 'ORG_LIST.TABLE.ACTIONS' | translate }}</th>
-        <td mat-cell *matCellDef="let org">
-          <button
-            mat-icon-button
-            [matTooltip]="'ORG_LIST.TOOLTIPS.DELETE' | translate"
-            color="warn"
-            (click)="deleteOrganization(org)"
-          >
-            <mat-icon>delete</mat-icon>
-          </button>
-        </td>
-      </ng-container>
-
-      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-    </table>
-
-    <mat-paginator
-      [pageSizeOptions]="[10, 25, 50]"
-      showFirstLastButtons
-      [aria-label]="'ORG_LIST.PAGE_TITLE' | translate"
-    >
-    </mat-paginator>
-  </div>
-  }
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef>{{ 'ORG_LIST.TABLE.ACTIONS' | translate }}</th>
+      <td mat-cell *matCellDef="let org">
+        <button
+          mat-icon-button
+          [matTooltip]="'ORG_LIST.TOOLTIPS.DELETE' | translate"
+          color="warn"
+          (click)="deleteOrganization(org)"
+        >
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+  </app-data-table>
 </div>

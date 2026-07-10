@@ -102,168 +102,142 @@
   <!-- Content Card -->
   <mat-card class="content-card">
     <mat-card-content>
-      <!-- Loading -->
-      <div *ngIf="loading" class="loading-state">
-        <mat-spinner diameter="40"></mat-spinner>
-        <p>{{ 'TENANT_LIST.LOADING' | translate }}</p>
-      </div>
-
-      <ng-container *ngIf="!loading">
-        <!-- Table -->
-        <div class="table-wrapper" *ngIf="pagedTenants.length > 0">
-          <table mat-table [dataSource]="pagedTenants" class="tenant-table">
-            <!-- Name Column -->
-            <ng-container matColumnDef="name">
-              <th mat-header-cell *matHeaderCellDef>
-                {{ 'TENANT_LIST.TABLE.TENANT' | translate }}
-              </th>
-              <td mat-cell *matCellDef="let tenant">
-                <div class="tenant-cell">
-                  <div class="tenant-avatar" [class.business]="tenant.tenant_type === 'Business'">
-                    <mat-icon
-                      >{{ tenant.tenant_type === 'Business' ? 'business' : 'person' }}</mat-icon
-                    >
-                  </div>
-                  <div>
-                    <div class="tenant-name">{{ tenant.name }}</div>
-                    <div *ngIf="tenant.address" class="tenant-address">{{ tenant.address }}</div>
-                  </div>
-                </div>
-              </td>
-            </ng-container>
-
-            <!-- Type Column -->
-            <ng-container matColumnDef="type">
-              <th mat-header-cell *matHeaderCellDef>{{ 'TENANT_LIST.TABLE.TYPE' | translate }}</th>
-              <td mat-cell *matCellDef="let tenant">
-                <span class="type-badge" [class.business]="tenant.tenant_type === 'Business'">
-                  {{ tenant.tenant_type }}
-                </span>
-              </td>
-            </ng-container>
-
-            <!-- Contact Column -->
-            <ng-container matColumnDef="contact">
-              <th mat-header-cell *matHeaderCellDef>
-                {{ 'TENANT_LIST.TABLE.CONTACT' | translate }}
-              </th>
-              <td mat-cell *matCellDef="let tenant">
-                <div class="contact-cell">
-                  <div *ngIf="tenant.phone_number" class="contact-row">
-                    <mat-icon class="contact-icon">phone</mat-icon>
-                    <span>{{ tenant.phone_number }}</span>
-                  </div>
-                  <div *ngIf="tenant.email" class="contact-row">
-                    <mat-icon class="contact-icon">mail_outline</mat-icon>
-                    <span>{{ tenant.email }}</span>
-                  </div>
-                  <span *ngIf="!tenant.phone_number && !tenant.email" class="empty-val">—</span>
-                </div>
-              </td>
-            </ng-container>
-
-            <!-- NID Column -->
-            <ng-container matColumnDef="nid">
-              <th mat-header-cell *matHeaderCellDef>{{ 'TENANT_LIST.TABLE.NID' | translate }}</th>
-              <td mat-cell *matCellDef="let tenant">
-                <span class="mono-val">{{ tenant.nid_number || '—' }}</span>
-              </td>
-            </ng-container>
-
-            <!-- Status Column -->
-            <ng-container matColumnDef="status">
-              <th mat-header-cell *matHeaderCellDef>
-                {{ 'TENANT_LIST.TABLE.STATUS' | translate }}
-              </th>
-              <td mat-cell *matCellDef="let tenant">
-                <span
-                  class="status-badge"
-                  [class.is-active]="tenant.active"
-                  [class.is-inactive]="!tenant.active"
+      <app-data-table
+        [dataSource]="pagedTenants"
+        [displayedColumns]="displayedColumns"
+        [loading]="loading"
+        [showPaginator]="false"
+        [emptyIcon]="hasActiveFilters ? 'search_off' : 'people_outline'"
+        [emptyMessage]="hasActiveFilters ? ('TENANT_LIST.EMPTY_STATE.NO_MATCHING' | translate) : ('TENANT_LIST.EMPTY_STATE.NO_TENANTS' | translate)"
+      >
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>
+            {{ 'TENANT_LIST.TABLE.TENANT' | translate }}
+          </th>
+          <td mat-cell *matCellDef="let tenant">
+            <div class="tenant-cell">
+              <div class="tenant-avatar" [class.business]="tenant.tenant_type === 'Business'">
+                <mat-icon
+                  >{{ tenant.tenant_type === 'Business' ? 'business' : 'person' }}</mat-icon
                 >
-                  <span class="status-dot"></span>
-                  {{ tenant.active ? ('TENANT_LIST.TABLE.ACTIVE' | translate) :
-                  ('TENANT_LIST.TABLE.INACTIVE' | translate) }}
-                </span>
-              </td>
-            </ng-container>
+              </div>
+              <div>
+                <div class="tenant-name">{{ tenant.name }}</div>
+                <div *ngIf="tenant.address" class="tenant-address">{{ tenant.address }}</div>
+              </div>
+            </div>
+          </td>
+        </ng-container>
 
-            <!-- Created Column -->
-            <ng-container matColumnDef="created">
-              <th mat-header-cell *matHeaderCellDef>
-                {{ 'TENANT_LIST.TABLE.JOINED' | translate }}
-              </th>
-              <td mat-cell *matCellDef="let tenant">
-                <span class="date-val">{{ tenant.created_at | date: 'mediumDate' }}</span>
-              </td>
-            </ng-container>
+        <ng-container matColumnDef="type">
+          <th mat-header-cell *matHeaderCellDef>{{ 'TENANT_LIST.TABLE.TYPE' | translate }}</th>
+          <td mat-cell *matCellDef="let tenant">
+            <span class="type-badge" [class.business]="tenant.tenant_type === 'Business'">
+              {{ tenant.tenant_type }}
+            </span>
+          </td>
+        </ng-container>
 
-            <!-- Actions Column -->
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef class="actions-header">
-                {{ 'TENANT_LIST.TABLE.ACTIONS' | translate }}
-              </th>
-              <td mat-cell *matCellDef="let tenant">
-                <div class="actions-cell">
-                  <button
-                    mat-icon-button
-                    [matMenuTriggerFor]="menu"
-                    [matTooltip]="'COMMON.ACTIONS.MORE' | translate"
-                    (click)="$event.stopPropagation()"
-                  >
-                    <mat-icon>more_vert</mat-icon>
-                  </button>
-                  <mat-menu #menu="matMenu">
-                    <button mat-menu-item (click)="viewTenant(tenant)">
-                      <mat-icon>visibility</mat-icon>
-                      <span>{{ 'COMMON.ACTIONS.VIEW_DETAILS' | translate }}</span>
-                    </button>
-                    <button mat-menu-item (click)="editTenant(tenant)">
-                      <mat-icon>edit</mat-icon>
-                      <span>{{ 'COMMON.BUTTONS.EDIT' | translate }}</span>
-                    </button>
-                    <button mat-menu-item (click)="deleteTenant(tenant)" class="delete-action">
-                      <mat-icon>delete_outline</mat-icon>
-                      <span>{{ 'COMMON.BUTTONS.DELETE' | translate }}</span>
-                    </button>
-                  </mat-menu>
-                </div>
-              </td>
-            </ng-container>
+        <ng-container matColumnDef="contact">
+          <th mat-header-cell *matHeaderCellDef>
+            {{ 'TENANT_LIST.TABLE.CONTACT' | translate }}
+          </th>
+          <td mat-cell *matCellDef="let tenant">
+            <div class="contact-cell">
+              <div *ngIf="tenant.phone_number" class="contact-row">
+                <mat-icon class="contact-icon">phone</mat-icon>
+                <span>{{ tenant.phone_number }}</span>
+              </div>
+              <div *ngIf="tenant.email" class="contact-row">
+                <mat-icon class="contact-icon">mail_outline</mat-icon>
+                <span>{{ tenant.email }}</span>
+              </div>
+              <span *ngIf="!tenant.phone_number && !tenant.email" class="empty-val">—</span>
+            </div>
+          </td>
+        </ng-container>
 
-            <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns" class="tenant-row"></tr>
-          </table>
-        </div>
+        <ng-container matColumnDef="nid">
+          <th mat-header-cell *matHeaderCellDef>{{ 'TENANT_LIST.TABLE.NID' | translate }}</th>
+          <td mat-cell *matCellDef="let tenant">
+            <span class="mono-val">{{ tenant.nid_number || '—' }}</span>
+          </td>
+        </ng-container>
 
-        <!-- Empty State -->
-        <div *ngIf="filteredTenants.length === 0" class="empty-state">
-          <mat-icon>{{ hasActiveFilters ? 'search_off' : 'people_outline' }}</mat-icon>
-          <h3>
-            {{ hasActiveFilters ? ('TENANT_LIST.EMPTY_STATE.NO_MATCHING' | translate) :
-            ('TENANT_LIST.EMPTY_STATE.NO_TENANTS' | translate) }}
-          </h3>
-          <p>
-            {{ hasActiveFilters ? ('COMMON.EMPTY_STATE.TRY_ADJUST' | translate) :
-            ('TENANT_LIST.EMPTY_STATE.ADD_FIRST' | translate) }}
-          </p>
-          <button *ngIf="!hasActiveFilters" mat-raised-button color="primary" (click)="addTenant()">
-            <mat-icon>person_add</mat-icon>
-            {{ 'TENANT_LIST.BUTTONS.ADD_TENANT' | translate }}
-          </button>
-        </div>
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>
+            {{ 'TENANT_LIST.TABLE.STATUS' | translate }}
+          </th>
+          <td mat-cell *matCellDef="let tenant">
+            <span
+              class="status-badge"
+              [class.is-active]="tenant.active"
+              [class.is-inactive]="!tenant.active"
+            >
+              <span class="status-dot"></span>
+              {{ tenant.active ? ('TENANT_LIST.TABLE.ACTIVE' | translate) :
+              ('TENANT_LIST.TABLE.INACTIVE' | translate) }}
+            </span>
+          </td>
+        </ng-container>
 
-        <!-- Pagination -->
-        <mat-paginator
-          *ngIf="filteredTenants.length > pageSize"
-          [length]="filteredTenants.length"
-          [pageSize]="pageSize"
-          [pageIndex]="pageIndex"
-          [pageSizeOptions]="[10, 25, 50]"
-          (page)="onPageChange($event)"
-          showFirstLastButtons
-        ></mat-paginator>
-      </ng-container>
+        <ng-container matColumnDef="created">
+          <th mat-header-cell *matHeaderCellDef>
+            {{ 'TENANT_LIST.TABLE.JOINED' | translate }}
+          </th>
+          <td mat-cell *matCellDef="let tenant">
+            <span class="date-val">{{ tenant.created_at | date: 'mediumDate' }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="actions-header">
+            {{ 'TENANT_LIST.TABLE.ACTIONS' | translate }}
+          </th>
+          <td mat-cell *matCellDef="let tenant">
+            <div class="actions-cell">
+              <button
+                mat-icon-button
+                [matMenuTriggerFor]="menu"
+                [matTooltip]="'COMMON.ACTIONS.MORE' | translate"
+                (click)="$event.stopPropagation()"
+              >
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #menu="matMenu">
+                <button mat-menu-item (click)="viewTenant(tenant)">
+                  <mat-icon>visibility</mat-icon>
+                  <span>{{ 'COMMON.ACTIONS.VIEW_DETAILS' | translate }}</span>
+                </button>
+                <button mat-menu-item (click)="editTenant(tenant)">
+                  <mat-icon>edit</mat-icon>
+                  <span>{{ 'COMMON.BUTTONS.EDIT' | translate }}</span>
+                </button>
+                <button mat-menu-item (click)="deleteTenant(tenant)" class="delete-action">
+                  <mat-icon>delete_outline</mat-icon>
+                  <span>{{ 'COMMON.BUTTONS.DELETE' | translate }}</span>
+                </button>
+              </mat-menu>
+            </div>
+          </td>
+        </ng-container>
+
+        <button dtEmptyAction *ngIf="!hasActiveFilters" mat-raised-button color="primary" (click)="addTenant()">
+          <mat-icon>person_add</mat-icon>
+          {{ 'TENANT_LIST.BUTTONS.ADD_TENANT' | translate }}
+        </button>
+      </app-data-table>
+
+      <!-- Pagination -->
+      <mat-paginator
+        *ngIf="filteredTenants.length > pageSize"
+        [length]="filteredTenants.length"
+        [pageSize]="pageSize"
+        [pageIndex]="pageIndex"
+        [pageSizeOptions]="[10, 25, 50]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons
+      ></mat-paginator>
     </mat-card-content>
   </mat-card>
 </div>

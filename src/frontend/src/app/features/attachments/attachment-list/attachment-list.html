@@ -30,105 +30,91 @@
         </mat-form-field>
       </div>
 
-      <div class="table-container">
-        <table mat-table [dataSource]="filteredAttachments" class="attachment-table">
-          <ng-container matColumnDef="file_name">
-            <th mat-header-cell *matHeaderCellDef>{{ 'ATTACHMENT_LIST.TABLE.FILE' | translate }}</th>
-            <td mat-cell *matCellDef="let attachment">
-              <div class="file-info">
-                <mat-icon class="file-icon">{{ getFileIcon(attachment.content_type) }}</mat-icon>
-                <div class="file-details">
-                  <div class="file-name">{{ attachment.file_name }}</div>
-                  <div class="content-type">{{ attachment.content_type }}</div>
-                </div>
+      <app-data-table
+        [dataSource]="filteredAttachments"
+        [displayedColumns]="displayedColumns"
+        [loading]="loading"
+        [showPaginator]="false"
+        emptyIcon="attach_file"
+        [emptyMessage]="'ATTACHMENT_LIST.EMPTY.TITLE' | translate"
+      >
+        <ng-container matColumnDef="file_name">
+          <th mat-header-cell *matHeaderCellDef>{{ 'ATTACHMENT_LIST.TABLE.FILE' | translate }}</th>
+          <td mat-cell *matCellDef="let attachment">
+            <div class="file-info">
+              <mat-icon class="file-icon">{{ getFileIcon(attachment.content_type) }}</mat-icon>
+              <div class="file-details">
+                <div class="file-name">{{ attachment.file_name }}</div>
+                <div class="content-type">{{ attachment.content_type }}</div>
               </div>
-            </td>
-          </ng-container>
+            </div>
+          </td>
+        </ng-container>
 
-          <ng-container matColumnDef="attachment_type">
-            <th mat-header-cell *matHeaderCellDef>{{ 'ATTACHMENT_LIST.TABLE.TYPE' | translate }}</th>
-            <td mat-cell *matCellDef="let attachment">
-              <mat-chip [color]="getTypeColor(attachment.attachment_type)" selected>
-                {{ attachment.attachment_type }}
-              </mat-chip>
-            </td>
-          </ng-container>
+        <ng-container matColumnDef="attachment_type">
+          <th mat-header-cell *matHeaderCellDef>{{ 'ATTACHMENT_LIST.TABLE.TYPE' | translate }}</th>
+          <td mat-cell *matCellDef="let attachment">
+            <mat-chip [color]="getTypeColor(attachment.attachment_type)" selected>
+              {{ attachment.attachment_type }}
+            </mat-chip>
+          </td>
+        </ng-container>
 
-          <ng-container matColumnDef="file_size">
-            <th mat-header-cell *matHeaderCellDef>{{ 'ATTACHMENT_LIST.TABLE.SIZE' | translate }}</th>
-            <td mat-cell *matCellDef="let attachment">
-              {{ formatFileSize(attachment.file_size) }}
-            </td>
-          </ng-container>
+        <ng-container matColumnDef="file_size">
+          <th mat-header-cell *matHeaderCellDef>{{ 'ATTACHMENT_LIST.TABLE.SIZE' | translate }}</th>
+          <td mat-cell *matCellDef="let attachment">
+            {{ formatFileSize(attachment.file_size) }}
+          </td>
+        </ng-container>
 
-          <ng-container matColumnDef="description">
-            <th mat-header-cell *matHeaderCellDef>{{ 'ATTACHMENT_LIST.TABLE.DESCRIPTION' | translate }}</th>
-            <td mat-cell *matCellDef="let attachment">
-              <div class="description">
-                {{ attachment.description || ('ATTACHMENT_LIST.NO_DESCRIPTION' | translate) }}
-              </div>
-              @if (attachment.tags) {
-              <div class="tags">
-                <mat-chip-listbox>
-                  @for (tag of attachment.tags.split(','); track tag) {
-                  <mat-chip [removable]="false"> {{ tag.trim() }} </mat-chip>
-                  }
-                </mat-chip-listbox>
-              </div>
-              }
-            </td>
-          </ng-container>
-
-          <ng-container matColumnDef="created_at">
-            <th mat-header-cell *matHeaderCellDef>{{ 'ATTACHMENT_LIST.TABLE.UPLOADED' | translate }}</th>
-            <td mat-cell *matCellDef="let attachment">{{ formatDate(attachment.created_at) }}</td>
-          </ng-container>
-
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>{{ 'ATTACHMENT_LIST.TABLE.ACTIONS' | translate }}</th>
-            <td mat-cell *matCellDef="let attachment">
-              <button mat-icon-button [matMenuTriggerFor]="menu">
-                <mat-icon>more_vert</mat-icon>
-              </button>
-              <mat-menu #menu="matMenu">
-                <button mat-menu-item (click)="viewAttachment(attachment)">
-                  <mat-icon>visibility</mat-icon>
-                  <span>{{ 'ATTACHMENT_LIST.MENU.VIEW' | translate }}</span>
-                </button>
-                <button mat-menu-item (click)="downloadAttachment(attachment)">
-                  <mat-icon>download</mat-icon>
-                  <span>{{ 'ATTACHMENT_LIST.MENU.DOWNLOAD' | translate }}</span>
-                </button>
-                @if (canDelete()) {
-                <button mat-menu-item (click)="deleteAttachment(attachment)" class="delete-action">
-                  <mat-icon>delete</mat-icon>
-                  <span>{{ 'ATTACHMENT_LIST.MENU.DELETE' | translate }}</span>
-                </button>
+        <ng-container matColumnDef="description">
+          <th mat-header-cell *matHeaderCellDef>{{ 'ATTACHMENT_LIST.TABLE.DESCRIPTION' | translate }}</th>
+          <td mat-cell *matCellDef="let attachment">
+            <div class="description">
+              {{ attachment.description || ('ATTACHMENT_LIST.NO_DESCRIPTION' | translate) }}
+            </div>
+            @if (attachment.tags) {
+            <div class="tags">
+              <mat-chip-listbox>
+                @for (tag of attachment.tags.split(','); track tag) {
+                <mat-chip [removable]="false"> {{ tag.trim() }} </mat-chip>
                 }
-              </mat-menu>
-            </td>
-          </ng-container>
+              </mat-chip-listbox>
+            </div>
+            }
+          </td>
+        </ng-container>
 
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-        </table>
+        <ng-container matColumnDef="created_at">
+          <th mat-header-cell *matHeaderCellDef>{{ 'ATTACHMENT_LIST.TABLE.UPLOADED' | translate }}</th>
+          <td mat-cell *matCellDef="let attachment">{{ formatDate(attachment.created_at) }}</td>
+        </ng-container>
 
-        @if (loading) {
-        <div class="loading-container">
-          <p>{{ 'ATTACHMENT_LIST.LOADING' | translate }}</p>
-        </div>
-        } @if (!loading && filteredAttachments.length === 0) {
-        <div class="empty-state">
-          <mat-icon>attach_file</mat-icon>
-          <h3>{{ 'ATTACHMENT_LIST.EMPTY.TITLE' | translate }}</h3>
-          @if (searchQuery || selectedType !== 'ALL') {
-          <p>{{ 'ATTACHMENT_LIST.EMPTY.TRY_ADJUST' | translate }}</p>
-          } @if (!searchQuery && selectedType === 'ALL') {
-          <p>{{ 'ATTACHMENT_LIST.EMPTY.START_UPLOAD' | translate }}</p>
-          }
-        </div>
-        }
-      </div>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>{{ 'ATTACHMENT_LIST.TABLE.ACTIONS' | translate }}</th>
+          <td mat-cell *matCellDef="let attachment">
+            <button mat-icon-button [matMenuTriggerFor]="menu">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #menu="matMenu">
+              <button mat-menu-item (click)="viewAttachment(attachment)">
+                <mat-icon>visibility</mat-icon>
+                <span>{{ 'ATTACHMENT_LIST.MENU.VIEW' | translate }}</span>
+              </button>
+              <button mat-menu-item (click)="downloadAttachment(attachment)">
+                <mat-icon>download</mat-icon>
+                <span>{{ 'ATTACHMENT_LIST.MENU.DOWNLOAD' | translate }}</span>
+              </button>
+              @if (canDelete()) {
+              <button mat-menu-item (click)="deleteAttachment(attachment)" class="delete-action">
+                <mat-icon>delete</mat-icon>
+                <span>{{ 'ATTACHMENT_LIST.MENU.DELETE' | translate }}</span>
+              </button>
+              }
+            </mat-menu>
+          </td>
+        </ng-container>
+      </app-data-table>
     </mat-card-content>
   </mat-card>
 </div>
