@@ -71,7 +71,11 @@
           <div class="stat-body">
             <span class="stat-label">{{ 'PAYMENT_LIST.SUMMARY.COLLECTION_RATE' | translate }}</span>
             <span class="stat-value">{{ summary()!.collection_rate | number:'1.1-1' }}%</span>
-            <mat-progress-bar mode="determinate" [value]="summary()!.collection_rate" class="progress-bar"></mat-progress-bar>
+            <mat-progress-bar
+              mode="determinate"
+              [value]="summary()!.collection_rate"
+              class="progress-bar"
+            ></mat-progress-bar>
           </div>
         </mat-card-content>
       </mat-card>
@@ -80,12 +84,14 @@
   }
 
   <!-- View Tabs -->
-  <mat-tab-group (selectedIndexChange)="onTabChange($event)" animationDuration="150ms" class="view-tabs">
-
+  <mat-tab-group
+    (selectedIndexChange)="onTabChange($event)"
+    animationDuration="150ms"
+    class="view-tabs"
+  >
     <!-- ── Tab 1: All Payments ── -->
     <mat-tab [label]="'PAYMENT_LIST.TABS.ALL_PAYMENTS' | translate">
       <div class="tab-pane">
-
         <section class="filters-section">
           <div class="filters-bar">
             <mat-form-field appearance="outline" class="form-field filter-field">
@@ -93,7 +99,9 @@
               <mat-select [(ngModel)]="filterStatus">
                 <mat-option value="">{{ 'PAYMENT_LIST.FILTERS.ALL' | translate }}</mat-option>
                 @for (s of statuses; track s) {
-                <mat-option [value]="s">{{ 'PAYMENT_LIST.STATUS.' + s | translate }}</mat-option>
+                <mat-option [value]="s"
+                  >{{ 'PAYMENT_LIST.STATUS.' + s.toUpperCase() | translate }}</mat-option
+                >
                 }
               </mat-select>
             </mat-form-field>
@@ -102,7 +110,9 @@
               <mat-select [(ngModel)]="filterMonth">
                 <mat-option value="">{{ 'PAYMENT_LIST.FILTERS.ALL' | translate }}</mat-option>
                 @for (m of months; track m.value) {
-                <mat-option [value]="m.value">{{ 'PAYMENT_LIST.MONTHS.' + m.label | translate }}</mat-option>
+                <mat-option [value]="m.value"
+                  >{{ 'PAYMENT_LIST.MONTHS.' + m.label.toUpperCase() | translate }}</mat-option
+                >
                 }
               </mat-select>
             </mat-form-field>
@@ -114,7 +124,7 @@
                 }
               </mat-select>
             </mat-form-field>
-            <div class="filter-actions">
+            <div class="filter-actions" style="margin-left: auto">
               <button mat-raised-button color="primary" (click)="applyFilters()">
                 <mat-icon>search</mat-icon>
                 {{ 'PAYMENT_LIST.BUTTONS.APPLY' | translate }}
@@ -137,7 +147,9 @@
             [emptyMessage]="'PAYMENT_LIST.EMPTY_STATE' | translate"
           >
             <ng-container matColumnDef="tenant">
-              <th mat-header-cell *matHeaderCellDef class="col-tenant">{{ 'PAYMENT_LIST.TABLE.TENANT_UNIT' | translate }}</th>
+              <th mat-header-cell *matHeaderCellDef class="col-tenant">
+                {{ 'PAYMENT_LIST.TABLE.TENANT_UNIT' | translate }}
+              </th>
               <td mat-cell *matCellDef="let p">
                 <div class="cell-stack">
                   <span class="cell-main">{{ p.tenant_name || '—' }}</span>
@@ -146,7 +158,9 @@
               </td>
             </ng-container>
             <ng-container matColumnDef="unit">
-              <th mat-header-cell *matHeaderCellDef class="col-property">{{ 'PAYMENT_LIST.TABLE.PROPERTY' | translate }}</th>
+              <th mat-header-cell *matHeaderCellDef class="col-property">
+                {{ 'PAYMENT_LIST.TABLE.PROPERTY' | translate }}
+              </th>
               <td mat-cell *matCellDef="let p">
                 <div class="cell-stack">
                   <span class="cell-main">{{ p.property_name || '—' }}</span>
@@ -155,22 +169,36 @@
               </td>
             </ng-container>
             <ng-container matColumnDef="period">
-              <th mat-header-cell *matHeaderCellDef class="col-period">{{ 'PAYMENT_LIST.TABLE.PERIOD' | translate }}</th>
+              <th mat-header-cell *matHeaderCellDef class="col-period">
+                {{ 'PAYMENT_LIST.TABLE.PERIOD' | translate }}
+              </th>
               <td mat-cell *matCellDef="let p">{{ monthName(p.month) }} {{ p.year }}</td>
             </ng-container>
             <ng-container matColumnDef="amount_due">
-              <th mat-header-cell *matHeaderCellDef class="col-amount">{{ 'PAYMENT_LIST.TABLE.AMOUNT_DUE' | translate }}</th>
-              <td mat-cell *matCellDef="let p" class="amount-cell">{{ p.amount_due | number:'1.2-2' }}</td>
+              <th mat-header-cell *matHeaderCellDef class="col-amount">
+                {{ 'PAYMENT_LIST.TABLE.AMOUNT_DUE' | translate }}
+              </th>
+              <td mat-cell *matCellDef="let p" class="amount-cell">
+                {{ p.amount_due | number:'1.2-2' }}
+              </td>
             </ng-container>
             <ng-container matColumnDef="amount_paid">
-              <th mat-header-cell *matHeaderCellDef class="col-amount">{{ 'PAYMENT_LIST.TABLE.AMOUNT_PAID' | translate }}</th>
-              <td mat-cell *matCellDef="let p" class="amount-cell">{{ p.amount_paid | number:'1.2-2' }}</td>
+              <th mat-header-cell *matHeaderCellDef class="col-amount">
+                {{ 'PAYMENT_LIST.TABLE.AMOUNT_PAID' | translate }}
+              </th>
+              <td mat-cell *matCellDef="let p" class="amount-cell">
+                {{ p.amount_paid | number:'1.2-2' }}
+              </td>
             </ng-container>
             <ng-container matColumnDef="status">
-              <th mat-header-cell *matHeaderCellDef class="col-status">{{ 'PAYMENT_LIST.TABLE.STATUS' | translate }}</th>
+              <th mat-header-cell *matHeaderCellDef class="col-status">
+                {{ 'PAYMENT_LIST.TABLE.STATUS' | translate }}
+              </th>
               <td mat-cell *matCellDef="let p">
                 <mat-chip-set>
-                  <mat-chip [class]="'status-' + p.status.toLowerCase()" highlighted>{{ p.status }}</mat-chip>
+                  <mat-chip [class]="'status-' + p.status.toLowerCase()" highlighted
+                    >{{ p.status }}</mat-chip
+                  >
                 </mat-chip-set>
               </td>
             </ng-container>
@@ -195,7 +223,9 @@
                     <div class="card-location">{{ p.unit_number }} • {{ p.building_name }}</div>
                   </div>
                   <mat-chip-set>
-                    <mat-chip [class]="'status-' + p.status.toLowerCase()" size="small">{{ p.status }}</mat-chip>
+                    <mat-chip [class]="'status-' + p.status.toLowerCase()" size="small"
+                      >{{ p.status }}</mat-chip
+                    >
                   </mat-chip-set>
                 </div>
               </mat-card-header>
@@ -234,14 +264,12 @@
             class="pagination"
           ></mat-paginator>
         </section>
-
       </div>
     </mat-tab>
 
     <!-- ── Tab 2: By Property ── -->
     <mat-tab [label]="'PAYMENT_LIST.TABS.BY_PROPERTY' | translate">
       <div class="tab-pane">
-
         <!-- Tree Filters -->
         <section class="tree-filters-section">
           <mat-card appearance="outlined" class="filters-card">
@@ -252,7 +280,9 @@
                   <mat-select [(ngModel)]="treeFilterMonth">
                     <mat-option value="">{{ 'PAYMENT_LIST.FILTERS.ALL' | translate }}</mat-option>
                     @for (m of months; track m.value) {
-                    <mat-option [value]="m.value">{{ 'PAYMENT_LIST.MONTHS.' + m.label | translate }}</mat-option>
+                    <mat-option [value]="m.value"
+                      >{{ 'PAYMENT_LIST.MONTHS.' + m.label.toUpperCase() | translate }}</mat-option
+                    >
                     }
                   </mat-select>
                 </mat-form-field>
@@ -264,7 +294,13 @@
                     }
                   </mat-select>
                 </mat-form-field>
-                <button mat-raised-button color="primary" (click)="loadTreePayments()" class="tree-load-btn">
+                <button
+                  mat-raised-button
+                  color="primary"
+                  (click)="loadTreePayments()"
+                  class="tree-load-btn"
+                  style="margin-left: auto"
+                >
                   <mat-icon>refresh</mat-icon>
                   {{ 'PAYMENT_LIST.BUTTONS.LOAD' | translate }}
                 </button>
@@ -275,138 +311,165 @@
 
         <!-- Tree Content -->
         @if (treeLoading()) {
-          <div class="tree-loading">
-            <mat-spinner diameter="40"></mat-spinner>
-            <p>{{ 'PAYMENT_LIST.TREE.LOADING' | translate }}</p>
-          </div>
+        <div class="tree-loading">
+          <mat-spinner diameter="40"></mat-spinner>
+          <p>{{ 'PAYMENT_LIST.TREE.LOADING' | translate }}</p>
+        </div>
         } @else if (treeData().length === 0) {
-          <mat-card appearance="outlined" class="empty-card">
-            <mat-card-content class="empty-content">
-              <mat-icon class="empty-icon">account_tree</mat-icon>
-              <h3>{{ 'PAYMENT_LIST.TREE.EMPTY_TITLE' | translate }}</h3>
-              <p>{{ 'PAYMENT_LIST.TREE.EMPTY_HINT' | translate }}</p>
-            </mat-card-content>
-          </mat-card>
+        <mat-card appearance="outlined" class="empty-card">
+          <mat-card-content class="empty-content">
+            <mat-icon class="empty-icon">account_tree</mat-icon>
+            <h3>{{ 'PAYMENT_LIST.TREE.EMPTY_TITLE' | translate }}</h3>
+            <p>{{ 'PAYMENT_LIST.TREE.EMPTY_HINT' | translate }}</p>
+          </mat-card-content>
+        </mat-card>
         } @else {
-          <div class="tree-view">
-            @for (property of treeData(); track property.property_id) {
-              <div class="property-block">
-
-                <!-- Property Card -->
-                <mat-card class="property-card" [style.border-left-color]="collectionRateColor(property.collectionRate)">
-                  <mat-card-content>
-                    <div class="property-card-layout">
-                      <div class="property-identity">
-                        <mat-icon class="prop-icon">location_city</mat-icon>
-                        <div>
-                          <div class="property-name">{{ property.property_name }}</div>
-                          <div class="property-meta">{{ property.buildings.length }} building{{ property.buildings.length !== 1 ? 's' : '' }}</div>
-                        </div>
-                      </div>
-                      <div class="property-financials">
-                        <div class="prop-fin-item">
-                          <span class="prop-fin-label">{{ 'PAYMENT_LIST.SUMMARY.TOTAL_DUE' | translate }}</span>
-                          <span class="prop-fin-value">৳{{ property.totalDue | number:'1.0-0' }}</span>
-                        </div>
-                        <div class="prop-fin-sep"></div>
-                        <div class="prop-fin-item">
-                          <span class="prop-fin-label">{{ 'PAYMENT_LIST.SUMMARY.TOTAL_COLLECTED' | translate }}</span>
-                          <span class="prop-fin-value collected">৳{{ property.totalPaid | number:'1.0-0' }}</span>
-                        </div>
-                        <div class="prop-fin-sep"></div>
-                        <div class="prop-badges">
-                          @if (property.paidCount > 0) {
-                            <span class="tree-badge badge-paid">{{ property.paidCount }} Paid</span>
-                          }
-                          @if (property.partialCount > 0) {
-                            <span class="tree-badge badge-partial">{{ property.partialCount }} Partial</span>
-                          }
-                          @if (property.dueCount > 0) {
-                            <span class="tree-badge badge-due">{{ property.dueCount }} Due</span>
-                          }
-                          @if (property.overdueCount > 0) {
-                            <span class="tree-badge badge-overdue">{{ property.overdueCount }} Overdue</span>
-                          }
-                        </div>
-                        <div class="prop-rate-block">
-                          <span class="prop-rate-pct" [style.color]="collectionRateColor(property.collectionRate)">
-                            {{ property.collectionRate | number:'1.0-0' }}%
-                          </span>
-                          <mat-progress-bar mode="determinate" [value]="property.collectionRate" class="prop-rate-bar"></mat-progress-bar>
-                        </div>
+        <div class="tree-view">
+          @for (property of treeData(); track property.property_id) {
+          <div class="property-block">
+            <!-- Property Card -->
+            <mat-card
+              class="property-card"
+              [style.border-left-color]="collectionRateColor(property.collectionRate)"
+            >
+              <mat-card-content>
+                <div class="property-card-layout">
+                  <div class="property-identity">
+                    <mat-icon class="prop-icon">location_city</mat-icon>
+                    <div>
+                      <div class="property-name">{{ property.property_name }}</div>
+                      <div class="property-meta">
+                        {{ property.buildings.length }} building{{ property.buildings.length !== 1 ?
+                        's' : '' }}
                       </div>
                     </div>
-                  </mat-card-content>
-                </mat-card>
-
-                <!-- Buildings -->
-                <div class="buildings-stack">
-                  @for (building of property.buildings; track building.building_id) {
-                    <mat-card class="building-card" appearance="outlined">
-                      <div class="building-header">
-                        <div class="building-title-row">
-                          <mat-icon class="bldg-icon">business</mat-icon>
-                          <span class="building-name">{{ building.building_name }}</span>
-                          <span class="building-code-chip">{{ building.building_code }}</span>
-                        </div>
-                        <div class="building-summary-row">
-                          <span class="bldg-count">{{ building.payments.length }} {{ 'PAYMENT_LIST.TREE.PAYMENTS_SUFFIX' | translate }}</span>
-                          <span class="bldg-amounts">
-                            <span class="bldg-paid">৳{{ building.totalPaid | number:'1.0-0' }}</span>
-                            <span class="bldg-sep"> / </span>
-                            <span class="bldg-due">৳{{ building.totalDue | number:'1.0-0' }}</span>
-                          </span>
-                          <span class="bldg-rate" [style.color]="collectionRateColor(building.collectionRate)">
-                            {{ building.collectionRate | number:'1.0-0' }}%
-                          </span>
-                        </div>
-                      </div>
-                      <div class="bldg-table-wrap">
-                        <table class="bldg-table">
-                          <thead>
-                            <tr>
-                              <th>{{ 'PAYMENT_LIST.TABLE.TENANT_UNIT' | translate }}</th>
-                              <th>{{ 'PAYMENT_LIST.TABLE.UNIT' | translate }}</th>
-                              <th>{{ 'PAYMENT_LIST.TABLE.PERIOD' | translate }}</th>
-                              <th class="num">{{ 'PAYMENT_LIST.TABLE.AMOUNT_DUE' | translate }}</th>
-                              <th class="num">{{ 'PAYMENT_LIST.TABLE.AMOUNT_PAID' | translate }}</th>
-                              <th>{{ 'PAYMENT_LIST.TABLE.STATUS' | translate }}</th>
-                              <th></th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            @for (p of building.payments; track p.id) {
-                              <tr>
-                                <td>{{ p.tenant_name || '—' }}</td>
-                                <td class="unit-cell">{{ p.unit_number }}</td>
-                                <td class="period-cell">{{ monthName(p.month) }} {{ p.year }}</td>
-                                <td class="num mono">{{ p.amount_due | number:'1.0-0' }}</td>
-                                <td class="num mono">{{ p.amount_paid | number:'1.0-0' }}</td>
-                                <td>
-                                  <span [class]="'inline-badge status-' + p.status.toLowerCase()">{{ p.status }}</span>
-                                </td>
-                                <td class="action-cell">
-                                  <button mat-icon-button (click)="openUpdateDialog(p)" matTooltip="Edit payment">
-                                    <mat-icon>edit</mat-icon>
-                                  </button>
-                                </td>
-                              </tr>
-                            }
-                          </tbody>
-                        </table>
-                      </div>
-                    </mat-card>
-                  }
+                  </div>
+                  <div class="property-financials">
+                    <div class="prop-fin-item">
+                      <span class="prop-fin-label"
+                        >{{ 'PAYMENT_LIST.SUMMARY.TOTAL_DUE' | translate }}</span
+                      >
+                      <span class="prop-fin-value">৳{{ property.totalDue | number:'1.0-0' }}</span>
+                    </div>
+                    <div class="prop-fin-sep"></div>
+                    <div class="prop-fin-item">
+                      <span class="prop-fin-label"
+                        >{{ 'PAYMENT_LIST.SUMMARY.TOTAL_COLLECTED' | translate }}</span
+                      >
+                      <span class="prop-fin-value collected"
+                        >৳{{ property.totalPaid | number:'1.0-0' }}</span
+                      >
+                    </div>
+                    <div class="prop-fin-sep"></div>
+                    <div class="prop-badges">
+                      @if (property.paidCount > 0) {
+                      <span class="tree-badge badge-paid">{{ property.paidCount }} Paid</span>
+                      } @if (property.partialCount > 0) {
+                      <span class="tree-badge badge-partial"
+                        >{{ property.partialCount }} Partial</span
+                      >
+                      } @if (property.dueCount > 0) {
+                      <span class="tree-badge badge-due">{{ property.dueCount }} Due</span>
+                      } @if (property.overdueCount > 0) {
+                      <span class="tree-badge badge-overdue"
+                        >{{ property.overdueCount }} Overdue</span
+                      >
+                      }
+                    </div>
+                    <div class="prop-rate-block">
+                      <span
+                        class="prop-rate-pct"
+                        [style.color]="collectionRateColor(property.collectionRate)"
+                      >
+                        {{ property.collectionRate | number:'1.0-0' }}%
+                      </span>
+                      <mat-progress-bar
+                        mode="determinate"
+                        [value]="property.collectionRate"
+                        class="prop-rate-bar"
+                      ></mat-progress-bar>
+                    </div>
+                  </div>
                 </div>
+              </mat-card-content>
+            </mat-card>
 
-              </div>
-            }
+            <!-- Buildings -->
+            <div class="buildings-stack">
+              @for (building of property.buildings; track building.building_id) {
+              <mat-card class="building-card" appearance="outlined">
+                <div class="building-header">
+                  <div class="building-title-row">
+                    <mat-icon class="bldg-icon">business</mat-icon>
+                    <span class="building-name">{{ building.building_name }}</span>
+                    <span class="building-code-chip">{{ building.building_code }}</span>
+                  </div>
+                  <div class="building-summary-row">
+                    <span class="bldg-count"
+                      >{{ building.payments.length }} {{ 'PAYMENT_LIST.TREE.PAYMENTS_SUFFIX' |
+                      translate }}</span
+                    >
+                    <span class="bldg-amounts">
+                      <span class="bldg-paid">৳{{ building.totalPaid | number:'1.0-0' }}</span>
+                      <span class="bldg-sep"> / </span>
+                      <span class="bldg-due">৳{{ building.totalDue | number:'1.0-0' }}</span>
+                    </span>
+                    <span
+                      class="bldg-rate"
+                      [style.color]="collectionRateColor(building.collectionRate)"
+                    >
+                      {{ building.collectionRate | number:'1.0-0' }}%
+                    </span>
+                  </div>
+                </div>
+                <div class="bldg-table-wrap">
+                  <table class="bldg-table">
+                    <thead>
+                      <tr>
+                        <th>{{ 'PAYMENT_LIST.TABLE.TENANT_UNIT' | translate }}</th>
+                        <th>{{ 'PAYMENT_LIST.TABLE.UNIT' | translate }}</th>
+                        <th>{{ 'PAYMENT_LIST.TABLE.PERIOD' | translate }}</th>
+                        <th class="num">{{ 'PAYMENT_LIST.TABLE.AMOUNT_DUE' | translate }}</th>
+                        <th class="num">{{ 'PAYMENT_LIST.TABLE.AMOUNT_PAID' | translate }}</th>
+                        <th>{{ 'PAYMENT_LIST.TABLE.STATUS' | translate }}</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (p of building.payments; track p.id) {
+                      <tr>
+                        <td>{{ p.tenant_name || '—' }}</td>
+                        <td class="unit-cell">{{ p.unit_number }}</td>
+                        <td class="period-cell">{{ monthName(p.month) }} {{ p.year }}</td>
+                        <td class="num mono">{{ p.amount_due | number:'1.0-0' }}</td>
+                        <td class="num mono">{{ p.amount_paid | number:'1.0-0' }}</td>
+                        <td>
+                          <span [class]="'inline-badge status-' + p.status.toLowerCase()"
+                            >{{ p.status }}</span
+                          >
+                        </td>
+                        <td class="action-cell">
+                          <button
+                            mat-icon-button
+                            (click)="openUpdateDialog(p)"
+                            matTooltip="Edit payment"
+                          >
+                            <mat-icon>edit</mat-icon>
+                          </button>
+                        </td>
+                      </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </mat-card>
+              }
+            </div>
           </div>
+          }
+        </div>
         }
-
       </div>
     </mat-tab>
-
   </mat-tab-group>
-
 </div>

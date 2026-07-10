@@ -26,8 +26,8 @@ jobs:
             --exclude '.git' \
             -e "ssh -o StrictHostKeyChecking=no" \
             ./ \
-            ${{ secrets.DEV_USER }}@${{ secrets.DEV_HOST }}:/home/${{ secrets.DEV_USER }}/tenantly/ \
-            --rsync-path="mkdir -p /home/${{ secrets.DEV_USER }}/tenantly && rsync"
+            ${{ secrets.DEV_USER }}@${{ secrets.DEV_HOST }}:/home/${{ secrets.DEV_USER }}/tenantly-dev/ \
+            --rsync-path="mkdir -p /home/${{ secrets.DEV_USER }}/tenantly-dev && rsync"
 
       - name: Deploy with Docker Compose
         run: |

@@ -555,7 +555,6 @@ mat-chip-set {
   }
 }
 
-
 .ledger-results {
   margin-top: 24px;
   padding: 24px;
@@ -597,9 +596,15 @@ mat-chip-set {
     font-weight: 600;
     color: var(--text-primary);
 
-    &.paid { color: var(--color-success); }
-    &.pending { color: #f57c00; }
-    &.overdue { color: var(--color-accent); }
+    &.paid {
+      color: var(--color-success);
+    }
+    &.pending {
+      color: #f57c00;
+    }
+    &.overdue {
+      color: var(--color-accent);
+    }
   }
 }
 
@@ -608,8 +613,20 @@ mat-chip-set {
   border-radius: 8px;
   overflow: hidden;
 
-  .status-paid { background-color: #e8f5e9; color: #2e7d32; }
-  .status-due { background-color: #fff3e0; color: #e65100; }
-  .status-overdue { background-color: #ffebee; color: #c62828; }
-  .status-partial { background-color: #e3f2fd; color: #1565c0; }
+  .status-paid {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  }
+  .status-due {
+    background-color: #fff3e0;
+    color: #e65100;
+  }
+  .status-overdue {
+    background-color: #ffebee;
+    color: #c62828;
+  }
+  .status-partial {
+    background-color: #e3f2fd;
+    color: #1565c0;
+  }
 }

@@ -18,11 +18,11 @@ import (
 // ---------------------------------------------------------------------------
 
 type mockReportService struct {
-	financialLedgerReportFn    func(orgID int, filters map[string]interface{}, limit, offset int) (*models.FinancialLedgerReport, error)
-	collectionSummaryReportFn  func(orgID int, startDate, endDate time.Time) (*models.CollectionSummaryReport, error)
-	paymentAnalysisReportFn    func(orgID int, startDate, endDate time.Time) (*models.PaymentAnalysisReport, error)
-	tenantSummaryReportFn      func(orgID int) (*models.TenantSummaryReport, error)
-	propertyAnalyticsReportFn  func(orgID int, startDate, endDate time.Time) (*models.PropertyAnalyticsReport, error)
+	financialLedgerReportFn   func(orgID int, filters map[string]interface{}, limit, offset int) (*models.FinancialLedgerReport, error)
+	collectionSummaryReportFn func(orgID int, startDate, endDate time.Time) (*models.CollectionSummaryReport, error)
+	paymentAnalysisReportFn   func(orgID int, startDate, endDate time.Time) (*models.PaymentAnalysisReport, error)
+	tenantSummaryReportFn     func(orgID int) (*models.TenantSummaryReport, error)
+	propertyAnalyticsReportFn func(orgID int, startDate, endDate time.Time) (*models.PropertyAnalyticsReport, error)
 }
 
 func (m *mockReportService) FinancialLedgerReport(orgID int, filters map[string]interface{}, limit, offset int) (*models.FinancialLedgerReport, error) {

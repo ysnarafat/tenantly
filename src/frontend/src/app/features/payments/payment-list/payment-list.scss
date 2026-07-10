@@ -110,7 +110,6 @@
   gap: 16px;
 }
 
-
 .summary-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -627,7 +626,6 @@
       font-size: 14px;
     }
   }
-
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -816,10 +814,22 @@
   letter-spacing: 0.3px;
   white-space: nowrap;
 
-  &.badge-paid    { background: rgba(76, 175, 80, 0.12);  color: var(--color-paid, #4caf50); }
-  &.badge-due     { background: rgba(144, 164, 174, 0.12); color: var(--color-due, #90a4ae); }
-  &.badge-partial { background: rgba(255, 152, 0, 0.12);  color: var(--color-pending, #ff9800); }
-  &.badge-overdue { background: rgba(244, 67, 54, 0.12);  color: var(--color-overdue, #f44336); }
+  &.badge-paid {
+    background: rgba(76, 175, 80, 0.12);
+    color: var(--color-paid, #4caf50);
+  }
+  &.badge-due {
+    background: rgba(144, 164, 174, 0.12);
+    color: var(--color-due, #90a4ae);
+  }
+  &.badge-partial {
+    background: rgba(255, 152, 0, 0.12);
+    color: var(--color-pending, #ff9800);
+  }
+  &.badge-overdue {
+    background: rgba(244, 67, 54, 0.12);
+    color: var(--color-overdue, #f44336);
+  }
 }
 
 .prop-rate-block {
@@ -912,10 +922,23 @@
   font-weight: 500;
 }
 
-.bldg-paid  { color: var(--color-paid, #4caf50); font-weight: 600; font-family: 'Roboto Mono', monospace; }
-.bldg-sep   { color: #ccc; }
-.bldg-due   { color: #888; font-family: 'Roboto Mono', monospace; }
-.bldg-rate  { font-weight: 700; font-family: 'Roboto Mono', monospace; font-size: 13px; }
+.bldg-paid {
+  color: var(--color-paid, #4caf50);
+  font-weight: 600;
+  font-family: 'Roboto Mono', monospace;
+}
+.bldg-sep {
+  color: #ccc;
+}
+.bldg-due {
+  color: #888;
+  font-family: 'Roboto Mono', monospace;
+}
+.bldg-rate {
+  font-weight: 700;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 13px;
+}
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Building Payments Table
@@ -942,7 +965,9 @@
     border-bottom: 1px solid var(--border-subtle, #e0e0e0);
     white-space: nowrap;
 
-    &.num { text-align: right; }
+    &.num {
+      text-align: right;
+    }
   }
 
   td {
@@ -950,17 +975,34 @@
     border-bottom: 1px solid var(--border-subtle, #e0e0e0);
     vertical-align: middle;
 
-    &.num   { text-align: right; }
-    &.mono  { font-family: 'Roboto Mono', monospace; font-weight: 500; }
+    &.num {
+      text-align: right;
+    }
+    &.mono {
+      font-family: 'Roboto Mono', monospace;
+      font-weight: 500;
+    }
   }
 
-  tr:last-child td { border-bottom: none; }
-  tr:hover td      { background: #fafafa; }
+  tr:last-child td {
+    border-bottom: none;
+  }
+  tr:hover td {
+    background: #fafafa;
+  }
 }
 
-.unit-cell   { font-weight: 500; }
-.period-cell { color: #888; white-space: nowrap; }
-.action-cell { width: 44px; padding: 0 4px !important; }
+.unit-cell {
+  font-weight: 500;
+}
+.period-cell {
+  color: #888;
+  white-space: nowrap;
+}
+.action-cell {
+  width: 44px;
+  padding: 0 4px !important;
+}
 
 // ── Inline status badges (tree table) ────────────────────────────────────────
 
@@ -973,10 +1015,22 @@
   letter-spacing: 0.3px;
   white-space: nowrap;
 
-  &.status-paid    { background: rgba(76, 175, 80, 0.12);  color: var(--color-paid, #4caf50); }
-  &.status-due     { background: rgba(144, 164, 174, 0.12); color: var(--color-due, #90a4ae); }
-  &.status-partial { background: rgba(255, 152, 0, 0.12);  color: var(--color-pending, #ff9800); }
-  &.status-overdue { background: rgba(244, 67, 54, 0.12);  color: var(--color-overdue, #f44336); }
+  &.status-paid {
+    background: rgba(76, 175, 80, 0.12);
+    color: var(--color-paid, #4caf50);
+  }
+  &.status-due {
+    background: rgba(144, 164, 174, 0.12);
+    color: var(--color-due, #90a4ae);
+  }
+  &.status-partial {
+    background: rgba(255, 152, 0, 0.12);
+    color: var(--color-pending, #ff9800);
+  }
+  &.status-overdue {
+    background: rgba(244, 67, 54, 0.12);
+    color: var(--color-overdue, #f44336);
+  }
 }
 
 // ── Tree responsive ───────────────────────────────────────────────────────────
@@ -1004,12 +1058,22 @@
 }
 
 @media (max-width: 480px) {
-  .tree-field     { width: 100%; }
-  .tree-load-btn  { margin-bottom: 0; width: 100%; }
-  .tree-filters-row { flex-direction: column; align-items: stretch; }
+  .tree-field {
+    width: 100%;
+  }
+  .tree-load-btn {
+    margin-bottom: 0;
+    width: 100%;
+  }
+  .tree-filters-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
   .bldg-table th,
-  .bldg-table td  { padding: 8px 10px; }
+  .bldg-table td {
+    padding: 8px 10px;
+  }
 
   .buildings-stack {
     padding-left: 8px;

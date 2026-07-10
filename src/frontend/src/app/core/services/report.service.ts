@@ -119,10 +119,7 @@ export class ReportService {
     });
   }
 
-  getCollectionSummary(
-    startDate?: string,
-    endDate?: string
-  ): Observable<CollectionSummaryReport> {
+  getCollectionSummary(startDate?: string, endDate?: string): Observable<CollectionSummaryReport> {
     let params = new HttpParams();
 
     if (startDate) {
@@ -132,16 +129,10 @@ export class ReportService {
       params = params.set('end_date', endDate);
     }
 
-    return this.http.get<CollectionSummaryReport>(
-      `${this.apiUrl}/collection-summary`,
-      { params }
-    );
+    return this.http.get<CollectionSummaryReport>(`${this.apiUrl}/collection-summary`, { params });
   }
 
-  getPaymentAnalysis(
-    startDate?: string,
-    endDate?: string
-  ): Observable<PaymentAnalysisReport> {
+  getPaymentAnalysis(startDate?: string, endDate?: string): Observable<PaymentAnalysisReport> {
     let params = new HttpParams();
 
     if (startDate) {
@@ -151,10 +142,7 @@ export class ReportService {
       params = params.set('end_date', endDate);
     }
 
-    return this.http.get<PaymentAnalysisReport>(
-      `${this.apiUrl}/payment-analysis`,
-      { params }
-    );
+    return this.http.get<PaymentAnalysisReport>(`${this.apiUrl}/payment-analysis`, { params });
   }
 
   getDashboardMetrics(): Observable<DashboardMetrics> {

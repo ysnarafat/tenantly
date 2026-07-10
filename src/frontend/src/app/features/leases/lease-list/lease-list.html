@@ -357,7 +357,7 @@
 
         <!-- Pagination -->
         <mat-paginator
-          *ngIf="filteredLeases.length > pageSize"
+          *ngIf="filteredLeases.length > 0"
           [length]="filteredLeases.length"
           [pageSize]="pageSize"
           [pageIndex]="pageIndex"

@@ -1,4 +1,4 @@
-﻿package services
+package services
 
 import (
 	"fmt"
@@ -1807,4 +1807,3 @@ func createFullBuildingService() (*BuildingService, *TestBuildingRepository, *Te
 
 	return service, buildingRepo, propertyRepo, auditService, metadataValidator
 }
-

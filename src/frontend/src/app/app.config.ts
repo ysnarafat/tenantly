@@ -23,7 +23,7 @@ export const appConfig: ApplicationConfig = {
     importProvidersFrom(TranslateModule.forRoot({ defaultLanguage: 'en' })),
     provideTranslateHttpLoader({
       prefix: 'assets/i18n/',
-      suffix: '.json',
+      suffix: `.json?v=${Date.now()}`,
     }),
     {
       provide: APP_INITIALIZER,

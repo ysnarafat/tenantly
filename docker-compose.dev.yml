@@ -12,6 +12,8 @@ services:
 
   frontend:
     container_name: tenantly-frontend-dev
+    args:
+      BUILD_CONFIGURATION: development
     environment:
       - NODE_ENV=development
 

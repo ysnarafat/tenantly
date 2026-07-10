@@ -1,10 +1,17 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {
+  ReactiveFormsModule,
+  FormsModule,
+  FormBuilder,
+  FormGroup,
+  Validators,
+} from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -17,10 +24,12 @@ import { AuthService, LoginRequest } from '../../../core/services/auth.service';
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    FormsModule,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
+    MatIconModule,
     MatProgressSpinnerModule,
     TranslateModule,
   ],
@@ -35,6 +44,8 @@ export class Login implements OnInit {
   loginForm: FormGroup;
   loading = signal(false);
   error = signal<unknown>(null);
+  showPassword = false;
+  rememberMe = false;
 
   constructor() {
     this.loginForm = this.fb.group({

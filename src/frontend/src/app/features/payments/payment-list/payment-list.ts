@@ -115,28 +115,42 @@ export class PaymentList implements OnInit {
 
   filterStatus = '';
   filterMonth = '';
-  filterYear = new Date().getFullYear().toString();
+  filterYear = new Date().getFullYear();
 
   treePayments = signal<PaymentWithDetails[]>([]);
   treeLoading = signal(false);
-  treeFilterMonth = (new Date().getMonth() + 1).toString();
-  treeFilterYear = new Date().getFullYear().toString();
+  treeFilterMonth: number | '' = '';
+  treeFilterYear = new Date().getFullYear();
 
   treeData = computed<PropertyNode[]>(() => {
     const propMap = new Map<number, PropertyNode>();
     for (const p of this.treePayments()) {
       if (!propMap.has(p.property_id)) {
         propMap.set(p.property_id, {
-          property_id: p.property_id, property_name: p.property_name,
-          buildings: [], totalDue: 0, totalPaid: 0,
-          paidCount: 0, dueCount: 0, overdueCount: 0, partialCount: 0, collectionRate: 0,
+          property_id: p.property_id,
+          property_name: p.property_name,
+          buildings: [],
+          totalDue: 0,
+          totalPaid: 0,
+          paidCount: 0,
+          dueCount: 0,
+          overdueCount: 0,
+          partialCount: 0,
+          collectionRate: 0,
         });
       }
       const prop = propMap.get(p.property_id)!;
-      let bldg = prop.buildings.find(b => b.building_id === p.building_id);
+      let bldg = prop.buildings.find((b) => b.building_id === p.building_id);
       if (!bldg) {
-        bldg = { building_id: p.building_id, building_name: p.building_name,
-          building_code: p.building_code, payments: [], totalDue: 0, totalPaid: 0, collectionRate: 0 };
+        bldg = {
+          building_id: p.building_id,
+          building_name: p.building_name,
+          building_code: p.building_code,
+          payments: [],
+          totalDue: 0,
+          totalPaid: 0,
+          collectionRate: 0,
+        };
         prop.buildings.push(bldg);
       }
       bldg.payments.push(p);
@@ -149,10 +163,10 @@ export class PaymentList implements OnInit {
       else if (p.status === 'Partial') prop.partialCount++;
       else prop.dueCount++;
     }
-    return Array.from(propMap.values()).map(prop => ({
+    return Array.from(propMap.values()).map((prop) => ({
       ...prop,
       collectionRate: prop.totalDue > 0 ? (prop.totalPaid / prop.totalDue) * 100 : 0,
-      buildings: prop.buildings.map(b => ({
+      buildings: prop.buildings.map((b) => ({
         ...b,
         collectionRate: b.totalDue > 0 ? (b.totalPaid / b.totalDue) * 100 : 0,
       })),
@@ -223,8 +237,14 @@ export class PaymentList implements OnInit {
     if (this.treeFilterMonth) filters['month'] = +this.treeFilterMonth;
     if (this.treeFilterYear) filters['year'] = +this.treeFilterYear;
     this.paymentService.getPayments(filters).subscribe({
-      next: (res) => { this.treePayments.set(res.payments ?? []); this.treeLoading.set(false); },
-      error: () => { this.treeLoading.set(false); this.showError('Failed to load tree view'); },
+      next: (res) => {
+        this.treePayments.set(res.payments ?? []);
+        this.treeLoading.set(false);
+      },
+      error: () => {
+        this.treeLoading.set(false);
+        this.showError('Failed to load tree view');
+      },
     });
   }
 
@@ -247,7 +267,7 @@ export class PaymentList implements OnInit {
   clearFilters(): void {
     this.filterStatus = '';
     this.filterMonth = '';
-    this.filterYear = new Date().getFullYear().toString();
+    this.filterYear = new Date().getFullYear();
     this.page.set(1);
     this.loadPayments();
   }

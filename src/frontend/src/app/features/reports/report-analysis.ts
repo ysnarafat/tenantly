@@ -1,6 +1,12 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule, JsonPipe } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {
+  FormsModule,
+  ReactiveFormsModule,
+  FormBuilder,
+  FormGroup,
+  Validators,
+} from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -21,7 +27,15 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatDialog } from '@angular/material/dialog';
 import { TranslateModule } from '@ngx-translate/core';
 import { PermissionService } from '../../core/services/permission.service';
-import { ReportService, DashboardMetrics, CollectionSummaryReport, PaymentAnalysisReport, FinancialLedgerReport, TenantSummaryReport, PropertyAnalyticsReport } from '../../core/services/report.service';
+import {
+  ReportService,
+  DashboardMetrics,
+  CollectionSummaryReport,
+  PaymentAnalysisReport,
+  FinancialLedgerReport,
+  TenantSummaryReport,
+  PropertyAnalyticsReport,
+} from '../../core/services/report.service';
 import { PaymentService } from '../../core/services/payment.service';
 import { BuildingService } from '../../core/services/building.service';
 import { PropertyService } from '../../core/services/property.service';
@@ -190,14 +204,18 @@ export class ReportAnalysis implements OnInit {
 
   loadBuildings() {
     this.buildingService.getBuildings({ active: true }).subscribe({
-      next: (res) => { this.buildings = res.buildings ?? []; },
+      next: (res) => {
+        this.buildings = res.buildings ?? [];
+      },
       error: () => {},
     });
   }
 
   loadProperties() {
     this.propertyService.getProperties({ active: true }).subscribe({
-      next: (res) => { this.properties = res.properties ?? []; },
+      next: (res) => {
+        this.properties = res.properties ?? [];
+      },
       error: () => {},
     });
   }
@@ -300,8 +318,12 @@ export class ReportAnalysis implements OnInit {
 
     const startDate = this.reportForm.get('startDate')?.value;
     const endDate = this.reportForm.get('endDate')?.value;
-    const start = startDate ? new Date(startDate).toISOString().split('T')[0] : new Date(new Date().setDate(1)).toISOString().split('T')[0];
-    const end = endDate ? new Date(endDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+    const start = startDate
+      ? new Date(startDate).toISOString().split('T')[0]
+      : new Date(new Date().setDate(1)).toISOString().split('T')[0];
+    const end = endDate
+      ? new Date(endDate).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0];
 
     this.generatingReport = true;
     this.paymentService.getBuildingReport(buildingId, start, end).subscribe({
@@ -414,18 +436,42 @@ export class ReportAnalysis implements OnInit {
       csv = this.toCsv(
         ['Tenant', 'Unit', 'Building', 'Period', 'Due (৳)', 'Paid (৳)', 'Status'],
         this.ledgerReport.payments.map((p: any) => [
-          p.tenant_name, p.unit_number, p.building_name,
-          `${p.month}/${p.year}`, p.amount_due, p.amount_paid, p.status,
+          p.tenant_name,
+          p.unit_number,
+          p.building_name,
+          `${p.month}/${p.year}`,
+          p.amount_due,
+          p.amount_paid,
+          p.status,
         ])
       );
     } else if (reportType === 'tenant_report' && this.tenantReport?.tenants?.length) {
       filename = 'tenant-report.csv';
       csv = this.toCsv(
-        ['Tenant', 'Phone', 'Email', 'Unit', 'Building', 'Property', 'Monthly Rent', 'Total Due', 'Total Paid', 'Balance', 'Lease Active'],
-        this.tenantReport.tenants.map(t => [
-          t.tenant_name, t.phone_number, t.email,
-          t.unit_number, t.building_name, t.property_name,
-          t.monthly_rent, t.total_due, t.total_paid, t.balance_due,
+        [
+          'Tenant',
+          'Phone',
+          'Email',
+          'Unit',
+          'Building',
+          'Property',
+          'Monthly Rent',
+          'Total Due',
+          'Total Paid',
+          'Balance',
+          'Lease Active',
+        ],
+        this.tenantReport.tenants.map((t) => [
+          t.tenant_name,
+          t.phone_number,
+          t.email,
+          t.unit_number,
+          t.building_name,
+          t.property_name,
+          t.monthly_rent,
+          t.total_due,
+          t.total_paid,
+          t.balance_due,
           t.lease_active ? 'Yes' : 'No',
         ])
       );
@@ -435,8 +481,12 @@ export class ReportAnalysis implements OnInit {
       csv = this.toCsv(
         ['Tenant', 'Unit', 'Period', 'Due (৳)', 'Paid (৳)', 'Status'],
         payments.map((p: any) => [
-          p.tenant_name, p.unit_number, `${p.month}/${p.year}`,
-          p.amount_due, p.amount_paid, p.status,
+          p.tenant_name,
+          p.unit_number,
+          `${p.month}/${p.year}`,
+          p.amount_due,
+          p.amount_paid,
+          p.status,
         ])
       );
     } else if (reportType === 'collection_summary' && this.collectionReport) {
@@ -452,11 +502,18 @@ export class ReportAnalysis implements OnInit {
           ['Period', this.collectionReport.report_period],
         ]
       );
-    } else if (reportType === 'property_analytics' && this.propertyAnalyticsReport?.properties?.length) {
+    } else if (
+      reportType === 'property_analytics' &&
+      this.propertyAnalyticsReport?.properties?.length
+    ) {
       filename = 'property-analytics.csv';
       csv = this.toCsv(
         ['Property', 'Code', 'Type'],
-        this.propertyAnalyticsReport.properties.map(p => [p.property_name, p.property_code, p.property_type])
+        this.propertyAnalyticsReport.properties.map((p) => [
+          p.property_name,
+          p.property_code,
+          p.property_type,
+        ])
       );
     } else {
       this.snackBar.open('Generate a report first before exporting', 'Close', { duration: 3000 });
@@ -470,9 +527,11 @@ export class ReportAnalysis implements OnInit {
   private toCsv(headers: string[], rows: any[][]): string {
     const escape = (v: any) => {
       const s = String(v ?? '');
-      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+      return s.includes(',') || s.includes('"') || s.includes('\n')
+        ? `"${s.replace(/"/g, '""')}"`
+        : s;
     };
-    return [headers, ...rows].map(row => row.map(escape).join(',')).join('\r\n');
+    return [headers, ...rows].map((row) => row.map(escape).join(',')).join('\r\n');
   }
 
   private downloadCsv(csv: string, filename: string): void {

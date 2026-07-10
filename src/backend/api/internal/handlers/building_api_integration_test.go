@@ -1,4 +1,4 @@
-﻿package handlers
+package handlers
 
 import (
 	"bytes"
@@ -757,4 +757,3 @@ func intPtr(i int) *int {
 func TestBuildingAPIIntegrationTestSuite(t *testing.T) {
 	suite.Run(t, new(BuildingAPIIntegrationTestSuite))
 }
-

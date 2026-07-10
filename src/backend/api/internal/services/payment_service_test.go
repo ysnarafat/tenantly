@@ -1,4 +1,4 @@
-﻿package services
+package services
 
 import (
 	"errors"
@@ -1918,5 +1918,3 @@ func paymentTestContains(s, substr string) bool {
 	}
 	return false
 }
-
-

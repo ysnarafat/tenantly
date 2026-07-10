@@ -1,5 +1,6 @@
 import {
   AfterViewInit,
+  ChangeDetectorRef,
   Component,
   ContentChildren,
   EventEmitter,
@@ -9,6 +10,7 @@ import {
   QueryList,
   SimpleChanges,
   ViewChild,
+  inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -37,6 +39,7 @@ import { MatIconModule } from '@angular/material/icon';
   styleUrl: './data-table.scss',
 })
 export class DataTable<T = unknown> implements OnChanges, AfterViewInit {
+  private cdr = inject(ChangeDetectorRef);
   @ContentChildren(MatColumnDef) columnDefs!: QueryList<MatColumnDef>;
   @ViewChild(MatTable) matTable!: MatTable<T>;
   @ViewChild(MatPaginator) matPaginator!: MatPaginator;
@@ -55,6 +58,7 @@ export class DataTable<T = unknown> implements OnChanges, AfterViewInit {
   @Output() sortChange = new EventEmitter<Sort>();
 
   internalDataSource = new MatTableDataSource<T>();
+  renderedColumns: string[] = [];
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['dataSource']) {
@@ -65,10 +69,15 @@ export class DataTable<T = unknown> implements OnChanges, AfterViewInit {
         this.internalDataSource.data = ds as T[];
       }
     }
+    if (changes['displayedColumns'] && this.matTable) {
+      this.renderedColumns = [...this.displayedColumns];
+    }
   }
 
   ngAfterViewInit(): void {
-    this.columnDefs.forEach(def => this.matTable.addColumnDef(def));
+    this.columnDefs.forEach((def) => this.matTable.addColumnDef(def));
+    this.renderedColumns = [...this.displayedColumns];
+    this.cdr.detectChanges();
     if (this.showPaginator && this.matPaginator) {
       this.internalDataSource.paginator = this.matPaginator;
     }

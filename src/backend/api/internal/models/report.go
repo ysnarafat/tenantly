@@ -55,6 +55,7 @@ type PaymentAnalyticsResult struct {
 	DailyTrend    map[string]int64
 	TotalPayments int64
 }
+
 // FinancialLedgerReport complete transaction history with balances
 type FinancialLedgerReport struct {
 	OrganizationID int                   `json:"organization_id"`
@@ -70,16 +71,16 @@ type FinancialLedgerReport struct {
 
 // CollectionSummaryReport returns collection rates, aging analysis, trends
 type CollectionSummaryReport struct {
-	OrganizationID    int                       `json:"organization_id"`
-	CollectionRate    float64                   `json:"collection_rate"`
-	TotalDue          int64                     `json:"total_due"`
-	TotalCollected    int64                     `json:"total_collected"`
-	TotalPending      int64                     `json:"total_pending"`
-	TotalOverdue      int64                     `json:"total_overdue"`
-	AgingBuckets      map[string]int64          `json:"aging_buckets"`
-	MonthlyTrend      []*MonthlyCollectionTrend `json:"monthly_trend"`
-	ReportPeriod      string                    `json:"report_period"`
-	GeneratedAt       time.Time                 `json:"generated_at"`
+	OrganizationID int                       `json:"organization_id"`
+	CollectionRate float64                   `json:"collection_rate"`
+	TotalDue       int64                     `json:"total_due"`
+	TotalCollected int64                     `json:"total_collected"`
+	TotalPending   int64                     `json:"total_pending"`
+	TotalOverdue   int64                     `json:"total_overdue"`
+	AgingBuckets   map[string]int64          `json:"aging_buckets"`
+	MonthlyTrend   []*MonthlyCollectionTrend `json:"monthly_trend"`
+	ReportPeriod   string                    `json:"report_period"`
+	GeneratedAt    time.Time                 `json:"generated_at"`
 }
 
 // MonthlyCollectionTrend represents collection data for a month
