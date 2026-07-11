@@ -9,7 +9,6 @@
   --color-paid: #4caf50;
   --color-pending: #ff9800;
   --color-overdue: #f44336;
-  --bg-surface: #f5f7fa;
   --border-subtle: #e0e0e0;
 }
 
@@ -18,7 +17,6 @@
   --color-paid: #81c784;
   --color-pending: #ffb74d;
   --color-overdue: #ef9a9a;
-  --bg-surface: #2a2a2a;
   --border-subtle: #333;
 }
 
@@ -30,7 +28,7 @@
   padding: 24px;
   max-width: 1400px;
   margin: 0 auto;
-  background: var(--bg-surface);
+  background: var(--bg-secondary);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -40,6 +38,14 @@
 // ──────────────────────────────────────────────────────────────────────────────
 // Page Header
 // ──────────────────────────────────────────────────────────────────────────────
+
+.header-card {
+  mat-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+}
 
 .page-header {
   padding-bottom: 12px;
@@ -68,7 +74,7 @@
 
 .page-subtitle {
   font-size: 14px;
-  color: #666;
+  color: var(--text-muted);
   margin: 0;
   font-weight: 500;
 }
@@ -255,7 +261,7 @@
 
   p {
     margin: 0;
-    color: #666;
+    color: var(--text-muted);
     font-size: 14px;
   }
 }
@@ -264,7 +270,7 @@
   font-size: 64px;
   width: 64px;
   height: 64px;
-  color: #ccc;
+  color: var(--border-color);
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -274,7 +280,7 @@
 .table-wrapper {
   overflow-x: auto;
   border-radius: 8px;
-  background: white;
+  background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
 
   @media (max-width: 768px) {
@@ -287,14 +293,14 @@
   border-collapse: collapse;
 
   th {
-    background: #f9fafb;
+    background: var(--bg-secondary);
     font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     padding: 14px 16px;
     text-align: left;
-    color: #666;
+    color: var(--text-muted);
     border-bottom: 1px solid var(--border-subtle);
   }
 
@@ -308,7 +314,7 @@
   }
 
   tr:hover {
-    background: #fafafa;
+    background: var(--bg-hover);
   }
 }
 
@@ -686,7 +692,7 @@
 
   p {
     margin: 0;
-    color: #666;
+    color: var(--text-muted);
     font-size: 14px;
   }
 }
@@ -752,7 +758,7 @@
 
 .property-meta {
   font-size: 12px;
-  color: #888;
+  color: var(--text-muted);
   margin-top: 3px;
   font-weight: 500;
 }
@@ -890,7 +896,7 @@
   font-size: 18px;
   width: 18px;
   height: 18px;
-  color: #2196f3;
+  color: var(--color-primary);
   opacity: 0.75;
 }
 
@@ -902,8 +908,8 @@
 .building-code-chip {
   display: inline-block;
   padding: 2px 7px;
-  background: rgba(33, 150, 243, 0.1);
-  color: #2196f3;
+  background: var(--bg-chip-blue);
+  color: var(--text-chip-blue);
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
@@ -918,7 +924,7 @@
 }
 
 .bldg-count {
-  color: #888;
+  color: var(--text-muted);
   font-weight: 500;
 }
 
@@ -928,10 +934,10 @@
   font-family: 'Roboto Mono', monospace;
 }
 .bldg-sep {
-  color: #ccc;
+  color: var(--border-color);
 }
 .bldg-due {
-  color: #888;
+  color: var(--text-muted);
   font-family: 'Roboto Mono', monospace;
 }
 .bldg-rate {
@@ -954,15 +960,15 @@
   font-size: 13px;
 
   th {
-    background: #fafafa;
+    background: var(--bg-secondary);
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: #888;
+    color: var(--text-muted);
     padding: 10px 16px;
     text-align: left;
-    border-bottom: 1px solid var(--border-subtle, #e0e0e0);
+    border-bottom: 1px solid var(--border-subtle);
     white-space: nowrap;
 
     &.num {
@@ -972,7 +978,7 @@
 
   td {
     padding: 10px 16px;
-    border-bottom: 1px solid var(--border-subtle, #e0e0e0);
+    border-bottom: 1px solid var(--border-subtle);
     vertical-align: middle;
 
     &.num {
@@ -988,7 +994,7 @@
     border-bottom: none;
   }
   tr:hover td {
-    background: #fafafa;
+    background: var(--bg-hover);
   }
 }
 
@@ -996,7 +1002,7 @@
   font-weight: 500;
 }
 .period-cell {
-  color: #888;
+  color: var(--text-muted);
   white-space: nowrap;
 }
 .action-cell {

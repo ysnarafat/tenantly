@@ -2,7 +2,7 @@
   <div class="header">
     <h1>{{ 'USER_LIST.PAGE_TITLE' | translate }}</h1>
     <div class="header-actions">
-      <button mat-raised-button color="primary" (click)="createUser()">
+      <button mat-flat-button color="primary" (click)="createUser()">
         <mat-icon>person_add</mat-icon>
         {{ 'USER_LIST.BUTTONS.CREATE_USER' | translate }}
       </button>
@@ -46,6 +46,7 @@
     [dataSource]="filteredData()"
     [displayedColumns]="displayedColumns"
     [loading]="loading()"
+    loadingMessage="Loading users..."
     emptyIcon="people_outline"
     emptyMessage="No users found"
   >

@@ -43,7 +43,7 @@
     </mat-form-field>
 
     <div class="form-actions">
-      <button mat-raised-button color="primary" type="submit" [disabled]="loading || form.invalid">
+      <button mat-flat-button color="primary" type="submit" [disabled]="loading || form.invalid">
         @if (loading) {
         <mat-spinner diameter="20"></mat-spinner>
         <span>{{ 'ORG_CREATE.BUTTONS.CREATING' | translate }}</span>

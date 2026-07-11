@@ -14,10 +14,11 @@
   </div>
 
   <!-- Loading State -->
-  <div *ngIf="loading()" class="loading-container">
-    <mat-spinner diameter="50"></mat-spinner>
-    <p>{{ 'DUE_LIST.LOADING' | translate }}</p>
-  </div>
+  <app-loading-spinner
+    *ngIf="loading()"
+    [message]="'DUE_LIST.LOADING' | translate"
+    [diameter]="50"
+  ></app-loading-spinner>
 
   <!-- Empty State -->
   <div *ngIf="isEmpty()" class="empty-state">

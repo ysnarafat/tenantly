@@ -1,7 +1,7 @@
 <div class="organization-list-container">
   <div class="header">
     <h1>{{ 'ORG_LIST.PAGE_TITLE' | translate }}</h1>
-    <button mat-raised-button color="primary" (click)="createOrganization()">
+    <button mat-flat-button color="primary" (click)="createOrganization()">
       <mat-icon>add</mat-icon>
       {{ 'ORG_LIST.BUTTONS.NEW' | translate }}
     </button>
@@ -23,6 +23,7 @@
     [dataSource]="filteredData()"
     [displayedColumns]="displayedColumns"
     [loading]="loading()"
+    loadingMessage="Loading organizations..."
     emptyIcon="domain_disabled"
     emptyMessage="No organizations found"
   >

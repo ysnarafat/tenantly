@@ -10,8 +10,6 @@
       <div class="info-row">
         <mat-icon>location_on</mat-icon>
         <span>{{ property.address }}@if (property.city) {, {{ property.city }}}</span>
-      </div>
-      <div class="info-row">
         <mat-chip [color]="getPropertyTypeColor(property.property_type)" selected>
           {{ property.property_type }}
         </mat-chip>
@@ -56,6 +54,14 @@
             <strong>{{ building.building_name }}</strong>
             <span class="building-code">{{ building.building_code }}</span>
           </div>
+          <button
+            mat-icon-button
+            matTooltip="Edit Building"
+            (click)="onEditBuilding(building, $event)"
+            class="building-edit-btn"
+          >
+            <mat-icon>edit</mat-icon>
+          </button>
           <mat-icon class="expand-icon">
             {{ building.expanded ? 'expand_less' : 'expand_more' }}
           </mat-icon>

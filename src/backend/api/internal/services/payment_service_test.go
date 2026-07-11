@@ -215,6 +215,10 @@ func (m *MockPaymentRepo) GetPaymentAnalyticsByPeriod(orgID int, startDate, endD
 	}, nil
 }
 
+func (m *MockPaymentRepo) GetBatchPropertyPaymentStats(propertyIDs []int, startDate, endDate time.Time) (map[int]any, error) {
+	return map[int]any{}, nil
+}
+
 // ---------------------------------------------------------------------------
 // MockPaymentUnitRepo â€“ implements interfaces.UnitRepositoryInterface
 // ---------------------------------------------------------------------------

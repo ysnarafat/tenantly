@@ -21,8 +21,8 @@ import {
 } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
+import { LoadingSpinner } from '../loading-spinner/loading-spinner';
 
 @Component({
   selector: 'app-data-table',
@@ -32,8 +32,8 @@ import { MatIconModule } from '@angular/material/icon';
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,
-    MatProgressSpinnerModule,
     MatIconModule,
+    LoadingSpinner,
   ],
   templateUrl: './data-table.html',
   styleUrl: './data-table.scss',
@@ -48,8 +48,10 @@ export class DataTable<T = unknown> implements OnChanges, AfterViewInit {
   @Input() dataSource: MatTableDataSource<T> | T[] = [];
   @Input() displayedColumns: string[] = [];
   @Input() loading = false;
+  @Input() loadingMessage = 'Loading...';
   @Input() emptyIcon = 'inbox';
   @Input() emptyMessage = 'No data found';
+  @Input() emptySubtitle = '';
   @Input() pageSizeOptions: number[] = [10, 25, 50];
   @Input() showPaginator = true;
   @Input() stickyHeader = true;

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule, JsonPipe } from '@angular/common';
 import {
   FormsModule,
@@ -6,7 +6,11 @@ import {
   FormBuilder,
   FormGroup,
   Validators,
+  AbstractControl,
+  ValidationErrors,
 } from '@angular/forms';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -58,6 +62,15 @@ export interface QuickMetric {
   icon: string;
 }
 
+function dateRangeValidator(fg: AbstractControl): ValidationErrors | null {
+  const start = fg.get('startDate')?.value;
+  const end = fg.get('endDate')?.value;
+  if (start && end && new Date(end) < new Date(start)) {
+    return { endBeforeStart: true };
+  }
+  return null;
+}
+
 @Component({
   selector: 'app-report-analysis',
   standalone: true,
@@ -87,7 +100,9 @@ export interface QuickMetric {
   templateUrl: './report-analysis.html',
   styleUrls: ['./report-analysis.scss'],
 })
-export class ReportAnalysis implements OnInit {
+export class ReportAnalysis implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
+  private cancelPending$ = new Subject<void>();
   private fb = inject(FormBuilder);
   private permissionService = inject(PermissionService);
   private snackBar = inject(MatSnackBar);
@@ -220,15 +235,23 @@ export class ReportAnalysis implements OnInit {
     });
   }
 
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   initForm() {
-    this.reportForm = this.fb.group({
-      reportType: ['ledger', Validators.required],
-      propertyFilter: [''],
-      buildingFilter: [''],
-      startDate: [''],
-      endDate: [''],
-      exportFormat: ['pdf'],
-    });
+    this.reportForm = this.fb.group(
+      {
+        reportType: ['ledger', Validators.required],
+        propertyFilter: [''],
+        buildingFilter: [''],
+        startDate: [''],
+        endDate: [''],
+        exportFormat: ['pdf'],
+      },
+      { validators: dateRangeValidator }
+    );
   }
 
   loadDashboardMetrics() {
@@ -257,34 +280,40 @@ export class ReportAnalysis implements OnInit {
     }
 
     this.generatingReport = true;
-    this.reportService.getFinancialLedger(1, 50, filters).subscribe({
-      next: (report) => {
-        this.ledgerReport = report;
-        this.generatingReport = false;
-        this.snackBar.open('Ledger report generated', 'Close', { duration: 2000 });
-      },
-      error: (error) => {
-        console.error('Error generating ledger report:', error);
-        this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
-        this.generatingReport = false;
-      },
-    });
+    this.reportService
+      .getFinancialLedger(1, 50, filters)
+      .pipe(takeUntil(this.cancelPending$), takeUntil(this.destroy$))
+      .subscribe({
+        next: (report) => {
+          this.ledgerReport = report;
+          this.generatingReport = false;
+          this.snackBar.open('Ledger report generated', 'Close', { duration: 2000 });
+        },
+        error: (error) => {
+          console.error('Error generating ledger report:', error);
+          this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+          this.generatingReport = false;
+        },
+      });
   }
 
   loadTenantSummary() {
     this.generatingReport = true;
-    this.reportService.getTenantSummary().subscribe({
-      next: (report) => {
-        this.tenantReport = report;
-        this.generatingReport = false;
-        this.snackBar.open('Tenant report generated', 'Close', { duration: 2000 });
-      },
-      error: (error) => {
-        console.error('Error generating tenant report:', error);
-        this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
-        this.generatingReport = false;
-      },
-    });
+    this.reportService
+      .getTenantSummary()
+      .pipe(takeUntil(this.cancelPending$), takeUntil(this.destroy$))
+      .subscribe({
+        next: (report) => {
+          this.tenantReport = report;
+          this.generatingReport = false;
+          this.snackBar.open('Tenant report generated', 'Close', { duration: 2000 });
+        },
+        error: (error) => {
+          console.error('Error generating tenant report:', error);
+          this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+          this.generatingReport = false;
+        },
+      });
   }
 
   loadPropertyAnalytics() {
@@ -294,18 +323,21 @@ export class ReportAnalysis implements OnInit {
     const end = endDate ? new Date(endDate).toISOString().split('T')[0] : undefined;
 
     this.generatingReport = true;
-    this.reportService.getPropertyAnalytics(start, end).subscribe({
-      next: (report) => {
-        this.propertyAnalyticsReport = report;
-        this.generatingReport = false;
-        this.snackBar.open('Property analytics generated', 'Close', { duration: 2000 });
-      },
-      error: (error) => {
-        console.error('Error generating property analytics:', error);
-        this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
-        this.generatingReport = false;
-      },
-    });
+    this.reportService
+      .getPropertyAnalytics(start, end)
+      .pipe(takeUntil(this.cancelPending$), takeUntil(this.destroy$))
+      .subscribe({
+        next: (report) => {
+          this.propertyAnalyticsReport = report;
+          this.generatingReport = false;
+          this.snackBar.open('Property analytics generated', 'Close', { duration: 2000 });
+        },
+        error: (error) => {
+          console.error('Error generating property analytics:', error);
+          this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+          this.generatingReport = false;
+        },
+      });
   }
 
   loadBuildingPerformance() {
@@ -326,18 +358,21 @@ export class ReportAnalysis implements OnInit {
       : new Date().toISOString().split('T')[0];
 
     this.generatingReport = true;
-    this.paymentService.getBuildingReport(buildingId, start, end).subscribe({
-      next: (report) => {
-        this.buildingReport = report;
-        this.generatingReport = false;
-        this.snackBar.open('Building performance report generated', 'Close', { duration: 2000 });
-      },
-      error: (error) => {
-        console.error('Error generating building report:', error);
-        this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
-        this.generatingReport = false;
-      },
-    });
+    this.paymentService
+      .getBuildingReport(buildingId, start, end)
+      .pipe(takeUntil(this.cancelPending$), takeUntil(this.destroy$))
+      .subscribe({
+        next: (report) => {
+          this.buildingReport = report;
+          this.generatingReport = false;
+          this.snackBar.open('Building performance report generated', 'Close', { duration: 2000 });
+        },
+        error: (error) => {
+          console.error('Error generating building report:', error);
+          this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+          this.generatingReport = false;
+        },
+      });
   }
 
   loadCollectionSummary() {
@@ -348,18 +383,21 @@ export class ReportAnalysis implements OnInit {
     const end = endDate ? new Date(endDate).toISOString().split('T')[0] : undefined;
 
     this.generatingReport = true;
-    this.reportService.getCollectionSummary(start, end).subscribe({
-      next: (report) => {
-        this.collectionReport = report;
-        this.generatingReport = false;
-        this.snackBar.open('Report generated', 'Close', { duration: 2000 });
-      },
-      error: (error) => {
-        console.error('Error generating report:', error);
-        this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
-        this.generatingReport = false;
-      },
-    });
+    this.reportService
+      .getCollectionSummary(start, end)
+      .pipe(takeUntil(this.cancelPending$), takeUntil(this.destroy$))
+      .subscribe({
+        next: (report) => {
+          this.collectionReport = report;
+          this.generatingReport = false;
+          this.snackBar.open('Report generated', 'Close', { duration: 2000 });
+        },
+        error: (error) => {
+          console.error('Error generating report:', error);
+          this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+          this.generatingReport = false;
+        },
+      });
   }
 
   loadPaymentAnalysis() {
@@ -370,18 +408,21 @@ export class ReportAnalysis implements OnInit {
     const end = endDate ? new Date(endDate).toISOString().split('T')[0] : undefined;
 
     this.generatingReport = true;
-    this.reportService.getPaymentAnalysis(start, end).subscribe({
-      next: (report) => {
-        this.paymentReport = report;
-        this.generatingReport = false;
-        this.snackBar.open('Report generated', 'Close', { duration: 2000 });
-      },
-      error: (error) => {
-        console.error('Error generating report:', error);
-        this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
-        this.generatingReport = false;
-      },
-    });
+    this.reportService
+      .getPaymentAnalysis(start, end)
+      .pipe(takeUntil(this.cancelPending$), takeUntil(this.destroy$))
+      .subscribe({
+        next: (report) => {
+          this.paymentReport = report;
+          this.generatingReport = false;
+          this.snackBar.open('Report generated', 'Close', { duration: 2000 });
+        },
+        error: (error) => {
+          console.error('Error generating report:', error);
+          this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+          this.generatingReport = false;
+        },
+      });
   }
 
   selectReport(report: ReportTemplate) {
@@ -390,11 +431,16 @@ export class ReportAnalysis implements OnInit {
   }
 
   generateReport() {
+    if (this.reportForm.hasError('endBeforeStart')) {
+      this.snackBar.open('End date must be after start date', 'Close', { duration: 3000 });
+      return;
+    }
     if (!this.reportForm.valid) {
       this.snackBar.open('Please fill required fields', 'Close', { duration: 3000 });
       return;
     }
 
+    this.cancelPending$.next();
     const reportType = this.reportForm.get('reportType')?.value;
 
     switch (reportType) {

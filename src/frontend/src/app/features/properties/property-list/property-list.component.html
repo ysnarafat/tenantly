@@ -1,17 +1,52 @@
 <div class="property-list-container">
-  <div class="header">
-    <h1>{{ 'PROPERTY_LIST.PAGE_TITLE' | translate }}</h1>
-    <button mat-raised-button color="primary" (click)="addProperty()">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1>{{ 'PROPERTY_LIST.PAGE_TITLE' | translate }}</h1>
+      <div class="stats-row">
+        <span class="stat-chip total"
+          >{{ properties().length }} {{ 'PROPERTY_LIST.STATS.TOTAL' | translate }}</span
+        >
+        <span class="stat-chip active"
+          >{{ activeCount() }} {{ 'PROPERTY_LIST.STATS.ACTIVE' | translate }}</span
+        >
+      </div>
+    </div>
+    <button mat-flat-button color="primary" (click)="addProperty()">
       <mat-icon>add</mat-icon>
       {{ 'PROPERTY_LIST.BUTTONS.ADD_PROPERTY' | translate }}
     </button>
   </div>
 
+  <!-- Filters Bar -->
+  <div class="filters-bar">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>{{ 'PROPERTY_LIST.FILTERS.SEARCH_LABEL' | translate }}</mat-label>
+      <mat-icon matPrefix>search</mat-icon>
+      <input
+        matInput
+        [ngModel]="searchQuery()"
+        (ngModelChange)="searchQuery.set($event)"
+        [placeholder]="'PROPERTY_LIST.FILTERS.SEARCH_PLACEHOLDER' | translate"
+      />
+      @if (searchQuery()) {
+        <button
+          matSuffix
+          mat-icon-button
+          (click)="clearSearch()"
+          [matTooltip]="'COMMON.ACTIONS.CLEAR' | translate"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </mat-form-field>
+  </div>
+
   @if (loading()) {
-    <div class="loading-container">
-      <mat-spinner diameter="50"></mat-spinner>
-      <p>{{ 'PROPERTY_LIST.LOADING' | translate }}</p>
-    </div>
+    <app-loading-spinner
+      [message]="'PROPERTY_LIST.LOADING' | translate"
+      [diameter]="50"
+    ></app-loading-spinner>
   }
 
   @if (error()) {
@@ -33,6 +68,7 @@
           (editProperty)="editProperty($event)"
           (deleteProperty)="deleteProperty($event)"
           (addBuilding)="addBuilding($event)"
+          (editBuilding)="editBuilding($event.building, $event.property)"
           (toggleBuilding)="toggleBuilding($event)"
           (addUnit)="addUnit($event.building, $event.property)"
           (editUnit)="editUnit($event.unit, $event.building, $event.property)"
@@ -42,15 +78,20 @@
       }
     </div>
 
-    @if (properties().length === 0) {
+    @if (displayedProperties().length === 0) {
       <mat-card class="empty-state">
-        <mat-icon>domain</mat-icon>
-        <h2>{{ 'PROPERTY_LIST.EMPTY_STATE.TITLE' | translate }}</h2>
-        <p>{{ 'PROPERTY_LIST.EMPTY_STATE.DESCRIPTION' | translate }}</p>
-        <button mat-raised-button color="primary" (click)="addProperty()">
-          <mat-icon>add</mat-icon>
-          {{ 'PROPERTY_LIST.BUTTONS.ADD_PROPERTY' | translate }}
-        </button>
+        <mat-icon>{{ searchQuery() ? 'search_off' : 'domain' }}</mat-icon>
+        @if (searchQuery()) {
+          <h2>{{ 'PROPERTY_LIST.EMPTY_STATE.NO_MATCHING' | translate }}</h2>
+          <p>{{ 'COMMON.EMPTY_STATE.TRY_ADJUST' | translate }}</p>
+        } @else {
+          <h2>{{ 'PROPERTY_LIST.EMPTY_STATE.TITLE' | translate }}</h2>
+          <p>{{ 'PROPERTY_LIST.EMPTY_STATE.DESCRIPTION' | translate }}</p>
+          <button mat-flat-button color="primary" (click)="addProperty()">
+            <mat-icon>add</mat-icon>
+            {{ 'PROPERTY_LIST.BUTTONS.ADD_PROPERTY' | translate }}
+          </button>
+        }
       </mat-card>
     }
   }

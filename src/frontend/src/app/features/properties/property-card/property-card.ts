@@ -40,6 +40,10 @@ export class PropertyCardComponent {
   @Output() editProperty = new EventEmitter<DisplayedProperty>();
   @Output() deleteProperty = new EventEmitter<DisplayedProperty>();
   @Output() addBuilding = new EventEmitter<DisplayedProperty>();
+  @Output() editBuilding = new EventEmitter<{
+    building: BuildingWithUnits;
+    property: DisplayedProperty;
+  }>();
   @Output() toggleBuilding = new EventEmitter<BuildingWithUnits>();
   @Output() addUnit = new EventEmitter<{
     building: BuildingWithUnits;
@@ -71,6 +75,11 @@ export class PropertyCardComponent {
 
   onAddBuilding() {
     this.addBuilding.emit(this.property);
+  }
+
+  onEditBuilding(building: BuildingWithUnits, event: Event) {
+    event.stopPropagation();
+    this.editBuilding.emit({ building, property: this.property });
   }
 
   onToggleBuilding(building: BuildingWithUnits) {

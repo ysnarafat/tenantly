@@ -5,11 +5,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DataTable } from '../../../shared/components/data-table/data-table';
+import { LoadingSpinner } from '../../../shared/components/loading-spinner/loading-spinner';
 import { LeaseService, LeaseDue, DueSummary } from '../../../core/services/lease.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
@@ -24,10 +24,10 @@ import { LanguageService } from '../../../core/services/language.service';
     MatIconModule,
     MatCardModule,
     MatChipsModule,
-    MatProgressSpinnerModule,
     MatTooltipModule,
     TranslateModule,
     DataTable,
+    LoadingSpinner,
   ],
   templateUrl: './due-list.html',
   styleUrls: ['./due-list.scss'],

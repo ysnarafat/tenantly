@@ -44,6 +44,13 @@
     },
     "HINTS": {
       "OPTIONAL": "ঐচ্ছিক"
+    },
+    "CONFIRM_DELETE_DIALOG": {
+      "TITLE": "{{entityLabel}} মুছুন",
+      "WARNING": "এটি {{entityLabel}} \"{{entityName}}\" স্থায়ীভাবে মুছে ফেলবে। এই কাজটি পূর্বাবস্থায় ফেরানো যাবে না।",
+      "LABEL": "নিশ্চিত করতে \"{{entityName}}\" টাইপ করুন",
+      "PLACEHOLDER": "{{entityName}}",
+      "CONFIRM_BUTTON": "{{entityLabel}} মুছুন"
     }
   },
   "DUE_LIST": {
@@ -152,6 +159,15 @@
       "NO_MATCHING": "কোনো মেলে এমন ভাড়াটে নেই",
       "NO_TENANTS": "এখনও কোনো ভাড়াটে নেই",
       "ADD_FIRST": "শুরু করতে আপনার প্রথম ভাড়াটে যোগ করুন।"
+    },
+    "MASKING": {
+      "REVEAL": "দেখুন",
+      "HIDE": "লুকান",
+      "SHOW_ALL_NID": "সব জাতীয় পরিচয়পত্র নম্বর দেখুন",
+      "HIDE_ALL_NID": "সব জাতীয় পরিচয়পত্র নম্বর লুকান",
+      "SHOW_ALL_PHONE": "সব ফোন নম্বর দেখুন",
+      "HIDE_ALL_PHONE": "সব ফোন নম্বর লুকান",
+      "RESTRICTED_TOOLTIP": "এই তথ্য দেখার অনুমতি আপনার নেই"
     }
   },
   "DASHBOARD": {
@@ -363,13 +379,22 @@
   },
   "PROPERTY_LIST": {
     "PAGE_TITLE": "সম্পত্তি",
+    "STATS": {
+      "TOTAL": "মোট",
+      "ACTIVE": "সক্রিয়"
+    },
     "BUTTONS": {
       "ADD_PROPERTY": "সম্পত্তি যোগ করুন"
+    },
+    "FILTERS": {
+      "SEARCH_LABEL": "সম্পত্তি খুঁজুন",
+      "SEARCH_PLACEHOLDER": "সম্পত্তি, ভবন বা ইউনিট…"
     },
     "LOADING": "সম্পত্তি লোড হচ্ছে...",
     "EMPTY_STATE": {
       "TITLE": "এখনও কোনো সম্পত্তি নেই",
-      "DESCRIPTION": "আপনার প্রথম সম্পত্তি যোগ করে শুরু করুন"
+      "DESCRIPTION": "আপনার প্রথম সম্পত্তি যোগ করে শুরু করুন",
+      "NO_MATCHING": "কোনো মিলযুক্ত সম্পত্তি নেই"
     },
     "DIALOGS": {
       "DELETE_PROPERTY": "আপনি কি এটি মুছতে চান",
@@ -542,7 +567,9 @@
   },
   "ORG_LIST": {
     "PAGE_TITLE": "সংগঠনসমূহ",
-    "BUTTONS": { "NEW": "নতুন সংগঠন" },
+    "BUTTONS": {
+      "NEW": "নতুন সংগঠন"
+    },
     "FILTERS": {
       "SEARCH_LABEL": "সংগঠন খুঁজুন",
       "SEARCH_PLACEHOLDER": "নাম বা স্লাগ দিয়ে খুঁজুন..."
@@ -555,7 +582,11 @@
       "ACTIVE": "সক্রিয়",
       "ACTIONS": "কার্যক্রম"
     },
-    "TOOLTIPS": { "VIEW": "দেখুন", "EDIT": "সম্পাদনা করুন", "DELETE": "মুছুন" }
+    "TOOLTIPS": {
+      "VIEW": "দেখুন",
+      "EDIT": "সম্পাদনা করুন",
+      "DELETE": "মুছুন"
+    }
   },
   "ORG_CREATE": {
     "PAGE_TITLE": "নতুন সংগঠন তৈরি করুন",
@@ -586,7 +617,9 @@
   },
   "ATTACHMENT_LIST": {
     "PAGE_TITLE": "সংযুক্তিসমূহ",
-    "BUTTONS": { "UPLOAD": "ফাইল আপলোড করুন" },
+    "BUTTONS": {
+      "UPLOAD": "ফাইল আপলোড করুন"
+    },
     "FILTERS": {
       "TYPE_LABEL": "ধরন অনুযায়ী ফিল্টার করুন",
       "ALL_TYPES": "সব ধরন",

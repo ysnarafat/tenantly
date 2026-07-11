@@ -32,23 +32,23 @@
   .table-container {
     overflow-x: auto;
     border-radius: 4px;
-    border: 1px solid rgba(0, 0, 0, 0.12);
+    border: 1px solid var(--border-color);
   }
 
   .organization-table {
     width: 100%;
 
     th {
-      background-color: #f5f5f5;
+      background-color: var(--bg-secondary);
       font-weight: 600;
     }
 
     tr:hover {
-      background-color: #fafafa;
+      background-color: var(--bg-hover);
     }
   }
 
   mat-paginator {
-    border-top: 1px solid rgba(0, 0, 0, 0.12);
+    border-top: 1px solid var(--border-color);
   }
 }

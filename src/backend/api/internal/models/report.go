@@ -50,7 +50,7 @@ type PropertyAnalyticsReport struct {
 // PaymentAnalyticsResult holds DB-aggregated counts for PaymentAnalysisReport.
 // Produced by a repository query; consumed by ReportService.
 type PaymentAnalyticsResult struct {
-	MethodCounts  map[string]int
+	MethodCounts  map[string]int64
 	StatusCounts  map[string]int64
 	DailyTrend    map[string]int64
 	TotalPayments int64
@@ -94,7 +94,7 @@ type MonthlyCollectionTrend struct {
 // PaymentAnalysisReport returns payment analysis data
 type PaymentAnalysisReport struct {
 	OrganizationID     int              `json:"organization_id"`
-	PaymentMethods     map[string]int   `json:"payment_methods"`
+	PaymentMethods     map[string]int64 `json:"payment_methods"`
 	StatusDistribution map[string]int64 `json:"status_distribution"`
 	DailyTrend         map[string]int64 `json:"daily_trend"`
 	TotalPayments      int64            `json:"total_payments"`

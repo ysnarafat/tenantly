@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -167,6 +168,17 @@ func TestPropertyHandler_CreateProperty(t *testing.T) {
 				PropertyType: models.PropertyTypeResidential,
 			},
 			expectedStatus: http.StatusConflict,
+			expectError:    true,
+		},
+		{
+			name: "Address exceeds max length",
+			requestBody: models.CreatePropertyRequest{
+				PropertyName: "Test Property 5",
+				PropertyCode: "TEST005",
+				Address:      strings.Repeat("a", 501),
+				PropertyType: models.PropertyTypeResidential,
+			},
+			expectedStatus: http.StatusBadRequest,
 			expectError:    true,
 		},
 	}
@@ -465,6 +477,15 @@ func TestPropertyHandler_UpdateProperty(t *testing.T) {
 			name:           "Invalid request body",
 			propertyID:     strconv.Itoa(propertyID),
 			requestBody:    "invalid json",
+			expectedStatus: http.StatusBadRequest,
+			expectError:    true,
+		},
+		{
+			name:       "Address exceeds max length",
+			propertyID: strconv.Itoa(propertyID),
+			requestBody: models.UpdatePropertyRequest{
+				Address: stringPtr(strings.Repeat("a", 501)),
+			},
 			expectedStatus: http.StatusBadRequest,
 			expectError:    true,
 		},

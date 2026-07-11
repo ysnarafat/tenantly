@@ -129,7 +129,6 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     Permission.VIEW_DASHBOARD,
   ],
   Accountant: [
-    Permission.VIEW_USERS,
     Permission.VIEW_PROPERTIES,
     Permission.VIEW_TENANTS,
     Permission.VIEW_LEASES,
