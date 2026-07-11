@@ -29,6 +29,12 @@
     color: var(--text-primary, #1a1a1a);
     line-height: 1;
   }
+
+  button {
+    mat-icon {
+      margin-right: 8px;
+    }
+  }
 }
 
 .stats-row {

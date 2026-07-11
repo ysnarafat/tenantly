@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { Router } from '@angular/router';
 import { of } from 'rxjs';
@@ -7,6 +7,13 @@ import { map, exhaustMap, catchError, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import * as AuthActions from './auth.actions';
 import { SetOrganizationResponse } from '../../core/models/organization.model';
+
+function toSerializableError(error: HttpErrorResponse): { status: number; message: string } {
+  return {
+    status: error.status,
+    message: error.error?.error ?? error.message ?? 'Request failed',
+  };
+}
 
 @Injectable()
 export class AuthEffects {
@@ -21,7 +28,9 @@ export class AuthEffects {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.http.post<any>(`${environment.apiUrl}/auth/login`, credentials).pipe(
           map((response) => AuthActions.loginSuccess({ response })),
-          catchError((error) => of(AuthActions.loginFailure({ error })))
+          catchError((error: HttpErrorResponse) =>
+            of(AuthActions.loginFailure({ error: toSerializableError(error) }))
+          )
         )
       )
     )
@@ -80,7 +89,9 @@ export class AuthEffects {
           })
           .pipe(
             map((response) => AuthActions.switchOrganizationSuccess({ response })),
-            catchError((error) => of(AuthActions.switchOrganizationFailure({ error })))
+            catchError((error: HttpErrorResponse) =>
+              of(AuthActions.switchOrganizationFailure({ error: toSerializableError(error) }))
+            )
           )
       )
     )
@@ -119,7 +130,9 @@ export class AuthEffects {
       exhaustMap(() =>
         this.http.post(`${environment.apiUrl}/auth/logout`, {}).pipe(
           map(() => AuthActions.logoutSuccess()),
-          catchError((error) => of(AuthActions.logoutFailure({ error })))
+          catchError((error: HttpErrorResponse) =>
+            of(AuthActions.logoutFailure({ error: toSerializableError(error) }))
+          )
         )
       )
     )
@@ -159,7 +172,9 @@ export class AuthEffects {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return this.http.post<any>(`${environment.apiUrl}/auth/refresh`, request).pipe(
           map((response) => AuthActions.refreshTokenSuccess({ response })),
-          catchError((error) => of(AuthActions.refreshTokenFailure({ error })))
+          catchError((error: HttpErrorResponse) =>
+            of(AuthActions.refreshTokenFailure({ error: toSerializableError(error) }))
+          )
         );
       })
     )
@@ -209,7 +224,9 @@ export class AuthEffects {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.http.post<any>(`${environment.apiUrl}/auth/change-password`, request).pipe(
           map((response) => AuthActions.changePasswordSuccess({ message: response.message })),
-          catchError((error) => of(AuthActions.changePasswordFailure({ error })))
+          catchError((error: HttpErrorResponse) =>
+            of(AuthActions.changePasswordFailure({ error: toSerializableError(error) }))
+          )
         )
       )
     )
@@ -222,7 +239,9 @@ export class AuthEffects {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.http.post<any>(`${environment.apiUrl}/auth/reset-password`, request).pipe(
           map((response) => AuthActions.resetPasswordSuccess({ message: response.message })),
-          catchError((error) => of(AuthActions.resetPasswordFailure({ error })))
+          catchError((error: HttpErrorResponse) =>
+            of(AuthActions.resetPasswordFailure({ error: toSerializableError(error) }))
+          )
         )
       )
     )

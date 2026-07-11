@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, ViewChild, signal, computed, effect } from '@angular/core';
 
-import { RouterOutlet, RouterModule } from '@angular/router';
+import { RouterOutlet, RouterModule, Router, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs/operators';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -30,6 +31,8 @@ const AVATAR_COLORS = [
   '#00695c',
 ];
 
+const AUTH_ROUTE_PREFIXES = ['/login', '/select-organization'];
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -57,8 +60,10 @@ export class App implements OnInit {
   public languageService = inject(LanguageService);
   public themeService = inject(ThemeService);
   private breakpointObserver = inject(BreakpointObserver);
+  private router = inject(Router);
 
   isAuthenticated = signal(false);
+  currentUrl = signal(this.router.url);
   userRole = signal('');
   user = signal<User | null>(null);
   isMobile = signal(false);
@@ -118,10 +123,23 @@ export class App implements OnInit {
       this.canManageDocuments()
   );
 
+  isOnAuthRoute = computed(() =>
+    AUTH_ROUTE_PREFIXES.some((prefix) => this.currentUrl().startsWith(prefix))
+  );
+
+  showShell = computed(() => this.isAuthenticated() && !this.isOnAuthRoute());
+
   constructor() {
     this.authFacade.isAuthenticated$
       .pipe(takeUntilDestroyed())
       .subscribe((isAuth) => this.isAuthenticated.set(isAuth));
+
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntilDestroyed()
+      )
+      .subscribe((event) => this.currentUrl.set(event.urlAfterRedirects));
 
     this.authFacade.userRole$
       .pipe(takeUntilDestroyed())

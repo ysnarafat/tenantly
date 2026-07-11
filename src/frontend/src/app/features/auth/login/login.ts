@@ -79,8 +79,7 @@ export class Login implements OnInit {
       .subscribe((error: unknown) => {
         console.error('Login error:', error);
         const errorMessage =
-          (error as { error?: { error?: string } }).error?.error ||
-          'Login failed. Please check your credentials.';
+          (error as { message?: string })?.message || 'Login failed. Please check your credentials.';
         this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
       });
   }

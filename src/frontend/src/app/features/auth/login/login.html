@@ -50,7 +50,7 @@
       </button>
 
       @if (error()) {
-      <p class="error-msg">{{ $any(error()) }}</p>
+      <p class="error-msg">{{ $any(error())?.message }}</p>
       }
     </form>
 
