@@ -51,6 +51,12 @@ func (s *PaymentService) CreatePayment(req *models.CreatePaymentRequest, userID 
 		return nil, fmt.Errorf("property ID mismatch with unit's property")
 	}
 
+	// Validate the unit actually belongs to the caller's organization — prevents
+	// creating a payment record against another organization's unit (IDOR).
+	if unit.OrganizationID != req.OrganizationID {
+		return nil, fmt.Errorf("unit not found")
+	}
+
 	// Get building information for context
 	building, err := s.buildingRepo.GetByID(req.BuildingID)
 	if err != nil {
@@ -210,11 +216,14 @@ func (s *PaymentService) GetPaymentsByProperty(propertyID int, page, pageSize in
 }
 
 // GenerateBuildingPaymentReport generates payment report for a building
-func (s *PaymentService) GenerateBuildingPaymentReport(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error) {
+func (s *PaymentService) GenerateBuildingPaymentReport(buildingID, orgID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error) {
 	// Validate building exists and get details
 	building, err := s.buildingRepo.GetByID(buildingID)
 	if err != nil {
 		return nil, fmt.Errorf("building not found: %w", err)
+	}
+	if building.OrganizationID != orgID {
+		return nil, fmt.Errorf("building not found")
 	}
 
 	// Get property details for context
@@ -251,11 +260,14 @@ func (s *PaymentService) GenerateBuildingPaymentReport(buildingID int, startDate
 }
 
 // GeneratePropertyPaymentReport generates payment report for a property with building breakdowns
-func (s *PaymentService) GeneratePropertyPaymentReport(propertyID int, startDate, endDate time.Time) (*models.PropertyPaymentReport, error) {
+func (s *PaymentService) GeneratePropertyPaymentReport(propertyID, orgID int, startDate, endDate time.Time) (*models.PropertyPaymentReport, error) {
 	// Validate property exists and get details
 	property, err := s.propertyRepo.GetByID(propertyID)
 	if err != nil {
 		return nil, fmt.Errorf("property not found: %w", err)
+	}
+	if property.OrganizationID != orgID {
+		return nil, fmt.Errorf("property not found")
 	}
 
 	// Get buildings in the property

@@ -29,7 +29,7 @@ func NewUnitService(
 }
 
 // CreateUnit creates a new unit with building-unit relationship validation
-func (s *UnitService) CreateUnit(req *models.CreateUnitRequest, userID int) (*models.Unit, error) {
+func (s *UnitService) CreateUnit(req *models.CreateUnitRequest, userID, orgID int) (*models.Unit, error) {
 	// Validate building-unit relationship and hierarchy integrity
 	if err := s.ValidateBuildingUnitRelationship(req.BuildingID, req.PropertyID); err != nil {
 		return nil, fmt.Errorf("building-unit relationship validation failed: %w", err)
@@ -53,6 +53,12 @@ func (s *UnitService) CreateUnit(req *models.CreateUnitRequest, userID int) (*mo
 	building, err := s.buildingRepo.GetByID(req.BuildingID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get building: %w", err)
+	}
+
+	// Validate the referenced building actually belongs to the caller's
+	// organization — prevents creating a unit inside another org's building (IDOR).
+	if building.OrganizationID != orgID {
+		return nil, fmt.Errorf("building not found")
 	}
 
 	// Create unit with organization_id
@@ -306,7 +312,7 @@ func (s *UnitService) ValidateHierarchyIntegrity(unitID int) error {
 }
 
 // GetUnitHierarchyContext returns complete hierarchy context for a unit
-func (s *UnitService) GetUnitHierarchyContext(unitID int) (map[string]interface{}, error) {
+func (s *UnitService) GetUnitHierarchyContext(unitID, orgID int) (map[string]interface{}, error) {
 	unit, err := s.unitRepo.GetByIDWithDetails(unitID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get unit details: %w", err)
@@ -315,6 +321,9 @@ func (s *UnitService) GetUnitHierarchyContext(unitID int) (map[string]interface{
 	building, err := s.buildingRepo.GetByID(unit.BuildingID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get building details: %w", err)
+	}
+	if building.OrganizationID != orgID {
+		return nil, fmt.Errorf("unit not found")
 	}
 
 	property, err := s.propertyRepo.GetByID(unit.PropertyID)

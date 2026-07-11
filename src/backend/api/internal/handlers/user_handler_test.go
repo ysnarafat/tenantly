@@ -89,6 +89,16 @@ func (m *MockUserService) DeleteUser(id int) error {
 	return args.Error(0)
 }
 
+func (m *MockUserService) UpdateUserInOrganization(id int, req *models.UpdateUserRequest, orgID int) error {
+	args := m.Called(id, req, orgID)
+	return args.Error(0)
+}
+
+func (m *MockUserService) DeleteUserInOrganization(id int, orgID int) error {
+	args := m.Called(id, orgID)
+	return args.Error(0)
+}
+
 func (m *MockUserService) GetUserByIDInOrganization(userID int, orgID int) (*models.User, error) {
 	args := m.Called(userID, orgID)
 	if args.Get(0) == nil {
@@ -538,7 +548,10 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 	handler := NewUserHandler(mockService)
 	router := setupTestRouter()
 
-	router.PUT("/users/:id", handler.UpdateUser)
+	router.PUT("/users/:id", func(c *gin.Context) {
+		c.Set("role", "SUPER_ADMIN")
+		handler.UpdateUser(c)
+	})
 
 	t.Run("Success", func(t *testing.T) {
 		req := &models.UpdateUserRequest{
@@ -577,7 +590,10 @@ func TestUserHandler_DeleteUser(t *testing.T) {
 	handler := NewUserHandler(mockService)
 	router := setupTestRouter()
 
-	router.DELETE("/users/:id", handler.DeleteUser)
+	router.DELETE("/users/:id", func(c *gin.Context) {
+		c.Set("role", "SUPER_ADMIN")
+		handler.DeleteUser(c)
+	})
 
 	t.Run("Success", func(t *testing.T) {
 		mockService.On("DeleteUser", 1).Return(nil)

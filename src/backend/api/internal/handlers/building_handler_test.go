@@ -135,8 +135,8 @@ func (m *MockBuildingService) AdvancedSearchBuildings(req *models.BuildingSearch
 	return args.Get(0).(*models.BuildingListResponse), args.Error(1)
 }
 
-func (m *MockBuildingService) GetBuildingUnits(buildingID int, page, pageSize int) (*models.BuildingUnitsResponse, error) {
-	args := m.Called(buildingID, page, pageSize)
+func (m *MockBuildingService) GetBuildingUnits(buildingID, orgID int, page, pageSize int) (*models.BuildingUnitsResponse, error) {
+	args := m.Called(buildingID, orgID, page, pageSize)
 	return args.Get(0).(*models.BuildingUnitsResponse), args.Error(1)
 }
 
@@ -150,8 +150,8 @@ func (m *MockBuildingService) ExportBuildingData(req *models.BuildingExportReque
 	return args.Get(0).([]byte), args.Get(1).(string), args.Error(2)
 }
 
-func (m *MockBuildingService) UpdateBuildingStatus(buildingID int, req *models.BuildingStatusRequest) (*models.Building, error) {
-	args := m.Called(buildingID, req)
+func (m *MockBuildingService) UpdateBuildingStatus(buildingID, orgID int, req *models.BuildingStatusRequest) (*models.Building, error) {
+	args := m.Called(buildingID, orgID, req)
 	return args.Get(0).(*models.Building), args.Error(1)
 }
 

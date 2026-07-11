@@ -27,8 +27,9 @@ func (h *UnitHandler) CreateUnit(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetInt("userID")
-	unit, err := h.unitService.CreateUnit(&req, userID)
+	userID := c.GetInt("user_id")
+	orgID := c.GetInt("org_id")
+	unit, err := h.unitService.CreateUnit(&req, userID, orgID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -69,7 +70,7 @@ func (h *UnitHandler) UpdateUnit(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 	orgID := c.GetInt("org_id")
 	unit, err := h.unitService.UpdateUnit(id, &req, userID, orgID)
 	if err != nil {
@@ -88,7 +89,7 @@ func (h *UnitHandler) DeleteUnit(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 	orgID := c.GetInt("org_id")
 	if err := h.unitService.DeleteUnit(id, userID, orgID); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -162,7 +163,8 @@ func (h *UnitHandler) GetUnitHierarchyContext(c *gin.Context) {
 		return
 	}
 
-	context, err := h.unitService.GetUnitHierarchyContext(id)
+	orgID := c.GetInt("org_id")
+	context, err := h.unitService.GetUnitHierarchyContext(id, orgID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 		return

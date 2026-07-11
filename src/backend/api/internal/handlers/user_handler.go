@@ -290,6 +290,20 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"users": users})
 }
 
+// callerOrgID extracts the organization_id set by AuthRequired for the current
+// caller. Returns ok=false if the caller has no organization context (e.g. SUPER_ADMIN).
+func callerOrgID(c *gin.Context) (int, bool) {
+	raw, exists := c.Get("organization_id")
+	if !exists {
+		return 0, false
+	}
+	orgIDPtr, ok := raw.(*int)
+	if !ok || orgIDPtr == nil {
+		return 0, false
+	}
+	return *orgIDPtr, true
+}
+
 func (h *UserHandler) GetUser(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -297,7 +311,19 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 		return
 	}
 
-	user, err := h.userService.GetUserByID(id)
+	callerRole, _ := c.Get("role")
+
+	var user *models.User
+	if callerRole == "SUPER_ADMIN" {
+		user, err = h.userService.GetUserByID(id)
+	} else {
+		orgID, ok := callerOrgID(c)
+		if !ok {
+			c.JSON(http.StatusForbidden, gin.H{"error": "no organization context"})
+			return
+		}
+		user, err = h.userService.GetUserByIDInOrganization(id, orgID)
+	}
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
@@ -319,7 +345,18 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	if err := h.userService.UpdateUser(id, &req); err != nil {
+	callerRole, _ := c.Get("role")
+	if callerRole == "SUPER_ADMIN" {
+		err = h.userService.UpdateUser(id, &req)
+	} else {
+		orgID, ok := callerOrgID(c)
+		if !ok {
+			c.JSON(http.StatusForbidden, gin.H{"error": "no organization context"})
+			return
+		}
+		err = h.userService.UpdateUserInOrganization(id, &req, orgID)
+	}
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -334,7 +371,18 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 		return
 	}
 
-	if err := h.userService.DeleteUser(id); err != nil {
+	callerRole, _ := c.Get("role")
+	if callerRole == "SUPER_ADMIN" {
+		err = h.userService.DeleteUser(id)
+	} else {
+		orgID, ok := callerOrgID(c)
+		if !ok {
+			c.JSON(http.StatusForbidden, gin.H{"error": "no organization context"})
+			return
+		}
+		err = h.userService.DeleteUserInOrganization(id, orgID)
+	}
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

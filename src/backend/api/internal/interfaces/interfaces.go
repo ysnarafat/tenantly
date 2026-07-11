@@ -110,6 +110,8 @@ type UserServiceInterface interface {
 	GetUserByIDInOrganization(userID int, orgID int) (*models.User, error)
 	UpdateUser(id int, req *models.UpdateUserRequest) error
 	DeleteUser(id int) error
+	UpdateUserInOrganization(id int, req *models.UpdateUserRequest, orgID int) error
+	DeleteUserInOrganization(id int, orgID int) error
 	SetOrganization(userID int, req *models.SetOrganizationRequest) (*models.SetOrganizationResponse, error)
 }
 
@@ -185,10 +187,10 @@ type BuildingServiceInterface interface {
 
 	// Advanced building API features
 	AdvancedSearchBuildings(req *models.BuildingSearchRequest) (*models.BuildingListResponse, error)
-	GetBuildingUnits(buildingID int, page, pageSize int) (*models.BuildingUnitsResponse, error)
+	GetBuildingUnits(buildingID, orgID int, page, pageSize int) (*models.BuildingUnitsResponse, error)
 	GetBuildingMetadataSchema(buildingType models.BuildingType) (*models.MetadataSchemaResponse, error)
 	ExportBuildingData(req *models.BuildingExportRequest) ([]byte, string, error)
-	UpdateBuildingStatus(buildingID int, req *models.BuildingStatusRequest) (*models.Building, error)
+	UpdateBuildingStatus(buildingID, orgID int, req *models.BuildingStatusRequest) (*models.Building, error)
 }
 
 // UnitRepositoryInterface defines the interface for unit repository operations
@@ -210,7 +212,7 @@ type UnitRepositoryInterface interface {
 
 // UnitServiceInterface defines the interface for unit service operations
 type UnitServiceInterface interface {
-	CreateUnit(req *models.CreateUnitRequest, userID int) (*models.Unit, error)
+	CreateUnit(req *models.CreateUnitRequest, userID, orgID int) (*models.Unit, error)
 	GetUnit(id, orgID int) (*models.UnitWithDetails, error)
 	UpdateUnit(id int, req *models.UpdateUnitRequest, userID, orgID int) (*models.Unit, error)
 	DeleteUnit(id, userID, orgID int) error
@@ -219,7 +221,7 @@ type UnitServiceInterface interface {
 	GetUnitsByBuilding(buildingID int, page, pageSize, orgID int) ([]*models.UnitWithDetails, int, error)
 	GetUnitsByProperty(propertyID int, page, pageSize, orgID int) ([]*models.UnitWithDetails, int, error)
 	ValidateHierarchyIntegrity(unitID int) error
-	GetUnitHierarchyContext(unitID int) (map[string]any, error)
+	GetUnitHierarchyContext(unitID, orgID int) (map[string]any, error)
 }
 
 // PaymentRepositoryInterface defines the interface for payment repository operations
@@ -254,8 +256,8 @@ type PaymentServiceInterface interface {
 	GetPayments(page, pageSize int, filters map[string]any) ([]*models.PaymentWithDetails, int, error)
 	GetPaymentsByBuilding(buildingID int, page, pageSize int, filters map[string]any) ([]*models.PaymentWithDetails, int, error)
 	GetPaymentsByProperty(propertyID int, page, pageSize int, filters map[string]any) ([]*models.PaymentWithDetails, int, error)
-	GenerateBuildingPaymentReport(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error)
-	GeneratePropertyPaymentReport(propertyID int, startDate, endDate time.Time) (*models.PropertyPaymentReport, error)
+	GenerateBuildingPaymentReport(buildingID, orgID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error)
+	GeneratePropertyPaymentReport(propertyID, orgID int, startDate, endDate time.Time) (*models.PropertyPaymentReport, error)
 	GetDashboardSummaryWithBuildingContext(orgID int) (*models.DashboardSummary, error)
 	ProcessBulkPayments(requests []*models.CreatePaymentRequest, userID int) ([]*models.Payment, []error)
 	GetPaymentAnalyticsByBuilding(buildingID int, period string) (*models.BuildingPaymentAnalytics, error)

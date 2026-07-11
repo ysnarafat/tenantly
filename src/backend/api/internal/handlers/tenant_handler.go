@@ -27,7 +27,7 @@ func (h *TenantHandler) CreateTenant(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 	orgID := c.GetInt("org_id")
 	req.OrganizationID = orgID
 	tenant, err := h.tenantService.CreateTenant(&req, userID)
@@ -91,7 +91,7 @@ func (h *TenantHandler) UpdateTenant(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 	orgID := c.GetInt("org_id")
 
 	tenant, err := h.tenantService.UpdateTenant(id, &req, userID, orgID)
@@ -115,7 +115,7 @@ func (h *TenantHandler) DeleteTenant(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 	orgID := c.GetInt("org_id")
 
 	if err := h.tenantService.DeleteTenant(id, userID, orgID); err != nil {

@@ -196,6 +196,7 @@ func (r *TenantRepository) GetAll(page, pageSize, orgID int) ([]*models.Tenant, 
 			&tenant.NIDNumber,
 			&tenant.Address,
 			&tenant.Active,
+			&tenant.OrganizationID,
 			&tenant.CreatedAt,
 			&tenant.UpdatedAt,
 		)

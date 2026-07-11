@@ -27,7 +27,7 @@ func (h *LeaseHandler) CreateLease(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 	orgID := c.GetInt("org_id")
 	req.OrganizationID = orgID
 
@@ -91,7 +91,7 @@ func (h *LeaseHandler) UpdateLease(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 	orgID := c.GetInt("org_id")
 
 	lease, err := h.leaseService.UpdateLease(id, &req, userID, orgID)
@@ -111,7 +111,7 @@ func (h *LeaseHandler) DeleteLease(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 	orgID := c.GetInt("org_id")
 
 	if err := h.leaseService.DeleteLease(id, userID, orgID); err != nil {
@@ -130,7 +130,7 @@ func (h *LeaseHandler) TerminateLease(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 	orgID := c.GetInt("org_id")
 
 	// Check for termination_date in query params or body

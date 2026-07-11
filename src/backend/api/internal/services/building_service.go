@@ -741,11 +741,14 @@ func (s *BuildingService) AdvancedSearchBuildings(req *models.BuildingSearchRequ
 }
 
 // GetBuildingUnits retrieves units for a specific building with pagination
-func (s *BuildingService) GetBuildingUnits(buildingID int, page, pageSize int) (*models.BuildingUnitsResponse, error) {
-	// Validate building exists
+func (s *BuildingService) GetBuildingUnits(buildingID, orgID int, page, pageSize int) (*models.BuildingUnitsResponse, error) {
+	// Validate building exists and belongs to the caller's organization (IDOR guard)
 	building, err := s.buildingRepo.GetByID(buildingID)
 	if err != nil {
 		return nil, fmt.Errorf("building validation failed: %w", err)
+	}
+	if building.OrganizationID != orgID {
+		return nil, fmt.Errorf("building validation failed: building not found")
 	}
 
 	// Set defaults
@@ -993,11 +996,14 @@ func (s *BuildingService) ExportBuildingData(req *models.BuildingExportRequest) 
 }
 
 // UpdateBuildingStatus updates building activation/deactivation status
-func (s *BuildingService) UpdateBuildingStatus(buildingID int, req *models.BuildingStatusRequest) (*models.Building, error) {
+func (s *BuildingService) UpdateBuildingStatus(buildingID, orgID int, req *models.BuildingStatusRequest) (*models.Building, error) {
 	// Get existing building for audit logging
 	existingBuilding, err := s.buildingRepo.GetByID(buildingID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get existing building: %w", err)
+	}
+	if existingBuilding.OrganizationID != orgID {
+		return nil, fmt.Errorf("building not found")
 	}
 
 	// If deactivating, check for active units

@@ -30,7 +30,7 @@ func (h *PaymentHandler) CreatePayment(c *gin.Context) {
 	}
 
 	req.OrganizationID = c.GetInt("org_id")
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 
 	payment, err := h.paymentService.CreatePayment(&req, userID)
 	if err != nil {
@@ -52,7 +52,7 @@ func (h *PaymentHandler) GetPayment(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 	userRole := c.GetString("role")
 	orgID := c.GetInt("org_id")
 
@@ -89,7 +89,7 @@ func (h *PaymentHandler) UpdatePayment(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 	userRole := c.GetString("role")
 	orgID := c.GetInt("org_id")
 
@@ -129,7 +129,7 @@ func (h *PaymentHandler) UpdatePayment(c *gin.Context) {
 // GetPayments handles GET /payments with query filters
 // Query params: building_id, property_id, status, month, year, page, page_size
 func (h *PaymentHandler) GetPayments(c *gin.Context) {
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 	orgID := c.GetInt("org_id")
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
@@ -222,7 +222,8 @@ func (h *PaymentHandler) GetBuildingPaymentReport(c *gin.Context) {
 		return
 	}
 
-	report, err := h.paymentService.GenerateBuildingPaymentReport(buildingID, startDate, endDate)
+	orgID := c.GetInt("org_id")
+	report, err := h.paymentService.GenerateBuildingPaymentReport(buildingID, orgID, startDate, endDate)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -246,7 +247,8 @@ func (h *PaymentHandler) GetPropertyPaymentReport(c *gin.Context) {
 		return
 	}
 
-	report, err := h.paymentService.GeneratePropertyPaymentReport(propertyID, startDate, endDate)
+	orgID := c.GetInt("org_id")
+	report, err := h.paymentService.GeneratePropertyPaymentReport(propertyID, orgID, startDate, endDate)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -264,7 +266,7 @@ func (h *PaymentHandler) BulkCreatePayments(c *gin.Context) {
 	}
 
 	orgID := c.GetInt("org_id")
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 	for _, req := range requests {
 		req.OrganizationID = orgID
 	}
@@ -316,7 +318,7 @@ func (h *PaymentHandler) GenerateMonthlyPayments(c *gin.Context) {
 	}
 
 	orgID := c.GetInt("org_id")
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 
 	result, err := h.paymentService.GenerateMonthlyPayments(&req, orgID, userID)
 	if err != nil {

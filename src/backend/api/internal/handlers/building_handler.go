@@ -541,7 +541,8 @@ func (h *BuildingHandler) GetBuildingUnits(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 
-	response, err := h.buildingService.GetBuildingUnits(id, page, pageSize)
+	orgID := c.GetInt("org_id")
+	response, err := h.buildingService.GetBuildingUnits(id, orgID, page, pageSize)
 	if err != nil {
 		if strings.Contains(err.Error(), "building validation failed") {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Building not found"})
@@ -624,7 +625,8 @@ func (h *BuildingHandler) UpdateBuildingStatus(c *gin.Context) {
 		return
 	}
 
-	building, err := h.buildingService.UpdateBuildingStatus(id, &req)
+	orgID := c.GetInt("org_id")
+	building, err := h.buildingService.UpdateBuildingStatus(id, orgID, &req)
 	if err != nil {
 		if strings.Contains(err.Error(), "building not found") {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Building not found"})
