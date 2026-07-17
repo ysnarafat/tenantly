@@ -44,6 +44,13 @@
     },
     "HINTS": {
       "OPTIONAL": "Optional"
+    },
+    "CONFIRM_DELETE_DIALOG": {
+      "TITLE": "Delete {{entityLabel}}",
+      "WARNING": "This will permanently delete the {{entityLabel}} \"{{entityName}}\". This action cannot be undone.",
+      "LABEL": "Type \"{{entityName}}\" to confirm",
+      "PLACEHOLDER": "{{entityName}}",
+      "CONFIRM_BUTTON": "Delete {{entityLabel}}"
     }
   },
   "DUE_LIST": {
@@ -152,6 +159,15 @@
       "NO_MATCHING": "No matching tenants",
       "NO_TENANTS": "No tenants yet",
       "ADD_FIRST": "Add your first tenant to get started."
+    },
+    "MASKING": {
+      "REVEAL": "Reveal",
+      "HIDE": "Hide",
+      "SHOW_ALL_NID": "Show all NID numbers",
+      "HIDE_ALL_NID": "Hide all NID numbers",
+      "SHOW_ALL_PHONE": "Show all phone numbers",
+      "HIDE_ALL_PHONE": "Hide all phone numbers",
+      "RESTRICTED_TOOLTIP": "You do not have access to view this field"
     }
   },
   "DASHBOARD": {
@@ -363,13 +379,22 @@
   },
   "PROPERTY_LIST": {
     "PAGE_TITLE": "Properties",
+    "STATS": {
+      "TOTAL": "Total",
+      "ACTIVE": "Active"
+    },
     "BUTTONS": {
       "ADD_PROPERTY": "Add Property"
+    },
+    "FILTERS": {
+      "SEARCH_LABEL": "Search properties",
+      "SEARCH_PLACEHOLDER": "Property, building or unit…"
     },
     "LOADING": "Loading properties...",
     "EMPTY_STATE": {
       "TITLE": "No Properties Yet",
-      "DESCRIPTION": "Get started by adding your first property"
+      "DESCRIPTION": "Get started by adding your first property",
+      "NO_MATCHING": "No matching properties"
     },
     "DIALOGS": {
       "DELETE_PROPERTY": "Are you sure you want to delete",
@@ -542,7 +567,9 @@
   },
   "ORG_LIST": {
     "PAGE_TITLE": "Organizations",
-    "BUTTONS": { "NEW": "New Organization" },
+    "BUTTONS": {
+      "NEW": "New Organization"
+    },
     "FILTERS": {
       "SEARCH_LABEL": "Search organizations",
       "SEARCH_PLACEHOLDER": "Search by name or slug..."
@@ -555,7 +582,11 @@
       "ACTIVE": "Active",
       "ACTIONS": "Actions"
     },
-    "TOOLTIPS": { "VIEW": "View", "EDIT": "Edit", "DELETE": "Delete" }
+    "TOOLTIPS": {
+      "VIEW": "View",
+      "EDIT": "Edit",
+      "DELETE": "Delete"
+    }
   },
   "ORG_CREATE": {
     "PAGE_TITLE": "Create New Organization",
@@ -586,7 +617,9 @@
   },
   "ATTACHMENT_LIST": {
     "PAGE_TITLE": "Attachments",
-    "BUTTONS": { "UPLOAD": "Upload File" },
+    "BUTTONS": {
+      "UPLOAD": "Upload File"
+    },
     "FILTERS": {
       "TYPE_LABEL": "Filter by Type",
       "ALL_TYPES": "All Types",

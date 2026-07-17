@@ -20,7 +20,13 @@ services:
 
   # Angular Frontend (Production)
   frontend:
+    args:
+      BUILD_CONFIGURATION: production
     restart: always
+
+  nginx:
+    ports:
+      - "8080:80"  
 
 # NO DATABASE ADMINISTRATION SERVICES IN PRODUCTION
 # For secure database access, use one of these methods:

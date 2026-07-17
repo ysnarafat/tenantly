@@ -1,11 +1,9 @@
 <div class="dt-wrapper">
   @if (loading) {
-    <div class="dt-loading">
-      <mat-spinner diameter="40"></mat-spinner>
-    </div>
+  <app-loading-spinner [message]="loadingMessage"></app-loading-spinner>
   }
 
-  <div class="dt-table-container" [class.dt-hidden]="isEmpty">
+  <div class="dt-table-container" [class.dt-hidden]="isEmpty || loading">
     <table
       mat-table
       [dataSource]="internalDataSource"
@@ -14,24 +12,25 @@
       class="dt-table"
     >
       <ng-content></ng-content>
-      <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: stickyHeader"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns" class="dt-row"></tr>
+      <tr mat-header-row *matHeaderRowDef="renderedColumns; sticky: stickyHeader"></tr>
+      <tr mat-row *matRowDef="let row; columns: renderedColumns" class="dt-row"></tr>
     </table>
   </div>
 
   @if (isEmpty) {
-    <div class="dt-empty">
-      <mat-icon>{{ emptyIcon }}</mat-icon>
-      <h3>{{ emptyMessage }}</h3>
-      <ng-content select="[dtEmptyAction]"></ng-content>
-    </div>
-  }
-
-  @if (showPaginator) {
-    <mat-paginator
-      [pageSizeOptions]="pageSizeOptions"
-      showFirstLastButtons
-      (page)="pageChange.emit($event)"
-    ></mat-paginator>
+  <div class="dt-empty">
+    <mat-icon>{{ emptyIcon }}</mat-icon>
+    <h3>{{ emptyMessage }}</h3>
+    @if (emptySubtitle) {
+    <p>{{ emptySubtitle }}</p>
+    }
+    <ng-content select="[dtEmptyAction]"></ng-content>
+  </div>
+  } @if (showPaginator) {
+  <mat-paginator
+    [pageSizeOptions]="pageSizeOptions"
+    showFirstLastButtons
+    (page)="pageChange.emit($event)"
+  ></mat-paginator>
   }
 </div>

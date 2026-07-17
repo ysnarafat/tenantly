@@ -1,27 +1,46 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ysnarafat/tenantly/internal/interfaces"
 )
 
+const dashboardCacheTTL = 5 * time.Minute
+
+type dashboardCacheEntry struct {
+	payload   gin.H
+	expiresAt time.Time
+}
+
 // ReportHandler handles HTTP requests for report operations
 type ReportHandler struct {
-	reportService interfaces.ReportServiceInterface
+	reportService  interfaces.ReportServiceInterface
+	dashboardCache map[int]*dashboardCacheEntry
+	cacheMu        sync.Mutex
 }
 
 // NewReportHandler creates a new ReportHandler
 func NewReportHandler(reportService interfaces.ReportServiceInterface) *ReportHandler {
-	return &ReportHandler{reportService: reportService}
+	return &ReportHandler{
+		reportService:  reportService,
+		dashboardCache: make(map[int]*dashboardCacheEntry),
+	}
 }
 
 // GetFinancialLedger handles GET /reports/ledger
 func (h *ReportHandler) GetFinancialLedger(c *gin.Context) {
 	orgID := c.GetInt("org_id")
+	if orgID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing organisation context"})
+		return
+	}
+
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "50"))
 
@@ -37,7 +56,6 @@ func (h *ReportHandler) GetFinancialLedger(c *gin.Context) {
 		"organization_id": orgID,
 	}
 
-	// Apply optional filters
 	if status := c.Query("status"); status != "" {
 		filters["status"] = status
 	}
@@ -54,7 +72,8 @@ func (h *ReportHandler) GetFinancialLedger(c *gin.Context) {
 
 	report, err := h.reportService.FinancialLedgerReport(orgID, filters, pageSize, offset)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Printf("ERROR GetFinancialLedger org=%d: %v", orgID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate ledger report"})
 		return
 	}
 
@@ -64,6 +83,10 @@ func (h *ReportHandler) GetFinancialLedger(c *gin.Context) {
 // GetCollectionSummary handles GET /reports/collection-summary
 func (h *ReportHandler) GetCollectionSummary(c *gin.Context) {
 	orgID := c.GetInt("org_id")
+	if orgID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing organisation context"})
+		return
+	}
 
 	startDate, endDate, err := parseDateRange(c)
 	if err != nil {
@@ -73,7 +96,8 @@ func (h *ReportHandler) GetCollectionSummary(c *gin.Context) {
 
 	report, err := h.reportService.CollectionSummaryReport(orgID, startDate, endDate)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Printf("ERROR GetCollectionSummary org=%d: %v", orgID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate collection summary"})
 		return
 	}
 
@@ -83,6 +107,10 @@ func (h *ReportHandler) GetCollectionSummary(c *gin.Context) {
 // GetPaymentAnalysis handles GET /reports/payment-analysis
 func (h *ReportHandler) GetPaymentAnalysis(c *gin.Context) {
 	orgID := c.GetInt("org_id")
+	if orgID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing organisation context"})
+		return
+	}
 
 	startDate, endDate, err := parseDateRange(c)
 	if err != nil {
@@ -92,7 +120,8 @@ func (h *ReportHandler) GetPaymentAnalysis(c *gin.Context) {
 
 	report, err := h.reportService.PaymentAnalysisReport(orgID, startDate, endDate)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Printf("ERROR GetPaymentAnalysis org=%d: %v", orgID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate payment analysis"})
 		return
 	}
 
@@ -102,10 +131,15 @@ func (h *ReportHandler) GetPaymentAnalysis(c *gin.Context) {
 // GetTenantSummary handles GET /reports/tenant-summary
 func (h *ReportHandler) GetTenantSummary(c *gin.Context) {
 	orgID := c.GetInt("org_id")
+	if orgID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing organisation context"})
+		return
+	}
 
 	report, err := h.reportService.TenantSummaryReport(orgID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Printf("ERROR GetTenantSummary org=%d: %v", orgID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate tenant summary"})
 		return
 	}
 
@@ -115,6 +149,10 @@ func (h *ReportHandler) GetTenantSummary(c *gin.Context) {
 // GetPropertyAnalytics handles GET /reports/property-analytics
 func (h *ReportHandler) GetPropertyAnalytics(c *gin.Context) {
 	orgID := c.GetInt("org_id")
+	if orgID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing organisation context"})
+		return
+	}
 
 	startDate, endDate, err := parseDateRange(c)
 	if err != nil {
@@ -124,7 +162,8 @@ func (h *ReportHandler) GetPropertyAnalytics(c *gin.Context) {
 
 	report, err := h.reportService.PropertyAnalyticsReport(orgID, startDate, endDate)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Printf("ERROR GetPropertyAnalytics org=%d: %v", orgID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to generate property analytics"})
 		return
 	}
 
@@ -133,29 +172,47 @@ func (h *ReportHandler) GetPropertyAnalytics(c *gin.Context) {
 
 // GetDashboardMetrics handles GET /reports/dashboard-metrics
 func (h *ReportHandler) GetDashboardMetrics(c *gin.Context) {
+	orgID := c.GetInt("org_id")
+	if orgID <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing organisation context"})
+		return
+	}
+
+	h.cacheMu.Lock()
+	if entry, ok := h.dashboardCache[orgID]; ok && time.Now().Before(entry.expiresAt) {
+		h.cacheMu.Unlock()
+		c.JSON(http.StatusOK, entry.payload)
+		return
+	}
+	h.cacheMu.Unlock()
+
 	now := time.Now()
 	startDate := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, time.UTC)
 	endDate := now
 
-	orgID := c.GetInt("org_id")
-
 	collectionReport, err := h.reportService.CollectionSummaryReport(orgID, startDate, endDate)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Printf("ERROR GetDashboardMetrics collection org=%d: %v", orgID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load dashboard metrics"})
 		return
 	}
 
 	paymentReport, err := h.reportService.PaymentAnalysisReport(orgID, startDate, endDate)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		log.Printf("ERROR GetDashboardMetrics payment org=%d: %v", orgID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load dashboard metrics"})
 		return
 	}
 
-	metrics := gin.H{
+	payload := gin.H{
 		"collection_summary": collectionReport,
 		"payment_analysis":   paymentReport,
-		"generated_at":       time.Now(),
+		"generated_at":       now,
 	}
 
-	c.JSON(http.StatusOK, metrics)
+	h.cacheMu.Lock()
+	h.dashboardCache[orgID] = &dashboardCacheEntry{payload: payload, expiresAt: now.Add(dashboardCacheTTL)}
+	h.cacheMu.Unlock()
+
+	c.JSON(http.StatusOK, payload)
 }

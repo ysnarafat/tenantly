@@ -2,6 +2,7 @@ import { ApplicationConfig, importProvidersFrom, isDevMode, APP_INITIALIZER } fr
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
 import { provideStore } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
 import { provideStoreDevtools } from '@ngrx/store-devtools';
@@ -20,10 +21,18 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptors([authInterceptor, slowRequestInterceptor])),
     importProvidersFrom(MatSnackBarModule),
+    {
+      // Many list/filter fields pair a `mat-label` with a native `[placeholder]`.
+      // With the default 'auto' float behavior, the label only floats on focus/value,
+      // so it visually overlaps the placeholder text while the field is empty and unfocused.
+      // Always floating the label keeps the field name pinned above the input, never overlapping.
+      provide: MAT_FORM_FIELD_DEFAULT_OPTIONS,
+      useValue: { floatLabel: 'always' },
+    },
     importProvidersFrom(TranslateModule.forRoot({ defaultLanguage: 'en' })),
     provideTranslateHttpLoader({
       prefix: 'assets/i18n/',
-      suffix: '.json',
+      suffix: `.json?v=${Date.now()}`,
     }),
     {
       provide: APP_INITIALIZER,

@@ -12,5 +12,12 @@ services:
 
   frontend:
     container_name: tenantly-frontend-dev
+    args:
+      BUILD_CONFIGURATION: development
     environment:
       - NODE_ENV=development
+
+  nginx:
+    container_name: tenantly-nginx-dev
+    ports:
+      - "8081:80"

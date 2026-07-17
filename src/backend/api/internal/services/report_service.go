@@ -59,7 +59,13 @@ func (s *ReportService) CollectionSummaryReport(orgID int, startDate, endDate ti
 		return nil, fmt.Errorf("failed to get aging buckets: %w", err)
 	}
 
-	monthlyTrend, err := s.paymentRepo.GetMonthlyCollectionTrend(orgID, 6)
+	months := int(endDate.Sub(startDate).Hours()/24/30) + 1
+	if months < 1 {
+		months = 1
+	} else if months > 24 {
+		months = 24
+	}
+	monthlyTrend, err := s.paymentRepo.GetMonthlyCollectionTrend(orgID, months)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get monthly trend: %w", err)
 	}
@@ -111,18 +117,24 @@ func (s *ReportService) PropertyAnalyticsReport(orgID int, startDate, endDate ti
 		return nil, fmt.Errorf("failed to list properties: %w", err)
 	}
 
+	propertyIDs := make([]int, len(properties))
+	for i, p := range properties {
+		propertyIDs[i] = p.ID
+	}
+
+	batchStats, err := s.paymentRepo.GetBatchPropertyPaymentStats(propertyIDs, startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get property payment stats: %w", err)
+	}
+
 	entries := make([]*models.PropertyAnalyticsEntry, 0, len(properties))
 	for _, p := range properties {
-		stats, err := s.paymentRepo.GetPropertyPaymentStats(p.ID, startDate, endDate)
-		if err != nil {
-			stats = nil
-		}
 		entries = append(entries, &models.PropertyAnalyticsEntry{
 			PropertyID:   p.ID,
 			PropertyName: p.PropertyName,
 			PropertyCode: p.PropertyCode,
 			PropertyType: string(p.PropertyType),
-			PaymentStats: stats,
+			PaymentStats: batchStats[p.ID],
 		})
 	}
 

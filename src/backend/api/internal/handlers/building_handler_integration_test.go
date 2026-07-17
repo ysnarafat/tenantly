@@ -1,4 +1,4 @@
-﻿package handlers
+package handlers
 
 import (
 	"bytes"
@@ -201,4 +201,3 @@ func TestBuildingHandler_CreateBuildingEndpoint(t *testing.T) {
 
 	mockService.AssertExpectations(t)
 }
-

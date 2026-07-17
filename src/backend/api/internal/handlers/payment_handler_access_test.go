@@ -1,4 +1,4 @@
-﻿package handlers
+package handlers
 
 import (
 	"encoding/json"
@@ -546,4 +546,3 @@ func TestPaymentHandler_SearchLeases(t *testing.T) {
 		}
 	})
 }
-

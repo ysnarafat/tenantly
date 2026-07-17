@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -269,6 +270,63 @@ func (r *PaymentRepository) GetPropertyPaymentStats(propertyID int, startDate, e
 	}
 	return buildPaymentStats(row.TotalRecords, row.PaidCount, row.DueCount, row.PartialCount, row.OverdueCount,
 		row.TotalDue, row.TotalPaid, row.TotalOverdue), nil
+}
+
+// GetBatchPropertyPaymentStats returns aggregate payment stats for multiple properties in a single query.
+func (r *PaymentRepository) GetBatchPropertyPaymentStats(propertyIDs []int, startDate, endDate time.Time) (map[int]any, error) {
+	if len(propertyIDs) == 0 {
+		return map[int]any{}, nil
+	}
+
+	placeholders := make([]string, len(propertyIDs))
+	args := make([]interface{}, len(propertyIDs)+2)
+	for i, id := range propertyIDs {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = id
+	}
+	args[len(propertyIDs)] = startDate
+	args[len(propertyIDs)+1] = endDate
+
+	q := fmt.Sprintf(`
+		SELECT
+			property_id,
+			COUNT(*)                                                                         AS total_records,
+			COALESCE(SUM(amount_due), 0)                                                     AS total_due,
+			COALESCE(SUM(amount_paid), 0)                                                    AS total_paid,
+			COALESCE(SUM(CASE WHEN status='Overdue' THEN amount_due - amount_paid ELSE 0 END), 0) AS total_overdue,
+			COUNT(CASE WHEN status='Paid'    THEN 1 END)                                     AS paid_count,
+			COUNT(CASE WHEN status='Due'     THEN 1 END)                                     AS due_count,
+			COUNT(CASE WHEN status='Partial' THEN 1 END)                                     AS partial_count,
+			COUNT(CASE WHEN status='Overdue' THEN 1 END)                                     AS overdue_count
+		FROM payments
+		WHERE property_id IN (%s)
+		  AND created_at >= $%d AND created_at <= $%d
+		GROUP BY property_id`,
+		strings.Join(placeholders, ","), len(propertyIDs)+1, len(propertyIDs)+2)
+
+	rows, err := r.db.QueryContext(context.Background(), q, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get batch property payment stats: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[int]any, len(propertyIDs))
+	for rows.Next() {
+		var propID int
+		var row statsRow
+		if err := rows.Scan(
+			&propID, &row.TotalRecords, &row.TotalDue, &row.TotalPaid, &row.TotalOverdue,
+			&row.PaidCount, &row.DueCount, &row.PartialCount, &row.OverdueCount,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan batch stats row: %w", err)
+		}
+		result[propID] = buildPaymentStats(row.TotalRecords, row.PaidCount, row.DueCount, row.PartialCount, row.OverdueCount,
+			row.TotalDue, row.TotalPaid, row.TotalOverdue)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("batch property stats rows error: %w", err)
+	}
+	return result, nil
 }
 
 // GetSystemPaymentStats returns system-wide aggregate payment stats for a date range.

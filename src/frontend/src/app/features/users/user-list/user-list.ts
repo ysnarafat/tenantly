@@ -1,10 +1,4 @@
-import {
-  Component,
-  OnInit,
-  inject,
-  signal,
-  computed,
-} from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatSortModule } from '@angular/material/sort';

@@ -25,7 +25,9 @@
       <mat-label>{{ 'ORG_CREATE.FIELDS.TIER' | translate }}</mat-label>
       <mat-select formControlName="subscriptionTier">
         <mat-option value="basic">{{ 'ORG_CREATE.TIERS.BASIC' | translate }}</mat-option>
-        <mat-option value="professional">{{ 'ORG_CREATE.TIERS.PROFESSIONAL' | translate }}</mat-option>
+        <mat-option value="professional"
+          >{{ 'ORG_CREATE.TIERS.PROFESSIONAL' | translate }}</mat-option
+        >
         <mat-option value="enterprise">{{ 'ORG_CREATE.TIERS.ENTERPRISE' | translate }}</mat-option>
       </mat-select>
     </mat-form-field>
@@ -41,7 +43,7 @@
     </mat-form-field>
 
     <div class="form-actions">
-      <button mat-raised-button color="primary" type="submit" [disabled]="loading || form.invalid">
+      <button mat-flat-button color="primary" type="submit" [disabled]="loading || form.invalid">
         @if (loading) {
         <mat-spinner diameter="20"></mat-spinner>
         <span>{{ 'ORG_CREATE.BUTTONS.CREATING' | translate }}</span>

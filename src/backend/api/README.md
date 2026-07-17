@@ -22,6 +22,29 @@ go run cmd/server/main.go     # or: air
 
 API is available at `http://localhost:8080/api/v1`.
 
+### Installing `air` (hot reload)
+
+`air` isn't bundled with Go — install it once per machine:
+
+**Linux / macOS:**
+```bash
+go install github.com/air-verse/air@latest
+export PATH=$PATH:$(go env GOPATH)/bin   # add to ~/.bashrc or ~/.zshrc to persist
+```
+
+**macOS (alternative via Homebrew):**
+```bash
+brew install air-verse/air/air
+```
+
+**Windows (PowerShell):**
+```powershell
+go install github.com/air-verse/air@latest
+# Ensure %GOPATH%\bin (usually %USERPROFILE%\go\bin) is on PATH
+```
+
+Verify with `air -v` on any OS.
+
 ## Project Structure
 
 ```

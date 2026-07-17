@@ -17,12 +17,12 @@ type AuditLog struct {
 }
 
 type CreateAuditLogRequest struct {
-	UserID    *int        `json:"user_id"`
-	Action    string      `json:"action" binding:"required"`
-	TableName string      `json:"table_name" binding:"required"`
-	RecordID  *int        `json:"record_id"`
-	OldValues any `json:"old_values"`
-	NewValues any `json:"new_values"`
+	UserID    *int   `json:"user_id"`
+	Action    string `json:"action" binding:"required"`
+	TableName string `json:"table_name" binding:"required"`
+	RecordID  *int   `json:"record_id"`
+	OldValues any    `json:"old_values"`
+	NewValues any    `json:"new_values"`
 }
 
 // AuditAction constants for consistent audit logging

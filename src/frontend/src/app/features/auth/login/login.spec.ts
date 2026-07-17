@@ -103,7 +103,7 @@ describe('Login Component', () => {
 
     component.ngOnInit();
 
-    const error = { error: { error: 'Invalid credentials' } };
+    const error = { message: 'Invalid credentials' };
     errorSubject.next(error);
 
     expect(snackBar.open).toHaveBeenCalledWith('Invalid credentials', 'Close', { duration: 5000 });

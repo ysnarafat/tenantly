@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './core/guards/auth.guard';
+import { GuestGuard } from './core/guards/guest.guard';
 import { superAdminGuard } from './core/guards/super-admin.guard';
 import { orgAdminGuard } from './core/guards/org-admin.guard';
 import { userManagementGuard } from './core/guards/user-management.guard';
@@ -21,6 +22,7 @@ export const routes: Routes = [
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
+    canActivate: [GuestGuard],
   },
   {
     path: 'select-organization',
@@ -73,8 +75,7 @@ export const routes: Routes = [
   },
   {
     path: 'reports',
-    loadComponent: () =>
-      import('./features/reports/report-analysis').then((m) => m.ReportAnalysis),
+    loadComponent: () => import('./features/reports/report-analysis').then((m) => m.ReportAnalysis),
     canActivate: [AuthGuard],
   },
   {
@@ -88,7 +89,7 @@ export const routes: Routes = [
   {
     path: 'users',
     loadComponent: () => import('./features/users/user-list/user-list').then((m) => m.UserList),
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, userManagementGuard],
   },
   {
     path: 'admin',

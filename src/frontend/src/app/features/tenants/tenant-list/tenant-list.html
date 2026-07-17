@@ -15,7 +15,7 @@
         >
       </div>
     </div>
-    <button mat-raised-button color="primary" (click)="addTenant()">
+    <button mat-flat-button color="primary" (click)="addTenant()">
       <mat-icon>person_add</mat-icon>
       {{ 'TENANT_LIST.BUTTONS.ADD_TENANT' | translate }}
     </button>
@@ -43,55 +43,25 @@
       </button>
     </mat-form-field>
 
-    <div class="filter-group">
-      <span class="filter-label">{{ 'TENANT_LIST.FILTERS.STATUS_LABEL' | translate }}</span>
-      <div class="filter-pills">
-        <button
-          class="pill"
-          [class.selected]="activeFilter === 'all'"
-          (click)="setActiveFilter('all')"
-        >
-          {{ 'TENANT_LIST.FILTERS.ALL' | translate }}
-        </button>
-        <button
-          class="pill"
-          [class.selected]="activeFilter === 'active'"
-          (click)="setActiveFilter('active')"
-        >
-          {{ 'TENANT_LIST.STATS.ACTIVE' | translate }}
-        </button>
-        <button
-          class="pill"
-          [class.selected]="activeFilter === 'inactive'"
-          (click)="setActiveFilter('inactive')"
-        >
-          {{ 'TENANT_LIST.STATS.INACTIVE' | translate }}
-        </button>
-      </div>
-    </div>
+    <mat-form-field appearance="outline" class="filter-select">
+      <mat-label>{{ 'TENANT_LIST.FILTERS.STATUS_LABEL' | translate }}</mat-label>
+      <mat-select [(ngModel)]="activeFilter" (ngModelChange)="setActiveFilter($event)">
+        <mat-option value="all">{{ 'TENANT_LIST.FILTERS.ALL' | translate }}</mat-option>
+        <mat-option value="active">{{ 'TENANT_LIST.STATS.ACTIVE' | translate }}</mat-option>
+        <mat-option value="inactive">{{ 'TENANT_LIST.STATS.INACTIVE' | translate }}</mat-option>
+      </mat-select>
+    </mat-form-field>
 
-    <div class="filter-group">
-      <span class="filter-label">{{ 'TENANT_LIST.FILTERS.TYPE_LABEL' | translate }}</span>
-      <div class="filter-pills">
-        <button class="pill" [class.selected]="typeFilter === 'all'" (click)="setTypeFilter('all')">
-          {{ 'TENANT_LIST.FILTERS.ALL' | translate }}
-        </button>
-        <button
-          class="pill"
-          [class.selected]="typeFilter === 'Individual'"
-          (click)="setTypeFilter('Individual')"
+    <mat-form-field appearance="outline" class="filter-select">
+      <mat-label>{{ 'TENANT_LIST.FILTERS.TYPE_LABEL' | translate }}</mat-label>
+      <mat-select [(ngModel)]="typeFilter" (ngModelChange)="setTypeFilter($event)">
+        <mat-option value="all">{{ 'TENANT_LIST.FILTERS.ALL' | translate }}</mat-option>
+        <mat-option value="Individual"
+          >{{ 'TENANT_LIST.FILTERS.INDIVIDUAL' | translate }}</mat-option
         >
-          {{ 'TENANT_LIST.FILTERS.INDIVIDUAL' | translate }}
-        </button>
-        <button
-          class="pill"
-          [class.selected]="typeFilter === 'Business'"
-          (click)="setTypeFilter('Business')"
-        >
-          {{ 'TENANT_LIST.FILTERS.BUSINESS' | translate }}
-        </button>
-      </div>
-    </div>
+        <mat-option value="Business">{{ 'TENANT_LIST.FILTERS.BUSINESS' | translate }}</mat-option>
+      </mat-select>
+    </mat-form-field>
 
     <span *ngIf="hasActiveFilters" class="results-count"
       >{{ filteredTenants.length }} {{ filteredTenants.length === 1 ? ('COMMON.PAGINATION.RESULT' |
@@ -106,20 +76,18 @@
         [dataSource]="pagedTenants"
         [displayedColumns]="displayedColumns"
         [loading]="loading"
+        [loadingMessage]="'TENANT_LIST.LOADING' | translate"
         [showPaginator]="false"
         [emptyIcon]="hasActiveFilters ? 'search_off' : 'people_outline'"
         [emptyMessage]="hasActiveFilters ? ('TENANT_LIST.EMPTY_STATE.NO_MATCHING' | translate) : ('TENANT_LIST.EMPTY_STATE.NO_TENANTS' | translate)"
+        [emptySubtitle]="hasActiveFilters ? ('COMMON.EMPTY_STATE.TRY_ADJUST' | translate) : ('TENANT_LIST.EMPTY_STATE.ADD_FIRST' | translate)"
       >
         <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>
-            {{ 'TENANT_LIST.TABLE.TENANT' | translate }}
-          </th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'TENANT_LIST.TABLE.TENANT' | translate }}</th>
           <td mat-cell *matCellDef="let tenant">
             <div class="tenant-cell">
               <div class="tenant-avatar" [class.business]="tenant.tenant_type === 'Business'">
-                <mat-icon
-                  >{{ tenant.tenant_type === 'Business' ? 'business' : 'person' }}</mat-icon
-                >
+                <mat-icon>{{ tenant.tenant_type === 'Business' ? 'business' : 'person' }}</mat-icon>
               </div>
               <div>
                 <div class="tenant-name">{{ tenant.name }}</div>
@@ -139,14 +107,29 @@
         </ng-container>
 
         <ng-container matColumnDef="contact">
-          <th mat-header-cell *matHeaderCellDef>
-            {{ 'TENANT_LIST.TABLE.CONTACT' | translate }}
-          </th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'TENANT_LIST.TABLE.CONTACT' | translate }}</th>
           <td mat-cell *matCellDef="let tenant">
             <div class="contact-cell">
               <div *ngIf="tenant.phone_number" class="contact-row">
                 <mat-icon class="contact-icon">phone</mat-icon>
-                <span>{{ tenant.phone_number }}</span>
+                <span
+                  [class.masked-val]="!isPhoneRevealed(tenant.id) && !isAccountantRole"
+                  [class.restricted-val]="isAccountantRole"
+                  >{{ getDisplayPhone(tenant) }}</span
+                >
+                <mat-icon
+                  *ngIf="canRevealPii"
+                  class="reveal-toggle-icon"
+                  (click)="togglePhoneReveal(tenant.id)"
+                  [matTooltip]="(isPhoneRevealed(tenant.id) ? 'TENANT_LIST.MASKING.HIDE' : 'TENANT_LIST.MASKING.REVEAL') | translate"
+                  >{{ isPhoneRevealed(tenant.id) ? 'visibility_off' : 'visibility' }}</mat-icon
+                >
+                <mat-icon
+                  *ngIf="isAccountantRole"
+                  class="restricted-icon"
+                  [matTooltip]="'TENANT_LIST.MASKING.RESTRICTED_TOOLTIP' | translate"
+                  >lock</mat-icon
+                >
               </div>
               <div *ngIf="tenant.email" class="contact-row">
                 <mat-icon class="contact-icon">mail_outline</mat-icon>
@@ -160,14 +143,32 @@
         <ng-container matColumnDef="nid">
           <th mat-header-cell *matHeaderCellDef>{{ 'TENANT_LIST.TABLE.NID' | translate }}</th>
           <td mat-cell *matCellDef="let tenant">
-            <span class="mono-val">{{ tenant.nid_number || '—' }}</span>
+            <div class="pii-cell">
+              <span
+                class="mono-val"
+                [class.masked-val]="!isNidRevealed(tenant.id) && !!tenant.nid_number && !isAccountantRole"
+                [class.restricted-val]="isAccountantRole && !!tenant.nid_number"
+                >{{ getDisplayNid(tenant) }}</span
+              >
+              <mat-icon
+                *ngIf="canRevealPii && tenant.nid_number"
+                class="reveal-toggle-icon"
+                (click)="toggleNidReveal(tenant.id)"
+                [matTooltip]="(isNidRevealed(tenant.id) ? 'TENANT_LIST.MASKING.HIDE' : 'TENANT_LIST.MASKING.REVEAL') | translate"
+                >{{ isNidRevealed(tenant.id) ? 'visibility_off' : 'visibility' }}</mat-icon
+              >
+              <mat-icon
+                *ngIf="isAccountantRole && tenant.nid_number"
+                class="restricted-icon"
+                [matTooltip]="'TENANT_LIST.MASKING.RESTRICTED_TOOLTIP' | translate"
+                >lock</mat-icon
+              >
+            </div>
           </td>
         </ng-container>
 
         <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>
-            {{ 'TENANT_LIST.TABLE.STATUS' | translate }}
-          </th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'TENANT_LIST.TABLE.STATUS' | translate }}</th>
           <td mat-cell *matCellDef="let tenant">
             <span
               class="status-badge"
@@ -182,9 +183,7 @@
         </ng-container>
 
         <ng-container matColumnDef="created">
-          <th mat-header-cell *matHeaderCellDef>
-            {{ 'TENANT_LIST.TABLE.JOINED' | translate }}
-          </th>
+          <th mat-header-cell *matHeaderCellDef>{{ 'TENANT_LIST.TABLE.JOINED' | translate }}</th>
           <td mat-cell *matCellDef="let tenant">
             <span class="date-val">{{ tenant.created_at | date: 'mediumDate' }}</span>
           </td>
@@ -214,23 +213,18 @@
                   <span>{{ 'COMMON.BUTTONS.EDIT' | translate }}</span>
                 </button>
                 <button mat-menu-item (click)="deleteTenant(tenant)" class="delete-action">
-                  <mat-icon>delete_outline</mat-icon>
+                  <mat-icon>delete</mat-icon>
                   <span>{{ 'COMMON.BUTTONS.DELETE' | translate }}</span>
                 </button>
               </mat-menu>
             </div>
           </td>
         </ng-container>
-
-        <button dtEmptyAction *ngIf="!hasActiveFilters" mat-raised-button color="primary" (click)="addTenant()">
-          <mat-icon>person_add</mat-icon>
-          {{ 'TENANT_LIST.BUTTONS.ADD_TENANT' | translate }}
-        </button>
       </app-data-table>
 
       <!-- Pagination -->
       <mat-paginator
-        *ngIf="filteredTenants.length > pageSize"
+        *ngIf="filteredTenants.length > 0"
         [length]="filteredTenants.length"
         [pageSize]="pageSize"
         [pageIndex]="pageIndex"

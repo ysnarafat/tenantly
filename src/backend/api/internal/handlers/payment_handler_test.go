@@ -1,4 +1,4 @@
-﻿package handlers
+package handlers
 
 import (
 	"bytes"
@@ -1104,4 +1104,3 @@ func TestPaymentHandler_BulkCreatePayments(t *testing.T) {
 		}
 	})
 }
-

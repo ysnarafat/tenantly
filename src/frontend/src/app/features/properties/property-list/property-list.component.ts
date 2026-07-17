@@ -1,12 +1,14 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 
 import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatExpansionModule } from '@angular/material/expansion';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
 import { TranslateModule } from '@ngx-translate/core';
@@ -35,6 +37,8 @@ import { BuildingFormDialogComponent } from '../building-form-dialog/building-fo
 import { UnitFormDialogComponent } from '../unit-form-dialog/unit-form-dialog';
 import { PaymentCreateDialog } from '../../payments/payment-list/payment-list';
 import { PaymentService } from '../../../core/services/payment.service';
+import { LoadingSpinner } from '../../../shared/components/loading-spinner/loading-spinner';
+import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm-delete-dialog/confirm-delete-dialog';
 
 interface PropertyWithHierarchy extends Property {
   buildings?: BuildingWithUnits[];
@@ -51,15 +55,18 @@ interface BuildingWithUnits extends Building {
   standalone: true,
   imports: [
     RouterModule,
+    FormsModule,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
-    MatProgressSpinnerModule,
     MatExpansionModule,
+    MatFormFieldModule,
+    MatInputModule,
     MatTooltipModule,
     PropertyCardComponent,
     TranslateModule,
+    LoadingSpinner,
   ],
   templateUrl: './property-list.component.html',
   styleUrls: ['./property-list.component.scss'],
@@ -79,19 +86,54 @@ export class PropertyListComponent implements OnInit {
   // UI state
   expandedProperties = signal<Set<number>>(new Set());
   loadedBuildings = signal<Map<number, BuildingWithUnits[]>>(new Map());
+  searchQuery = signal('');
+
+  activeCount = computed(() => this.properties().filter((p) => p.active).length);
 
   // Combined state for template
   displayedProperties = computed(() => {
     const props = this.properties();
     const expandedProps = this.expandedProperties();
     const buildingsMap = this.loadedBuildings();
+    const query = this.searchQuery().trim().toLowerCase();
 
-    return props.map((p) => ({
+    const withHierarchy = props.map((p) => ({
       ...p,
       expanded: expandedProps.has(p.id),
       buildings: buildingsMap.get(p.id),
     })) as DisplayedProperty[];
+
+    if (!query) return withHierarchy;
+
+    return withHierarchy.filter((property) => this.matchesSearch(property, query));
   });
+
+  private matchesSearch(property: DisplayedProperty, query: string): boolean {
+    const propertyMatch =
+      property.property_name?.toLowerCase().includes(query) ||
+      property.property_code?.toLowerCase().includes(query) ||
+      property.address?.toLowerCase().includes(query);
+    if (propertyMatch) return true;
+
+    const buildings = (property as PropertyWithHierarchy).buildings ?? [];
+    return buildings.some((building) => {
+      const buildingMatch =
+        building.building_name?.toLowerCase().includes(query) ||
+        building.building_code?.toLowerCase().includes(query);
+      if (buildingMatch) return true;
+
+      const units = building.units ?? [];
+      return units.some(
+        (unit) =>
+          unit.unit_number?.toLowerCase().includes(query) ||
+          unit.unit_name?.toLowerCase().includes(query)
+      );
+    });
+  }
+
+  clearSearch() {
+    this.searchQuery.set('');
+  }
 
   ngOnInit() {
     this.store.dispatch(PropertyActions.loadProperties({ active: true }));
@@ -219,9 +261,16 @@ export class PropertyListComponent implements OnInit {
   }
 
   deleteProperty(property: DisplayedProperty) {
-    if (confirm(`Are you sure you want to delete ${property.property_name}?`)) {
-      this.store.dispatch(PropertyActions.deleteProperty({ id: property.id }));
-    }
+    const dialogRef = this.dialog.open(ConfirmDeleteDialogComponent, {
+      width: '480px',
+      data: { entityLabel: 'property', entityName: property.property_name },
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (confirmed) {
+        this.store.dispatch(PropertyActions.deleteProperty({ id: property.id }));
+      }
+    });
   }
 
   // Building CRUD handlers
@@ -261,11 +310,18 @@ export class PropertyListComponent implements OnInit {
   }
 
   deleteBuilding(building: BuildingWithUnits, propertyId: number) {
-    if (confirm(`Are you sure you want to delete ${building.building_name}?`)) {
-      this.store.dispatch(BuildingActions.deleteBuilding({ id: building.id }));
-      // Reload buildings for this property after deletion
-      setTimeout(() => this.loadBuildings(propertyId), 500);
-    }
+    const dialogRef = this.dialog.open(ConfirmDeleteDialogComponent, {
+      width: '480px',
+      data: { entityLabel: 'building', entityName: building.building_name },
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (confirmed) {
+        this.store.dispatch(BuildingActions.deleteBuilding({ id: building.id }));
+        // Reload buildings for this property after deletion
+        setTimeout(() => this.loadBuildings(propertyId), 500);
+      }
+    });
   }
 
   // Unit CRUD handlers
@@ -303,11 +359,18 @@ export class PropertyListComponent implements OnInit {
   }
 
   deleteUnit(unit: Unit, building: BuildingWithUnits) {
-    if (confirm(`Are you sure you want to delete unit ${unit.unit_number}?`)) {
-      this.store.dispatch(UnitActions.deleteUnit({ id: unit.id }));
-      // Reload units for this building after deletion
-      setTimeout(() => this.loadUnits(building), 500);
-    }
+    const dialogRef = this.dialog.open(ConfirmDeleteDialogComponent, {
+      width: '480px',
+      data: { entityLabel: 'unit', entityName: unit.unit_number },
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (confirmed) {
+        this.store.dispatch(UnitActions.deleteUnit({ id: unit.id }));
+        // Reload units for this building after deletion
+        setTimeout(() => this.loadUnits(building), 500);
+      }
+    });
   }
 
   addPaymentForUnit(

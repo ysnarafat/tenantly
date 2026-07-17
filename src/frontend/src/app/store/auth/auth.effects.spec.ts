@@ -101,9 +101,9 @@ describe('AuthEffects', () => {
 
       effects.login$.subscribe((result) => {
         expect(result.type).toBe(AuthActions.loginSuccess.type);
-        expect(
-          (result as unknown as { response: typeof mockLoginResponse }).response
-        ).toEqual(mockLoginResponse);
+        expect((result as unknown as { response: typeof mockLoginResponse }).response).toEqual(
+          mockLoginResponse
+        );
         done();
       });
 

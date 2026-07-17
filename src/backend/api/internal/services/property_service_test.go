@@ -1,4 +1,4 @@
-﻿package services
+package services
 
 import (
 	"testing"
@@ -650,4 +650,3 @@ func TestPropertyService_ValidatePropertyType(t *testing.T) {
 		})
 	}
 }
-

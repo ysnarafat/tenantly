@@ -7,8 +7,11 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslateModule } from '@ngx-translate/core';
 import { Tenant, TenantType } from '../../../core/models/tenant.model';
+import { PermissionService } from '../../../core/services/permission.service';
+import { maskNid, maskPhone } from '../../../shared/utils/pii-mask.utils';
 
 export interface TenantFormDialogData {
   tenant?: Tenant;
@@ -27,6 +30,7 @@ export interface TenantFormDialogData {
     MatButtonModule,
     MatSelectModule,
     MatIconModule,
+    MatTooltipModule,
     TranslateModule,
   ],
   templateUrl: './tenant-form-dialog.html',
@@ -35,10 +39,52 @@ export interface TenantFormDialogData {
 export class TenantFormDialogComponent implements OnInit {
   private fb = inject(FormBuilder);
   private dialogRef = inject(MatDialogRef<TenantFormDialogComponent>);
+  private permissionService = inject(PermissionService);
   public data = inject<TenantFormDialogData>(MAT_DIALOG_DATA);
 
   tenantForm!: FormGroup;
   tenantTypes: TenantType[] = ['Individual', 'Business'];
+
+  nidRevealed = false;
+  phoneRevealed = false;
+  private _realNid = '';
+  private _realPhone = '';
+
+  get hasNid(): boolean {
+    return !!this._realNid;
+  }
+  get hasPhone(): boolean {
+    return !!this._realPhone;
+  }
+
+  get canRevealPii(): boolean {
+    return (
+      this.permissionService.isSuperAdmin() ||
+      this.permissionService.isOrgAdmin() ||
+      this.permissionService.isAdmin() ||
+      this.permissionService.isPropertyManager()
+    );
+  }
+
+  toggleNidReveal(): void {
+    this.nidRevealed = !this.nidRevealed;
+    if (this.isViewMode) {
+      this.tenantForm
+        .get('nid_number')
+        ?.setValue(this.nidRevealed ? this._realNid : maskNid(this._realNid), { emitEvent: false });
+    }
+  }
+
+  togglePhoneReveal(): void {
+    this.phoneRevealed = !this.phoneRevealed;
+    if (this.isViewMode) {
+      this.tenantForm
+        .get('phone_number')
+        ?.setValue(this.phoneRevealed ? this._realPhone : maskPhone(this._realPhone), {
+          emitEvent: false,
+        });
+    }
+  }
 
   ngOnInit() {
     this.initializeForm();
@@ -46,6 +92,9 @@ export class TenantFormDialogComponent implements OnInit {
 
   private initializeForm() {
     const tenant = this.data.tenant;
+
+    this._realNid = tenant?.nid_number || '';
+    this._realPhone = tenant?.phone_number || '';
 
     this.tenantForm = this.fb.group({
       name: [
@@ -57,11 +106,11 @@ export class TenantFormDialogComponent implements OnInit {
         this.isViewMode ? [] : [Validators.required],
       ],
       nid_number: [
-        tenant?.nid_number || '',
+        this.isViewMode ? maskNid(this._realNid) : this._realNid,
         this.isViewMode ? [] : [Validators.required, Validators.maxLength(20)],
       ],
       phone_number: [
-        tenant?.phone_number || '',
+        this.isViewMode ? maskPhone(this._realPhone) : this._realPhone,
         this.isViewMode ? [] : [Validators.required, Validators.maxLength(20)],
       ],
       email: [tenant?.email || '', this.isViewMode ? [] : [Validators.email]],

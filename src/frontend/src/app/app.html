@@ -1,4 +1,4 @@
-@if (isAuthenticated()) {
+@if (showShell()) {
 <div class="app-container">
   <mat-toolbar color="primary" class="app-toolbar">
     <button mat-icon-button (click)="toggleSidenav()" class="menu-button">
@@ -10,6 +10,16 @@
     </div>
     <app-organization-selector></app-organization-selector>
     <span class="spacer"></span>
+    @if (themeService.darkModeEnabled) {
+    <button
+      mat-icon-button
+      (click)="themeService.toggle()"
+      class="theme-toggle"
+      [matTooltip]="themeService.isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
+    >
+      <mat-icon>{{ themeService.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+    </button>
+    }
     <button
       mat-icon-button
       (click)="languageService.toggle()"
@@ -117,17 +127,6 @@
           <mat-icon class="nav-icon">assignment</mat-icon>
           <span class="nav-label">Leases</span>
         </a>
-        <a
-          class="nav-item"
-          routerLink="/leases/due"
-          routerLinkActive="nav-active"
-          (click)="onNavigate()"
-          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Due List' : ''"
-          matTooltipPosition="right"
-        >
-          <mat-icon class="nav-icon">account_balance_wallet</mat-icon>
-          <span class="nav-label">Due List</span>
-        </a>
         } @if (canViewPayments()) {
         <a
           class="nav-item"
@@ -139,18 +138,6 @@
         >
           <mat-icon class="nav-icon">payment</mat-icon>
           <span class="nav-label">Payments</span>
-        </a>
-        } @if (canViewReports()) {
-        <a
-          class="nav-item"
-          routerLink="/reports"
-          routerLinkActive="nav-active"
-          (click)="onNavigate()"
-          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Reports' : ''"
-          matTooltipPosition="right"
-        >
-          <mat-icon class="nav-icon">assessment</mat-icon>
-          <span class="nav-label">Reports</span>
         </a>
         } @if (canManageDocuments()) {
         <a
