@@ -17,6 +17,7 @@ import { User } from '../../../core/services/auth.service';
 import { UserService } from '../../../core/services/user.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { DataTable } from '../../../shared/components/data-table/data-table';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
 
 @Component({
   selector: 'app-user-list',
@@ -83,7 +84,7 @@ export class UserList implements OnInit {
         this.loading.set(false);
       },
       error: (error) => {
-        console.error('Error loading users:', error);
+        console.error('Error loading users:', safeErrorMessage(error));
         this.snackBar.open('Failed to load users', 'Close', { duration: 3000 });
         this.loading.set(false);
       },

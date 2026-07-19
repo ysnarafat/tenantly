@@ -23,10 +23,7 @@ func NewPropertyHandler(propertyService *services.PropertyService) *PropertyHand
 func (h *PropertyHandler) CreateProperty(c *gin.Context) {
 	var req models.CreatePropertyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request data",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request data", err)
 		return
 	}
 
@@ -43,10 +40,10 @@ func (h *PropertyHandler) CreateProperty(c *gin.Context) {
 	property, err := h.propertyService.CreateProperty(&req, userID.(int))
 	if err != nil {
 		if err.Error() == "property name already exists" || err.Error() == "property code already exists" {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			respondError(c, http.StatusConflict, "PROPERTY_CONFLICT", "A property with this name or code already exists", err)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create property"})
+		respondError(c, http.StatusInternalServerError, "CREATE_PROPERTY_FAILED", "Failed to create property", err)
 		return
 	}
 
@@ -179,10 +176,7 @@ func (h *PropertyHandler) UpdateProperty(c *gin.Context) {
 
 	var req models.UpdatePropertyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request data",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request data", err)
 		return
 	}
 
@@ -201,10 +195,10 @@ func (h *PropertyHandler) UpdateProperty(c *gin.Context) {
 			return
 		}
 		if err.Error() == "property name already exists" {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			respondError(c, http.StatusConflict, "PROPERTY_NAME_EXISTS", "A property with this name already exists", err)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update property"})
+		respondError(c, http.StatusInternalServerError, "UPDATE_PROPERTY_FAILED", "Failed to update property", err)
 		return
 	}
 
@@ -236,10 +230,10 @@ func (h *PropertyHandler) DeleteProperty(c *gin.Context) {
 		}
 		if err.Error() == "cannot delete property: has active buildings" ||
 			err.Error() == "cannot delete property: has active units" {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			respondError(c, http.StatusConflict, "PROPERTY_HAS_DEPENDENCIES", "Cannot delete property with active buildings or units", err)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete property"})
+		respondError(c, http.StatusInternalServerError, "DELETE_PROPERTY_FAILED", "Failed to delete property", err)
 		return
 	}
 

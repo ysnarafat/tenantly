@@ -5,17 +5,23 @@ services:
       file: docker-compose.yml
       service: postgres
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-this-in-production}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your production environment}
     # NO PORTS EXPOSED - Database is completely internal in production
     restart: always
-    
+
   # Go API Service (Production)
+  # DATABASE_URL/JWT_SECRET/CORS_ALLOWED_ORIGINS are required here with no
+  # insecure default — the app itself also hard-fails at startup if any of
+  # these are unset while ENVIRONMENT=production, as defense in depth.
   api:
     extends:
       file: docker-compose.yml
       service: api
     environment:
       ENVIRONMENT: production
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your production environment}@postgres:5432/tenantly?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in your production environment (openssl rand -base64 32)}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?Set CORS_ALLOWED_ORIGINS to your production frontend origin(s)}
     restart: always
 
   # Angular Frontend (Production)

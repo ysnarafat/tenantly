@@ -12,6 +12,8 @@ import { DataTable } from '../../../shared/components/data-table/data-table';
 import { LeaseService, LeaseDue, DueSummary } from '../../../core/services/lease.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { LoadingSpinner } from '../../../shared/components/loading-spinner/loading-spinner';
 
 @Component({
   selector: 'app-due-list',
@@ -26,6 +28,7 @@ import { LanguageService } from '../../../core/services/language.service';
     MatTooltipModule,
     TranslateModule,
     DataTable,
+    LoadingSpinner,
   ],
   templateUrl: './due-list.html',
   styleUrls: ['./due-list.scss'],
@@ -70,7 +73,7 @@ export class DueList {
         this.loading.set(false);
       })
       .catch((error) => {
-        console.error('Error loading due list:', error);
+        console.error('Error loading due list:', safeErrorMessage(error));
         this.snackBar.open(this.translateService.instant('DUE_LIST.ERROR_LOADING'), 'Close', {
           duration: 3000,
         });

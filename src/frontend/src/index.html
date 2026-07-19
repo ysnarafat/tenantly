@@ -5,6 +5,23 @@
     <title>Tenantly - Property Rental Management</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--
+      Content-Security-Policy: defense-in-depth against XSS. Angular Material
+      injects component styles via inline <style> tags at runtime, hence
+      style-src 'unsafe-inline'. connect-src includes the local dev API origin
+      since this same index.html is used for both dev and prod builds
+      (prod calls a relative /api/v1 path, covered by 'self').
+
+      Note: Google's font CSS (fonts.googleapis.com) is served dynamically
+      per User-Agent, so a Subresource Integrity hash cannot be applied to it
+      reliably (the byte content varies) — this CSP is the practical
+      defense-in-depth control here instead. Self-hosting the fonts would
+      allow real SRI but is a larger follow-up, out of scope for this pass.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://localhost:8080; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+    />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link rel="preconnect" href="https://fonts.gstatic.com" />
     <link

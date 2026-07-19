@@ -25,7 +25,7 @@ func NewPaymentHandler(paymentService interfaces.PaymentServiceInterface) *Payme
 func (h *PaymentHandler) CreatePayment(c *gin.Context) {
 	var req models.CreatePaymentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "CREATE_PAYMENT_INVALID_BODY", "Invalid request body", err)
 		return
 	}
 
@@ -34,7 +34,7 @@ func (h *PaymentHandler) CreatePayment(c *gin.Context) {
 
 	payment, err := h.paymentService.CreatePayment(&req, userID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "CREATE_PAYMENT_FAILED", "Failed to create payment", err)
 		return
 	}
 
@@ -58,7 +58,7 @@ func (h *PaymentHandler) GetPayment(c *gin.Context) {
 
 	payment, err := h.paymentService.GetPayment(id, orgID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		respondError(c, http.StatusNotFound, "GET_PAYMENT_FAILED", "Payment not found", err)
 		return
 	}
 
@@ -85,7 +85,7 @@ func (h *PaymentHandler) UpdatePayment(c *gin.Context) {
 
 	var req models.UpdatePaymentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "UPDATE_PAYMENT_INVALID_BODY", "Invalid request body", err)
 		return
 	}
 
@@ -116,7 +116,7 @@ func (h *PaymentHandler) UpdatePayment(c *gin.Context) {
 
 	payment, err := h.paymentService.UpdatePayment(id, &req, userID, orgID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "UPDATE_PAYMENT_FAILED", "Failed to update payment", err)
 		return
 	}
 
@@ -175,7 +175,7 @@ func (h *PaymentHandler) GetPayments(c *gin.Context) {
 	}
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondError(c, http.StatusInternalServerError, "GET_PAYMENTS_FAILED", "Failed to retrieve payments", err)
 		return
 	}
 
@@ -201,7 +201,7 @@ func (h *PaymentHandler) GetDashboardSummary(c *gin.Context) {
 	orgID := c.GetInt("org_id")
 	summary, err := h.paymentService.GetDashboardSummaryWithBuildingContext(orgID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondError(c, http.StatusInternalServerError, "GET_DASHBOARD_SUMMARY_FAILED", "Failed to retrieve dashboard summary", err)
 		return
 	}
 	c.JSON(http.StatusOK, summary)
@@ -218,14 +218,14 @@ func (h *PaymentHandler) GetBuildingPaymentReport(c *gin.Context) {
 
 	startDate, endDate, err := parseDateRange(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "GET_BUILDING_PAYMENT_REPORT_INVALID_RANGE", "Invalid date range", err)
 		return
 	}
 
 	orgID := c.GetInt("org_id")
 	report, err := h.paymentService.GenerateBuildingPaymentReport(buildingID, orgID, startDate, endDate)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondError(c, http.StatusInternalServerError, "GET_BUILDING_PAYMENT_REPORT_FAILED", "Failed to generate building payment report", err)
 		return
 	}
 
@@ -243,14 +243,14 @@ func (h *PaymentHandler) GetPropertyPaymentReport(c *gin.Context) {
 
 	startDate, endDate, err := parseDateRange(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "GET_PROPERTY_PAYMENT_REPORT_INVALID_RANGE", "Invalid date range", err)
 		return
 	}
 
 	orgID := c.GetInt("org_id")
 	report, err := h.paymentService.GeneratePropertyPaymentReport(propertyID, orgID, startDate, endDate)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondError(c, http.StatusInternalServerError, "GET_PROPERTY_PAYMENT_REPORT_FAILED", "Failed to generate property payment report", err)
 		return
 	}
 
@@ -261,7 +261,7 @@ func (h *PaymentHandler) GetPropertyPaymentReport(c *gin.Context) {
 func (h *PaymentHandler) BulkCreatePayments(c *gin.Context) {
 	var requests []*models.CreatePaymentRequest
 	if err := c.ShouldBindJSON(&requests); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "BULK_CREATE_PAYMENTS_INVALID_BODY", "Invalid request body", err)
 		return
 	}
 
@@ -302,7 +302,7 @@ func (h *PaymentHandler) SearchLeases(c *gin.Context) {
 
 	result, err := h.paymentService.SearchLeases(orgID, query)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondError(c, http.StatusInternalServerError, "SEARCH_LEASES_FAILED", "Failed to search leases", err)
 		return
 	}
 
@@ -313,7 +313,7 @@ func (h *PaymentHandler) SearchLeases(c *gin.Context) {
 func (h *PaymentHandler) GenerateMonthlyPayments(c *gin.Context) {
 	var req models.GenerateMonthlyPaymentsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "GENERATE_MONTHLY_PAYMENTS_INVALID_BODY", "Invalid request body", err)
 		return
 	}
 
@@ -322,7 +322,7 @@ func (h *PaymentHandler) GenerateMonthlyPayments(c *gin.Context) {
 
 	result, err := h.paymentService.GenerateMonthlyPayments(&req, orgID, userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondError(c, http.StatusInternalServerError, "GENERATE_MONTHLY_PAYMENTS_FAILED", "Failed to generate monthly payments", err)
 		return
 	}
 

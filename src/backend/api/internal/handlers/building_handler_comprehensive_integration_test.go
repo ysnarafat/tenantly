@@ -76,7 +76,7 @@ func (suite *BuildingIntegrationTestSuite) SetupSuite() {
 	buildingService := services.NewBuildingService(suite.buildingRepo, suite.propertyRepo, auditService, metadataValidator)
 
 	// Initialize handlers
-	userHandler := NewUserHandler(userService)
+	userHandler := NewUserHandler(userService, "", false)
 	propertyHandler := NewPropertyHandler(propertyService)
 	suite.buildingHandler = NewBuildingHandler(buildingService)
 
@@ -106,7 +106,7 @@ func (suite *BuildingIntegrationTestSuite) SetupTest() {
 func (suite *BuildingIntegrationTestSuite) setupTestRoutes(userHandler *UserHandler, propertyHandler *PropertyHandler, auditService *database.AuditService) {
 	// Add middleware
 	suite.router.Use(middleware.SecurityHeadersMiddleware())
-	suite.router.Use(middleware.CORS(suite.config.Environment))
+	suite.router.Use(middleware.CORS(suite.config.AllowedOrigins))
 	suite.router.Use(gin.Logger())
 	suite.router.Use(gin.Recovery())
 

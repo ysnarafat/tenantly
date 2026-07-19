@@ -25,10 +25,7 @@ func NewBuildingHandler(buildingService interfaces.BuildingServiceInterface) *Bu
 func (h *BuildingHandler) CreateBuilding(c *gin.Context) {
 	var req models.CreateBuildingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request data",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request data", err)
 		return
 	}
 
@@ -42,7 +39,7 @@ func (h *BuildingHandler) CreateBuilding(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Property not found"})
 			return
 		case err.Error() == fmt.Sprintf("building code '%s' already exists in this property", req.BuildingCode):
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			respondError(c, http.StatusConflict, "BUILDING_CODE_EXISTS", "Building code already exists in this property", err)
 			return
 		case err.Error() == "metadata validation failed":
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid metadata for building type"})
@@ -191,10 +188,7 @@ func (h *BuildingHandler) UpdateBuilding(c *gin.Context) {
 
 	var req models.UpdateBuildingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request data",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request data", err)
 		return
 	}
 
@@ -265,10 +259,7 @@ func (h *BuildingHandler) GetPropertyBuildings(c *gin.Context) {
 	// Parse request parameters
 	var req models.BuildingListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request parameters",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request parameters", err)
 		return
 	}
 
@@ -339,10 +330,7 @@ func (h *BuildingHandler) BulkCreateBuildings(c *gin.Context) {
 
 	var req models.BulkCreateBuildingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request data",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request data", err)
 		return
 	}
 
@@ -497,10 +485,7 @@ func (h *BuildingHandler) GetBuildingAnalytics(c *gin.Context) {
 func (h *BuildingHandler) AdvancedSearchBuildings(c *gin.Context) {
 	var req models.BuildingSearchRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid search parameters",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid search parameters", err)
 		return
 	}
 
@@ -562,10 +547,7 @@ func (h *BuildingHandler) GetBuildingMetadataSchema(c *gin.Context) {
 
 	response, err := h.buildingService.GetBuildingMetadataSchema(buildingType)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid building type",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_BUILDING_TYPE", "Invalid building type", err)
 		return
 	}
 
@@ -576,10 +558,7 @@ func (h *BuildingHandler) GetBuildingMetadataSchema(c *gin.Context) {
 func (h *BuildingHandler) ExportBuildingData(c *gin.Context) {
 	var req models.BuildingExportRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid export parameters",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid export parameters", err)
 		return
 	}
 
@@ -618,10 +597,7 @@ func (h *BuildingHandler) UpdateBuildingStatus(c *gin.Context) {
 
 	var req models.BuildingStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request data",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request data", err)
 		return
 	}
 

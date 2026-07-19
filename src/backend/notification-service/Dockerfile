@@ -20,10 +20,18 @@ RUN dotnet publish -c Release -o /app/publish \
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
+# Create a dedicated non-root user rather than assuming one is built into this
+# base image tag.
+RUN groupadd -r appgroup && useradd -r -u 1001 -g appgroup appuser
+
 # Create logs directory
 RUN mkdir -p /app/logs
 
 # Copy published application
 COPY --from=build /app/publish .
+
+RUN chown -R appuser:appgroup /app
+
+USER appuser
 
 ENTRYPOINT ["dotnet", "TenantlyNotificationService.dll"]

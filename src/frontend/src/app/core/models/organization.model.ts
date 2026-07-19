@@ -57,7 +57,7 @@ export interface SetOrganizationRequest {
 
 export interface SetOrganizationResponse {
   token: string;
-  refresh_token: string;
+  // No refresh_token field — set as an httpOnly cookie by the backend instead.
   organization: UserOrganization;
   expires_at: string | Date;
 }

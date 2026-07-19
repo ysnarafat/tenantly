@@ -90,7 +90,7 @@ func (h *ReportHandler) GetCollectionSummary(c *gin.Context) {
 
 	startDate, endDate, err := parseDateRange(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "GET_COLLECTION_SUMMARY_INVALID_RANGE", "Invalid date range", err)
 		return
 	}
 
@@ -114,7 +114,7 @@ func (h *ReportHandler) GetPaymentAnalysis(c *gin.Context) {
 
 	startDate, endDate, err := parseDateRange(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "GET_PAYMENT_ANALYSIS_INVALID_RANGE", "Invalid date range", err)
 		return
 	}
 
@@ -156,7 +156,7 @@ func (h *ReportHandler) GetPropertyAnalytics(c *gin.Context) {
 
 	startDate, endDate, err := parseDateRange(c)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "GET_PROPERTY_ANALYTICS_INVALID_RANGE", "Invalid date range", err)
 		return
 	}
 

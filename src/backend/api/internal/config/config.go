@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -42,12 +43,16 @@ func loadEnv() error {
 }
 
 type Config struct {
-	DatabaseURL   string
-	JWTSecret     string
-	JWTExpiration time.Duration
-	SMSProvider   SMSConfig
-	EmailProvider EmailConfig
-	Environment   string
+	DatabaseURL    string
+	JWTSecret      string
+	JWTExpiration  time.Duration
+	SMSProvider    SMSConfig
+	EmailProvider  EmailConfig
+	Environment    string
+	AllowedOrigins []string
+	TrustedProxies []string
+	CookieDomain   string
+	CookieSecure   bool
 }
 
 type SMSConfig struct {
@@ -89,9 +94,57 @@ func Load() (*Config, error) {
 
 	jwtExpiration, _ := time.ParseDuration(getEnv("JWT_EXPIRATION", "8h"))
 	smtpPort, _ := strconv.Atoi(getEnv("SMTP_PORT", "587"))
+	environment := getEnv("ENVIRONMENT", "development")
+
+	// Load and validate database URL — same no-insecure-default-in-prod pattern as JWT_SECRET.
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		if environment == "production" {
+			return nil, fmt.Errorf("CRITICAL: DATABASE_URL environment variable must be set in production")
+		}
+		fmt.Println("⚠️  WARNING: DATABASE_URL not set. Using local development default.")
+		databaseURL = "postgres://postgres:password@localhost:5432/tenantly?sslmode=disable"
+	}
+
+	// CORS allowed origins — required in production (no wildcard fallback), a
+	// sane localhost default in development.
+	var allowedOrigins []string
+	if raw := os.Getenv("CORS_ALLOWED_ORIGINS"); raw != "" {
+		for _, origin := range strings.Split(raw, ",") {
+			if o := strings.TrimSpace(origin); o != "" {
+				allowedOrigins = append(allowedOrigins, o)
+			}
+		}
+	}
+	if len(allowedOrigins) == 0 {
+		if environment == "production" {
+			return nil, fmt.Errorf("CRITICAL: CORS_ALLOWED_ORIGINS environment variable must be set in production")
+		}
+		fmt.Println("⚠️  WARNING: CORS_ALLOWED_ORIGINS not set. Defaulting to http://localhost:4200 for development.")
+		allowedOrigins = []string{"http://localhost:4200"}
+	}
+
+	// Trusted proxies for Gin's ClientIP() resolution — empty/unset means Gin
+	// ignores X-Forwarded-For entirely and uses the real socket address (safe
+	// default). Set explicitly only if a real reverse proxy forwards client IPs.
+	var trustedProxies []string
+	if raw := os.Getenv("TRUSTED_PROXIES"); raw != "" {
+		for _, proxy := range strings.Split(raw, ",") {
+			if p := strings.TrimSpace(proxy); p != "" {
+				trustedProxies = append(trustedProxies, p)
+			}
+		}
+	}
+
+	cookieSecure := environment == "production"
+	if raw := os.Getenv("COOKIE_SECURE"); raw != "" {
+		if parsed, err := strconv.ParseBool(raw); err == nil {
+			cookieSecure = parsed
+		}
+	}
 
 	config := &Config{
-		DatabaseURL:   getEnv("DATABASE_URL", "postgres://postgres:password@localhost:5432/tenantly?sslmode=disable"),
+		DatabaseURL:   databaseURL,
 		JWTSecret:     jwtSecret,
 		JWTExpiration: jwtExpiration,
 		SMSProvider: SMSConfig{
@@ -106,7 +159,11 @@ func Load() (*Config, error) {
 			SMTPPassword: getEnv("SMTP_PASSWORD", ""),
 			FromEmail:    getEnv("FROM_EMAIL", "noreply@tenantly.com"),
 		},
-		Environment: getEnv("ENVIRONMENT", "development"),
+		Environment:    environment,
+		AllowedOrigins: allowedOrigins,
+		TrustedProxies: trustedProxies,
+		CookieDomain:   getEnv("COOKIE_DOMAIN", ""),
+		CookieSecure:   cookieSecure,
 	}
 	return config, nil
 }

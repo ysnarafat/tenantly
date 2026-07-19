@@ -87,7 +87,7 @@ func (suite *LeaseIntegrationTestSuite) SetupSuite() {
 	leaseService := services.NewLeaseService(suite.leaseRepo, suite.tenantRepo, suite.unitRepo, auditService)
 
 	// Initialize handlers
-	userHandler := NewUserHandler(userService)
+	userHandler := NewUserHandler(userService, "", false)
 	suite.tenantHandler = NewTenantHandler(tenantService)
 	suite.leaseHandler = NewLeaseHandler(leaseService)
 
@@ -117,7 +117,7 @@ func (suite *LeaseIntegrationTestSuite) SetupTest() {
 func (suite *LeaseIntegrationTestSuite) setupTestRoutes(userHandler *UserHandler, auditService *database.AuditService) {
 	// Add middleware
 	suite.router.Use(middleware.SecurityHeadersMiddleware())
-	suite.router.Use(middleware.CORS(suite.config.Environment))
+	suite.router.Use(middleware.CORS(suite.config.AllowedOrigins))
 	suite.router.Use(gin.Logger())
 	suite.router.Use(gin.Recovery())
 

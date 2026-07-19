@@ -15,6 +15,7 @@ import { AttachmentService, Attachment } from '../../core/services/attachment.se
 import { AuthService } from '../../core/services/auth.service';
 import { AppState } from '../../store';
 import * as AuthSelectors from '../../store/auth/auth.selectors';
+import { safeErrorMessage } from '../../shared/utils/error.utils';
 
 interface DashboardStats {
   totalRentDue: number;
@@ -94,7 +95,7 @@ export class Dashboard implements OnInit {
           (l) => l.days_remaining <= 30 && l.days_remaining > 0
         ).length;
       },
-      error: (error) => console.error('Error loading leases:', error),
+      error: (error) => console.error('Error loading leases:', safeErrorMessage(error)),
     });
 
     // Load attachments data
@@ -107,7 +108,7 @@ export class Dashboard implements OnInit {
         this.loading = false;
       },
       error: (error) => {
-        console.error('Error loading attachments:', error);
+        console.error('Error loading attachments:', safeErrorMessage(error));
         this.loading = false;
       },
     });

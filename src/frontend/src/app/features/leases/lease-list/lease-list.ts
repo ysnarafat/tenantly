@@ -22,6 +22,7 @@ import { CreateLeaseDialog } from '../create-lease-dialog/create-lease-dialog';
 import { EditLeaseDialog } from '../edit-lease-dialog/edit-lease-dialog';
 import { LoadingSpinner } from '../../../shared/components/loading-spinner/loading-spinner';
 import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm-delete-dialog/confirm-delete-dialog';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
 
 @Component({
   selector: 'app-lease-list',
@@ -90,7 +91,7 @@ export class LeaseList implements OnInit {
         this.loading = false;
       },
       error: (error) => {
-        console.error('Error loading leases:', error);
+        console.error('Error loading leases:', safeErrorMessage(error));
         this.snackBar.open('Error loading leases', 'Close', { duration: 3000 });
         this.loading = false;
       },
@@ -218,7 +219,7 @@ export class LeaseList implements OnInit {
             this.loadLeases();
           },
           error: (error) => {
-            console.error('Error deleting lease:', error);
+            console.error('Error deleting lease:', safeErrorMessage(error));
             this.snackBar.open('Error deleting lease', 'Close', { duration: 3000 });
           },
         });

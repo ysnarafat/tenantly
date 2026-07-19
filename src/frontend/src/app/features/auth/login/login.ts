@@ -18,6 +18,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { TranslateModule } from '@ngx-translate/core';
 import { AuthService, LoginRequest } from '../../../core/services/auth.service';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
 
 @Component({
   selector: 'app-login',
@@ -77,7 +78,7 @@ export class Login implements OnInit {
         filter((error) => !!error)
       )
       .subscribe((error: unknown) => {
-        console.error('Login error:', error);
+        console.error('Login error:', safeErrorMessage(error));
         const errorMessage =
           (error as { message?: string })?.message || 'Login failed. Please check your credentials.';
         this.snackBar.open(errorMessage, 'Close', { duration: 5000 });

@@ -51,7 +51,6 @@ describe('AuthReducer', () => {
 
   const mockLoginResponse = {
     token: 'test-token',
-    refresh_token: 'test-refresh-token',
     user: mockUser,
     expires_at: '2023-12-31T23:59:59Z',
   };
@@ -88,7 +87,6 @@ describe('AuthReducer', () => {
 
       expect(state.user).toEqual(mockUser);
       expect(state.token).toBe('test-token');
-      expect(state.refreshToken).toBe('test-refresh-token');
       expect(state.expiresAt).toBe('2023-12-31T23:59:59Z');
       expect(state.isAuthenticated).toBe(true);
       expect(state.loading).toBe(false);
@@ -143,7 +141,6 @@ describe('AuthReducer', () => {
 
       expect(state.user).toBe(null);
       expect(state.token).toBe(null);
-      expect(state.refreshToken).toBe(null);
       expect(state.expiresAt).toBe(null);
       expect(state.isAuthenticated).toBe(false);
       expect(state.loading).toBe(false);
@@ -180,7 +177,6 @@ describe('AuthReducer', () => {
 
       expect(state.user).toBe(null);
       expect(state.token).toBe(null);
-      expect(state.refreshToken).toBe(null);
       expect(state.expiresAt).toBe(null);
       expect(state.isAuthenticated).toBe(false);
       expect(state.loading).toBe(false);
@@ -214,7 +210,6 @@ describe('AuthReducer', () => {
 
       expect(state.user).toEqual(mockUser);
       expect(state.token).toBe('test-token');
-      expect(state.refreshToken).toBe('test-refresh-token');
       expect(state.expiresAt).toBe('2023-12-31T23:59:59Z');
       expect(state.isAuthenticated).toBe(true);
       expect(state.loading).toBe(false);
@@ -233,7 +228,6 @@ describe('AuthReducer', () => {
       const state = authReducer(authenticatedState, action);
 
       expect(state.token).toBe(null);
-      expect(state.refreshToken).toBe(null);
       expect(state.expiresAt).toBe(null);
       expect(state.isAuthenticated).toBe(false);
       expect(state.loading).toBe(false);
@@ -315,7 +309,6 @@ describe('AuthReducer', () => {
 
     it('should initialize auth from localStorage on initializeAuth', () => {
       localStorage.setItem('tenantly_token', 'stored-token');
-      localStorage.setItem('tenantly_refresh_token', 'stored-refresh-token');
       localStorage.setItem('tenantly_user', JSON.stringify(mockUser));
       localStorage.setItem('tenantly_expires_at', '2099-12-31T23:59:59Z');
 
@@ -324,14 +317,12 @@ describe('AuthReducer', () => {
 
       expect(state.user).toEqual(mockUser);
       expect(state.token).toBe('stored-token');
-      expect(state.refreshToken).toBe('stored-refresh-token');
       expect(state.expiresAt).toBe('2099-12-31T23:59:59Z');
       expect(state.isAuthenticated).toBe(true);
     });
 
     it('should restore userOrganizations and currentOrganizationId from localStorage on initializeAuth', () => {
       localStorage.setItem('tenantly_token', 'stored-token');
-      localStorage.setItem('tenantly_refresh_token', 'stored-refresh-token');
       localStorage.setItem('tenantly_user', JSON.stringify(mockUser));
       localStorage.setItem('tenantly_expires_at', '2099-12-31T23:59:59Z');
       localStorage.setItem('tenantly_organizations', JSON.stringify([mockOrg1, mockOrg2]));
@@ -346,7 +337,6 @@ describe('AuthReducer', () => {
 
     it('should not initialize auth from localStorage if token is expired', () => {
       localStorage.setItem('tenantly_token', 'expired-token');
-      localStorage.setItem('tenantly_refresh_token', 'expired-refresh-token');
       localStorage.setItem('tenantly_user', JSON.stringify(mockUser));
       localStorage.setItem('tenantly_expires_at', '2020-01-01T00:00:00Z');
 
@@ -392,11 +382,10 @@ describe('AuthReducer', () => {
       expect(state.error).toBe(null);
     });
 
-    it('should update token, refreshToken, expiresAt and currentOrganizationId on switchOrganizationSuccess', () => {
+    it('should update token, expiresAt and currentOrganizationId on switchOrganizationSuccess', () => {
       const loadingState: AuthState = { ...initialState, loading: true };
       const response = {
         token: 'new-token',
-        refresh_token: 'new-refresh-token',
         organization: mockOrg1,
         expires_at: '2099-06-01T00:00:00Z',
       };
@@ -404,7 +393,6 @@ describe('AuthReducer', () => {
       const state = authReducer(loadingState, action);
 
       expect(state.token).toBe('new-token');
-      expect(state.refreshToken).toBe('new-refresh-token');
       expect(state.expiresAt).toBe('2099-06-01T00:00:00Z');
       expect(state.currentOrganizationId).toBe(100); // mockOrg1.organization_id
       expect(state.loading).toBe(false);
@@ -415,7 +403,6 @@ describe('AuthReducer', () => {
       const date = new Date('2099-06-01T00:00:00Z');
       const response = {
         token: 'new-token',
-        refresh_token: 'new-refresh',
         organization: mockOrg1,
         expires_at: date,
       };

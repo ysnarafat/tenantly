@@ -208,7 +208,7 @@ func (m *MockPaymentRepo) GetTenantPaymentSummary(orgID int) ([]*models.TenantRe
 
 func (m *MockPaymentRepo) GetPaymentAnalyticsByPeriod(orgID int, startDate, endDate time.Time) (*models.PaymentAnalyticsResult, error) {
 	return &models.PaymentAnalyticsResult{
-		MethodCounts:  map[string]int{},
+		MethodCounts:  map[string]int64{},
 		StatusCounts:  map[string]int64{},
 		DailyTrend:    map[string]int64{},
 		TotalPayments: 0,
@@ -571,32 +571,35 @@ func newPaymentServiceWithMocks() (
 
 func sampleUnit(id, buildingID, propertyID int) *models.Unit {
 	return &models.Unit{
-		ID:         id,
-		BuildingID: buildingID,
-		PropertyID: propertyID,
-		UnitNumber: "U-101",
-		UnitType:   models.UnitTypeApartment,
-		Active:     true,
+		ID:             id,
+		BuildingID:     buildingID,
+		PropertyID:     propertyID,
+		OrganizationID: 1,
+		UnitNumber:     "U-101",
+		UnitType:       models.UnitTypeApartment,
+		Active:         true,
 	}
 }
 
 func sampleBuilding(id, propertyID int) *models.Building {
 	return &models.Building{
-		ID:           id,
-		PropertyID:   propertyID,
-		BuildingName: "Block A",
-		BuildingCode: "BLK-A",
-		BuildingType: models.BuildingTypeResidential,
-		ActiveStatus: true,
+		ID:             id,
+		PropertyID:     propertyID,
+		OrganizationID: 1,
+		BuildingName:   "Block A",
+		BuildingCode:   "BLK-A",
+		BuildingType:   models.BuildingTypeResidential,
+		ActiveStatus:   true,
 	}
 }
 
 func sampleProperty(id int) *models.Property {
 	return &models.Property{
-		ID:           id,
-		PropertyName: "Sunrise Residency",
-		PropertyCode: "SR-001",
-		Active:       true,
+		ID:             id,
+		OrganizationID: 1,
+		PropertyName:   "Sunrise Residency",
+		PropertyCode:   "SR-001",
+		Active:         true,
 	}
 }
 
@@ -1306,7 +1309,7 @@ func TestGenerateBuildingPaymentReport(t *testing.T) {
 			payRepo.shouldFailStats = tc.statsFail
 			payRepo.shouldFailPeriod = tc.periodFail
 
-			report, err := svc.GenerateBuildingPaymentReport(tc.buildingID, start, end)
+			report, err := svc.GenerateBuildingPaymentReport(tc.buildingID, 1, start, end)
 
 			if tc.wantErr {
 				if err == nil {
@@ -1411,7 +1414,7 @@ func TestGeneratePropertyPaymentReport(t *testing.T) {
 			bldgRepo.shouldFail = tc.bldgFail
 			payRepo.shouldFailStats = tc.statsFail
 
-			report, err := svc.GeneratePropertyPaymentReport(tc.propertyID, start, end)
+			report, err := svc.GeneratePropertyPaymentReport(tc.propertyID, 1, start, end)
 
 			if tc.wantErr {
 				if err == nil {
@@ -1460,7 +1463,7 @@ func TestGeneratePropertyPaymentReport_BuildingBreakdownSkipOnError(t *testing.T
 	// Property stats succeed but per-building stats fail
 	payRepo.shouldFailStats = true
 
-	report, err := svc.GeneratePropertyPaymentReport(3, start, end)
+	report, err := svc.GeneratePropertyPaymentReport(3, 1, start, end)
 	if err == nil {
 		// The service returns an error when property stats fail; that's expected
 		// because GetPropertyPaymentStats uses the same shouldFailStats flag.

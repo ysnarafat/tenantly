@@ -434,7 +434,7 @@ func TestPaymentHandler_DateRangeParsing(t *testing.T) {
 		reportCalled := false
 
 		svc := &mockPaymentService{
-			generateBuildingReportFn: func(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error) {
+			generateBuildingReportFn: func(buildingID, orgID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error) {
 				reportCalled = true
 				return &models.BuildingPaymentReport{}, nil
 			},

@@ -125,7 +125,7 @@ func sampleCollectionSummaryReport() *models.CollectionSummaryReport {
 func samplePaymentAnalysisReport() *models.PaymentAnalysisReport {
 	return &models.PaymentAnalysisReport{
 		OrganizationID:     1,
-		PaymentMethods:     map[string]int{"Bank Transfer": 5, "Cash": 3},
+		PaymentMethods:     map[string]int64{"Bank Transfer": 5, "Cash": 3},
 		StatusDistribution: map[string]int64{"Paid": 7, "Pending": 1},
 		DailyTrend:         map[string]int64{"2026-05-01": 2, "2026-05-02": 3},
 		TotalPayments:      8,

@@ -4,27 +4,66 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ysnarafat/tenantly/internal/interfaces"
+	"github.com/ysnarafat/tenantly/internal/middleware"
 	"github.com/ysnarafat/tenantly/internal/models"
 )
 
+const refreshCookieName = "refresh_token"
+const refreshCookiePath = "/api/v1/auth"
+const refreshCookieMaxAge = 7 * 24 * 60 * 60 // 7 days, in seconds — matches generateTokens' refresh token expiry
+
 type UserHandler struct {
 	userService interfaces.UserServiceInterface
+	// accountLoginLimiter throttles login attempts per account (username),
+	// independent of the per-IP limiter applied at the route level — mitigates
+	// distributed credential stuffing against a single account from many IPs.
+	accountLoginLimiter *middleware.RateLimiter
+	cookieDomain        string
+	cookieSecure        bool
 }
 
-func NewUserHandler(userService interfaces.UserServiceInterface) *UserHandler {
-	return &UserHandler{userService: userService}
+func NewUserHandler(userService interfaces.UserServiceInterface, cookieDomain string, cookieSecure bool) *UserHandler {
+	return &UserHandler{
+		userService:         userService,
+		accountLoginLimiter: middleware.NewRateLimiter(5, 15*time.Minute),
+		cookieDomain:        cookieDomain,
+		cookieSecure:        cookieSecure,
+	}
+}
+
+// setRefreshCookie sets the refresh token as an httpOnly cookie rather than
+// returning it in the JSON body — an XSS payload that can read localStorage
+// cannot read an httpOnly cookie, so it can't steal the long-lived credential.
+func (h *UserHandler) setRefreshCookie(c *gin.Context, token string) {
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(refreshCookieName, token, refreshCookieMaxAge, refreshCookiePath, h.cookieDomain, h.cookieSecure, true)
+}
+
+func (h *UserHandler) clearRefreshCookie(c *gin.Context) {
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(refreshCookieName, "", -1, refreshCookiePath, h.cookieDomain, h.cookieSecure, true)
 }
 
 func (h *UserHandler) Login(c *gin.Context) {
 	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request format",
-			"code":    "INVALID_REQUEST",
-			"details": err.Error(),
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request format", err)
+		return
+	}
+
+	// Per-account throttling, independent of the route's per-IP limiter — a
+	// distributed credential-stuffing attempt against one account from many
+	// IPs would otherwise never trip the per-IP limit.
+	accountKey := strings.ToLower(strings.TrimSpace(req.Username))
+	if !h.accountLoginLimiter.Allow(accountKey) {
+		c.JSON(http.StatusTooManyRequests, gin.H{
+			"error": "Too many login attempts for this account. Please try again later.",
+			"code":  "ACCOUNT_RATE_LIMIT_EXCEEDED",
 		})
 		return
 	}
@@ -34,35 +73,31 @@ func (h *UserHandler) Login(c *gin.Context) {
 
 	response, err := h.userService.Login(&req, clientIP, userAgent)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": err.Error(),
-			"code":  "LOGIN_FAILED",
-		})
+		respondError(c, http.StatusUnauthorized, "LOGIN_FAILED", "Invalid credentials", err)
 		return
 	}
 
+	h.setRefreshCookie(c, response.RefreshToken)
 	c.JSON(http.StatusOK, response)
 }
 
 func (h *UserHandler) RefreshToken(c *gin.Context) {
-	var req models.RefreshTokenRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request format",
-			"code":  "INVALID_REQUEST",
-		})
-		return
-	}
-
-	response, err := h.userService.RefreshToken(req.RefreshToken)
-	if err != nil {
+	refreshToken, err := c.Cookie(refreshCookieName)
+	if err != nil || refreshToken == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": err.Error(),
+			"error": "Refresh token missing",
 			"code":  "TOKEN_REFRESH_FAILED",
 		})
 		return
 	}
 
+	response, err := h.userService.RefreshToken(refreshToken)
+	if err != nil {
+		respondError(c, http.StatusUnauthorized, "TOKEN_REFRESH_FAILED", "Failed to refresh token", err)
+		return
+	}
+
+	h.setRefreshCookie(c, response.RefreshToken)
 	c.JSON(http.StatusOK, response)
 }
 
@@ -87,6 +122,7 @@ func (h *UserHandler) Logout(c *gin.Context) {
 		return
 	}
 
+	h.clearRefreshCookie(c)
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Successfully logged out",
 	})
@@ -112,10 +148,7 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 	}
 
 	if err := h.userService.ChangePassword(userID.(int), req.CurrentPassword, req.NewPassword); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-			"code":  "PASSWORD_CHANGE_FAILED",
-		})
+		respondError(c, http.StatusBadRequest, "PASSWORD_CHANGE_FAILED", "Failed to change password", err)
 		return
 	}
 
@@ -127,11 +160,7 @@ func (h *UserHandler) ChangePassword(c *gin.Context) {
 func (h *UserHandler) ResetPassword(c *gin.Context) {
 	var req models.ResetPasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request format",
-			"code":    "INVALID_REQUEST",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request format", err)
 		return
 	}
 
@@ -160,42 +189,29 @@ func (h *UserHandler) SetOrganization(c *gin.Context) {
 
 	var req models.SetOrganizationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request format",
-			"code":    "INVALID_REQUEST",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request format", err)
 		return
 	}
 
 	response, err := h.userService.SetOrganization(userID.(int), &req)
 	if err != nil {
-		c.JSON(http.StatusForbidden, gin.H{
-			"error": err.Error(),
-			"code":  "ORGANIZATION_SWITCH_FAILED",
-		})
+		respondError(c, http.StatusForbidden, "ORGANIZATION_SWITCH_FAILED", "Failed to switch organization", err)
 		return
 	}
 
+	h.setRefreshCookie(c, response.RefreshToken)
 	c.JSON(http.StatusOK, response)
 }
 
 func (h *UserHandler) ConfirmPasswordReset(c *gin.Context) {
 	var req models.ConfirmPasswordResetRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request format",
-			"code":    "INVALID_REQUEST",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request format", err)
 		return
 	}
 
 	if err := h.userService.ConfirmPasswordReset(req.Token, req.NewPassword); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-			"code":  "PASSWORD_RESET_CONFIRMATION_FAILED",
-		})
+		respondError(c, http.StatusBadRequest, "PASSWORD_RESET_CONFIRMATION_FAILED", "Failed to reset password", err)
 		return
 	}
 
@@ -207,7 +223,7 @@ func (h *UserHandler) ConfirmPasswordReset(c *gin.Context) {
 func (h *UserHandler) CreateUser(c *gin.Context) {
 	var req models.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request format", err)
 		return
 	}
 
@@ -239,7 +255,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 
 	user, err := h.userService.CreateUser(&req)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "CREATE_USER_FAILED", "Failed to create user", err)
 		return
 	}
 
@@ -283,7 +299,7 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 	}
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondError(c, http.StatusInternalServerError, "GET_USERS_FAILED", "Failed to retrieve users", err)
 		return
 	}
 
@@ -341,7 +357,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 
 	var req models.UpdateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request format", err)
 		return
 	}
 
@@ -357,7 +373,7 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 		err = h.userService.UpdateUserInOrganization(id, &req, orgID)
 	}
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondError(c, http.StatusInternalServerError, "UPDATE_USER_FAILED", "Failed to update user", err)
 		return
 	}
 
@@ -383,7 +399,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 		err = h.userService.DeleteUserInOrganization(id, orgID)
 	}
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondError(c, http.StatusInternalServerError, "DELETE_USER_FAILED", "Failed to delete user", err)
 		return
 	}
 
@@ -393,10 +409,7 @@ func (h *UserHandler) DeleteUser(c *gin.Context) {
 func (h *UserHandler) RegisterWithInvitation(c *gin.Context) {
 	var req models.RegisterWithInvitationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request format",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request format", err)
 		return
 	}
 
@@ -413,10 +426,7 @@ func (h *UserHandler) RegisterWithInvitation(c *gin.Context) {
 			statusCode = http.StatusBadRequest
 		}
 
-		c.JSON(statusCode, gin.H{
-			"error": err.Error(),
-			"code":  "REGISTRATION_FAILED",
-		})
+		respondError(c, statusCode, "REGISTRATION_FAILED", "Failed to complete registration", err)
 		return
 	}
 

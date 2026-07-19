@@ -44,6 +44,7 @@ import { PaymentService } from '../../core/services/payment.service';
 import { BuildingService } from '../../core/services/building.service';
 import { PropertyService } from '../../core/services/property.service';
 import { Building, Property } from '../../core/models';
+import { safeErrorMessage } from '../../shared/utils/error.utils';
 
 export interface ReportTemplate {
   id: string;
@@ -264,7 +265,7 @@ export class ReportAnalysis implements OnInit, OnDestroy {
         this.loadingMetrics = false;
       },
       error: (error) => {
-        console.error('Error loading dashboard metrics:', error);
+        console.error('Error loading dashboard metrics:', safeErrorMessage(error));
         this.snackBar.open('Error loading report data', 'Close', { duration: 3000 });
         this.loadingMetrics = false;
       },
@@ -290,7 +291,7 @@ export class ReportAnalysis implements OnInit, OnDestroy {
           this.snackBar.open('Ledger report generated', 'Close', { duration: 2000 });
         },
         error: (error) => {
-          console.error('Error generating ledger report:', error);
+          console.error('Error generating ledger report:', safeErrorMessage(error));
           this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
           this.generatingReport = false;
         },
@@ -309,7 +310,7 @@ export class ReportAnalysis implements OnInit, OnDestroy {
           this.snackBar.open('Tenant report generated', 'Close', { duration: 2000 });
         },
         error: (error) => {
-          console.error('Error generating tenant report:', error);
+          console.error('Error generating tenant report:', safeErrorMessage(error));
           this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
           this.generatingReport = false;
         },
@@ -333,7 +334,7 @@ export class ReportAnalysis implements OnInit, OnDestroy {
           this.snackBar.open('Property analytics generated', 'Close', { duration: 2000 });
         },
         error: (error) => {
-          console.error('Error generating property analytics:', error);
+          console.error('Error generating property analytics:', safeErrorMessage(error));
           this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
           this.generatingReport = false;
         },
@@ -368,7 +369,7 @@ export class ReportAnalysis implements OnInit, OnDestroy {
           this.snackBar.open('Building performance report generated', 'Close', { duration: 2000 });
         },
         error: (error) => {
-          console.error('Error generating building report:', error);
+          console.error('Error generating building report:', safeErrorMessage(error));
           this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
           this.generatingReport = false;
         },
@@ -393,7 +394,7 @@ export class ReportAnalysis implements OnInit, OnDestroy {
           this.snackBar.open('Report generated', 'Close', { duration: 2000 });
         },
         error: (error) => {
-          console.error('Error generating report:', error);
+          console.error('Error generating report:', safeErrorMessage(error));
           this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
           this.generatingReport = false;
         },
@@ -418,7 +419,7 @@ export class ReportAnalysis implements OnInit, OnDestroy {
           this.snackBar.open('Report generated', 'Close', { duration: 2000 });
         },
         error: (error) => {
-          console.error('Error generating report:', error);
+          console.error('Error generating report:', safeErrorMessage(error));
           this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
           this.generatingReport = false;
         },

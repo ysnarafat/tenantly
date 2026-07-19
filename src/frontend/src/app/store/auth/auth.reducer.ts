@@ -6,7 +6,6 @@ import * as AuthActions from './auth.actions';
 export interface AuthState {
   user: User | null;
   token: string | null;
-  refreshToken: string | null;
   expiresAt: string | null;
   isAuthenticated: boolean;
   loading: boolean;
@@ -15,10 +14,11 @@ export interface AuthState {
   currentOrganizationId: number | null;
 }
 
-// Initialize state from localStorage if available
+// Initialize state from localStorage if available. The refresh token is never
+// stored in localStorage — it lives only in an httpOnly cookie the backend
+// sets and reads directly, so it's not readable (or storable) here.
 const initializeFromStorage = (): AuthState => {
   const token = localStorage.getItem('tenantly_token');
-  const refreshToken = localStorage.getItem('tenantly_refresh_token');
   const userStr = localStorage.getItem('tenantly_user');
   const expiresAt = localStorage.getItem('tenantly_expires_at');
 
@@ -33,7 +33,6 @@ const initializeFromStorage = (): AuthState => {
       return {
         user,
         token,
-        refreshToken,
         expiresAt,
         isAuthenticated: true,
         loading: false,
@@ -47,7 +46,6 @@ const initializeFromStorage = (): AuthState => {
   return {
     user: null,
     token: null,
-    refreshToken: null,
     expiresAt: null,
     isAuthenticated: false,
     loading: false,
@@ -73,7 +71,6 @@ export const authReducer = createReducer(
     ...state,
     user: response.user,
     token: response.token,
-    refreshToken: response.refresh_token,
     expiresAt:
       typeof response.expires_at === 'string'
         ? response.expires_at
@@ -91,7 +88,6 @@ export const authReducer = createReducer(
     ...state,
     user: null,
     token: null,
-    refreshToken: null,
     expiresAt: null,
     isAuthenticated: false,
     loading: false,
@@ -102,7 +98,6 @@ export const authReducer = createReducer(
   on(AuthActions.logout, () => ({
     user: null,
     token: null,
-    refreshToken: null,
     expiresAt: null,
     isAuthenticated: false,
     loading: true,
@@ -114,7 +109,6 @@ export const authReducer = createReducer(
   on(AuthActions.logoutSuccess, () => ({
     user: null,
     token: null,
-    refreshToken: null,
     expiresAt: null,
     isAuthenticated: false,
     loading: false,
@@ -140,7 +134,6 @@ export const authReducer = createReducer(
     ...state,
     user: response.user,
     token: response.token,
-    refreshToken: response.refresh_token,
     expiresAt:
       typeof response.expires_at === 'string'
         ? response.expires_at
@@ -153,7 +146,6 @@ export const authReducer = createReducer(
   on(AuthActions.refreshTokenFailure, (state, { error }) => ({
     ...state,
     token: null,
-    refreshToken: null,
     expiresAt: null,
     isAuthenticated: false,
     loading: false,
@@ -218,7 +210,6 @@ export const authReducer = createReducer(
   on(AuthActions.switchOrganizationSuccess, (state, { response }) => ({
     ...state,
     token: response.token,
-    refreshToken: response.refresh_token,
     expiresAt:
       typeof response.expires_at === 'string'
         ? response.expires_at
@@ -248,7 +239,6 @@ export const authReducer = createReducer(
   // Initialize Auth (load from localStorage)
   on(AuthActions.initializeAuth, (state) => {
     const token = localStorage.getItem('tenantly_token');
-    const refreshToken = localStorage.getItem('tenantly_refresh_token');
     const userStr = localStorage.getItem('tenantly_user');
     const expiresAt = localStorage.getItem('tenantly_expires_at');
 
@@ -264,7 +254,6 @@ export const authReducer = createReducer(
           ...state,
           user,
           token,
-          refreshToken,
           expiresAt,
           isAuthenticated: true,
           userOrganizations,

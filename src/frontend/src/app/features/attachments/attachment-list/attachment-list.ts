@@ -20,6 +20,7 @@ import {
   AttachmentType,
 } from '../../../core/services/attachment.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
 
 @Component({
   selector: 'app-attachment-list',
@@ -89,7 +90,7 @@ export class AttachmentList implements OnInit {
         this.loading = false;
       },
       error: (error) => {
-        console.error('Error loading attachments:', error);
+        console.error('Error loading attachments:', safeErrorMessage(error));
         this.snackBar.open('Error loading attachments', 'Close', { duration: 3000 });
         this.loading = false;
       },
@@ -185,7 +186,7 @@ export class AttachmentList implements OnInit {
         window.URL.revokeObjectURL(url);
       },
       error: (error) => {
-        console.error('Error downloading attachment:', error);
+        console.error('Error downloading attachment:', safeErrorMessage(error));
         this.snackBar.open('Error downloading attachment', 'Close', { duration: 3000 });
       },
     });
@@ -217,7 +218,7 @@ export class AttachmentList implements OnInit {
           this.loadAttachments();
         },
         error: (error) => {
-          console.error('Error deleting attachment:', error);
+          console.error('Error deleting attachment:', safeErrorMessage(error));
           this.snackBar.open('Error deleting attachment', 'Close', { duration: 3000 });
         },
       });

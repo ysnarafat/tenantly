@@ -29,6 +29,12 @@ func New(cfg *config.Config, db *sqlx.DB) *Server {
 		router: gin.Default(),
 	}
 
+	// Empty/nil means Gin ignores X-Forwarded-For entirely and uses the real
+	// socket address — safe default unless a specific reverse proxy is configured.
+	if err := s.router.SetTrustedProxies(cfg.TrustedProxies); err != nil {
+		panic(fmt.Sprintf("invalid TRUSTED_PROXIES configuration: %v", err))
+	}
+
 	s.setupMiddleware()
 	s.setupRoutes()
 
@@ -48,8 +54,7 @@ func (s *Server) setupMiddleware() {
 		c.Next()
 	})
 
-	// CORS is handled by nginx proxy, no need for API-level CORS
-	s.router.Use(middleware.CORS(s.config.Environment))
+	s.router.Use(middleware.CORS(s.config.AllowedOrigins))
 
 	// Rate limiting (5 requests per second per IP)
 	rateLimiter := middleware.NewRateLimiter(100, time.Minute)
@@ -96,7 +101,7 @@ func (s *Server) setupRoutes() {
 	paymentService := services.NewPaymentService(paymentRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
 	reportService := services.NewReportService(paymentRepo, propertyRepo)
 	// Initialize handlers
-	userHandler := handlers.NewUserHandler(userService)
+	userHandler := handlers.NewUserHandler(userService, s.config.CookieDomain, s.config.CookieSecure)
 	propertyHandler := handlers.NewPropertyHandler(propertyService)
 	buildingHandler := handlers.NewBuildingHandler(buildingService)
 	unitHandler := handlers.NewUnitHandler(unitService)
@@ -165,22 +170,24 @@ func (s *Server) setupRoutes() {
 				users.DELETE("/:id", middleware.RequireSuperAdminOrAdmin(), userHandler.DeleteUser)
 			}
 
-			// Organization management routes (SUPER_ADMIN only)
+			// Organization management routes
 			organizations := protected.Group("/organizations")
-			organizations.Use(middleware.RequireSuperAdmin())
 			{
-				organizations.POST("", organizationHandler.CreateOrganization)
-				organizations.GET("", organizationHandler.ListOrganizations)
+				// Platform-level management (SUPER_ADMIN only)
+				organizations.POST("", middleware.RequireSuperAdmin(), organizationHandler.CreateOrganization)
+				organizations.GET("", middleware.RequireSuperAdmin(), organizationHandler.ListOrganizations)
 
-				// User invitation routes within organization (register before generic :id route)
-				organizations.POST("/:id/invitations", middleware.OrganizationValidationMiddleware(organizationRepo), middleware.RequireOrgAdmin(organizationRepo), organizationHandler.InviteUser)
-				organizations.GET("/:id/invitations", middleware.OrganizationValidationMiddleware(organizationRepo), middleware.RequireOrgAdmin(organizationRepo), organizationHandler.GetPendingInvitations)
-				organizations.DELETE("/:id/invitations/:invitation_id", middleware.RequireOrgAdmin(organizationRepo), organizationHandler.RevokeInvitation)
+				// User invitation routes within organization — SUPER_ADMIN, or ORG_ADMIN of
+				// THIS organization specifically (RequireOrgAdmin verifies membership via DB,
+				// not just the JWT role claim). Register before the generic :id route.
+				organizations.POST("/:id/invitations", middleware.OrganizationValidationMiddleware(organizationRepo), middleware.RequireOrgAdmin(organizationRepo, userOrgRoleRepo), organizationHandler.InviteUser)
+				organizations.GET("/:id/invitations", middleware.OrganizationValidationMiddleware(organizationRepo), middleware.RequireOrgAdmin(organizationRepo, userOrgRoleRepo), organizationHandler.GetPendingInvitations)
+				organizations.DELETE("/:id/invitations/:invitation_id", middleware.OrganizationValidationMiddleware(organizationRepo), middleware.RequireOrgAdmin(organizationRepo, userOrgRoleRepo), organizationHandler.RevokeInvitation)
 
-				// Generic organization routes (register after specific nested routes)
-				organizations.GET("/:id", organizationHandler.GetOrganization)
-				organizations.PUT("/:id", organizationHandler.UpdateOrganization)
-				organizations.DELETE("/:id", organizationHandler.DeleteOrganization)
+				// Generic organization routes (SUPER_ADMIN only; register after specific nested routes)
+				organizations.GET("/:id", middleware.RequireSuperAdmin(), organizationHandler.GetOrganization)
+				organizations.PUT("/:id", middleware.RequireSuperAdmin(), organizationHandler.UpdateOrganization)
+				organizations.DELETE("/:id", middleware.RequireSuperAdmin(), organizationHandler.DeleteOrganization)
 			}
 
 			// Property management routes
@@ -234,14 +241,17 @@ func (s *Server) setupRoutes() {
 				units.GET("/:id/hierarchy", middleware.RequireAnyRole(), unitHandler.GetUnitHierarchyContext)
 			}
 
-			// Placeholder routes for other modules (will be implemented in later tasks)
+			// Placeholder routes for other modules (will be implemented in later tasks).
+			// Org-scoped and role-checked now, matching every other data route group,
+			// so real handlers can't land here later without access control already in place.
 			shops := protected.Group("/shops")
+			shops.Use(middleware.RequireOrgContext())
 			{
-				shops.GET("", s.handlePlaceholder("Get shops"))
-				shops.POST("", s.handlePlaceholder("Create shop"))
-				shops.GET("/:id", s.handlePlaceholder("Get shop"))
-				shops.PUT("/:id", s.handlePlaceholder("Update shop"))
-				shops.DELETE("/:id", s.handlePlaceholder("Delete shop"))
+				shops.GET("", middleware.RequireAnyRole(), s.handlePlaceholder("Get shops"))
+				shops.POST("", middleware.RequireAdminOrPropertyManager(), s.handlePlaceholder("Create shop"))
+				shops.GET("/:id", middleware.RequireAnyRole(), s.handlePlaceholder("Get shop"))
+				shops.PUT("/:id", middleware.RequireAdminOrPropertyManager(), s.handlePlaceholder("Update shop"))
+				shops.DELETE("/:id", middleware.RequireAdmin(), s.handlePlaceholder("Delete shop"))
 			}
 
 			tenants := protected.Group("/tenants")

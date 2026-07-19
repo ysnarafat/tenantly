@@ -529,7 +529,7 @@ func (suite *BuildingAPIIntegrationTestSuite) TestGetBuildingUnits() {
 		},
 	}
 
-	suite.mockService.On("GetBuildingUnits", 1, 1, 20).Return(unitsResponse, nil)
+	suite.mockService.On("GetBuildingUnits", 1, 0, 1, 20).Return(unitsResponse, nil)
 
 	w := suite.makeRequest("GET", "/api/v1/buildings/1/units", nil)
 
@@ -607,7 +607,7 @@ func (suite *BuildingAPIIntegrationTestSuite) TestUpdateBuildingStatus() {
 		ActiveStatus: true,
 	}
 
-	suite.mockService.On("UpdateBuildingStatus", 1, statusReq).Return(updatedBuilding, nil)
+	suite.mockService.On("UpdateBuildingStatus", 1, 0, statusReq).Return(updatedBuilding, nil)
 
 	w := suite.makeRequest("PUT", "/api/v1/buildings/1/status", statusReq)
 

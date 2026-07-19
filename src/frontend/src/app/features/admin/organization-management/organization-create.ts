@@ -11,6 +11,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { TranslateModule } from '@ngx-translate/core';
 import { CreateOrgRequest } from '../../../core/models';
 import { OrganizationService } from '../../../core/services/organization.service';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
 
 @Component({
   selector: 'app-organization-create',
@@ -74,7 +75,7 @@ export class OrganizationCreateComponent implements OnInit {
         this.router.navigate(['/admin/organizations']);
       },
       error: (error) => {
-        console.error('Error creating organization:', error);
+        console.error('Error creating organization:', safeErrorMessage(error));
         this.snackBar.open('Failed to create organization', 'Close', { duration: 3000 });
         this.loading = false;
       },

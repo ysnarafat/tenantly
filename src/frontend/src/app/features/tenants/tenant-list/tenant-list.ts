@@ -23,6 +23,7 @@ import { cleanEmptyFields } from '../../../shared/utils/object.utils';
 import { DataTable } from '../../../shared/components/data-table/data-table';
 import { PermissionService } from '../../../core/services/permission.service';
 import { maskNid, maskPhone, RESTRICTED_LABEL } from '../../../shared/utils/pii-mask.utils';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
 import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm-delete-dialog/confirm-delete-dialog';
 
 @Component({
@@ -127,7 +128,7 @@ export class TenantList implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        console.error('Error fetching tenants:', err);
+        console.error('Error fetching tenants:', safeErrorMessage(err));
         this.snackBar.open('Failed to load tenants', 'Close', { duration: 3000 });
         this.loading = false;
       },
@@ -237,7 +238,6 @@ export class TenantList implements OnInit {
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         const cleanedResult = cleanEmptyFields(result);
-        console.log('Updating tenant with ID:', tenant.id, 'Data:', cleanedResult);
         this.tenantService.updateTenant(tenant.id, cleanedResult).subscribe({
           next: () => {
             this.snackBar.open('Tenant updated successfully', 'Close', { duration: 3000 });

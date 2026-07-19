@@ -23,7 +23,7 @@ func NewTenantHandler(tenantService interfaces.TenantServiceInterface) *TenantHa
 func (h *TenantHandler) CreateTenant(c *gin.Context) {
 	var req models.CreateTenantRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "CREATE_TENANT_INVALID_BODY", "Invalid request body", err)
 		return
 	}
 
@@ -34,10 +34,10 @@ func (h *TenantHandler) CreateTenant(c *gin.Context) {
 	if err != nil {
 		// Check for uniqueness errors
 		if err.Error() == "email already exists" || err.Error() == "NID number already exists" {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			respondError(c, http.StatusConflict, "CREATE_TENANT_CONFLICT", err.Error(), err)
 			return
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "CREATE_TENANT_FAILED", "Failed to create tenant", err)
 		return
 	}
 
@@ -52,7 +52,7 @@ func (h *TenantHandler) GetAllTenants(c *gin.Context) {
 
 	response, err := h.tenantService.GetAllTenants(page, pageSize, orgID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondError(c, http.StatusInternalServerError, "GET_ALL_TENANTS_FAILED", "Failed to retrieve tenants", err)
 		return
 	}
 
@@ -87,7 +87,7 @@ func (h *TenantHandler) UpdateTenant(c *gin.Context) {
 
 	var req models.UpdateTenantRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "UPDATE_TENANT_INVALID_BODY", "Invalid request body", err)
 		return
 	}
 
@@ -97,10 +97,10 @@ func (h *TenantHandler) UpdateTenant(c *gin.Context) {
 	tenant, err := h.tenantService.UpdateTenant(id, &req, userID, orgID)
 	if err != nil {
 		if err.Error() == "email already exists" || err.Error() == "NID number already exists" {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			respondError(c, http.StatusConflict, "UPDATE_TENANT_CONFLICT", err.Error(), err)
 			return
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "UPDATE_TENANT_FAILED", "Failed to update tenant", err)
 		return
 	}
 
@@ -120,10 +120,10 @@ func (h *TenantHandler) DeleteTenant(c *gin.Context) {
 
 	if err := h.tenantService.DeleteTenant(id, userID, orgID); err != nil {
 		if err.Error() == "cannot delete tenant with active leases" {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			respondError(c, http.StatusConflict, "DELETE_TENANT_CONFLICT", err.Error(), err)
 			return
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "DELETE_TENANT_FAILED", "Failed to delete tenant", err)
 		return
 	}
 

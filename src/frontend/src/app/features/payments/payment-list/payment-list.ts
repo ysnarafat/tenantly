@@ -47,6 +47,7 @@ import {
 import { debounceTime, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { DataTable } from '../../../shared/components/data-table/data-table';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
 
 interface BuildingNode {
   building_id: number;
@@ -226,7 +227,7 @@ export class PaymentList implements OnInit {
       error: (err) => {
         this.loading.set(false);
         this.showError('Failed to load payments');
-        console.error(err);
+        console.error(safeErrorMessage(err));
       },
     });
   }

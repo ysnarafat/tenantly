@@ -21,6 +21,12 @@ COPY --from=builder /app/dist/tenantly-frontend/browser /usr/share/nginx/html
 
 COPY nginx.conf /etc/nginx/nginx.conf
 
-EXPOSE 80
+# Run as the image's built-in non-root nginx user. Listens on 8080 (not 80)
+# since binding a privileged port requires root.
+RUN chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/run /var/log/nginx
+
+USER nginx
+
+EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]

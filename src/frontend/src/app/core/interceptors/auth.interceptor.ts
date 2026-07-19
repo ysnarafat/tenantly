@@ -2,10 +2,35 @@ import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { catchError, switchMap, throwError, take, filter } from 'rxjs';
+import { Observable, catchError, switchMap, throwError, take, filter, finalize, shareReplay } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { AppState } from '../../store';
 import * as AuthSelectors from '../../store/auth/auth.selectors';
+
+// Shared across all interceptor invocations (module-level, not per-call) so
+// that N concurrent requests hitting a 401 (or an expired token) at once
+// trigger exactly one refresh dispatch instead of one each — avoids a stampede
+// of parallel /auth/refresh calls racing to rotate the same refresh token.
+let refreshInFlight$: Observable<string | null> | null = null;
+
+function triggerRefresh(
+  authService: AuthService,
+  store: Store<AppState>,
+  previousToken: string | null
+): Observable<string | null> {
+  if (!refreshInFlight$) {
+    authService.refreshToken();
+    refreshInFlight$ = store.select(AuthSelectors.selectToken).pipe(
+      filter((newToken) => !!newToken && newToken !== previousToken),
+      take(1),
+      finalize(() => {
+        refreshInFlight$ = null;
+      }),
+      shareReplay(1)
+    );
+  }
+  return refreshInFlight$;
+}
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
@@ -43,13 +68,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     return next(authReq).pipe(
       catchError((error: HttpErrorResponse) => {
         if (error.status === 401) {
-          // Token might be expired, try to refresh
-          authService.refreshToken();
-
-          // Wait for refresh to complete and retry
-          return store.select(AuthSelectors.selectToken).pipe(
-            filter((newToken) => !!newToken && newToken !== token),
-            take(1),
+          // Token might be expired, try to refresh (deduped — see triggerRefresh)
+          return triggerRefresh(authService, store, token).pipe(
             switchMap((newToken) => {
               const retryReq = req.clone({
                 headers: req.headers.set('Authorization', `Bearer ${newToken}`),
@@ -67,13 +87,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         return throwError(() => error);
       })
     );
-  } else if (localStorage.getItem('tenantly_refresh_token') && isTokenExpired) {
-    // Token is expired but we have a refresh token
-    authService.refreshToken();
-
-    return store.select(AuthSelectors.selectToken).pipe(
-      filter((newToken) => !!newToken),
-      take(1),
+  } else if (isTokenExpired) {
+    // Token is expired — attempt a refresh. The httpOnly refresh cookie (if
+    // any) is sent automatically by the browser on the /auth/refresh call;
+    // there's nothing to check in localStorage anymore.
+    return triggerRefresh(authService, store, token).pipe(
       switchMap((newToken) => {
         const authReq = req.clone({
           headers: req.headers.set('Authorization', `Bearer ${newToken}`),

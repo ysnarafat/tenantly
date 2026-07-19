@@ -62,7 +62,6 @@ describe('AuthEffects', () => {
 
   const mockLoginResponse = {
     token: 'test-token',
-    refresh_token: 'test-refresh-token',
     user: mockUser,
     expires_at: '2023-12-31T23:59:59Z',
   };
@@ -135,9 +134,9 @@ describe('AuthEffects', () => {
 
       effects.loginSuccess$.subscribe(() => {
         expect(localStorage.getItem('tenantly_token')).toBe(mockLoginResponse.token);
-        expect(localStorage.getItem('tenantly_refresh_token')).toBe(
-          mockLoginResponse.refresh_token
-        );
+        // No tenantly_refresh_token assertion — the refresh token is never in
+        // the response body or localStorage; the backend sets it as an
+        // httpOnly cookie the browser manages, invisible to this code.
         expect(localStorage.getItem('tenantly_user')).toBe(JSON.stringify(mockLoginResponse.user));
         expect(localStorage.getItem('tenantly_expires_at')).toBe(mockLoginResponse.expires_at);
         expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
@@ -219,7 +218,6 @@ describe('AuthEffects', () => {
     it('should call the set-organization API and dispatch switchOrganizationSuccess', (done) => {
       const mockSwitchResponse = {
         token: 'new-token',
-        refresh_token: 'new-refresh',
         organization: mockOrg1,
         expires_at: '2099-01-01T00:00:00Z',
       };
@@ -256,7 +254,6 @@ describe('AuthEffects', () => {
     it('should update tokens in localStorage and navigate to dashboard', (done) => {
       const response = {
         token: 'new-token',
-        refresh_token: 'new-refresh',
         organization: mockOrg1,
         expires_at: '2099-01-01T00:00:00Z',
       };
@@ -264,7 +261,6 @@ describe('AuthEffects', () => {
 
       effects.switchOrganizationSuccess$.subscribe(() => {
         expect(localStorage.getItem('tenantly_token')).toBe('new-token');
-        expect(localStorage.getItem('tenantly_refresh_token')).toBe('new-refresh');
         expect(localStorage.getItem('tenantly_current_org_id')).toBe('100');
         expect(localStorage.getItem('tenantly_current_org')).toBe(JSON.stringify(mockOrg1));
         expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
@@ -292,7 +288,6 @@ describe('AuthEffects', () => {
   describe('logoutSuccess$', () => {
     it('should clear auth and org data from localStorage and navigate to login', (done) => {
       localStorage.setItem('tenantly_token', 'test-token');
-      localStorage.setItem('tenantly_refresh_token', 'test-refresh-token');
       localStorage.setItem('tenantly_user', JSON.stringify(mockLoginResponse.user));
       localStorage.setItem('tenantly_expires_at', 'test-expires-at');
       localStorage.setItem('tenantly_organizations', JSON.stringify([mockOrg1]));
@@ -303,7 +298,6 @@ describe('AuthEffects', () => {
 
       effects.logoutSuccess$.subscribe(() => {
         expect(localStorage.getItem('tenantly_token')).toBeNull();
-        expect(localStorage.getItem('tenantly_refresh_token')).toBeNull();
         expect(localStorage.getItem('tenantly_user')).toBeNull();
         expect(localStorage.getItem('tenantly_expires_at')).toBeNull();
         expect(localStorage.getItem('tenantly_organizations')).toBeNull();
@@ -317,8 +311,8 @@ describe('AuthEffects', () => {
 
   describe('refreshToken$', () => {
     it('should return refreshTokenSuccess action on successful API refresh', (done) => {
-      localStorage.setItem('tenantly_refresh_token', 'test-refresh-token');
-
+      // No localStorage setup needed — the httpOnly refresh cookie (if any)
+      // is sent automatically by the browser via withCredentials.
       const action = AuthActions.refreshToken();
       actions$ = of(action);
 
@@ -329,19 +323,21 @@ describe('AuthEffects', () => {
 
       const req = httpMock.expectOne(`${environment.apiUrl}/auth/refresh`);
       expect(req.request.method).toBe('POST');
-      expect(req.request.body).toEqual({ refresh_token: 'test-refresh-token' });
+      expect(req.request.withCredentials).toBe(true);
       req.flush(mockLoginResponse);
     });
 
-    it('should return refreshTokenFailure action when no refresh token', (done) => {
+    it('should return refreshTokenFailure action when the backend rejects the refresh', (done) => {
       const action = AuthActions.refreshToken();
       actions$ = of(action);
 
       effects.refreshToken$.subscribe((result) => {
         expect(result.type).toBe(AuthActions.refreshTokenFailure.type);
-        expect((result as unknown as { error: string }).error).toBe('No refresh token available');
         done();
       });
+
+      const req = httpMock.expectOne(`${environment.apiUrl}/auth/refresh`);
+      req.flush({ error: 'Refresh token missing' }, { status: 401, statusText: 'Unauthorized' });
     });
   });
 
@@ -352,9 +348,6 @@ describe('AuthEffects', () => {
 
       effects.refreshTokenSuccess$.subscribe(() => {
         expect(localStorage.getItem('tenantly_token')).toBe(mockLoginResponse.token);
-        expect(localStorage.getItem('tenantly_refresh_token')).toBe(
-          mockLoginResponse.refresh_token
-        );
         expect(localStorage.getItem('tenantly_user')).toBe(JSON.stringify(mockLoginResponse.user));
         expect(localStorage.getItem('tenantly_expires_at')).toBe(mockLoginResponse.expires_at);
         done();
@@ -366,7 +359,6 @@ describe('AuthEffects', () => {
     it('should clear auth data and navigate to login', (done) => {
       // Set up localStorage with auth data
       localStorage.setItem('tenantly_token', 'test-token');
-      localStorage.setItem('tenantly_refresh_token', 'test-refresh-token');
       localStorage.setItem('tenantly_user', JSON.stringify(mockLoginResponse.user));
       localStorage.setItem('tenantly_expires_at', 'test-expires-at');
 
@@ -375,7 +367,6 @@ describe('AuthEffects', () => {
 
       effects.refreshTokenFailure$.subscribe(() => {
         expect(localStorage.getItem('tenantly_token')).toBeNull();
-        expect(localStorage.getItem('tenantly_refresh_token')).toBeNull();
         expect(localStorage.getItem('tenantly_user')).toBeNull();
         expect(localStorage.getItem('tenantly_expires_at')).toBeNull();
         expect(router.navigate).toHaveBeenCalledWith(['/login']);

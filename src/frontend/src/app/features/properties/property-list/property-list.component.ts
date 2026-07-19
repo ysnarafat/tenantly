@@ -39,6 +39,7 @@ import { PaymentCreateDialog } from '../../payments/payment-list/payment-list';
 import { PaymentService } from '../../../core/services/payment.service';
 import { LoadingSpinner } from '../../../shared/components/loading-spinner/loading-spinner';
 import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm-delete-dialog/confirm-delete-dialog';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
 
 interface PropertyWithHierarchy extends Property {
   buildings?: BuildingWithUnits[];
@@ -169,7 +170,7 @@ export class PropertyListComponent implements OnInit {
         });
       },
       error: (err: unknown) => {
-        console.error('Error loading buildings:', err);
+        console.error('Error loading buildings:', safeErrorMessage(err));
         this.loadedBuildings.update((map) => {
           const newMap = new Map(map);
           newMap.set(propertyId, []);
@@ -193,7 +194,7 @@ export class PropertyListComponent implements OnInit {
         building.units = response.units as UnitWithDetails[];
       },
       error: (err: unknown) => {
-        console.error('Error loading units:', err);
+        console.error('Error loading units:', safeErrorMessage(err));
       },
     });
   }
@@ -396,12 +397,12 @@ export class PropertyListComponent implements OnInit {
           if (req) {
             this.paymentService.createPayment(req).subscribe({
               next: () => {},
-              error: (err: unknown) => console.error('Failed to create payment', err),
+              error: (err: unknown) => console.error('Failed to create payment', safeErrorMessage(err)),
             });
           }
         });
       },
-      error: (err: unknown) => console.error('Failed to load lease', err),
+      error: (err: unknown) => console.error('Failed to load lease', safeErrorMessage(err)),
     });
   }
 }

@@ -14,6 +14,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { Organization } from '../../../core/models';
 import { OrganizationService } from '../../../core/services/organization.service';
 import { DataTable } from '../../../shared/components/data-table/data-table';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
 
 @Component({
   selector: 'app-organization-list',
@@ -71,7 +72,7 @@ export class OrganizationListComponent implements OnInit {
         this.loading.set(false);
       },
       error: (error) => {
-        console.error('Error loading organizations:', error);
+        console.error('Error loading organizations:', safeErrorMessage(error));
         this.snackBar.open('Failed to load organizations', 'Close', { duration: 3000 });
         this.loading.set(false);
       },
@@ -103,7 +104,7 @@ export class OrganizationListComponent implements OnInit {
           this.loadOrganizations();
         },
         error: (error) => {
-          console.error('Error deleting organization:', error);
+          console.error('Error deleting organization:', safeErrorMessage(error));
           this.snackBar.open('Failed to delete organization', 'Close', { duration: 3000 });
         },
       });
