@@ -22,7 +22,11 @@ import { Tenant } from '../../../core/models/tenant.model';
 import { cleanEmptyFields } from '../../../shared/utils/object.utils';
 import { DataTable } from '../../../shared/components/data-table/data-table';
 import { PermissionService } from '../../../core/services/permission.service';
-import { maskNid, maskPhone, RESTRICTED_LABEL } from '../../../shared/utils/pii-mask.utils';
+import {
+  maskFromLastFour,
+  maskPhone,
+  RESTRICTED_LABEL,
+} from '../../../shared/utils/pii-mask.utils';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
 import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm-delete-dialog/confirm-delete-dialog';
 
@@ -71,9 +75,27 @@ export class TenantList implements OnInit {
     return this.permissionService.isAccountant();
   }
 
+  // Cache of full NIDs fetched from the role-gated reveal endpoint, keyed by
+  // tenant id. Populated lazily on first reveal.
+  private revealedNid = new Map<number, string>();
+
   toggleNidReveal(id: number): void {
     const current = this.revealState.get(id) ?? { nid: false, phone: false };
-    this.revealState.set(id, { ...current, nid: !current.nid });
+    const willReveal = !current.nid;
+    this.revealState.set(id, { ...current, nid: willReveal });
+
+    // Fetch the full NID on demand the first time it is revealed.
+    if (willReveal && !this.revealedNid.has(id)) {
+      this.tenantService.getTenantNid(id).subscribe({
+        next: (res) => this.revealedNid.set(id, res.nid_number),
+        error: (err) => {
+          console.error('Error revealing NID:', safeErrorMessage(err));
+          this.snackBar.open('Failed to reveal NID', 'Close', { duration: 3000 });
+          const state = this.revealState.get(id) ?? { nid: false, phone: false };
+          this.revealState.set(id, { ...state, nid: false });
+        },
+      });
+    }
   }
 
   togglePhoneReveal(id: number): void {
@@ -90,9 +112,12 @@ export class TenantList implements OnInit {
   }
 
   getDisplayNid(tenant: Tenant): string {
-    if (!tenant.nid_number) return '—';
+    if (!tenant.nid_last_four) return '—';
     if (this.isAccountantRole) return RESTRICTED_LABEL;
-    return this.isNidRevealed(tenant.id) ? tenant.nid_number : maskNid(tenant.nid_number);
+    if (this.isNidRevealed(tenant.id)) {
+      return this.revealedNid.get(tenant.id) ?? maskFromLastFour(tenant.nid_last_four);
+    }
+    return maskFromLastFour(tenant.nid_last_four);
   }
 
   getDisplayPhone(tenant: Tenant): string {
@@ -145,7 +170,7 @@ export class TenantList implements OnInit {
           t.name.toLowerCase().includes(q) ||
           t.phone_number?.toLowerCase().includes(q) ||
           t.email?.toLowerCase().includes(q) ||
-          t.nid_number?.toLowerCase().includes(q)
+          t.nid_last_four?.toLowerCase().includes(q)
       );
     }
 

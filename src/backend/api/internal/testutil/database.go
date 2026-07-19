@@ -152,10 +152,10 @@ func CreateTestUnit(t *testing.T, db *sqlx.DB, buildingID int, orgID int) int {
 func CreateTestTenant(t *testing.T, db *sqlx.DB, orgID int) int {
 	var tenantID int
 	err := db.QueryRow(`
-		INSERT INTO tenants (name, tenant_type, phone_number, email, nid_number, address, organization_id)
+		INSERT INTO tenants (name, tenant_type, phone_number, email, nid_last_four, address, organization_id)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id`,
-		"Test Tenant", "Individual", "+8801234567890", "test@example.com", "1234567890", "123 Test Street", orgID).Scan(&tenantID)
+		"Test Tenant", "Individual", "+8801234567890", "test@example.com", "7890", "123 Test Street", orgID).Scan(&tenantID)
 	if err != nil {
 		t.Fatalf("Failed to create test tenant: %v", err)
 	}

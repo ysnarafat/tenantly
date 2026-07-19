@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/ysnarafat/tenantly/internal/config"
 	"github.com/ysnarafat/tenantly/internal/database"
+	"github.com/ysnarafat/tenantly/internal/repositories"
 	"github.com/ysnarafat/tenantly/internal/server"
 
 	"github.com/joho/godotenv"
@@ -38,6 +39,12 @@ func main() {
 	// Run migrations
 	if err := database.RunMigrations(cfg.DatabaseURL); err != nil {
 		log.Fatal("Failed to run migrations: ", err)
+	}
+
+	// Encrypt any legacy plaintext tenant NIDs left over from before at-rest
+	// protection was introduced (idempotent, safe to run on every startup).
+	if err := repositories.BackfillTenantNID(db, cfg.NIDProtector); err != nil {
+		log.Fatal("Failed to back-fill tenant NID: ", err)
 	}
 
 	// Set Gin mode based on environment

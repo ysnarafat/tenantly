@@ -2,6 +2,7 @@ package config
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"os"
@@ -9,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	appcrypto "github.com/ysnarafat/tenantly/internal/crypto"
 
 	"github.com/joho/godotenv"
 )
@@ -53,6 +56,7 @@ type Config struct {
 	TrustedProxies []string
 	CookieDomain   string
 	CookieSecure   bool
+	NIDProtector   *appcrypto.NIDProtector
 }
 
 type SMSConfig struct {
@@ -143,6 +147,21 @@ func Load() (*Config, error) {
 		}
 	}
 
+	// NID protection keys: AES-256 key (base64, 32 bytes) for encryption at rest
+	// and a secret pepper for the deterministic uniqueness hash. Required in
+	// production (no insecure default), same pattern as JWT_SECRET. In
+	// development we derive a *stable* key/pepper from fixed dev material so
+	// encrypted data survives restarts (a random per-boot key would make prior
+	// ciphertext undecryptable).
+	nidKey, nidPepper, err := loadNIDSecrets(environment)
+	if err != nil {
+		return nil, err
+	}
+	nidProtector, err := appcrypto.NewNIDProtector(nidKey, nidPepper)
+	if err != nil {
+		return nil, fmt.Errorf("CRITICAL: failed to initialize NID protector: %w", err)
+	}
+
 	config := &Config{
 		DatabaseURL:   databaseURL,
 		JWTSecret:     jwtSecret,
@@ -164,8 +183,48 @@ func Load() (*Config, error) {
 		TrustedProxies: trustedProxies,
 		CookieDomain:   getEnv("COOKIE_DOMAIN", ""),
 		CookieSecure:   cookieSecure,
+		NIDProtector:   nidProtector,
 	}
 	return config, nil
+}
+
+// loadNIDSecrets resolves the AES-256 key and HMAC pepper used to protect NID
+// values. In production both NID_ENCRYPTION_KEY (base64-encoded 32 bytes) and
+// NID_HASH_PEPPER must be set. In development, missing values are derived from
+// fixed dev material so ciphertext remains decryptable across restarts.
+func loadNIDSecrets(environment string) (key, pepper []byte, err error) {
+	rawKey := os.Getenv("NID_ENCRYPTION_KEY")
+	rawPepper := os.Getenv("NID_HASH_PEPPER")
+
+	if rawKey == "" || rawPepper == "" {
+		if environment == "production" {
+			return nil, nil, fmt.Errorf("CRITICAL: NID_ENCRYPTION_KEY and NID_HASH_PEPPER must be set in production")
+		}
+		fmt.Println("⚠️  WARNING: NID_ENCRYPTION_KEY/NID_HASH_PEPPER not set. Deriving stable development keys (NOT for production).")
+		if rawKey == "" {
+			devKey := sha256.Sum256([]byte("tenantly-dev-nid-encryption-key"))
+			key = devKey[:]
+		}
+		if rawPepper == "" {
+			pepper = []byte("tenantly-dev-nid-hash-pepper")
+		}
+	}
+
+	if rawKey != "" {
+		decoded, decErr := base64.StdEncoding.DecodeString(rawKey)
+		if decErr != nil {
+			return nil, nil, fmt.Errorf("CRITICAL: NID_ENCRYPTION_KEY must be base64-encoded: %w", decErr)
+		}
+		if len(decoded) != 32 {
+			return nil, nil, fmt.Errorf("CRITICAL: NID_ENCRYPTION_KEY must decode to 32 bytes (got %d). Use 'openssl rand -base64 32'", len(decoded))
+		}
+		key = decoded
+	}
+	if rawPepper != "" {
+		pepper = []byte(rawPepper)
+	}
+
+	return key, pepper, nil
 }
 
 func getEnv(key, defaultValue string) string {

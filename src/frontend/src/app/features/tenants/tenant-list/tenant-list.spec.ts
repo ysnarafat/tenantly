@@ -21,7 +21,7 @@ describe('TenantList - Delete action consistency', () => {
     tenant_type: 'Individual',
     phone_number: '01700000000',
     email: 'jane@example.com',
-    nid_number: '1234567890',
+    nid_last_four: '7890',
     active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -30,7 +30,9 @@ describe('TenantList - Delete action consistency', () => {
   beforeEach(async () => {
     const tenantServiceSpy = jasmine.createSpyObj<TenantService>('TenantService', [
       'getAllTenants',
+      'getTenantNid',
     ]);
+    tenantServiceSpy.getTenantNid.and.returnValue(of({ nid_number: '1234567890' }));
     tenantServiceSpy.getAllTenants.and.returnValue(
       of({
         tenants: [mockTenant],

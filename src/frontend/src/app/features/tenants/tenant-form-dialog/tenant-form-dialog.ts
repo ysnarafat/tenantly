@@ -11,7 +11,9 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslateModule } from '@ngx-translate/core';
 import { Tenant, TenantType } from '../../../core/models/tenant.model';
 import { PermissionService } from '../../../core/services/permission.service';
-import { maskNid, maskPhone } from '../../../shared/utils/pii-mask.utils';
+import { TenantService } from '../../../core/services/tenant.service';
+import { maskFromLastFour, maskPhone } from '../../../shared/utils/pii-mask.utils';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
 
 export interface TenantFormDialogData {
   tenant?: Tenant;
@@ -40,6 +42,7 @@ export class TenantFormDialogComponent implements OnInit {
   private fb = inject(FormBuilder);
   private dialogRef = inject(MatDialogRef<TenantFormDialogComponent>);
   private permissionService = inject(PermissionService);
+  private tenantService = inject(TenantService);
   public data = inject<TenantFormDialogData>(MAT_DIALOG_DATA);
 
   tenantForm!: FormGroup;
@@ -48,10 +51,11 @@ export class TenantFormDialogComponent implements OnInit {
   nidRevealed = false;
   phoneRevealed = false;
   private _realNid = '';
+  private _nidLastFour = '';
   private _realPhone = '';
 
   get hasNid(): boolean {
-    return !!this._realNid;
+    return !!this._nidLastFour || !!this._realNid;
   }
   get hasPhone(): boolean {
     return !!this._realPhone;
@@ -67,11 +71,32 @@ export class TenantFormDialogComponent implements OnInit {
   }
 
   toggleNidReveal(): void {
-    this.nidRevealed = !this.nidRevealed;
+    const willReveal = !this.nidRevealed;
+
+    // Fetch the full NID on demand the first time it is revealed.
+    if (willReveal && !this._realNid && this.data.tenant?.id) {
+      this.tenantService.getTenantNid(this.data.tenant.id).subscribe({
+        next: (res) => {
+          this._realNid = res.nid_number;
+          this.nidRevealed = true;
+          if (this.isViewMode) {
+            this.tenantForm.get('nid_number')?.setValue(this._realNid, { emitEvent: false });
+          }
+        },
+        error: (err) => {
+          console.error('Error revealing NID:', safeErrorMessage(err));
+        },
+      });
+      return;
+    }
+
+    this.nidRevealed = willReveal;
     if (this.isViewMode) {
       this.tenantForm
         .get('nid_number')
-        ?.setValue(this.nidRevealed ? this._realNid : maskNid(this._realNid), { emitEvent: false });
+        ?.setValue(this.nidRevealed ? this._realNid : maskFromLastFour(this._nidLastFour), {
+          emitEvent: false,
+        });
     }
   }
 
@@ -93,7 +118,7 @@ export class TenantFormDialogComponent implements OnInit {
   private initializeForm() {
     const tenant = this.data.tenant;
 
-    this._realNid = tenant?.nid_number || '';
+    this._nidLastFour = tenant?.nid_last_four || '';
     this._realPhone = tenant?.phone_number || '';
 
     this.tenantForm = this.fb.group({
@@ -106,7 +131,7 @@ export class TenantFormDialogComponent implements OnInit {
         this.isViewMode ? [] : [Validators.required],
       ],
       nid_number: [
-        this.isViewMode ? maskNid(this._realNid) : this._realNid,
+        this.isViewMode ? maskFromLastFour(this._nidLastFour) : '',
         this.isViewMode ? [] : [Validators.required, Validators.maxLength(20)],
       ],
       phone_number: [
@@ -119,6 +144,21 @@ export class TenantFormDialogComponent implements OnInit {
 
     if (this.isViewMode) {
       this.tenantForm.disable();
+    }
+
+    // In edit mode the NID field must be pre-filled with the real value, which
+    // is no longer sent with the tenant record — fetch it from the reveal
+    // endpoint (edit is restricted to roles allowed to see the full NID).
+    if (this.isEditMode && tenant?.id) {
+      this.tenantService.getTenantNid(tenant.id).subscribe({
+        next: (res) => {
+          this._realNid = res.nid_number;
+          this.tenantForm.get('nid_number')?.setValue(res.nid_number, { emitEvent: false });
+        },
+        error: (err) => {
+          console.error('Error loading NID for edit:', safeErrorMessage(err));
+        },
+      });
     }
   }
 

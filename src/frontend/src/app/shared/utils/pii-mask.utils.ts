@@ -4,6 +4,14 @@ export function maskNid(value: string | null | undefined): string {
   return '•'.repeat(value.length - 4) + value.slice(-4);
 }
 
+// maskFromLastFour renders a masked NID when only the last four digits are known
+// (the full value is no longer sent to the client by default). The exact length
+// is unknown, so a fixed-width bullet prefix is used.
+export function maskFromLastFour(lastFour: string | null | undefined): string {
+  if (!lastFour || lastFour.trim() === '') return '—';
+  return '••••••' + lastFour;
+}
+
 export function maskPhone(value: string | null | undefined): string {
   if (!value || value.trim() === '') return '—';
   const str = value.trim();

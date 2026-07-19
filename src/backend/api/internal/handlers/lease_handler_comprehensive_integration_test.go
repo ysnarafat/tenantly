@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,6 +10,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	appcrypto "github.com/ysnarafat/tenantly/internal/crypto"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
@@ -52,15 +55,19 @@ func (suite *LeaseIntegrationTestSuite) SetupSuite() {
 	gin.SetMode(gin.TestMode)
 
 	// Load test configuration
+	nidKey := sha256.Sum256([]byte("lease-integration-test-key"))
+	nidProtector, err := appcrypto.NewNIDProtector(nidKey[:], []byte("lease-integration-test-pepper"))
+	require.NoError(suite.T(), err)
+
 	suite.config = &config.Config{
 		DatabaseURL:   getLeaseTestDatabaseURL(),
 		JWTSecret:     "test-jwt-secret-key",
 		JWTExpiration: time.Hour * 24,
 		Environment:   "test",
+		NIDProtector:  nidProtector,
 	}
 
 	// Initialize test database
-	var err error
 	suite.db, err = database.Connect(suite.config.DatabaseURL)
 	if err != nil {
 		suite.T().Skipf("Skipping integration test: PostgreSQL not available: %v", err)
@@ -77,7 +84,7 @@ func (suite *LeaseIntegrationTestSuite) SetupSuite() {
 	suite.propertyRepo = repositories.NewPropertyRepository(suite.db)
 	suite.buildingRepo = repositories.NewBuildingRepository(suite.db)
 	suite.unitRepo = repositories.NewUnitRepository(suite.db)
-	suite.tenantRepo = repositories.NewTenantRepository(suite.db)
+	suite.tenantRepo = repositories.NewTenantRepository(suite.db, suite.config.NIDProtector)
 	suite.leaseRepo = repositories.NewLeaseRepository(suite.db)
 
 	// Initialize services

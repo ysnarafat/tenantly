@@ -80,7 +80,7 @@ func (s *Server) setupRoutes() {
 	propertyRepo := repositories.NewPropertyRepository(s.db)
 	buildingRepo := repositories.NewBuildingRepository(s.db)
 	unitRepo := repositories.NewUnitRepository(s.db)
-	tenantRepo := repositories.NewTenantRepository(s.db)
+	tenantRepo := repositories.NewTenantRepository(s.db, s.config.NIDProtector)
 	paymentRepo := repositories.NewPaymentRepository(s.db)
 	leaseRepo := repositories.NewLeaseRepository(s.db)
 	organizationRepo := repositories.NewOrganizationRepository(s.db)
@@ -260,6 +260,7 @@ func (s *Server) setupRoutes() {
 				tenants.GET("", middleware.RequireAnyRole(), tenantHandler.GetAllTenants)
 				tenants.POST("", middleware.RequireAdminOrPropertyManager(), tenantHandler.CreateTenant)
 				tenants.GET("/:id", middleware.RequireAnyRole(), tenantHandler.GetTenantByID)
+				tenants.GET("/:id/nid", middleware.RequireAdminOrPropertyManager(), tenantHandler.RevealNID)
 				tenants.PUT("/:id", middleware.RequireAdminOrPropertyManager(), tenantHandler.UpdateTenant)
 				tenants.DELETE("/:id", middleware.RequireAdmin(), tenantHandler.DeleteTenant)
 			}

@@ -77,6 +77,27 @@ func (h *TenantHandler) GetTenantByID(c *gin.Context) {
 	c.JSON(http.StatusOK, tenant)
 }
 
+// RevealNID returns the full, decrypted NID for a tenant. This endpoint is
+// role-gated (excludes read-only Accountants) and every access is audit-logged.
+func (h *TenantHandler) RevealNID(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid tenant ID"})
+		return
+	}
+
+	userID := c.GetInt("user_id")
+	orgID := c.GetInt("org_id")
+
+	nid, err := h.tenantService.RevealNID(id, orgID, userID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Tenant not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"nid_number": nid})
+}
+
 // UpdateTenant handles tenant updates
 func (h *TenantHandler) UpdateTenant(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))

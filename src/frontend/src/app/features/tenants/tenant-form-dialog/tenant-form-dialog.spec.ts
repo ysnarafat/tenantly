@@ -3,12 +3,15 @@ import { TenantFormDialogComponent } from './tenant-form-dialog';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { of } from 'rxjs';
 import { Tenant } from '../../../core/models/tenant.model';
+import { TenantService } from '../../../core/services/tenant.service';
 
 describe('TenantFormDialogComponent', () => {
   let component: TenantFormDialogComponent;
   let fixture: ComponentFixture<TenantFormDialogComponent>;
   let dialogRefSpy: jasmine.SpyObj<MatDialogRef<TenantFormDialogComponent>>;
+  let tenantServiceSpy: jasmine.SpyObj<TenantService>;
 
   const mockTenant: Tenant = {
     id: 1,
@@ -16,7 +19,7 @@ describe('TenantFormDialogComponent', () => {
     tenant_type: 'Individual',
     email: 'john@example.com',
     phone_number: '1234567890',
-    nid_number: 'NID123',
+    nid_last_four: 'D123',
     address: '123 Main St',
     active: true,
     created_at: new Date().toISOString(),
@@ -25,6 +28,8 @@ describe('TenantFormDialogComponent', () => {
 
   beforeEach(async () => {
     dialogRefSpy = jasmine.createSpyObj('MatDialogRef', ['close']);
+    tenantServiceSpy = jasmine.createSpyObj('TenantService', ['getTenantNid']);
+    tenantServiceSpy.getTenantNid.and.returnValue(of({ nid_number: 'NID123' }));
 
     await TestBed.configureTestingModule({
       imports: [
@@ -37,6 +42,7 @@ describe('TenantFormDialogComponent', () => {
         FormBuilder,
         { provide: MatDialogRef, useValue: dialogRefSpy },
         { provide: MAT_DIALOG_DATA, useValue: { mode: 'create' } },
+        { provide: TenantService, useValue: tenantServiceSpy },
       ],
     }).compileComponents();
 
@@ -70,6 +76,7 @@ describe('TenantFormDialogComponent', () => {
         FormBuilder,
         { provide: MatDialogRef, useValue: dialogRefSpy },
         { provide: MAT_DIALOG_DATA, useValue: { mode: 'edit', tenant: mockTenant } },
+        { provide: TenantService, useValue: tenantServiceSpy },
       ],
     });
 
