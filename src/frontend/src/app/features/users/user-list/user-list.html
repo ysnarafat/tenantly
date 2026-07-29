@@ -54,14 +54,18 @@
       <th mat-header-cell *matHeaderCellDef mat-sort-header>
         {{ 'USER_LIST.TABLE.NAME' | translate }}
       </th>
-      <td mat-cell *matCellDef="let user" [attr.data-label]="'USER_LIST.TABLE.NAME' | translate">{{ user.first_name || user.username }}</td>
+      <td mat-cell *matCellDef="let user" [attr.data-label]="'USER_LIST.TABLE.NAME' | translate">
+        {{ user.first_name || user.username }}
+      </td>
     </ng-container>
 
     <ng-container matColumnDef="email">
       <th mat-header-cell *matHeaderCellDef mat-sort-header>
         {{ 'USER_LIST.TABLE.EMAIL' | translate }}
       </th>
-      <td mat-cell *matCellDef="let user" [attr.data-label]="'USER_LIST.TABLE.EMAIL' | translate">{{ user.email }}</td>
+      <td mat-cell *matCellDef="let user" [attr.data-label]="'USER_LIST.TABLE.EMAIL' | translate">
+        {{ user.email }}
+      </td>
     </ng-container>
 
     <ng-container matColumnDef="role">
@@ -87,7 +91,9 @@
       <th mat-header-cell *matHeaderCellDef mat-sort-header>
         {{ 'USER_LIST.TABLE.CREATED' | translate }}
       </th>
-      <td mat-cell *matCellDef="let user" [attr.data-label]="'USER_LIST.TABLE.CREATED' | translate">{{ user.created_at | date: 'short' }}</td>
+      <td mat-cell *matCellDef="let user" [attr.data-label]="'USER_LIST.TABLE.CREATED' | translate">
+        {{ user.created_at | date: 'short' }}
+      </td>
     </ng-container>
 
     <ng-container matColumnDef="actions">

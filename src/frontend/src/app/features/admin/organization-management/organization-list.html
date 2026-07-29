@@ -31,14 +31,18 @@
       <th mat-header-cell *matHeaderCellDef mat-sort-header>
         {{ 'ORG_LIST.TABLE.NAME' | translate }}
       </th>
-      <td mat-cell *matCellDef="let org" [attr.data-label]="'ORG_LIST.TABLE.NAME' | translate">{{ org.name }}</td>
+      <td mat-cell *matCellDef="let org" [attr.data-label]="'ORG_LIST.TABLE.NAME' | translate">
+        {{ org.name }}
+      </td>
     </ng-container>
 
     <ng-container matColumnDef="slug">
       <th mat-header-cell *matHeaderCellDef mat-sort-header>
         {{ 'ORG_LIST.TABLE.SLUG' | translate }}
       </th>
-      <td mat-cell *matCellDef="let org" [attr.data-label]="'ORG_LIST.TABLE.SLUG' | translate">{{ org.slug }}</td>
+      <td mat-cell *matCellDef="let org" [attr.data-label]="'ORG_LIST.TABLE.SLUG' | translate">
+        {{ org.slug }}
+      </td>
     </ng-container>
 
     <ng-container matColumnDef="subscriptionTier">
@@ -54,7 +58,9 @@
       <th mat-header-cell *matHeaderCellDef mat-sort-header>
         {{ 'ORG_LIST.TABLE.MAX_USERS' | translate }}
       </th>
-      <td mat-cell *matCellDef="let org" [attr.data-label]="'ORG_LIST.TABLE.MAX_USERS' | translate">{{ org.maxUsers }}</td>
+      <td mat-cell *matCellDef="let org" [attr.data-label]="'ORG_LIST.TABLE.MAX_USERS' | translate">
+        {{ org.maxUsers }}
+      </td>
     </ng-container>
 
     <ng-container matColumnDef="active">

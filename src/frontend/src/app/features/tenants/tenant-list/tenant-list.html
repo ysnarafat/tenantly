@@ -84,7 +84,11 @@
       >
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef>{{ 'TENANT_LIST.TABLE.TENANT' | translate }}</th>
-          <td mat-cell *matCellDef="let tenant" [attr.data-label]="'TENANT_LIST.TABLE.TENANT' | translate">
+          <td
+            mat-cell
+            *matCellDef="let tenant"
+            [attr.data-label]="'TENANT_LIST.TABLE.TENANT' | translate"
+          >
             <div class="tenant-cell">
               <div class="tenant-avatar" [class.business]="tenant.tenant_type === 'Business'">
                 <mat-icon>{{ tenant.tenant_type === 'Business' ? 'business' : 'person' }}</mat-icon>
@@ -99,7 +103,11 @@
 
         <ng-container matColumnDef="type">
           <th mat-header-cell *matHeaderCellDef>{{ 'TENANT_LIST.TABLE.TYPE' | translate }}</th>
-          <td mat-cell *matCellDef="let tenant" [attr.data-label]="'TENANT_LIST.TABLE.TYPE' | translate">
+          <td
+            mat-cell
+            *matCellDef="let tenant"
+            [attr.data-label]="'TENANT_LIST.TABLE.TYPE' | translate"
+          >
             <span class="type-badge" [class.business]="tenant.tenant_type === 'Business'">
               {{ tenant.tenant_type }}
             </span>
@@ -108,7 +116,11 @@
 
         <ng-container matColumnDef="contact">
           <th mat-header-cell *matHeaderCellDef>{{ 'TENANT_LIST.TABLE.CONTACT' | translate }}</th>
-          <td mat-cell *matCellDef="let tenant" [attr.data-label]="'TENANT_LIST.TABLE.CONTACT' | translate">
+          <td
+            mat-cell
+            *matCellDef="let tenant"
+            [attr.data-label]="'TENANT_LIST.TABLE.CONTACT' | translate"
+          >
             <div class="contact-cell">
               <div *ngIf="tenant.phone_number" class="contact-row">
                 <mat-icon class="contact-icon">phone</mat-icon>
@@ -142,7 +154,11 @@
 
         <ng-container matColumnDef="nid">
           <th mat-header-cell *matHeaderCellDef>{{ 'TENANT_LIST.TABLE.NID' | translate }}</th>
-          <td mat-cell *matCellDef="let tenant" [attr.data-label]="'TENANT_LIST.TABLE.NID' | translate">
+          <td
+            mat-cell
+            *matCellDef="let tenant"
+            [attr.data-label]="'TENANT_LIST.TABLE.NID' | translate"
+          >
             <div class="pii-cell">
               <span
                 class="mono-val"
@@ -169,7 +185,11 @@
 
         <ng-container matColumnDef="status">
           <th mat-header-cell *matHeaderCellDef>{{ 'TENANT_LIST.TABLE.STATUS' | translate }}</th>
-          <td mat-cell *matCellDef="let tenant" [attr.data-label]="'TENANT_LIST.TABLE.STATUS' | translate">
+          <td
+            mat-cell
+            *matCellDef="let tenant"
+            [attr.data-label]="'TENANT_LIST.TABLE.STATUS' | translate"
+          >
             <span
               class="status-badge"
               [class.is-active]="tenant.active"
@@ -184,7 +204,11 @@
 
         <ng-container matColumnDef="created">
           <th mat-header-cell *matHeaderCellDef>{{ 'TENANT_LIST.TABLE.JOINED' | translate }}</th>
-          <td mat-cell *matCellDef="let tenant" [attr.data-label]="'TENANT_LIST.TABLE.JOINED' | translate">
+          <td
+            mat-cell
+            *matCellDef="let tenant"
+            [attr.data-label]="'TENANT_LIST.TABLE.JOINED' | translate"
+          >
             <span class="date-val">{{ tenant.created_at | date: 'mediumDate' }}</span>
           </td>
         </ng-container>
@@ -193,7 +217,11 @@
           <th mat-header-cell *matHeaderCellDef class="actions-header">
             {{ 'TENANT_LIST.TABLE.ACTIONS' | translate }}
           </th>
-          <td mat-cell *matCellDef="let tenant" [attr.data-label]="'TENANT_LIST.TABLE.ACTIONS' | translate">
+          <td
+            mat-cell
+            *matCellDef="let tenant"
+            [attr.data-label]="'TENANT_LIST.TABLE.ACTIONS' | translate"
+          >
             <div class="actions-cell">
               <button
                 mat-icon-button

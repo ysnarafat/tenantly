@@ -27,12 +27,14 @@ export class AuthEffects {
       exhaustMap(({ credentials }) =>
         // withCredentials: the backend sets the refresh token as an httpOnly cookie on this response.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        this.http.post<any>(`${environment.apiUrl}/auth/login`, credentials, { withCredentials: true }).pipe(
-          map((response) => AuthActions.loginSuccess({ response })),
-          catchError((error: HttpErrorResponse) =>
-            of(AuthActions.loginFailure({ error: toSerializableError(error) }))
+        this.http
+          .post<any>(`${environment.apiUrl}/auth/login`, credentials, { withCredentials: true })
+          .pipe(
+            map((response) => AuthActions.loginSuccess({ response })),
+            catchError((error: HttpErrorResponse) =>
+              of(AuthActions.loginFailure({ error: toSerializableError(error) }))
+            )
           )
-        )
       )
     )
   );
@@ -170,12 +172,14 @@ export class AuthEffects {
         // No body needed — the httpOnly refresh cookie is sent automatically
         // via withCredentials; the browser holds it, not this code.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        this.http.post<any>(`${environment.apiUrl}/auth/refresh`, {}, { withCredentials: true }).pipe(
-          map((response) => AuthActions.refreshTokenSuccess({ response })),
-          catchError((error: HttpErrorResponse) =>
-            of(AuthActions.refreshTokenFailure({ error: toSerializableError(error) }))
+        this.http
+          .post<any>(`${environment.apiUrl}/auth/refresh`, {}, { withCredentials: true })
+          .pipe(
+            map((response) => AuthActions.refreshTokenSuccess({ response })),
+            catchError((error: HttpErrorResponse) =>
+              of(AuthActions.refreshTokenFailure({ error: toSerializableError(error) }))
+            )
           )
-        )
       )
     )
   );

@@ -2,7 +2,16 @@ import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
-import { Observable, catchError, switchMap, throwError, take, filter, finalize, shareReplay } from 'rxjs';
+import {
+  Observable,
+  catchError,
+  switchMap,
+  throwError,
+  take,
+  filter,
+  finalize,
+  shareReplay,
+} from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import { AppState } from '../../store';
 import * as AuthSelectors from '../../store/auth/auth.selectors';

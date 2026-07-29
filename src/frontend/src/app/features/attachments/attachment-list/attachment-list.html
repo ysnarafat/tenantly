@@ -43,7 +43,11 @@
       >
         <ng-container matColumnDef="file_name">
           <th mat-header-cell *matHeaderCellDef>{{ 'ATTACHMENT_LIST.TABLE.FILE' | translate }}</th>
-          <td mat-cell *matCellDef="let attachment" [attr.data-label]="'ATTACHMENT_LIST.TABLE.FILE' | translate">
+          <td
+            mat-cell
+            *matCellDef="let attachment"
+            [attr.data-label]="'ATTACHMENT_LIST.TABLE.FILE' | translate"
+          >
             <div class="file-info">
               <mat-icon class="file-icon">{{ getFileIcon(attachment.content_type) }}</mat-icon>
               <div class="file-details">
@@ -56,7 +60,11 @@
 
         <ng-container matColumnDef="attachment_type">
           <th mat-header-cell *matHeaderCellDef>{{ 'ATTACHMENT_LIST.TABLE.TYPE' | translate }}</th>
-          <td mat-cell *matCellDef="let attachment" [attr.data-label]="'ATTACHMENT_LIST.TABLE.TYPE' | translate">
+          <td
+            mat-cell
+            *matCellDef="let attachment"
+            [attr.data-label]="'ATTACHMENT_LIST.TABLE.TYPE' | translate"
+          >
             <mat-chip [color]="getTypeColor(attachment.attachment_type)" selected>
               {{ attachment.attachment_type }}
             </mat-chip>
@@ -65,14 +73,24 @@
 
         <ng-container matColumnDef="file_size">
           <th mat-header-cell *matHeaderCellDef>{{ 'ATTACHMENT_LIST.TABLE.SIZE' | translate }}</th>
-          <td mat-cell *matCellDef="let attachment" [attr.data-label]="'ATTACHMENT_LIST.TABLE.SIZE' | translate">{{ formatFileSize(attachment.file_size) }}</td>
+          <td
+            mat-cell
+            *matCellDef="let attachment"
+            [attr.data-label]="'ATTACHMENT_LIST.TABLE.SIZE' | translate"
+          >
+            {{ formatFileSize(attachment.file_size) }}
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="description">
           <th mat-header-cell *matHeaderCellDef>
             {{ 'ATTACHMENT_LIST.TABLE.DESCRIPTION' | translate }}
           </th>
-          <td mat-cell *matCellDef="let attachment" [attr.data-label]="'ATTACHMENT_LIST.TABLE.DESCRIPTION' | translate">
+          <td
+            mat-cell
+            *matCellDef="let attachment"
+            [attr.data-label]="'ATTACHMENT_LIST.TABLE.DESCRIPTION' | translate"
+          >
             <div class="description">
               {{ attachment.description || ('ATTACHMENT_LIST.NO_DESCRIPTION' | translate) }}
             </div>
@@ -92,14 +110,24 @@
           <th mat-header-cell *matHeaderCellDef>
             {{ 'ATTACHMENT_LIST.TABLE.UPLOADED' | translate }}
           </th>
-          <td mat-cell *matCellDef="let attachment" [attr.data-label]="'ATTACHMENT_LIST.TABLE.UPLOADED' | translate">{{ formatDate(attachment.created_at) }}</td>
+          <td
+            mat-cell
+            *matCellDef="let attachment"
+            [attr.data-label]="'ATTACHMENT_LIST.TABLE.UPLOADED' | translate"
+          >
+            {{ formatDate(attachment.created_at) }}
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>
             {{ 'ATTACHMENT_LIST.TABLE.ACTIONS' | translate }}
           </th>
-          <td mat-cell *matCellDef="let attachment" [attr.data-label]="'ATTACHMENT_LIST.TABLE.ACTIONS' | translate">
+          <td
+            mat-cell
+            *matCellDef="let attachment"
+            [attr.data-label]="'ATTACHMENT_LIST.TABLE.ACTIONS' | translate"
+          >
             <button mat-icon-button [matMenuTriggerFor]="menu">
               <mat-icon>more_vert</mat-icon>
             </button>

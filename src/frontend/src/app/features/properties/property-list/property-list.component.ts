@@ -397,7 +397,8 @@ export class PropertyListComponent implements OnInit {
           if (req) {
             this.paymentService.createPayment(req).subscribe({
               next: () => {},
-              error: (err: unknown) => console.error('Failed to create payment', safeErrorMessage(err)),
+              error: (err: unknown) =>
+                console.error('Failed to create payment', safeErrorMessage(err)),
             });
           }
         });
