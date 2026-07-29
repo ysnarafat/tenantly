@@ -58,3 +58,21 @@ mat-dialog-actions {
     margin-right: 8px;
   }
 }
+
+@media (max-width: 600px) {
+  .dialog-content {
+    min-width: auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  mat-dialog-actions {
+    flex-wrap: wrap;
+
+    button {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+  }
+}

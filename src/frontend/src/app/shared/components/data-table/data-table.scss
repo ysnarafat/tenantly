@@ -75,3 +75,66 @@
 mat-paginator {
   border-top: 1px solid var(--border-light);
 }
+
+// ── Mobile: rows become stacked cards ─────────────────────────────────────────
+// Consumers must set `data-label="Column Name"` on each `td.mat-cell` (matching
+// the column's header text) — that's what renders as the row label below.
+@media (max-width: 768px) {
+  .dt-table-container {
+    overflow-x: visible;
+  }
+
+  .dt-table {
+    display: block;
+    width: 100%;
+
+    tr[mat-header-row] {
+      display: none;
+    }
+
+    tr.dt-row {
+      display: block;
+      margin-bottom: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background: var(--bg-surface);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+
+      &:hover {
+        background: var(--bg-surface) !important;
+      }
+    }
+
+    td.mat-cell {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-light);
+      text-align: right;
+
+      &::before {
+        content: attr(data-label);
+        flex-shrink: 0;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--text-hint);
+        text-align: left;
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:empty,
+      &[data-label=''] {
+        display: none;
+      }
+    }
+  }
+}

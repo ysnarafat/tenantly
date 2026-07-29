@@ -364,27 +364,27 @@
           <mat-table [dataSource]="ledgerReport.payments" class="ledger-table">
             <ng-container matColumnDef="tenant">
               <mat-header-cell *matHeaderCellDef>Tenant</mat-header-cell>
-              <mat-cell *matCellDef="let p">{{ p.tenant_name || '—' }}</mat-cell>
+              <mat-cell *matCellDef="let p" data-label="Tenant">{{ p.tenant_name || '—' }}</mat-cell>
             </ng-container>
             <ng-container matColumnDef="unit">
               <mat-header-cell *matHeaderCellDef>Unit</mat-header-cell>
-              <mat-cell *matCellDef="let p">{{ p.unit_number }}</mat-cell>
+              <mat-cell *matCellDef="let p" data-label="Unit">{{ p.unit_number }}</mat-cell>
             </ng-container>
             <ng-container matColumnDef="period">
               <mat-header-cell *matHeaderCellDef>Period</mat-header-cell>
-              <mat-cell *matCellDef="let p">{{ p.month }}/{{ p.year }}</mat-cell>
+              <mat-cell *matCellDef="let p" data-label="Period">{{ p.month }}/{{ p.year }}</mat-cell>
             </ng-container>
             <ng-container matColumnDef="due">
               <mat-header-cell *matHeaderCellDef>Due</mat-header-cell>
-              <mat-cell *matCellDef="let p">৳ {{ p.amount_due | number }}</mat-cell>
+              <mat-cell *matCellDef="let p" data-label="Due">৳ {{ p.amount_due | number }}</mat-cell>
             </ng-container>
             <ng-container matColumnDef="paid">
               <mat-header-cell *matHeaderCellDef>Paid</mat-header-cell>
-              <mat-cell *matCellDef="let p">৳ {{ p.amount_paid | number }}</mat-cell>
+              <mat-cell *matCellDef="let p" data-label="Paid">৳ {{ p.amount_paid | number }}</mat-cell>
             </ng-container>
             <ng-container matColumnDef="status">
               <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
-              <mat-cell *matCellDef="let p">
+              <mat-cell *matCellDef="let p" data-label="Status">
                 <mat-chip [class]="'status-' + p.status?.toLowerCase()">{{ p.status }}</mat-chip>
               </mat-cell>
             </ng-container>
@@ -406,34 +406,34 @@
           <mat-table [dataSource]="tenantReport.tenants" class="ledger-table">
             <ng-container matColumnDef="name">
               <mat-header-cell *matHeaderCellDef>Tenant</mat-header-cell>
-              <mat-cell *matCellDef="let t">{{ t.tenant_name }}</mat-cell>
+              <mat-cell *matCellDef="let t" data-label="Tenant">{{ t.tenant_name }}</mat-cell>
             </ng-container>
             <ng-container matColumnDef="contact">
               <mat-header-cell *matHeaderCellDef>Phone</mat-header-cell>
-              <mat-cell *matCellDef="let t">{{ t.phone_number || '—' }}</mat-cell>
+              <mat-cell *matCellDef="let t" data-label="Phone">{{ t.phone_number || '—' }}</mat-cell>
             </ng-container>
             <ng-container matColumnDef="unit">
               <mat-header-cell *matHeaderCellDef>Unit / Building</mat-header-cell>
-              <mat-cell *matCellDef="let t">
+              <mat-cell *matCellDef="let t" data-label="Unit / Building">
                 {{ t.unit_number || '—' }}
                 <span *ngIf="t.building_name" class="secondary-text"> · {{ t.building_name }}</span>
               </mat-cell>
             </ng-container>
             <ng-container matColumnDef="rent">
               <mat-header-cell *matHeaderCellDef>Monthly Rent</mat-header-cell>
-              <mat-cell *matCellDef="let t"
+              <mat-cell *matCellDef="let t" data-label="Monthly Rent"
                 >{{ t.monthly_rent ? '৳ ' + (t.monthly_rent | number) : '—' }}</mat-cell
               >
             </ng-container>
             <ng-container matColumnDef="balance">
               <mat-header-cell *matHeaderCellDef>Balance Due</mat-header-cell>
-              <mat-cell *matCellDef="let t" [class.overdue-text]="t.balance_due > 0">
+              <mat-cell *matCellDef="let t" data-label="Balance Due" [class.overdue-text]="t.balance_due > 0">
                 ৳ {{ t.balance_due | number }}
               </mat-cell>
             </ng-container>
             <ng-container matColumnDef="status">
               <mat-header-cell *matHeaderCellDef>Lease</mat-header-cell>
-              <mat-cell *matCellDef="let t">
+              <mat-cell *matCellDef="let t" data-label="Lease">
                 <mat-chip [class]="t.lease_active ? 'status-paid' : 'status-due'">
                   {{ t.lease_active ? 'Active' : 'Inactive' }}
                 </mat-chip>
@@ -458,18 +458,18 @@
           <mat-table [dataSource]="propertyAnalyticsReport.properties" class="ledger-table">
             <ng-container matColumnDef="name">
               <mat-header-cell *matHeaderCellDef>Property</mat-header-cell>
-              <mat-cell *matCellDef="let p"
+              <mat-cell *matCellDef="let p" data-label="Property"
                 >{{ p.property_name }}
                 <span class="secondary-text">({{ p.property_code }})</span></mat-cell
               >
             </ng-container>
             <ng-container matColumnDef="type">
               <mat-header-cell *matHeaderCellDef>Type</mat-header-cell>
-              <mat-cell *matCellDef="let p">{{ p.property_type }}</mat-cell>
+              <mat-cell *matCellDef="let p" data-label="Type">{{ p.property_type }}</mat-cell>
             </ng-container>
             <ng-container matColumnDef="stats">
               <mat-header-cell *matHeaderCellDef>Payment Stats</mat-header-cell>
-              <mat-cell *matCellDef="let p">
+              <mat-cell *matCellDef="let p" data-label="Payment Stats">
                 <span *ngIf="p.payment_stats">{{ p.payment_stats | json }}</span>
                 <span *ngIf="!p.payment_stats" class="secondary-text">No data</span>
               </mat-cell>
@@ -495,27 +495,27 @@
           <mat-table [dataSource]="$any(buildingReport).payments || []" class="ledger-table">
             <ng-container matColumnDef="tenant">
               <mat-header-cell *matHeaderCellDef>Tenant</mat-header-cell>
-              <mat-cell *matCellDef="let p">{{ p.tenant_name || '—' }}</mat-cell>
+              <mat-cell *matCellDef="let p" data-label="Tenant">{{ p.tenant_name || '—' }}</mat-cell>
             </ng-container>
             <ng-container matColumnDef="unit">
               <mat-header-cell *matHeaderCellDef>Unit</mat-header-cell>
-              <mat-cell *matCellDef="let p">{{ p.unit_number }}</mat-cell>
+              <mat-cell *matCellDef="let p" data-label="Unit">{{ p.unit_number }}</mat-cell>
             </ng-container>
             <ng-container matColumnDef="period">
               <mat-header-cell *matHeaderCellDef>Period</mat-header-cell>
-              <mat-cell *matCellDef="let p">{{ p.month }}/{{ p.year }}</mat-cell>
+              <mat-cell *matCellDef="let p" data-label="Period">{{ p.month }}/{{ p.year }}</mat-cell>
             </ng-container>
             <ng-container matColumnDef="due">
               <mat-header-cell *matHeaderCellDef>Due</mat-header-cell>
-              <mat-cell *matCellDef="let p">৳ {{ p.amount_due | number }}</mat-cell>
+              <mat-cell *matCellDef="let p" data-label="Due">৳ {{ p.amount_due | number }}</mat-cell>
             </ng-container>
             <ng-container matColumnDef="paid">
               <mat-header-cell *matHeaderCellDef>Paid</mat-header-cell>
-              <mat-cell *matCellDef="let p">৳ {{ p.amount_paid | number }}</mat-cell>
+              <mat-cell *matCellDef="let p" data-label="Paid">৳ {{ p.amount_paid | number }}</mat-cell>
             </ng-container>
             <ng-container matColumnDef="status">
               <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
-              <mat-cell *matCellDef="let p">
+              <mat-cell *matCellDef="let p" data-label="Status">
                 <mat-chip [class]="'status-' + p.status?.toLowerCase()">{{ p.status }}</mat-chip>
               </mat-cell>
             </ng-container>

@@ -260,6 +260,50 @@ body {
   opacity: 1 !important;
 }
 
+// ── Mobile: dialogs go full-screen ────────────────────────────────────────────
+// Targets only overlay panes that host a dialog (`:has()`), so menus, selects,
+// autocomplete panels and tooltips — which also render through `.cdk-overlay-pane`
+// — are left untouched.
+@media (max-width: 600px) {
+  .cdk-overlay-pane:has(.mat-mdc-dialog-container) {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100%;
+    max-height: 100% !important;
+    margin: 0 !important;
+  }
+
+  .mat-mdc-dialog-container {
+    --mdc-dialog-container-shape: 0;
+  }
+
+  .mat-mdc-dialog-surface {
+    border-radius: 0 !important;
+    height: 100%;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mat-mdc-dialog-title {
+    flex: 0 0 auto;
+  }
+
+  .mat-mdc-dialog-content {
+    flex: 1 1 auto;
+    max-height: none !important;
+  }
+
+  .mat-mdc-dialog-actions {
+    flex: 0 0 auto;
+    position: sticky;
+    bottom: 0;
+    background-color: var(--bg-surface);
+    z-index: 1;
+    box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.08);
+  }
+}
+
 // ── Surface overrides ─────────────────────────────────────────────────────────
 // Angular Material sets container-color tokens directly on the component's own
 // selector (e.g. `.mat-mdc-card { --mdc-elevated-card-container-color: #fff }`).

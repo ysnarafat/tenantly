@@ -521,9 +521,23 @@ import { UserOrganization } from '../../../core/models/organization.model';
       }
 
       /* ─── Responsive ─── */
+      @media (max-width: 768px) {
+        .picker-page {
+          padding: 32px 16px;
+        }
+
+        .picker-wrapper {
+          gap: 32px;
+        }
+      }
+
       @media (max-width: 480px) {
         .picker-title {
           font-size: 1.75rem;
+        }
+
+        .picker-subtitle {
+          font-size: 0.875rem;
         }
 
         .org-card {
@@ -534,6 +548,15 @@ import { UserOrganization } from '../../../core/models/organization.model';
         .org-avatar {
           width: 42px;
           height: 42px;
+        }
+
+        .org-name {
+          font-size: 0.9375rem;
+        }
+
+        .logout-link {
+          padding: 12px 16px;
+          min-height: 40px;
         }
       }
     `,

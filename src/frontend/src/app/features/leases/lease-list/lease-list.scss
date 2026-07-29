@@ -431,4 +431,79 @@ mat-paginator {
   .detail-grid {
     grid-template-columns: 1fr 1fr;
   }
+
+  // Stacked-card table
+  .table-wrapper {
+    overflow-x: visible;
+  }
+
+  .lease-table {
+    display: block;
+    width: 100%;
+
+    thead,
+    tr[mat-header-row] {
+      display: none;
+    }
+
+    tbody,
+    tr {
+      display: block;
+      width: 100%;
+    }
+
+    .lease-row {
+      display: block;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background: var(--bg-surface);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      margin-bottom: 12px;
+    }
+
+    td.mat-cell {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-light);
+      text-align: right;
+      width: 100%;
+
+      &::before {
+        content: attr(data-label);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--text-hint);
+        text-align: left;
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+
+    // Actions cell shouldn't show a label/row of its own text, but keep consistent
+    .actions-cell {
+      justify-content: flex-end;
+      width: 100%;
+    }
+
+    // Detail row spans the whole card and isn't part of the flex-label layout
+    .detail-row {
+      margin-bottom: 12px;
+
+      td.mat-cell {
+        display: block;
+        padding: 0;
+
+        &::before {
+          content: none;
+        }
+      }
+    }
+  }
 }

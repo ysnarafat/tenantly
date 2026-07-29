@@ -8,7 +8,8 @@
   justify-content: center;
   padding: 32px 16px;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   box-sizing: border-box;
 
   background: linear-gradient(

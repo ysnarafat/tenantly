@@ -529,6 +529,59 @@ mat-chip-set {
   .analytics-grid {
     grid-template-columns: 1fr;
   }
+
+  .ledger-summary {
+    .summary-item {
+      flex: 1 1 100%;
+      min-width: unset;
+    }
+  }
+
+  // Stacked-card table
+  .ledger-table {
+    display: block;
+    width: 100%;
+
+    mat-header-row {
+      display: none;
+    }
+
+    mat-row {
+      display: block;
+      height: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background: var(--bg-surface);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      margin-bottom: 12px;
+      padding: 0;
+    }
+
+    mat-cell {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-light);
+      text-align: right;
+      width: 100%;
+
+      &::before {
+        content: attr(data-label);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--text-hint);
+        text-align: left;
+      }
+
+      &:last-of-type {
+        border-bottom: none;
+      }
+    }
+  }
 }
 
 .ledger-results {
