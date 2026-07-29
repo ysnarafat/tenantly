@@ -9,9 +9,11 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslateModule } from '@ngx-translate/core';
+import { switchMap } from 'rxjs/operators';
 import { Tenant, TenantType } from '../../../core/models/tenant.model';
 import { PermissionService } from '../../../core/services/permission.service';
 import { TenantService } from '../../../core/services/tenant.service';
+import { MfaService } from '../../../core/services/mfa.service';
 import { maskFromLastFour, maskPhone } from '../../../shared/utils/pii-mask.utils';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
 
@@ -43,6 +45,7 @@ export class TenantFormDialogComponent implements OnInit {
   private dialogRef = inject(MatDialogRef<TenantFormDialogComponent>);
   private permissionService = inject(PermissionService);
   private tenantService = inject(TenantService);
+  private mfaService = inject(MfaService);
   public data = inject<TenantFormDialogData>(MAT_DIALOG_DATA);
 
   tenantForm!: FormGroup;
@@ -73,20 +76,26 @@ export class TenantFormDialogComponent implements OnInit {
   toggleNidReveal(): void {
     const willReveal = !this.nidRevealed;
 
-    // Fetch the full NID on demand the first time it is revealed.
+    // Fetch the full NID on demand the first time it is revealed, gated by an
+    // MFA step-up challenge.
     if (willReveal && !this._realNid && this.data.tenant?.id) {
-      this.tenantService.getTenantNid(this.data.tenant.id).subscribe({
-        next: (res) => {
-          this._realNid = res.nid_number;
-          this.nidRevealed = true;
-          if (this.isViewMode) {
-            this.tenantForm.get('nid_number')?.setValue(this._realNid, { emitEvent: false });
-          }
-        },
-        error: (err) => {
-          console.error('Error revealing NID:', safeErrorMessage(err));
-        },
-      });
+      const id = this.data.tenant.id;
+      this.mfaService
+        .ensureStepUp()
+        .pipe(switchMap((token) => this.tenantService.getTenantNid(id, token)))
+        .subscribe({
+          next: (res) => {
+            this._realNid = res.nid_number;
+            this.nidRevealed = true;
+            if (this.isViewMode) {
+              this.tenantForm.get('nid_number')?.setValue(this._realNid, { emitEvent: false });
+            }
+          },
+          error: (err) => {
+            this.mfaService.clearStepUp();
+            console.error('Error revealing NID:', safeErrorMessage(err));
+          },
+        });
       return;
     }
 
@@ -132,7 +141,14 @@ export class TenantFormDialogComponent implements OnInit {
       ],
       nid_number: [
         this.isViewMode ? maskFromLastFour(this._nidLastFour) : '',
-        this.isViewMode ? [] : [Validators.required, Validators.maxLength(20)],
+        // NID is required only when creating. In edit mode it is left blank and
+        // an empty value is dropped on submit so the existing NID is preserved
+        // (changing it is optional and does not force an MFA reveal).
+        this.isViewMode
+          ? []
+          : this.isEditMode
+            ? [Validators.maxLength(20)]
+            : [Validators.required, Validators.maxLength(20)],
       ],
       phone_number: [
         this.isViewMode ? maskPhone(this._realPhone) : this._realPhone,
@@ -145,26 +161,17 @@ export class TenantFormDialogComponent implements OnInit {
     if (this.isViewMode) {
       this.tenantForm.disable();
     }
-
-    // In edit mode the NID field must be pre-filled with the real value, which
-    // is no longer sent with the tenant record — fetch it from the reveal
-    // endpoint (edit is restricted to roles allowed to see the full NID).
-    if (this.isEditMode && tenant?.id) {
-      this.tenantService.getTenantNid(tenant.id).subscribe({
-        next: (res) => {
-          this._realNid = res.nid_number;
-          this.tenantForm.get('nid_number')?.setValue(res.nid_number, { emitEvent: false });
-        },
-        error: (err) => {
-          console.error('Error loading NID for edit:', safeErrorMessage(err));
-        },
-      });
-    }
   }
 
   onSubmit() {
     if (this.tenantForm.valid) {
-      this.dialogRef.close(this.tenantForm.value);
+      const value = { ...this.tenantForm.value };
+      // In edit mode a blank NID means "keep the existing value" — omit it so
+      // the backend does not overwrite the stored NID with an empty string.
+      if (this.isEditMode && !value.nid_number?.trim()) {
+        delete value.nid_number;
+      }
+      this.dialogRef.close(value);
     } else {
       Object.keys(this.tenantForm.controls).forEach((key) => {
         this.tenantForm.get(key)?.markAsTouched();

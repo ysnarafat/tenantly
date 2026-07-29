@@ -16,7 +16,9 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
 import { MatOptionModule } from '@angular/material/core';
 import { TranslateModule } from '@ngx-translate/core';
+import { switchMap } from 'rxjs/operators';
 import { TenantService } from '../../../core/services/tenant.service';
+import { MfaService } from '../../../core/services/mfa.service';
 import { TenantFormDialogComponent } from '../tenant-form-dialog/tenant-form-dialog';
 import { Tenant } from '../../../core/models/tenant.model';
 import { cleanEmptyFields } from '../../../shared/utils/object.utils';
@@ -58,6 +60,7 @@ import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm
 export class TenantList implements OnInit {
   private dialog = inject(MatDialog);
   private tenantService = inject(TenantService);
+  private mfaService = inject(MfaService);
   private snackBar = inject(MatSnackBar);
   private permissionService = inject(PermissionService);
 
@@ -84,17 +87,22 @@ export class TenantList implements OnInit {
     const willReveal = !current.nid;
     this.revealState.set(id, { ...current, nid: willReveal });
 
-    // Fetch the full NID on demand the first time it is revealed.
+    // Fetch the full NID on demand the first time it is revealed, gated by an
+    // MFA step-up challenge.
     if (willReveal && !this.revealedNid.has(id)) {
-      this.tenantService.getTenantNid(id).subscribe({
-        next: (res) => this.revealedNid.set(id, res.nid_number),
-        error: (err) => {
-          console.error('Error revealing NID:', safeErrorMessage(err));
-          this.snackBar.open('Failed to reveal NID', 'Close', { duration: 3000 });
-          const state = this.revealState.get(id) ?? { nid: false, phone: false };
-          this.revealState.set(id, { ...state, nid: false });
-        },
-      });
+      this.mfaService
+        .ensureStepUp()
+        .pipe(switchMap((token) => this.tenantService.getTenantNid(id, token)))
+        .subscribe({
+          next: (res) => this.revealedNid.set(id, res.nid_number),
+          error: (err) => {
+            this.mfaService.clearStepUp();
+            console.error('Error revealing NID:', safeErrorMessage(err));
+            this.snackBar.open('Failed to reveal NID', 'Close', { duration: 3000 });
+            const state = this.revealState.get(id) ?? { nid: false, phone: false };
+            this.revealState.set(id, { ...state, nid: false });
+          },
+        });
     }
   }
 

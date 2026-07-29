@@ -6,12 +6,14 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { of } from 'rxjs';
 import { Tenant } from '../../../core/models/tenant.model';
 import { TenantService } from '../../../core/services/tenant.service';
+import { MfaService } from '../../../core/services/mfa.service';
 
 describe('TenantFormDialogComponent', () => {
   let component: TenantFormDialogComponent;
   let fixture: ComponentFixture<TenantFormDialogComponent>;
   let dialogRefSpy: jasmine.SpyObj<MatDialogRef<TenantFormDialogComponent>>;
   let tenantServiceSpy: jasmine.SpyObj<TenantService>;
+  let mfaServiceSpy: jasmine.SpyObj<MfaService>;
 
   const mockTenant: Tenant = {
     id: 1,
@@ -30,6 +32,8 @@ describe('TenantFormDialogComponent', () => {
     dialogRefSpy = jasmine.createSpyObj('MatDialogRef', ['close']);
     tenantServiceSpy = jasmine.createSpyObj('TenantService', ['getTenantNid']);
     tenantServiceSpy.getTenantNid.and.returnValue(of({ nid_number: 'NID123' }));
+    mfaServiceSpy = jasmine.createSpyObj('MfaService', ['ensureStepUp', 'clearStepUp']);
+    mfaServiceSpy.ensureStepUp.and.returnValue(of('step-up-token'));
 
     await TestBed.configureTestingModule({
       imports: [
@@ -43,6 +47,7 @@ describe('TenantFormDialogComponent', () => {
         { provide: MatDialogRef, useValue: dialogRefSpy },
         { provide: MAT_DIALOG_DATA, useValue: { mode: 'create' } },
         { provide: TenantService, useValue: tenantServiceSpy },
+        { provide: MfaService, useValue: mfaServiceSpy },
       ],
     }).compileComponents();
 
@@ -77,6 +82,7 @@ describe('TenantFormDialogComponent', () => {
         { provide: MatDialogRef, useValue: dialogRefSpy },
         { provide: MAT_DIALOG_DATA, useValue: { mode: 'edit', tenant: mockTenant } },
         { provide: TenantService, useValue: tenantServiceSpy },
+        { provide: MfaService, useValue: mfaServiceSpy },
       ],
     });
 

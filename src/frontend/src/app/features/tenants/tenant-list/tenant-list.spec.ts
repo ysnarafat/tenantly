@@ -8,6 +8,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TenantList } from './tenant-list';
 import { TenantService } from '../../../core/services/tenant.service';
+import { MfaService } from '../../../core/services/mfa.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { Tenant, TenantListResponse } from '../../../core/models/tenant.model';
 
@@ -62,11 +63,18 @@ describe('TenantList - Delete action consistency', () => {
 
     const snackBarSpy = jasmine.createSpyObj<MatSnackBar>('MatSnackBar', ['open']);
 
+    const mfaServiceSpy = jasmine.createSpyObj<MfaService>('MfaService', [
+      'ensureStepUp',
+      'clearStepUp',
+    ]);
+    mfaServiceSpy.ensureStepUp.and.returnValue(of('step-up-token'));
+
     await TestBed.configureTestingModule({
       imports: [TenantList, TranslateModule.forRoot()],
       providers: [
         provideNoopAnimations(),
         { provide: TenantService, useValue: tenantServiceSpy },
+        { provide: MfaService, useValue: mfaServiceSpy },
         { provide: PermissionService, useValue: permissionServiceSpy },
         { provide: MatSnackBar, useValue: snackBarSpy },
       ],

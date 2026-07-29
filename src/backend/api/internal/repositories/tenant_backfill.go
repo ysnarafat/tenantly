@@ -16,6 +16,20 @@ import (
 // column itself is retained for one release and should be dropped in a later
 // migration once every environment has completed this back-fill.
 func BackfillTenantNID(db *sqlx.DB, nid *appcrypto.NIDProtector) error {
+	// The plaintext column is dropped in a later migration once every
+	// environment has drained it; after that there is nothing to back-fill.
+	var hasColumn bool
+	if err := db.QueryRow(`
+		SELECT EXISTS (
+			SELECT 1 FROM information_schema.columns
+			WHERE table_name = 'tenants' AND column_name = 'nid_number'
+		)`).Scan(&hasColumn); err != nil {
+		return fmt.Errorf("failed to check for nid_number column: %w", err)
+	}
+	if !hasColumn {
+		return nil
+	}
+
 	rows, err := db.Query(`
 		SELECT id, nid_number
 		FROM tenants
