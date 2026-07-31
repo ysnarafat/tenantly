@@ -6,6 +6,7 @@ import {
   EventEmitter,
   Input,
   OnChanges,
+  OnDestroy,
   Output,
   QueryList,
   SimpleChanges,
@@ -38,7 +39,7 @@ import { LoadingSpinner } from '../loading-spinner/loading-spinner';
   templateUrl: './data-table.html',
   styleUrl: './data-table.scss',
 })
-export class DataTable<T = unknown> implements OnChanges, AfterViewInit {
+export class DataTable<T = unknown> implements OnChanges, AfterViewInit, OnDestroy {
   private cdr = inject(ChangeDetectorRef);
   @ContentChildren(MatColumnDef) columnDefs!: QueryList<MatColumnDef>;
   @ViewChild(MatTable) matTable!: MatTable<T>;
@@ -86,6 +87,14 @@ export class DataTable<T = unknown> implements OnChanges, AfterViewInit {
     if (this.matSort) {
       this.internalDataSource.sort = this.matSort;
     }
+  }
+
+  ngOnDestroy(): void {
+    if (this.matTable && this.columnDefs) {
+      this.columnDefs.forEach((def) => this.matTable.removeColumnDef(def));
+    }
+    this.internalDataSource.paginator = undefined;
+    this.internalDataSource.sort = undefined;
   }
 
   get isEmpty(): boolean {

@@ -740,7 +740,8 @@ export class PaymentCreateDialog implements OnInit {
 
   onLeaseSelected(lease: LeaseSearchResult): void {
     this.selectedLease.set(lease);
-    const amountDue = lease.outstanding_balance > 0 ? lease.outstanding_balance : lease.monthly_rent;
+    const amountDue =
+      lease.outstanding_balance > 0 ? lease.outstanding_balance : lease.monthly_rent;
     this.form.patchValue({
       unit_id: lease.unit_id,
       tenant_id: lease.tenant_id,
