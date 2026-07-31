@@ -2,6 +2,7 @@
   max-width: 600px;
   margin: 0 auto;
   padding: 24px;
+  box-sizing: border-box;
 
   h1 {
     margin-bottom: 24px;
@@ -24,6 +25,32 @@
 
       button {
         flex: 1;
+        min-height: 40px;
+      }
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .organization-form-container {
+    padding: 16px;
+
+    h1 {
+      font-size: 20px;
+      margin-bottom: 16px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .organization-form-container {
+    .form {
+      .form-actions {
+        flex-direction: column;
+
+        button {
+          width: 100%;
+        }
       }
     }
   }

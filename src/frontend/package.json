@@ -15,7 +15,10 @@
     "lint": "ng lint",
     "lint:fix": "ng lint --fix",
     "quality": "npm run format && npm run lint:fix",
-    "e2e": "ng e2e"
+    "e2e": "ng e2e",
+    "e2e:pw": "playwright test",
+    "e2e:pw:ui": "playwright test --ui",
+    "e2e:pw:report": "playwright show-report"
   },
   "private": true,
   "dependencies": {
@@ -43,6 +46,7 @@
     "@angular/build": "^21.2.9",
     "@angular/cli": "^21.2.9",
     "@angular/compiler-cli": "^21.2.11",
+    "@playwright/test": "^1.61.1",
     "@types/jasmine": "~6.0.0",
     "@types/node": "^25.6.0",
     "angular-eslint": "21.3.1",

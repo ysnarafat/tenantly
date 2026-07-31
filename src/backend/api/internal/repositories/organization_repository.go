@@ -4,16 +4,17 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/models"
 )
 
 // OrganizationRepository handles database operations for organizations
 type OrganizationRepository struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
 // NewOrganizationRepository creates a new instance of OrganizationRepository
-func NewOrganizationRepository(db *sql.DB) *OrganizationRepository {
+func NewOrganizationRepository(db *sqlx.DB) *OrganizationRepository {
 	return &OrganizationRepository{db: db}
 }
 

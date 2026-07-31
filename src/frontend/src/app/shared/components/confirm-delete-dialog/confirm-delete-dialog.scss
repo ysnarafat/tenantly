@@ -1,0 +1,25 @@
+.dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow-wrap: anywhere;
+}
+
+.warning-text {
+  color: var(--text-secondary);
+  margin: 0 0 16px;
+  overflow-wrap: anywhere;
+}
+
+.full-width {
+  width: 100%;
+  min-width: 0;
+
+  // Floating labels can't wrap without breaking Material's notch-outline math,
+  // so truncate instead of letting a long entity name push the dialog wider.
+  ::ng-deep .mdc-floating-label {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

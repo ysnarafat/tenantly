@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './core/guards/auth.guard';
+import { GuestGuard } from './core/guards/guest.guard';
 import { superAdminGuard } from './core/guards/super-admin.guard';
 import { orgAdminGuard } from './core/guards/org-admin.guard';
 import { userManagementGuard } from './core/guards/user-management.guard';
@@ -21,6 +22,7 @@ export const routes: Routes = [
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
+    canActivate: [GuestGuard],
   },
   {
     path: 'select-organization',
@@ -73,8 +75,7 @@ export const routes: Routes = [
   },
   {
     path: 'reports',
-    loadComponent: () =>
-      import('./features/reports/report-list/report-list').then((m) => m.ReportList),
+    loadComponent: () => import('./features/reports/report-analysis').then((m) => m.ReportAnalysis),
     canActivate: [AuthGuard],
   },
   {
@@ -88,7 +89,7 @@ export const routes: Routes = [
   {
     path: 'users',
     loadComponent: () => import('./features/users/user-list/user-list').then((m) => m.UserList),
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, userManagementGuard],
   },
   {
     path: 'admin',
@@ -111,22 +112,6 @@ export const routes: Routes = [
         canActivate: [superAdminGuard],
       },
       {
-        path: 'organizations/:id',
-        loadComponent: () =>
-          import('./features/admin/organization-management/organization-detail').then(
-            (m) => m.OrganizationDetailComponent
-          ),
-        canActivate: [superAdminGuard],
-      },
-      {
-        path: 'organizations/:id/edit',
-        loadComponent: () =>
-          import('./features/admin/organization-management/organization-edit').then(
-            (m) => m.OrganizationEditComponent
-          ),
-        canActivate: [superAdminGuard],
-      },
-      {
         path: 'invitations',
         loadComponent: () =>
           import('./features/admin/user-onboarding/pending-invitations').then(
@@ -139,18 +124,6 @@ export const routes: Routes = [
           import('./features/admin/user-onboarding/invite-user').then((m) => m.InviteUserComponent),
       },
       {
-        path: 'invitations/bulk',
-        loadComponent: () =>
-          import('./features/admin/user-onboarding/bulk-import').then((m) => m.BulkImportComponent),
-      },
-      {
-        path: 'audit-logs',
-        loadComponent: () =>
-          import('./features/admin/audit-logs/audit-log-viewer').then(
-            (m) => m.AuditLogViewerComponent
-          ),
-      },
-      {
         path: 'users',
         loadComponent: () => import('./features/users/user-list/user-list').then((m) => m.UserList),
         canActivate: [userManagementGuard],
@@ -159,14 +132,6 @@ export const routes: Routes = [
         path: 'users/new',
         loadComponent: () =>
           import('./features/admin/user-management/create-user').then((m) => m.CreateUserComponent),
-        canActivate: [userManagementGuard],
-      },
-      {
-        path: 'users/promote',
-        loadComponent: () =>
-          import('./features/admin/user-management/admin-promotion').then(
-            (m) => m.AdminPromotionComponent
-          ),
         canActivate: [userManagementGuard],
       },
     ],

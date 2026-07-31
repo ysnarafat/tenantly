@@ -6,16 +6,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/models"
 )
 
 // LeaseRepository handles lease data operations
 type LeaseRepository struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
 // NewLeaseRepository creates a new lease repository
-func NewLeaseRepository(db *sql.DB) *LeaseRepository {
+func NewLeaseRepository(db *sqlx.DB) *LeaseRepository {
 	return &LeaseRepository{db: db}
 }
 

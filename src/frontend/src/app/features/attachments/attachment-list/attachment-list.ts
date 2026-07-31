@@ -12,12 +12,15 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule } from '@ngx-translate/core';
+import { DataTable } from '../../../shared/components/data-table/data-table';
 import {
   AttachmentService,
   Attachment,
   AttachmentType,
 } from '../../../core/services/attachment.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
 
 @Component({
   selector: 'app-attachment-list',
@@ -33,6 +36,8 @@ import { AuthService } from '../../../core/services/auth.service';
     MatSelectModule,
     MatInputModule,
     FormsModule,
+    TranslateModule,
+    DataTable,
   ],
   templateUrl: './attachment-list.html',
   styleUrls: ['./attachment-list.scss'],
@@ -85,7 +90,7 @@ export class AttachmentList implements OnInit {
         this.loading = false;
       },
       error: (error) => {
-        console.error('Error loading attachments:', error);
+        console.error('Error loading attachments:', safeErrorMessage(error));
         this.snackBar.open('Error loading attachments', 'Close', { duration: 3000 });
         this.loading = false;
       },
@@ -181,7 +186,7 @@ export class AttachmentList implements OnInit {
         window.URL.revokeObjectURL(url);
       },
       error: (error) => {
-        console.error('Error downloading attachment:', error);
+        console.error('Error downloading attachment:', safeErrorMessage(error));
         this.snackBar.open('Error downloading attachment', 'Close', { duration: 3000 });
       },
     });
@@ -213,7 +218,7 @@ export class AttachmentList implements OnInit {
           this.loadAttachments();
         },
         error: (error) => {
-          console.error('Error deleting attachment:', error);
+          console.error('Error deleting attachment:', safeErrorMessage(error));
           this.snackBar.open('Error deleting attachment', 'Close', { duration: 3000 });
         },
       });

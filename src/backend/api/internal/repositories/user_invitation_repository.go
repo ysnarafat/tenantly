@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/models"
 )
 
 // UserInvitationRepository handles database operations for user invitations
 type UserInvitationRepository struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
 // NewUserInvitationRepository creates a new instance of UserInvitationRepository
-func NewUserInvitationRepository(db *sql.DB) *UserInvitationRepository {
+func NewUserInvitationRepository(db *sqlx.DB) *UserInvitationRepository {
 	return &UserInvitationRepository{db: db}
 }
 

@@ -227,7 +227,7 @@ func (suite *BuildingAPIIntegrationTestSuite) TestGetBuilding_WithStats() {
 		OccupancyRate: 75.0,
 	}
 
-	suite.mockService.On("GetBuildingWithStats", 1).Return(buildingWithStats, nil)
+	suite.mockService.On("GetBuildingWithStats", 1, 0).Return(buildingWithStats, nil)
 
 	w := suite.makeRequest("GET", "/api/v1/buildings/1?include_stats=true", nil)
 
@@ -461,7 +461,7 @@ func (suite *BuildingAPIIntegrationTestSuite) TestGetBuildingAnalytics() {
 		TotalArea:      5000.0,
 	}
 
-	suite.mockService.On("GetBuildingAnalytics", 1).Return(analytics, nil)
+	suite.mockService.On("GetBuildingAnalytics", 1, 0).Return(analytics, nil)
 
 	w := suite.makeRequest("GET", "/api/v1/buildings/1/analytics", nil)
 
@@ -529,7 +529,7 @@ func (suite *BuildingAPIIntegrationTestSuite) TestGetBuildingUnits() {
 		},
 	}
 
-	suite.mockService.On("GetBuildingUnits", 1, 1, 20).Return(unitsResponse, nil)
+	suite.mockService.On("GetBuildingUnits", 1, 0, 1, 20).Return(unitsResponse, nil)
 
 	w := suite.makeRequest("GET", "/api/v1/buildings/1/units", nil)
 
@@ -607,7 +607,7 @@ func (suite *BuildingAPIIntegrationTestSuite) TestUpdateBuildingStatus() {
 		ActiveStatus: true,
 	}
 
-	suite.mockService.On("UpdateBuildingStatus", 1, statusReq).Return(updatedBuilding, nil)
+	suite.mockService.On("UpdateBuildingStatus", 1, 0, statusReq).Return(updatedBuilding, nil)
 
 	w := suite.makeRequest("PUT", "/api/v1/buildings/1/status", statusReq)
 
@@ -631,7 +631,7 @@ func (suite *BuildingAPIIntegrationTestSuite) TestUpdateBuildingStatus() {
 
 // Test Error Handling and Validation
 func (suite *BuildingAPIIntegrationTestSuite) TestErrorHandling_NotFound() {
-	suite.mockService.On("GetBuilding", 999).Return((*models.Building)(nil), fmt.Errorf("failed to get building: building not found"))
+	suite.mockService.On("GetBuilding", 999, 0).Return((*models.Building)(nil), fmt.Errorf("failed to get building: building not found"))
 
 	w := suite.makeRequest("GET", "/api/v1/buildings/999", nil)
 

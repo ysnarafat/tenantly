@@ -23,10 +23,7 @@ func NewPropertyHandler(propertyService *services.PropertyService) *PropertyHand
 func (h *PropertyHandler) CreateProperty(c *gin.Context) {
 	var req models.CreatePropertyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request data",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request data", err)
 		return
 	}
 
@@ -43,13 +40,10 @@ func (h *PropertyHandler) CreateProperty(c *gin.Context) {
 	property, err := h.propertyService.CreateProperty(&req, userID.(int))
 	if err != nil {
 		if err.Error() == "property name already exists" || err.Error() == "property code already exists" {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			respondError(c, http.StatusConflict, "PROPERTY_CONFLICT", "A property with this name or code already exists", err)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to create property",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusInternalServerError, "CREATE_PROPERTY_FAILED", "Failed to create property", err)
 		return
 	}
 
@@ -88,10 +82,7 @@ func (h *PropertyHandler) GetProperties(c *gin.Context) {
 
 	properties, total, err := h.propertyService.ListProperties(filters, page, pageSize)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to retrieve properties",
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve properties"})
 		return
 	}
 
@@ -125,18 +116,16 @@ func (h *PropertyHandler) GetProperty(c *gin.Context) {
 	// Check if stats are requested
 	includeStats := c.Query("include_stats") == "true"
 	includeBuildings := c.Query("include_buildings") == "true"
+	orgID := c.GetInt("org_id")
 
 	if includeStats {
-		property, err := h.propertyService.GetPropertyWithStats(id)
+		property, err := h.propertyService.GetPropertyWithStats(id, orgID)
 		if err != nil {
 			if err.Error() == "property not found" {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Property not found"})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error":   "Failed to retrieve property",
-				"details": err.Error(),
-			})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve property"})
 			return
 		}
 
@@ -152,16 +141,13 @@ func (h *PropertyHandler) GetProperty(c *gin.Context) {
 
 		c.JSON(http.StatusOK, response)
 	} else {
-		property, err := h.propertyService.GetProperty(id)
+		property, err := h.propertyService.GetProperty(id, orgID)
 		if err != nil {
 			if err.Error() == "property not found" {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Property not found"})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error":   "Failed to retrieve property",
-				"details": err.Error(),
-			})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve property"})
 			return
 		}
 
@@ -190,10 +176,7 @@ func (h *PropertyHandler) UpdateProperty(c *gin.Context) {
 
 	var req models.UpdatePropertyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request data",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request data", err)
 		return
 	}
 
@@ -204,20 +187,18 @@ func (h *PropertyHandler) UpdateProperty(c *gin.Context) {
 		return
 	}
 
-	property, err := h.propertyService.UpdateProperty(id, &req, userID.(int))
+	orgID := c.GetInt("org_id")
+	property, err := h.propertyService.UpdateProperty(id, &req, userID.(int), orgID)
 	if err != nil {
 		if err.Error() == "property not found" {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Property not found"})
 			return
 		}
 		if err.Error() == "property name already exists" {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			respondError(c, http.StatusConflict, "PROPERTY_NAME_EXISTS", "A property with this name already exists", err)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to update property",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusInternalServerError, "UPDATE_PROPERTY_FAILED", "Failed to update property", err)
 		return
 	}
 
@@ -240,7 +221,8 @@ func (h *PropertyHandler) DeleteProperty(c *gin.Context) {
 		return
 	}
 
-	err = h.propertyService.DeleteProperty(id, userID.(int))
+	orgID := c.GetInt("org_id")
+	err = h.propertyService.DeleteProperty(id, userID.(int), orgID)
 	if err != nil {
 		if err.Error() == "property not found" {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Property not found"})
@@ -248,13 +230,10 @@ func (h *PropertyHandler) DeleteProperty(c *gin.Context) {
 		}
 		if err.Error() == "cannot delete property: has active buildings" ||
 			err.Error() == "cannot delete property: has active units" {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			respondError(c, http.StatusConflict, "PROPERTY_HAS_DEPENDENCIES", "Cannot delete property with active buildings or units", err)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to delete property",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusInternalServerError, "DELETE_PROPERTY_FAILED", "Failed to delete property", err)
 		return
 	}
 
@@ -270,16 +249,14 @@ func (h *PropertyHandler) GetPropertyAggregations(c *gin.Context) {
 		return
 	}
 
-	aggregations, err := h.propertyService.GetPropertyAggregations(id)
+	orgID := c.GetInt("org_id")
+	aggregations, err := h.propertyService.GetPropertyAggregations(id, orgID)
 	if err != nil {
 		if err.Error() == "property not found" {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Property not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to retrieve property aggregations",
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve property aggregations"})
 		return
 	}
 
@@ -296,6 +273,7 @@ func (h *PropertyHandler) SearchProperties(c *gin.Context) {
 
 	// Build filters
 	filters := make(map[string]interface{})
+	filters["organization_id"] = c.GetInt("org_id")
 
 	if propertyType != "" {
 		filters["property_type"] = propertyType
@@ -310,10 +288,7 @@ func (h *PropertyHandler) SearchProperties(c *gin.Context) {
 
 	properties, total, err := h.propertyService.SearchProperties(searchTerm, filters, page, pageSize)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to search properties",
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to search properties"})
 		return
 	}
 

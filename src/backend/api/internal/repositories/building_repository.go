@@ -6,17 +6,18 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/models"
 	"github.com/ysnarafat/tenantly/internal/models/columns"
 )
 
 // BuildingRepository implements the BuildingRepositoryInterface
 type BuildingRepository struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
 // NewBuildingRepository creates a new building repository instance
-func NewBuildingRepository(db *sql.DB) *BuildingRepository {
+func NewBuildingRepository(db *sqlx.DB) *BuildingRepository {
 	return &BuildingRepository{db: db}
 }
 

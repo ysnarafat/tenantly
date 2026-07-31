@@ -55,28 +55,6 @@
     }
   }
 
-  // Loading State
-  .loading-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 80px 20px;
-    gap: 16px;
-
-    mat-spinner {
-      ::ng-deep circle {
-        stroke: var(--color-primary);
-      }
-    }
-
-    p {
-      margin: 0;
-      font-size: 16px;
-      color: var(--text-secondary);
-    }
-  }
-
   // Empty State
   .empty-state {
     display: flex;
@@ -435,7 +413,6 @@
       }
     }
 
-    .loading-container,
     .empty-state {
       padding: 40px 12px;
 

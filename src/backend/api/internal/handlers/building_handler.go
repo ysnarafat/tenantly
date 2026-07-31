@@ -25,10 +25,7 @@ func NewBuildingHandler(buildingService interfaces.BuildingServiceInterface) *Bu
 func (h *BuildingHandler) CreateBuilding(c *gin.Context) {
 	var req models.CreateBuildingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request data",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request data", err)
 		return
 	}
 
@@ -42,16 +39,13 @@ func (h *BuildingHandler) CreateBuilding(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Property not found"})
 			return
 		case err.Error() == fmt.Sprintf("building code '%s' already exists in this property", req.BuildingCode):
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			respondError(c, http.StatusConflict, "BUILDING_CODE_EXISTS", "Building code already exists in this property", err)
 			return
 		case err.Error() == "metadata validation failed":
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid metadata for building type"})
 			return
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error":   "Failed to create building",
-				"details": err.Error(),
-			})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create building"})
 			return
 		}
 	}
@@ -124,10 +118,7 @@ func (h *BuildingHandler) GetBuildings(c *gin.Context) {
 
 	buildings, err := h.buildingService.SearchBuildings(filters)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to retrieve buildings",
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve buildings"})
 		return
 	}
 
@@ -157,33 +148,28 @@ func (h *BuildingHandler) GetBuilding(c *gin.Context) {
 
 	// Check if stats are requested
 	includeStats := c.Query("include_stats") == "true"
+	orgID := c.GetInt("org_id")
 
 	if includeStats {
-		building, err := h.buildingService.GetBuildingWithStats(id)
+		building, err := h.buildingService.GetBuildingWithStats(id, orgID)
 		if err != nil {
 			if err.Error() == "failed to get building with stats: building not found" {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Building not found"})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error":   "Failed to retrieve building with stats",
-				"details": err.Error(),
-			})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve building with stats"})
 			return
 		}
 
 		c.JSON(http.StatusOK, gin.H{"building": building})
 	} else {
-		building, err := h.buildingService.GetBuilding(id)
+		building, err := h.buildingService.GetBuilding(id, orgID)
 		if err != nil {
 			if err.Error() == "failed to get building: building not found" {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Building not found"})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error":   "Failed to retrieve building",
-				"details": err.Error(),
-			})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve building"})
 			return
 		}
 
@@ -202,28 +188,24 @@ func (h *BuildingHandler) UpdateBuilding(c *gin.Context) {
 
 	var req models.UpdateBuildingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request data",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request data", err)
 		return
 	}
 
-	building, err := h.buildingService.UpdateBuilding(id, &req)
+	orgID := c.GetInt("org_id")
+	building, err := h.buildingService.UpdateBuilding(id, &req, orgID)
 	if err != nil {
 		// Handle specific error types
 		switch {
-		case err.Error() == "failed to get existing building: building not found":
+		case err.Error() == "failed to get existing building: building not found",
+			err.Error() == "building not found":
 			c.JSON(http.StatusNotFound, gin.H{"error": "Building not found"})
 			return
 		case err.Error() == "metadata validation failed":
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid metadata for building type"})
 			return
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error":   "Failed to update building",
-				"details": err.Error(),
-			})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update building"})
 			return
 		}
 	}
@@ -243,21 +225,20 @@ func (h *BuildingHandler) DeleteBuilding(c *gin.Context) {
 		return
 	}
 
-	err = h.buildingService.DeleteBuilding(id)
+	orgID := c.GetInt("org_id")
+	err = h.buildingService.DeleteBuilding(id, orgID)
 	if err != nil {
 		// Handle specific error types
 		switch {
-		case err.Error() == "failed to get existing building: building not found":
+		case err.Error() == "failed to get existing building: building not found",
+			err.Error() == "building not found":
 			c.JSON(http.StatusNotFound, gin.H{"error": "Building not found"})
 			return
 		case err.Error() == "failed to delete building: cannot delete building with active units":
 			c.JSON(http.StatusConflict, gin.H{"error": "Cannot delete building with active units"})
 			return
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error":   "Failed to delete building",
-				"details": err.Error(),
-			})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete building"})
 			return
 		}
 	}
@@ -278,10 +259,7 @@ func (h *BuildingHandler) GetPropertyBuildings(c *gin.Context) {
 	// Parse request parameters
 	var req models.BuildingListRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request parameters",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request parameters", err)
 		return
 	}
 
@@ -318,10 +296,7 @@ func (h *BuildingHandler) GetPropertyBuildings(c *gin.Context) {
 	// Get buildings with enhanced service method
 	response, err := h.buildingService.GetPropertyBuildingsWithPagination(propertyObj.ID, filters, req.SortBy, req.SortOrder, req.IncludeStats)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to retrieve property buildings",
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve property buildings"})
 		return
 	}
 
@@ -355,10 +330,7 @@ func (h *BuildingHandler) BulkCreateBuildings(c *gin.Context) {
 
 	var req models.BulkCreateBuildingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request data",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request data", err)
 		return
 	}
 
@@ -374,10 +346,7 @@ func (h *BuildingHandler) BulkCreateBuildings(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Duplicate building codes in request"})
 			return
 		default:
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error":   "Failed to bulk create buildings",
-				"details": err.Error(),
-			})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to bulk create buildings"})
 			return
 		}
 	}
@@ -469,10 +438,7 @@ func (h *BuildingHandler) SearchBuildings(c *gin.Context) {
 
 	buildings, err := h.buildingService.SearchBuildings(filters)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to search buildings",
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to search buildings"})
 		return
 	}
 
@@ -501,16 +467,14 @@ func (h *BuildingHandler) GetBuildingAnalytics(c *gin.Context) {
 		return
 	}
 
-	analytics, err := h.buildingService.GetBuildingAnalytics(id)
+	orgID := c.GetInt("org_id")
+	analytics, err := h.buildingService.GetBuildingAnalytics(id, orgID)
 	if err != nil {
 		if err.Error() == "building validation failed: building not found" {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Building not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to retrieve building analytics",
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve building analytics"})
 		return
 	}
 
@@ -521,10 +485,7 @@ func (h *BuildingHandler) GetBuildingAnalytics(c *gin.Context) {
 func (h *BuildingHandler) AdvancedSearchBuildings(c *gin.Context) {
 	var req models.BuildingSearchRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid search parameters",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid search parameters", err)
 		return
 	}
 
@@ -541,10 +502,7 @@ func (h *BuildingHandler) AdvancedSearchBuildings(c *gin.Context) {
 
 	response, err := h.buildingService.AdvancedSearchBuildings(&req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to search buildings",
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to search buildings"})
 		return
 	}
 
@@ -568,16 +526,14 @@ func (h *BuildingHandler) GetBuildingUnits(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "20"))
 
-	response, err := h.buildingService.GetBuildingUnits(id, page, pageSize)
+	orgID := c.GetInt("org_id")
+	response, err := h.buildingService.GetBuildingUnits(id, orgID, page, pageSize)
 	if err != nil {
 		if strings.Contains(err.Error(), "building validation failed") {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Building not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to retrieve building units",
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve building units"})
 		return
 	}
 
@@ -591,10 +547,7 @@ func (h *BuildingHandler) GetBuildingMetadataSchema(c *gin.Context) {
 
 	response, err := h.buildingService.GetBuildingMetadataSchema(buildingType)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid building type",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_BUILDING_TYPE", "Invalid building type", err)
 		return
 	}
 
@@ -605,19 +558,13 @@ func (h *BuildingHandler) GetBuildingMetadataSchema(c *gin.Context) {
 func (h *BuildingHandler) ExportBuildingData(c *gin.Context) {
 	var req models.BuildingExportRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid export parameters",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid export parameters", err)
 		return
 	}
 
 	data, contentType, err := h.buildingService.ExportBuildingData(&req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to export building data",
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to export building data"})
 		return
 	}
 
@@ -650,30 +597,22 @@ func (h *BuildingHandler) UpdateBuildingStatus(c *gin.Context) {
 
 	var req models.BuildingStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request data",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request data", err)
 		return
 	}
 
-	building, err := h.buildingService.UpdateBuildingStatus(id, &req)
+	orgID := c.GetInt("org_id")
+	building, err := h.buildingService.UpdateBuildingStatus(id, orgID, &req)
 	if err != nil {
 		if strings.Contains(err.Error(), "building not found") {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Building not found"})
 			return
 		}
 		if strings.Contains(err.Error(), "cannot deactivate building") {
-			c.JSON(http.StatusConflict, gin.H{
-				"error":   "Cannot deactivate building with active units",
-				"details": err.Error(),
-			})
+			c.JSON(http.StatusConflict, gin.H{"error": "Cannot deactivate building with active units"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to update building status",
-			"details": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update building status"})
 		return
 	}
 

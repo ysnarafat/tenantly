@@ -13,11 +13,18 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatSelectModule } from '@angular/material/select';
+import { MatOptionModule } from '@angular/material/core';
 import { TranslateModule } from '@ngx-translate/core';
 import { TenantService } from '../../../core/services/tenant.service';
 import { TenantFormDialogComponent } from '../tenant-form-dialog/tenant-form-dialog';
 import { Tenant } from '../../../core/models/tenant.model';
 import { cleanEmptyFields } from '../../../shared/utils/object.utils';
+import { DataTable } from '../../../shared/components/data-table/data-table';
+import { PermissionService } from '../../../core/services/permission.service';
+import { maskNid, maskPhone, RESTRICTED_LABEL } from '../../../shared/utils/pii-mask.utils';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm-delete-dialog/confirm-delete-dialog';
 
 @Component({
   selector: 'app-tenant-list',
@@ -36,7 +43,10 @@ import { cleanEmptyFields } from '../../../shared/utils/object.utils';
     MatTooltipModule,
     MatProgressSpinnerModule,
     MatMenuModule,
+    MatSelectModule,
+    MatOptionModule,
     TranslateModule,
+    DataTable,
   ],
   templateUrl: './tenant-list.html',
   styleUrls: ['./tenant-list.scss'],
@@ -45,6 +55,51 @@ export class TenantList implements OnInit {
   private dialog = inject(MatDialog);
   private tenantService = inject(TenantService);
   private snackBar = inject(MatSnackBar);
+  private permissionService = inject(PermissionService);
+
+  private revealState = new Map<number, { nid: boolean; phone: boolean }>();
+  get canRevealPii(): boolean {
+    return (
+      this.permissionService.isSuperAdmin() ||
+      this.permissionService.isOrgAdmin() ||
+      this.permissionService.isAdmin() ||
+      this.permissionService.isPropertyManager()
+    );
+  }
+
+  get isAccountantRole(): boolean {
+    return this.permissionService.isAccountant();
+  }
+
+  toggleNidReveal(id: number): void {
+    const current = this.revealState.get(id) ?? { nid: false, phone: false };
+    this.revealState.set(id, { ...current, nid: !current.nid });
+  }
+
+  togglePhoneReveal(id: number): void {
+    const current = this.revealState.get(id) ?? { nid: false, phone: false };
+    this.revealState.set(id, { ...current, phone: !current.phone });
+  }
+
+  isNidRevealed(id: number): boolean {
+    return this.revealState.get(id)?.nid ?? false;
+  }
+
+  isPhoneRevealed(id: number): boolean {
+    return this.revealState.get(id)?.phone ?? false;
+  }
+
+  getDisplayNid(tenant: Tenant): string {
+    if (!tenant.nid_number) return '—';
+    if (this.isAccountantRole) return RESTRICTED_LABEL;
+    return this.isNidRevealed(tenant.id) ? tenant.nid_number : maskNid(tenant.nid_number);
+  }
+
+  getDisplayPhone(tenant: Tenant): string {
+    if (!tenant.phone_number) return '—';
+    if (this.isAccountantRole) return RESTRICTED_LABEL;
+    return this.isPhoneRevealed(tenant.id) ? tenant.phone_number : maskPhone(tenant.phone_number);
+  }
 
   tenants: Tenant[] = [];
   filteredTenants: Tenant[] = [];
@@ -73,7 +128,7 @@ export class TenantList implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        console.error('Error fetching tenants:', err);
+        console.error('Error fetching tenants:', safeErrorMessage(err));
         this.snackBar.open('Failed to load tenants', 'Close', { duration: 3000 });
         this.loading = false;
       },
@@ -183,7 +238,6 @@ export class TenantList implements OnInit {
     dialogRef.afterClosed().subscribe((result) => {
       if (result) {
         const cleanedResult = cleanEmptyFields(result);
-        console.log('Updating tenant with ID:', tenant.id, 'Data:', cleanedResult);
         this.tenantService.updateTenant(tenant.id, cleanedResult).subscribe({
           next: () => {
             this.snackBar.open('Tenant updated successfully', 'Close', { duration: 3000 });
@@ -200,18 +254,25 @@ export class TenantList implements OnInit {
   }
 
   deleteTenant(tenant: Tenant) {
-    if (confirm(`Delete tenant "${tenant.name}"? This cannot be undone.`)) {
-      this.tenantService.deleteTenant(tenant.id).subscribe({
-        next: () => {
-          this.snackBar.open('Tenant deleted', 'Close', { duration: 3000 });
-          this.loadTenants();
-        },
-        error: (err) => {
-          this.snackBar.open(err.error?.message || 'Failed to delete tenant', 'Close', {
-            duration: 3000,
-          });
-        },
-      });
-    }
+    const dialogRef = this.dialog.open(ConfirmDeleteDialogComponent, {
+      width: '480px',
+      data: { entityLabel: 'tenant', entityName: tenant.name },
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (confirmed) {
+        this.tenantService.deleteTenant(tenant.id).subscribe({
+          next: () => {
+            this.snackBar.open('Tenant deleted', 'Close', { duration: 3000 });
+            this.loadTenants();
+          },
+          error: (err) => {
+            this.snackBar.open(err.error?.message || 'Failed to delete tenant', 'Close', {
+              duration: 3000,
+            });
+          },
+        });
+      }
+    });
   }
 }

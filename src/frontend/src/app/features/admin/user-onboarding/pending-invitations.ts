@@ -65,46 +65,48 @@ import { UserInvitation, Organization } from '../../../core/models';
           <button mat-button color="primary" (click)="inviteUser()">Send First Invitation</button>
         </div>
       } @else {
-        <table mat-table [dataSource]="invitations()">
-          <ng-container matColumnDef="email">
-            <th mat-header-cell *matHeaderCellDef>Email</th>
-            <td mat-cell *matCellDef="let inv">{{ inv.email }}</td>
-          </ng-container>
+        <div class="table-scroll">
+          <table mat-table [dataSource]="invitations()">
+            <ng-container matColumnDef="email">
+              <th mat-header-cell *matHeaderCellDef>Email</th>
+              <td mat-cell *matCellDef="let inv">{{ inv.email }}</td>
+            </ng-container>
 
-          <ng-container matColumnDef="role">
-            <th mat-header-cell *matHeaderCellDef>Role</th>
-            <td mat-cell *matCellDef="let inv">
-              <mat-chip>{{ inv.role }}</mat-chip>
-            </td>
-          </ng-container>
+            <ng-container matColumnDef="role">
+              <th mat-header-cell *matHeaderCellDef>Role</th>
+              <td mat-cell *matCellDef="let inv">
+                <mat-chip>{{ inv.role }}</mat-chip>
+              </td>
+            </ng-container>
 
-          <ng-container matColumnDef="expires">
-            <th mat-header-cell *matHeaderCellDef>Expires</th>
-            <td mat-cell *matCellDef="let inv">{{ inv.expires_at | date: 'mediumDate' }}</td>
-          </ng-container>
+            <ng-container matColumnDef="expires">
+              <th mat-header-cell *matHeaderCellDef>Expires</th>
+              <td mat-cell *matCellDef="let inv">{{ inv.expires_at | date: 'mediumDate' }}</td>
+            </ng-container>
 
-          <ng-container matColumnDef="created">
-            <th mat-header-cell *matHeaderCellDef>Sent</th>
-            <td mat-cell *matCellDef="let inv">{{ inv.created_at | date: 'mediumDate' }}</td>
-          </ng-container>
+            <ng-container matColumnDef="created">
+              <th mat-header-cell *matHeaderCellDef>Sent</th>
+              <td mat-cell *matCellDef="let inv">{{ inv.created_at | date: 'mediumDate' }}</td>
+            </ng-container>
 
-          <ng-container matColumnDef="actions">
-            <th mat-header-cell *matHeaderCellDef>Actions</th>
-            <td mat-cell *matCellDef="let inv">
-              <button
-                mat-icon-button
-                color="warn"
-                matTooltip="Revoke invitation"
-                (click)="revokeInvitation(inv)"
-              >
-                <mat-icon>cancel</mat-icon>
-              </button>
-            </td>
-          </ng-container>
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <td mat-cell *matCellDef="let inv">
+                <button
+                  mat-icon-button
+                  color="warn"
+                  matTooltip="Revoke invitation"
+                  (click)="revokeInvitation(inv)"
+                >
+                  <mat-icon>cancel</mat-icon>
+                </button>
+              </td>
+            </ng-container>
 
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-        </table>
+            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+          </table>
+        </div>
       }
     </div>
   `,
@@ -120,6 +122,12 @@ import { UserInvitation, Organization } from '../../../core/models';
         justify-content: space-between;
         align-items: center;
         margin-bottom: 16px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
       }
       h2 {
         margin: 0;
@@ -150,6 +158,11 @@ import { UserInvitation, Organization } from '../../../core/models';
       }
       table {
         width: 100%;
+      }
+      @media (max-width: 480px) {
+        .invitations-container {
+          padding: 16px;
+        }
       }
     `,
   ],

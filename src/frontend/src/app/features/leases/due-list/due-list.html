@@ -14,10 +14,11 @@
   </div>
 
   <!-- Loading State -->
-  <div *ngIf="loading()" class="loading-container">
-    <mat-spinner diameter="50"></mat-spinner>
-    <p>{{ 'DUE_LIST.LOADING' | translate }}</p>
-  </div>
+  <app-loading-spinner
+    *ngIf="loading()"
+    [message]="'DUE_LIST.LOADING' | translate"
+    [diameter]="50"
+  ></app-loading-spinner>
 
   <!-- Empty State -->
   <div *ngIf="isEmpty()" class="empty-state">
@@ -55,29 +56,48 @@
     <div class="table-section">
       <mat-card class="table-card">
         <mat-card-content>
-          <table mat-table [dataSource]="dataSource()" class="due-table">
-            <!-- Tenant Name Column -->
+          <app-data-table
+            [dataSource]="dataSource()"
+            [displayedColumns]="displayedColumns"
+            [showPaginator]="false"
+            emptyIcon="check_circle_outline"
+            emptyMessage="No overdue payments"
+          >
             <ng-container matColumnDef="tenant_name">
               <th mat-header-cell *matHeaderCellDef>
                 {{ 'DUE_LIST.COLUMNS.TENANT_NAME' | translate }}
               </th>
-              <td mat-cell *matCellDef="let element">{{ element.tenant_name }}</td>
+              <td
+                mat-cell
+                *matCellDef="let element"
+                [attr.data-label]="'DUE_LIST.COLUMNS.TENANT_NAME' | translate"
+              >
+                {{ element.tenant_name }}
+              </td>
             </ng-container>
 
-            <!-- Property Column -->
             <ng-container matColumnDef="property_name">
               <th mat-header-cell *matHeaderCellDef>
                 {{ 'DUE_LIST.COLUMNS.PROPERTY' | translate }}
               </th>
-              <td mat-cell *matCellDef="let element">{{ element.property_name }}</td>
+              <td
+                mat-cell
+                *matCellDef="let element"
+                [attr.data-label]="'DUE_LIST.COLUMNS.PROPERTY' | translate"
+              >
+                {{ element.property_name }}
+              </td>
             </ng-container>
 
-            <!-- Building Column -->
             <ng-container matColumnDef="building_name">
               <th mat-header-cell *matHeaderCellDef>
                 {{ 'DUE_LIST.COLUMNS.BUILDING' | translate }}
               </th>
-              <td mat-cell *matCellDef="let element">
+              <td
+                mat-cell
+                *matCellDef="let element"
+                [attr.data-label]="'DUE_LIST.COLUMNS.BUILDING' | translate"
+              >
                 <span class="building-info">
                   {{ element.building_name }}
                   <small class="building-code">({{ element.building_code }})</small>
@@ -85,10 +105,13 @@
               </td>
             </ng-container>
 
-            <!-- Unit Column -->
             <ng-container matColumnDef="unit_number">
               <th mat-header-cell *matHeaderCellDef>{{ 'DUE_LIST.COLUMNS.UNIT' | translate }}</th>
-              <td mat-cell *matCellDef="let element">
+              <td
+                mat-cell
+                *matCellDef="let element"
+                [attr.data-label]="'DUE_LIST.COLUMNS.UNIT' | translate"
+              >
                 <span class="unit-info">
                   {{ element.unit_number }}
                   <small class="unit-type">{{ element.unit_type }}</small>
@@ -96,32 +119,36 @@
               </td>
             </ng-container>
 
-            <!-- Monthly Rent Column -->
             <ng-container matColumnDef="monthly_rent">
               <th mat-header-cell *matHeaderCellDef class="amount-column">
                 {{ 'DUE_LIST.COLUMNS.MONTHLY_RENT' | translate }}
               </th>
-              <td mat-cell *matCellDef="let element" class="amount-cell">
+              <td
+                mat-cell
+                *matCellDef="let element"
+                class="amount-cell"
+                [attr.data-label]="'DUE_LIST.COLUMNS.MONTHLY_RENT' | translate"
+              >
                 {{ formatCurrency(element.monthly_rent) }}
               </td>
             </ng-container>
 
-            <!-- Days Overdue Column -->
             <ng-container matColumnDef="days_overdue">
               <th mat-header-cell *matHeaderCellDef>
                 {{ 'DUE_LIST.COLUMNS.DAYS_OVERDUE' | translate }}
               </th>
-              <td mat-cell *matCellDef="let element">
+              <td
+                mat-cell
+                *matCellDef="let element"
+                [attr.data-label]="'DUE_LIST.COLUMNS.DAYS_OVERDUE' | translate"
+              >
                 <mat-chip [ngClass]="'overdue-chip ' + getOverdueColor(element.days_overdue)">
                   <mat-icon class="chip-icon">{{ getOverdueIcon(element.days_overdue) }}</mat-icon>
                   {{ element.days_overdue }} {{ 'DUE_LIST.DAYS' | translate }}
                 </mat-chip>
               </td>
             </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-          </table>
+          </app-data-table>
         </mat-card-content>
       </mat-card>
     </div>

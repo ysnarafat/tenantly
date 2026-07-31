@@ -7,11 +7,6 @@ export const selectUser = createSelector(selectAuthState, (state: AuthState) => 
 
 export const selectToken = createSelector(selectAuthState, (state: AuthState) => state.token);
 
-export const selectRefreshToken = createSelector(
-  selectAuthState,
-  (state: AuthState) => state.refreshToken
-);
-
 export const selectIsAuthenticated = createSelector(
   selectAuthState,
   (state: AuthState) => state.isAuthenticated

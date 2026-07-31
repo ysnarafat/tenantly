@@ -77,8 +77,9 @@ type SetOrganizationRequest struct {
 
 // SetOrganizationResponse is returned when a user switches organizations
 type SetOrganizationResponse struct {
-	Token        string               `json:"token"`
-	RefreshToken string               `json:"refresh_token"`
+	Token string `json:"token"`
+	// RefreshToken is never serialized — see LoginResponse.RefreshToken for why.
+	RefreshToken string               `json:"-"`
 	Organization UserOrganizationRole `json:"organization"`
 	ExpiresAt    time.Time            `json:"expires_at"`
 }

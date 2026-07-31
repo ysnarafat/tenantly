@@ -20,13 +20,13 @@ import (
 
 type mockPaymentService struct {
 	createPaymentFn          func(req *models.CreatePaymentRequest, userID int) (*models.Payment, error)
-	getPaymentFn             func(id int) (*models.PaymentWithDetails, error)
-	updatePaymentFn          func(id int, req *models.UpdatePaymentRequest, userID int) (*models.Payment, error)
+	getPaymentFn             func(id, orgID int) (*models.PaymentWithDetails, error)
+	updatePaymentFn          func(id int, req *models.UpdatePaymentRequest, userID, orgID int) (*models.Payment, error)
 	getPaymentsFn            func(page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
 	getPaymentsByBuildingFn  func(buildingID int, page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
 	getPaymentsByPropertyFn  func(propertyID int, page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error)
-	generateBuildingReportFn func(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error)
-	generatePropertyReportFn func(propertyID int, startDate, endDate time.Time) (*models.PropertyPaymentReport, error)
+	generateBuildingReportFn func(buildingID, orgID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error)
+	generatePropertyReportFn func(propertyID, orgID int, startDate, endDate time.Time) (*models.PropertyPaymentReport, error)
 	getDashboardSummaryFn    func() (*models.DashboardSummary, error)
 	processBulkFn            func(requests []*models.CreatePaymentRequest, userID int) ([]*models.Payment, []error)
 	getAnalyticsFn           func(buildingID int, period string) (*models.BuildingPaymentAnalytics, error)
@@ -42,7 +42,7 @@ func (m *mockPaymentService) CreatePayment(req *models.CreatePaymentRequest, use
 	return m.createPaymentFn(req, userID)
 }
 
-func (m *mockPaymentService) GetPayment(id int) (*models.PaymentWithDetails, error) {
+func (m *mockPaymentService) GetPayment(id, orgID int) (*models.PaymentWithDetails, error) {
 	if m.getPaymentFn == nil {
 		return &models.PaymentWithDetails{
 			Payment: models.Payment{
@@ -50,14 +50,14 @@ func (m *mockPaymentService) GetPayment(id int) (*models.PaymentWithDetails, err
 			},
 		}, nil
 	}
-	return m.getPaymentFn(id)
+	return m.getPaymentFn(id, orgID)
 }
 
-func (m *mockPaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequest, userID int) (*models.Payment, error) {
+func (m *mockPaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequest, userID, orgID int) (*models.Payment, error) {
 	if m.updatePaymentFn == nil {
 		return nil, errors.New("update payment not mocked")
 	}
-	return m.updatePaymentFn(id, req, userID)
+	return m.updatePaymentFn(id, req, userID, orgID)
 }
 
 func (m *mockPaymentService) GetPayments(page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error) {
@@ -81,21 +81,21 @@ func (m *mockPaymentService) GetPaymentsByProperty(propertyID int, page, pageSiz
 	return m.getPaymentsByPropertyFn(propertyID, page, pageSize, filters)
 }
 
-func (m *mockPaymentService) GenerateBuildingPaymentReport(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error) {
+func (m *mockPaymentService) GenerateBuildingPaymentReport(buildingID, orgID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error) {
 	if m.generateBuildingReportFn == nil {
 		return nil, errors.New("generate building report not mocked")
 	}
-	return m.generateBuildingReportFn(buildingID, startDate, endDate)
+	return m.generateBuildingReportFn(buildingID, orgID, startDate, endDate)
 }
 
-func (m *mockPaymentService) GeneratePropertyPaymentReport(propertyID int, startDate, endDate time.Time) (*models.PropertyPaymentReport, error) {
+func (m *mockPaymentService) GeneratePropertyPaymentReport(propertyID, orgID int, startDate, endDate time.Time) (*models.PropertyPaymentReport, error) {
 	if m.generatePropertyReportFn == nil {
 		return nil, errors.New("generate property report not mocked")
 	}
-	return m.generatePropertyReportFn(propertyID, startDate, endDate)
+	return m.generatePropertyReportFn(propertyID, orgID, startDate, endDate)
 }
 
-func (m *mockPaymentService) GetDashboardSummaryWithBuildingContext() (*models.DashboardSummary, error) {
+func (m *mockPaymentService) GetDashboardSummaryWithBuildingContext(orgID int) (*models.DashboardSummary, error) {
 	if m.getDashboardSummaryFn == nil {
 		return nil, errors.New("get dashboard summary not mocked")
 	}
@@ -289,7 +289,7 @@ func TestPaymentHandler_CreatePayment(t *testing.T) {
 		svc := &mockPaymentService{}
 		router := setupPaymentTestRouter(svc)
 
-		// Empty object — all required fields absent.
+		// Empty object â€” all required fields absent.
 		w := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodPost, "/payments", toJSON(t, map[string]interface{}{}))
 		req.Header.Set("Content-Type", "application/json")
@@ -349,7 +349,7 @@ func TestPaymentHandler_CreatePayment(t *testing.T) {
 func TestPaymentHandler_GetPayment(t *testing.T) {
 	t.Run("success returns 200 with payment details", func(t *testing.T) {
 		svc := &mockPaymentService{
-			getPaymentFn: func(id int) (*models.PaymentWithDetails, error) {
+			getPaymentFn: func(id, orgID int) (*models.PaymentWithDetails, error) {
 				return samplePaymentWithDetails(), nil
 			},
 		}
@@ -384,7 +384,7 @@ func TestPaymentHandler_GetPayment(t *testing.T) {
 
 	t.Run("not found returns 404", func(t *testing.T) {
 		svc := &mockPaymentService{
-			getPaymentFn: func(id int) (*models.PaymentWithDetails, error) {
+			getPaymentFn: func(id, orgID int) (*models.PaymentWithDetails, error) {
 				return nil, errors.New("payment not found")
 			},
 		}
@@ -420,10 +420,10 @@ func TestPaymentHandler_UpdatePayment(t *testing.T) {
 		existing := samplePaymentWithDetails()
 
 		svc := &mockPaymentService{
-			getPaymentFn: func(id int) (*models.PaymentWithDetails, error) {
+			getPaymentFn: func(id, orgID int) (*models.PaymentWithDetails, error) {
 				return existing, nil
 			},
-			updatePaymentFn: func(id int, req *models.UpdatePaymentRequest, userID int) (*models.Payment, error) {
+			updatePaymentFn: func(id int, req *models.UpdatePaymentRequest, userID, orgID int) (*models.Payment, error) {
 				return updated, nil
 			},
 		}
@@ -469,7 +469,7 @@ func TestPaymentHandler_UpdatePayment(t *testing.T) {
 
 	t.Run("service error returns 400", func(t *testing.T) {
 		svc := &mockPaymentService{
-			updatePaymentFn: func(id int, req *models.UpdatePaymentRequest, userID int) (*models.Payment, error) {
+			updatePaymentFn: func(id int, req *models.UpdatePaymentRequest, userID, orgID int) (*models.Payment, error) {
 				return nil, errors.New("payment already finalised")
 			},
 		}
@@ -756,7 +756,7 @@ func TestPaymentHandler_GetBuildingPaymentReport(t *testing.T) {
 
 	t.Run("success returns 200 with report", func(t *testing.T) {
 		svc := &mockPaymentService{
-			generateBuildingReportFn: func(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error) {
+			generateBuildingReportFn: func(buildingID, orgID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error) {
 				return sampleReport(), nil
 			},
 		}
@@ -811,7 +811,7 @@ func TestPaymentHandler_GetBuildingPaymentReport(t *testing.T) {
 	t.Run("defaults are used when dates are omitted", func(t *testing.T) {
 		var capturedStart, capturedEnd time.Time
 		svc := &mockPaymentService{
-			generateBuildingReportFn: func(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error) {
+			generateBuildingReportFn: func(buildingID, orgID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error) {
 				capturedStart = startDate
 				capturedEnd = endDate
 				return sampleReport(), nil
@@ -829,7 +829,7 @@ func TestPaymentHandler_GetBuildingPaymentReport(t *testing.T) {
 
 		// parseDateRange formats now-1month as YYYY-MM-DD then re-parses it,
 		// so the result is midnight of that day. Compare against the truncated
-		// expected value and allow ±1 day to handle month-boundary rounding.
+		// expected value and allow Â±1 day to handle month-boundary rounding.
 		expectedStartDate := now.AddDate(0, -1, 0).Format("2006-01-02")
 		expectedStart, _ := time.Parse("2006-01-02", expectedStartDate)
 		diff := capturedStart.Sub(expectedStart)
@@ -850,7 +850,7 @@ func TestPaymentHandler_GetBuildingPaymentReport(t *testing.T) {
 
 	t.Run("service error returns 500", func(t *testing.T) {
 		svc := &mockPaymentService{
-			generateBuildingReportFn: func(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error) {
+			generateBuildingReportFn: func(buildingID, orgID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error) {
 				return nil, errors.New("report generation failed")
 			},
 		}
@@ -881,7 +881,7 @@ func TestPaymentHandler_GetPropertyPaymentReport(t *testing.T) {
 
 	t.Run("success returns 200 with report", func(t *testing.T) {
 		svc := &mockPaymentService{
-			generatePropertyReportFn: func(propertyID int, startDate, endDate time.Time) (*models.PropertyPaymentReport, error) {
+			generatePropertyReportFn: func(propertyID, orgID int, startDate, endDate time.Time) (*models.PropertyPaymentReport, error) {
 				return samplePropertyReport(), nil
 			},
 		}
@@ -924,7 +924,7 @@ func TestPaymentHandler_GetPropertyPaymentReport(t *testing.T) {
 
 	t.Run("service error returns 500", func(t *testing.T) {
 		svc := &mockPaymentService{
-			generatePropertyReportFn: func(propertyID int, startDate, endDate time.Time) (*models.PropertyPaymentReport, error) {
+			generatePropertyReportFn: func(propertyID, orgID int, startDate, endDate time.Time) (*models.PropertyPaymentReport, error) {
 				return nil, errors.New("property report failed")
 			},
 		}

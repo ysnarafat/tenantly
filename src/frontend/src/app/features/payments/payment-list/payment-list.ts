@@ -30,6 +30,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatTabsModule } from '@angular/material/tabs';
 import { PaymentService, PaymentFilters } from '../../../core/services/payment.service';
 import { LeaseService } from '../../../core/services/lease.service';
 import { LeaseWithDetails } from '../../../core/models/lease.model';
@@ -43,8 +44,33 @@ import {
   GenerateMonthlyPaymentsRequest,
   GenerateMonthlyPaymentsResult,
 } from '../../../core/models/payment.model';
-import { debounceTime, switchMap, startWith } from 'rxjs/operators';
+import { debounceTime, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { DataTable } from '../../../shared/components/data-table/data-table';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
+
+interface BuildingNode {
+  building_id: number;
+  building_name: string;
+  building_code: string;
+  payments: PaymentWithDetails[];
+  totalDue: number;
+  totalPaid: number;
+  collectionRate: number;
+}
+
+interface PropertyNode {
+  property_id: number;
+  property_name: string;
+  buildings: BuildingNode[];
+  totalDue: number;
+  totalPaid: number;
+  paidCount: number;
+  dueCount: number;
+  overdueCount: number;
+  partialCount: number;
+  collectionRate: number;
+}
 
 @Component({
   selector: 'app-payment-list',
@@ -69,6 +95,8 @@ import { of } from 'rxjs';
     MatSnackBarModule,
     MatDividerModule,
     MatTooltipModule,
+    MatTabsModule,
+    DataTable,
   ],
   templateUrl: './payment-list.html',
   styleUrls: ['./payment-list.scss'],
@@ -84,10 +112,67 @@ export class PaymentList implements OnInit {
   total = signal(0);
   page = signal(1);
   pageSize = signal(20);
+  activeTab = signal(0);
 
   filterStatus = '';
   filterMonth = '';
-  filterYear = new Date().getFullYear().toString();
+  filterYear = new Date().getFullYear();
+
+  treePayments = signal<PaymentWithDetails[]>([]);
+  treeLoading = signal(false);
+  treeFilterMonth: number | '' = '';
+  treeFilterYear = new Date().getFullYear();
+
+  treeData = computed<PropertyNode[]>(() => {
+    const propMap = new Map<number, PropertyNode>();
+    for (const p of this.treePayments()) {
+      if (!propMap.has(p.property_id)) {
+        propMap.set(p.property_id, {
+          property_id: p.property_id,
+          property_name: p.property_name,
+          buildings: [],
+          totalDue: 0,
+          totalPaid: 0,
+          paidCount: 0,
+          dueCount: 0,
+          overdueCount: 0,
+          partialCount: 0,
+          collectionRate: 0,
+        });
+      }
+      const prop = propMap.get(p.property_id)!;
+      let bldg = prop.buildings.find((b) => b.building_id === p.building_id);
+      if (!bldg) {
+        bldg = {
+          building_id: p.building_id,
+          building_name: p.building_name,
+          building_code: p.building_code,
+          payments: [],
+          totalDue: 0,
+          totalPaid: 0,
+          collectionRate: 0,
+        };
+        prop.buildings.push(bldg);
+      }
+      bldg.payments.push(p);
+      bldg.totalDue += p.amount_due;
+      bldg.totalPaid += p.amount_paid;
+      prop.totalDue += p.amount_due;
+      prop.totalPaid += p.amount_paid;
+      if (p.status === 'Paid') prop.paidCount++;
+      else if (p.status === 'Overdue') prop.overdueCount++;
+      else if (p.status === 'Partial') prop.partialCount++;
+      else prop.dueCount++;
+    }
+    return Array.from(propMap.values()).map((prop) => ({
+      ...prop,
+      collectionRate: prop.totalDue > 0 ? (prop.totalPaid / prop.totalDue) * 100 : 0,
+      buildings: prop.buildings.map((b) => ({
+        ...b,
+        collectionRate: b.totalDue > 0 ? (b.totalPaid / b.totalDue) * 100 : 0,
+      })),
+    }));
+  });
 
   displayedColumns = ['tenant', 'unit', 'period', 'amount_due', 'amount_paid', 'status', 'actions'];
 
@@ -142,9 +227,31 @@ export class PaymentList implements OnInit {
       error: (err) => {
         this.loading.set(false);
         this.showError('Failed to load payments');
-        console.error(err);
+        console.error(safeErrorMessage(err));
       },
     });
+  }
+
+  loadTreePayments(): void {
+    this.treeLoading.set(true);
+    const filters: PaymentFilters = { page: 1, page_size: 500 };
+    if (this.treeFilterMonth) filters['month'] = +this.treeFilterMonth;
+    if (this.treeFilterYear) filters['year'] = +this.treeFilterYear;
+    this.paymentService.getPayments(filters).subscribe({
+      next: (res) => {
+        this.treePayments.set(res.payments ?? []);
+        this.treeLoading.set(false);
+      },
+      error: () => {
+        this.treeLoading.set(false);
+        this.showError('Failed to load tree view');
+      },
+    });
+  }
+
+  onTabChange(index: number): void {
+    this.activeTab.set(index);
+    if (index === 1 && this.treePayments().length === 0) this.loadTreePayments();
   }
 
   onPageChange(event: PageEvent): void {
@@ -161,7 +268,7 @@ export class PaymentList implements OnInit {
   clearFilters(): void {
     this.filterStatus = '';
     this.filterMonth = '';
-    this.filterYear = new Date().getFullYear().toString();
+    this.filterYear = new Date().getFullYear();
     this.page.set(1);
     this.loadPayments();
   }
@@ -182,6 +289,7 @@ export class PaymentList implements OnInit {
             }
             this.loadPayments();
             this.loadSummary();
+            if (this.activeTab() === 1) this.loadTreePayments();
           },
           error: (err) => {
             this.loading.set(false);
@@ -201,6 +309,7 @@ export class PaymentList implements OnInit {
             this.showSuccess('Payment created');
             this.loadPayments();
             this.loadSummary();
+            if (this.activeTab() === 1) this.loadTreePayments();
           },
           error: (err) => this.showError(err?.error?.error ?? 'Failed to create payment'),
         });
@@ -221,6 +330,7 @@ export class PaymentList implements OnInit {
             this.showSuccess('Payment updated');
             this.loadPayments();
             this.loadSummary();
+            if (this.activeTab() === 1) this.loadTreePayments();
           },
           error: (err) => this.showError(err?.error?.error ?? 'Failed to update payment'),
         });

@@ -51,6 +51,12 @@ func (s *PaymentService) CreatePayment(req *models.CreatePaymentRequest, userID 
 		return nil, fmt.Errorf("property ID mismatch with unit's property")
 	}
 
+	// Validate the unit actually belongs to the caller's organization — prevents
+	// creating a payment record against another organization's unit (IDOR).
+	if unit.OrganizationID != req.OrganizationID {
+		return nil, fmt.Errorf("unit not found")
+	}
+
 	// Get building information for context
 	building, err := s.buildingRepo.GetByID(req.BuildingID)
 	if err != nil {
@@ -88,20 +94,26 @@ func (s *PaymentService) CreatePayment(req *models.CreatePaymentRequest, userID 
 }
 
 // GetPayment retrieves a payment with building and property context
-func (s *PaymentService) GetPayment(id int) (*models.PaymentWithDetails, error) {
+func (s *PaymentService) GetPayment(id, orgID int) (*models.PaymentWithDetails, error) {
 	payment, err := s.paymentRepo.GetByIDWithDetails(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get payment with details: %w", err)
+	}
+	if payment.OrganizationID != orgID {
+		return nil, fmt.Errorf("payment not found")
 	}
 	return payment, nil
 }
 
 // UpdatePayment updates a payment record with building context logging
-func (s *PaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequest, userID int) (*models.Payment, error) {
+func (s *PaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequest, userID, orgID int) (*models.Payment, error) {
 	// Get existing payment for audit and building context
 	existingPayment, err := s.paymentRepo.GetByIDWithDetails(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get existing payment: %w", err)
+	}
+	if existingPayment.OrganizationID != orgID {
+		return nil, fmt.Errorf("payment not found")
 	}
 
 	// Update payment
@@ -204,11 +216,14 @@ func (s *PaymentService) GetPaymentsByProperty(propertyID int, page, pageSize in
 }
 
 // GenerateBuildingPaymentReport generates payment report for a building
-func (s *PaymentService) GenerateBuildingPaymentReport(buildingID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error) {
+func (s *PaymentService) GenerateBuildingPaymentReport(buildingID, orgID int, startDate, endDate time.Time) (*models.BuildingPaymentReport, error) {
 	// Validate building exists and get details
 	building, err := s.buildingRepo.GetByID(buildingID)
 	if err != nil {
 		return nil, fmt.Errorf("building not found: %w", err)
+	}
+	if building.OrganizationID != orgID {
+		return nil, fmt.Errorf("building not found")
 	}
 
 	// Get property details for context
@@ -245,11 +260,14 @@ func (s *PaymentService) GenerateBuildingPaymentReport(buildingID int, startDate
 }
 
 // GeneratePropertyPaymentReport generates payment report for a property with building breakdowns
-func (s *PaymentService) GeneratePropertyPaymentReport(propertyID int, startDate, endDate time.Time) (*models.PropertyPaymentReport, error) {
+func (s *PaymentService) GeneratePropertyPaymentReport(propertyID, orgID int, startDate, endDate time.Time) (*models.PropertyPaymentReport, error) {
 	// Validate property exists and get details
 	property, err := s.propertyRepo.GetByID(propertyID)
 	if err != nil {
 		return nil, fmt.Errorf("property not found: %w", err)
+	}
+	if property.OrganizationID != orgID {
+		return nil, fmt.Errorf("property not found")
 	}
 
 	// Get buildings in the property
@@ -295,11 +313,18 @@ func (s *PaymentService) GeneratePropertyPaymentReport(propertyID int, startDate
 	return report, nil
 }
 
-// GetDashboardSummaryWithBuildingContext returns dashboard summary with building-level context
-func (s *PaymentService) GetDashboardSummaryWithBuildingContext() (*models.DashboardSummary, error) {
-	summary, err := s.paymentRepo.GetDashboardSummary()
+// GetDashboardSummaryWithBuildingContext returns dashboard summary scoped to the given org.
+func (s *PaymentService) GetDashboardSummaryWithBuildingContext(orgID int) (*models.DashboardSummary, error) {
+	summary, err := s.paymentRepo.GetDashboardSummary(orgID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get dashboard summary: %w", err)
+	}
+	buildingLevel, err := s.paymentRepo.GetBuildingLevelSummary()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get building-level summary: %w", err)
+	}
+	if count, ok := buildingLevel["total_buildings"].(int); ok {
+		summary.BuildingCount = count
 	}
 	return summary, nil
 }

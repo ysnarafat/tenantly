@@ -28,15 +28,12 @@ export interface User {
 
 export interface LoginResponse {
   token: string;
-  refresh_token: string;
+  // No refresh_token field — the backend sets it as an httpOnly cookie
+  // instead of returning it in the JSON body (never readable by JS).
   user: User;
   expires_at: string | Date;
   organizations?: UserOrganization[];
   default_organization_id?: number;
-}
-
-export interface RefreshTokenRequest {
-  refresh_token: string;
 }
 
 export interface ChangePasswordRequest {
@@ -55,12 +52,8 @@ export class AuthService {
   private http = inject(HttpClient);
   private store = inject(Store<AppState>);
   private readonly TOKEN_KEY = 'tenantly_token';
-  private readonly REFRESH_TOKEN_KEY = 'tenantly_refresh_token';
   private readonly USER_KEY = 'tenantly_user';
   private readonly EXPIRES_AT_KEY = 'tenantly_expires_at';
-
-  // DEMO MODE: Set to true to enable demo login (disable for production)
-  private readonly DEMO_MODE = false; // <-- Set to false to disable demo login
 
   // NgRx store selectors for reactive access
   public isAuthenticated$ = this.store.select(AuthSelectors.selectIsAuthenticated);
@@ -106,10 +99,6 @@ export class AuthService {
 
   getToken(): string | null {
     return localStorage.getItem(this.TOKEN_KEY);
-  }
-
-  getRefreshToken(): string | null {
-    return localStorage.getItem(this.REFRESH_TOKEN_KEY);
   }
 
   getUser(): User | null {
@@ -215,7 +204,6 @@ export class AuthService {
 
   private storeAuthData(response: LoginResponse): void {
     localStorage.setItem(this.TOKEN_KEY, response.token);
-    localStorage.setItem(this.REFRESH_TOKEN_KEY, response.refresh_token);
     localStorage.setItem(this.USER_KEY, JSON.stringify(response.user));
     localStorage.setItem(
       this.EXPIRES_AT_KEY,
@@ -228,7 +216,6 @@ export class AuthService {
 
   private clearAuthData(): void {
     localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.REFRESH_TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     localStorage.removeItem(this.EXPIRES_AT_KEY);
     // Note: NgRx effects will handle state updates

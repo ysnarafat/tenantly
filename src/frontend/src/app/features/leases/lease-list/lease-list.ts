@@ -12,13 +12,17 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSelectModule } from '@angular/material/select';
+import { MatOptionModule } from '@angular/material/core';
 import { TranslateModule } from '@ngx-translate/core';
 import { LeaseService, LeaseWithDetails } from '../../../core/services/lease.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CreateLeaseDialog } from '../create-lease-dialog/create-lease-dialog';
 import { EditLeaseDialog } from '../edit-lease-dialog/edit-lease-dialog';
+import { LoadingSpinner } from '../../../shared/components/loading-spinner/loading-spinner';
+import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm-delete-dialog/confirm-delete-dialog';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
 
 @Component({
   selector: 'app-lease-list',
@@ -35,9 +39,11 @@ import { EditLeaseDialog } from '../edit-lease-dialog/edit-lease-dialog';
     MatFormFieldModule,
     MatInputModule,
     MatPaginatorModule,
-    MatProgressSpinnerModule,
     MatTooltipModule,
+    MatSelectModule,
+    MatOptionModule,
     TranslateModule,
+    LoadingSpinner,
   ],
   templateUrl: './lease-list.html',
   styleUrls: ['./lease-list.scss'],
@@ -85,7 +91,7 @@ export class LeaseList implements OnInit {
         this.loading = false;
       },
       error: (error) => {
-        console.error('Error loading leases:', error);
+        console.error('Error loading leases:', safeErrorMessage(error));
         this.snackBar.open('Error loading leases', 'Close', { duration: 3000 });
         this.loading = false;
       },
@@ -200,18 +206,25 @@ export class LeaseList implements OnInit {
   }
 
   deleteLease(lease: LeaseWithDetails) {
-    if (confirm(`Delete lease for ${lease.tenant_name}? This cannot be undone.`)) {
-      this.leaseService.deleteLease(lease.id).subscribe({
-        next: () => {
-          this.snackBar.open('Lease deleted', 'Close', { duration: 3000 });
-          this.loadLeases();
-        },
-        error: (error) => {
-          console.error('Error deleting lease:', error);
-          this.snackBar.open('Error deleting lease', 'Close', { duration: 3000 });
-        },
-      });
-    }
+    const dialogRef = this.dialog.open(ConfirmDeleteDialogComponent, {
+      width: '480px',
+      data: { entityLabel: 'lease', entityName: lease.tenant_name },
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (confirmed) {
+        this.leaseService.deleteLease(lease.id).subscribe({
+          next: () => {
+            this.snackBar.open('Lease deleted', 'Close', { duration: 3000 });
+            this.loadLeases();
+          },
+          error: (error) => {
+            console.error('Error deleting lease:', safeErrorMessage(error));
+            this.snackBar.open('Error deleting lease', 'Close', { duration: 3000 });
+          },
+        });
+      }
+    });
   }
 
   createLease() {

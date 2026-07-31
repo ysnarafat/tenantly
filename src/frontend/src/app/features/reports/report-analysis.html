@@ -1,0 +1,647 @@
+<div class="report-analysis-container">
+  <!-- Header -->
+  <div class="page-header">
+    <h1>{{ 'REPORTS.PAGE_TITLE' | translate }}</h1>
+    <p class="subtitle">{{ 'REPORTS.SUBTITLE' | translate }}</p>
+  </div>
+
+  <!-- Quick Metrics -->
+  <section class="quick-metrics-section">
+    <mat-grid-list cols="4" rowHeight="120px" gutterSize="16">
+      <mat-grid-tile *ngFor="let metric of quickMetrics">
+        <mat-card class="metric-card">
+          <mat-card-content>
+            <div class="metric-icon">
+              <mat-icon>{{ metric.icon }}</mat-icon>
+            </div>
+            <div class="metric-data">
+              <span class="metric-value">{{ metric.value }}</span>
+              <span class="metric-label">{{ metric.label }}</span>
+              <div
+                class="metric-trend"
+                *ngIf="metric.trend"
+                [ngClass]="getTrendClass(metric.trend)"
+              >
+                <mat-icon [class.trend-up]="metric.trend > 0" [class.trend-down]="metric.trend < 0">
+                  {{ getTrendIcon(metric.trend) }}
+                </mat-icon>
+                <span>{{ metric.trend > 0 ? '+' : '' }}{{ metric.trend }}%</span>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </mat-grid-tile>
+    </mat-grid-list>
+  </section>
+
+  <!-- Main Content Tabs -->
+  <mat-tab-group [(selectedIndex)]="activeTab" class="reports-tab-group">
+    <!-- Tab 1: Report Catalog -->
+    <mat-tab label="{{ 'REPORTS.CATALOG' | translate }}">
+      <ng-template mat-tab-label>
+        <mat-icon>inventory_2</mat-icon>
+        <span class="tab-label">{{ 'REPORTS.CATALOG' | translate }}</span>
+      </ng-template>
+
+      <div class="tab-content">
+        <!-- Category: Financial -->
+        <div class="report-category">
+          <h3 class="category-title">
+            <mat-icon>monetization_on</mat-icon>
+            {{ 'REPORTS.CATEGORY_FINANCIAL' | translate }}
+          </h3>
+          <div class="reports-grid">
+            <mat-card
+              *ngFor="let report of getReportsByCategory('financial')"
+              [class.disabled]="!canAccessReport(report)"
+              class="report-card"
+              (click)="canAccessReport(report) && selectReport(report)"
+            >
+              <mat-card-content>
+                <div class="report-icon">
+                  <mat-icon>{{ report.icon }}</mat-icon>
+                </div>
+                <h4>{{ report.name }}</h4>
+                <p>{{ report.description }}</p>
+                <mat-chip-set>
+                  <mat-chip *ngFor="let req of report.requires" disabled> {{ req }} </mat-chip>
+                </mat-chip-set>
+              </mat-card-content>
+              <mat-card-actions>
+                <button
+                  mat-stroked-button
+                  color="primary"
+                  (click)="selectReport(report); activeTab = 1"
+                >
+                  {{ 'COMMON.BUTTONS.GENERATE' | translate }}
+                </button>
+              </mat-card-actions>
+            </mat-card>
+          </div>
+        </div>
+
+        <!-- Category: Operational -->
+        <div class="report-category">
+          <h3 class="category-title">
+            <mat-icon>trending_up</mat-icon>
+            {{ 'REPORTS.CATEGORY_OPERATIONAL' | translate }}
+          </h3>
+          <div class="reports-grid">
+            <mat-card
+              *ngFor="let report of getReportsByCategory('operational')"
+              [class.disabled]="!canAccessReport(report)"
+              class="report-card"
+              (click)="canAccessReport(report) && selectReport(report)"
+            >
+              <mat-card-content>
+                <div class="report-icon">
+                  <mat-icon>{{ report.icon }}</mat-icon>
+                </div>
+                <h4>{{ report.name }}</h4>
+                <p>{{ report.description }}</p>
+                <mat-chip-set>
+                  <mat-chip *ngFor="let req of report.requires" disabled> {{ req }} </mat-chip>
+                </mat-chip-set>
+              </mat-card-content>
+              <mat-card-actions>
+                <button
+                  mat-stroked-button
+                  color="primary"
+                  (click)="selectReport(report); activeTab = 1"
+                >
+                  {{ 'COMMON.BUTTONS.GENERATE' | translate }}
+                </button>
+              </mat-card-actions>
+            </mat-card>
+          </div>
+        </div>
+
+        <!-- Category: Collections -->
+        <div class="report-category">
+          <h3 class="category-title">
+            <mat-icon>payments</mat-icon>
+            {{ 'REPORTS.CATEGORY_COLLECTIONS' | translate }}
+          </h3>
+          <div class="reports-grid">
+            <mat-card
+              *ngFor="let report of getReportsByCategory('collections')"
+              [class.disabled]="!canAccessReport(report)"
+              class="report-card"
+              (click)="canAccessReport(report) && selectReport(report)"
+            >
+              <mat-card-content>
+                <div class="report-icon">
+                  <mat-icon>{{ report.icon }}</mat-icon>
+                </div>
+                <h4>{{ report.name }}</h4>
+                <p>{{ report.description }}</p>
+                <mat-chip-set>
+                  <mat-chip *ngFor="let req of report.requires" disabled> {{ req }} </mat-chip>
+                </mat-chip-set>
+              </mat-card-content>
+              <mat-card-actions>
+                <button
+                  mat-stroked-button
+                  color="primary"
+                  (click)="selectReport(report); activeTab = 1"
+                >
+                  {{ 'COMMON.BUTTONS.GENERATE' | translate }}
+                </button>
+              </mat-card-actions>
+            </mat-card>
+          </div>
+        </div>
+
+        <!-- Category: Tenant -->
+        <div class="report-category">
+          <h3 class="category-title">
+            <mat-icon>group</mat-icon>
+            {{ 'REPORTS.CATEGORY_TENANT' | translate }}
+          </h3>
+          <div class="reports-grid">
+            <mat-card
+              *ngFor="let report of getReportsByCategory('tenant')"
+              [class.disabled]="!canAccessReport(report)"
+              class="report-card"
+              (click)="canAccessReport(report) && selectReport(report)"
+            >
+              <mat-card-content>
+                <div class="report-icon">
+                  <mat-icon>{{ report.icon }}</mat-icon>
+                </div>
+                <h4>{{ report.name }}</h4>
+                <p>{{ report.description }}</p>
+                <mat-chip-set>
+                  <mat-chip *ngFor="let req of report.requires" disabled> {{ req }} </mat-chip>
+                </mat-chip-set>
+              </mat-card-content>
+              <mat-card-actions>
+                <button
+                  mat-stroked-button
+                  color="primary"
+                  (click)="selectReport(report); activeTab = 1"
+                >
+                  {{ 'COMMON.BUTTONS.GENERATE' | translate }}
+                </button>
+              </mat-card-actions>
+            </mat-card>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Tab 2: Generate Report -->
+    <mat-tab label="{{ 'REPORTS.GENERATE' | translate }}">
+      <ng-template mat-tab-label>
+        <mat-icon>assessment</mat-icon>
+        <span class="tab-label">{{ 'REPORTS.GENERATE' | translate }}</span>
+      </ng-template>
+
+      <div class="tab-content report-generator">
+        <div class="generator-grid">
+          <!-- Form Panel -->
+          <div class="form-panel">
+            <h3>{{ 'REPORTS.REPORT_SETTINGS' | translate }}</h3>
+
+            <form [formGroup]="reportForm">
+              <!-- Report Type Selection -->
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>{{ 'REPORTS.REPORT_TYPE' | translate }}</mat-label>
+                <mat-select formControlName="reportType">
+                  <mat-optgroup
+                    *ngFor="let category of ['financial', 'operational', 'collections', 'tenant']"
+                    [label]="category | uppercase"
+                  >
+                    <mat-option
+                      *ngFor="let report of getReportsByCategory(category)"
+                      [value]="report.id"
+                    >
+                      {{ report.name }}
+                    </mat-option>
+                  </mat-optgroup>
+                </mat-select>
+              </mat-form-field>
+
+              <!-- Date Range -->
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="half-width">
+                  <mat-label>{{ 'COMMON.START_DATE' | translate }}</mat-label>
+                  <input matInput [matDatepicker]="startPicker" formControlName="startDate" />
+                  <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+                  <mat-datepicker #startPicker></mat-datepicker>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="half-width">
+                  <mat-label>{{ 'COMMON.END_DATE' | translate }}</mat-label>
+                  <input matInput [matDatepicker]="endPicker" formControlName="endDate" />
+                  <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+                  <mat-datepicker #endPicker></mat-datepicker>
+                </mat-form-field>
+              </div>
+
+              <!-- Filters -->
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>{{ 'REPORTS.PROPERTY_FILTER' | translate }}</mat-label>
+                <mat-select formControlName="propertyFilter">
+                  <mat-option value="">{{ 'COMMON.ALL' | translate }}</mat-option>
+                  <mat-option *ngFor="let p of properties" [value]="p.id.toString()">
+                    {{ p.property_name }} ({{ p.property_code }})
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>{{ 'REPORTS.BUILDING_FILTER' | translate }}</mat-label>
+                <mat-select formControlName="buildingFilter">
+                  <mat-option value="">{{ 'COMMON.ALL' | translate }}</mat-option>
+                  <mat-option *ngFor="let b of buildings" [value]="b.id.toString()">
+                    {{ b.building_name }} ({{ b.building_code }})
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <!-- Export Format -->
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>{{ 'REPORTS.EXPORT_FORMAT' | translate }}</mat-label>
+                <mat-select formControlName="exportFormat">
+                  <mat-option value="csv">CSV</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <!-- Actions -->
+              <div class="form-actions">
+                <button
+                  mat-flat-button
+                  color="primary"
+                  (click)="generateReport()"
+                  [disabled]="generatingReport"
+                  class="action-button"
+                >
+                  <mat-icon *ngIf="!generatingReport">assessment</mat-icon>
+                  <mat-spinner *ngIf="generatingReport" diameter="20"></mat-spinner>
+                  {{ generatingReport ? 'REPORTS.GENERATING' : 'REPORTS.GENERATE_REPORT' | translate
+                  }}
+                </button>
+                <button mat-stroked-button (click)="reportForm.reset()" class="action-button">
+                  {{ 'COMMON.BUTTONS.RESET' | translate }}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Preview Panel -->
+          <div class="preview-panel">
+            <h3>{{ 'REPORTS.PREVIEW' | translate }}</h3>
+
+            <mat-card *ngIf="selectedReport" class="selected-report">
+              <mat-card-header>
+                <div mat-card-avatar class="report-avatar">
+                  <mat-icon>{{ selectedReport.icon }}</mat-icon>
+                </div>
+                <mat-card-title>{{ selectedReport.name }}</mat-card-title>
+                <mat-card-subtitle>{{ selectedReport.category | uppercase }}</mat-card-subtitle>
+              </mat-card-header>
+
+              <mat-card-content>
+                <p>{{ selectedReport.description }}</p>
+
+                <div class="requirement-section">
+                  <strong>{{ 'REPORTS.REQUIREMENTS' | translate }}:</strong>
+                  <mat-chip-set>
+                    <mat-chip *ngFor="let req of selectedReport.requires" disabled>
+                      <mat-icon matChipRemove>check_circle</mat-icon>
+                      {{ req }}
+                    </mat-chip>
+                  </mat-chip-set>
+                </div>
+
+                <mat-progress-bar *ngIf="generatingReport" mode="indeterminate"></mat-progress-bar>
+              </mat-card-content>
+
+              <mat-card-actions>
+                <button mat-button (click)="exportReport('csv')">
+                  <mat-icon>table_chart</mat-icon>
+                  CSV
+                </button>
+              </mat-card-actions>
+            </mat-card>
+
+            <p class="empty-state" *ngIf="!selectedReport">
+              {{ 'REPORTS.SELECT_REPORT_HINT' | translate }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Ledger Results -->
+        <div class="ledger-results" *ngIf="ledgerReport">
+          <h3>Financial Ledger — {{ ledgerReport.total }} records</h3>
+
+          <div class="ledger-summary">
+            <div class="summary-item">
+              <span class="summary-label">Total Due</span>
+              <span class="summary-value">৳ {{ ledgerReport.total_due | number }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Total Paid</span>
+              <span class="summary-value paid">৳ {{ ledgerReport.total_paid | number }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Pending</span>
+              <span class="summary-value pending">৳ {{ ledgerReport.total_pending | number }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Overdue</span>
+              <span class="summary-value overdue">৳ {{ ledgerReport.total_overdue | number }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Collection Rate</span>
+              <span class="summary-value"
+                >{{ ledgerReport.collection_rate | number: '1.1-2' }}%</span
+              >
+            </div>
+          </div>
+
+          <mat-table [dataSource]="ledgerReport.payments" class="ledger-table">
+            <ng-container matColumnDef="tenant">
+              <mat-header-cell *matHeaderCellDef>Tenant</mat-header-cell>
+              <mat-cell *matCellDef="let p" data-label="Tenant"
+                >{{ p.tenant_name || '—' }}</mat-cell
+              >
+            </ng-container>
+            <ng-container matColumnDef="unit">
+              <mat-header-cell *matHeaderCellDef>Unit</mat-header-cell>
+              <mat-cell *matCellDef="let p" data-label="Unit">{{ p.unit_number }}</mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="period">
+              <mat-header-cell *matHeaderCellDef>Period</mat-header-cell>
+              <mat-cell *matCellDef="let p" data-label="Period"
+                >{{ p.month }}/{{ p.year }}</mat-cell
+              >
+            </ng-container>
+            <ng-container matColumnDef="due">
+              <mat-header-cell *matHeaderCellDef>Due</mat-header-cell>
+              <mat-cell *matCellDef="let p" data-label="Due"
+                >৳ {{ p.amount_due | number }}</mat-cell
+              >
+            </ng-container>
+            <ng-container matColumnDef="paid">
+              <mat-header-cell *matHeaderCellDef>Paid</mat-header-cell>
+              <mat-cell *matCellDef="let p" data-label="Paid"
+                >৳ {{ p.amount_paid | number }}</mat-cell
+              >
+            </ng-container>
+            <ng-container matColumnDef="status">
+              <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
+              <mat-cell *matCellDef="let p" data-label="Status">
+                <mat-chip [class]="'status-' + p.status?.toLowerCase()">{{ p.status }}</mat-chip>
+              </mat-cell>
+            </ng-container>
+            <mat-header-row
+              *matHeaderRowDef="['tenant','unit','period','due','paid','status']"
+            ></mat-header-row>
+            <mat-row
+              *matRowDef="let row; columns: ['tenant','unit','period','due','paid','status']"
+            ></mat-row>
+          </mat-table>
+        </div>
+        <!-- Tenant Report Results -->
+        <div class="ledger-results" *ngIf="tenantReport">
+          <h3>
+            Tenant Report — {{ tenantReport.total }} tenants ({{ tenantReport.active_tenants }}
+            active)
+          </h3>
+
+          <mat-table [dataSource]="tenantReport.tenants" class="ledger-table">
+            <ng-container matColumnDef="name">
+              <mat-header-cell *matHeaderCellDef>Tenant</mat-header-cell>
+              <mat-cell *matCellDef="let t" data-label="Tenant">{{ t.tenant_name }}</mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="contact">
+              <mat-header-cell *matHeaderCellDef>Phone</mat-header-cell>
+              <mat-cell *matCellDef="let t" data-label="Phone"
+                >{{ t.phone_number || '—' }}</mat-cell
+              >
+            </ng-container>
+            <ng-container matColumnDef="unit">
+              <mat-header-cell *matHeaderCellDef>Unit / Building</mat-header-cell>
+              <mat-cell *matCellDef="let t" data-label="Unit / Building">
+                {{ t.unit_number || '—' }}
+                <span *ngIf="t.building_name" class="secondary-text"> · {{ t.building_name }}</span>
+              </mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="rent">
+              <mat-header-cell *matHeaderCellDef>Monthly Rent</mat-header-cell>
+              <mat-cell *matCellDef="let t" data-label="Monthly Rent"
+                >{{ t.monthly_rent ? '৳ ' + (t.monthly_rent | number) : '—' }}</mat-cell
+              >
+            </ng-container>
+            <ng-container matColumnDef="balance">
+              <mat-header-cell *matHeaderCellDef>Balance Due</mat-header-cell>
+              <mat-cell
+                *matCellDef="let t"
+                data-label="Balance Due"
+                [class.overdue-text]="t.balance_due > 0"
+              >
+                ৳ {{ t.balance_due | number }}
+              </mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="status">
+              <mat-header-cell *matHeaderCellDef>Lease</mat-header-cell>
+              <mat-cell *matCellDef="let t" data-label="Lease">
+                <mat-chip [class]="t.lease_active ? 'status-paid' : 'status-due'">
+                  {{ t.lease_active ? 'Active' : 'Inactive' }}
+                </mat-chip>
+              </mat-cell>
+            </ng-container>
+            <mat-header-row
+              *matHeaderRowDef="['name','contact','unit','rent','balance','status']"
+            ></mat-header-row>
+            <mat-row
+              *matRowDef="let row; columns: ['name','contact','unit','rent','balance','status']"
+            ></mat-row>
+          </mat-table>
+        </div>
+
+        <!-- Property Analytics Results -->
+        <div class="ledger-results" *ngIf="propertyAnalyticsReport">
+          <h3>
+            Property Analytics — {{ propertyAnalyticsReport.total }} properties · {{
+            propertyAnalyticsReport.report_period }}
+          </h3>
+
+          <mat-table [dataSource]="propertyAnalyticsReport.properties" class="ledger-table">
+            <ng-container matColumnDef="name">
+              <mat-header-cell *matHeaderCellDef>Property</mat-header-cell>
+              <mat-cell *matCellDef="let p" data-label="Property"
+                >{{ p.property_name }}
+                <span class="secondary-text">({{ p.property_code }})</span></mat-cell
+              >
+            </ng-container>
+            <ng-container matColumnDef="type">
+              <mat-header-cell *matHeaderCellDef>Type</mat-header-cell>
+              <mat-cell *matCellDef="let p" data-label="Type">{{ p.property_type }}</mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="stats">
+              <mat-header-cell *matHeaderCellDef>Payment Stats</mat-header-cell>
+              <mat-cell *matCellDef="let p" data-label="Payment Stats">
+                <span *ngIf="p.payment_stats">{{ p.payment_stats | json }}</span>
+                <span *ngIf="!p.payment_stats" class="secondary-text">No data</span>
+              </mat-cell>
+            </ng-container>
+            <mat-header-row *matHeaderRowDef="['name','type','stats']"></mat-header-row>
+            <mat-row *matRowDef="let row; columns: ['name','type','stats']"></mat-row>
+          </mat-table>
+        </div>
+
+        <!-- Building Performance Results -->
+        <div class="ledger-results" *ngIf="buildingReport">
+          <h3>Building Performance Report</h3>
+          <div class="ledger-summary">
+            <div class="summary-item">
+              <span class="summary-label">Building</span>
+              <span class="summary-value">{{ $any(buildingReport).building_name }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Period</span>
+              <span class="summary-value">{{ $any(buildingReport).report_period }}</span>
+            </div>
+          </div>
+          <mat-table [dataSource]="$any(buildingReport).payments || []" class="ledger-table">
+            <ng-container matColumnDef="tenant">
+              <mat-header-cell *matHeaderCellDef>Tenant</mat-header-cell>
+              <mat-cell *matCellDef="let p" data-label="Tenant"
+                >{{ p.tenant_name || '—' }}</mat-cell
+              >
+            </ng-container>
+            <ng-container matColumnDef="unit">
+              <mat-header-cell *matHeaderCellDef>Unit</mat-header-cell>
+              <mat-cell *matCellDef="let p" data-label="Unit">{{ p.unit_number }}</mat-cell>
+            </ng-container>
+            <ng-container matColumnDef="period">
+              <mat-header-cell *matHeaderCellDef>Period</mat-header-cell>
+              <mat-cell *matCellDef="let p" data-label="Period"
+                >{{ p.month }}/{{ p.year }}</mat-cell
+              >
+            </ng-container>
+            <ng-container matColumnDef="due">
+              <mat-header-cell *matHeaderCellDef>Due</mat-header-cell>
+              <mat-cell *matCellDef="let p" data-label="Due"
+                >৳ {{ p.amount_due | number }}</mat-cell
+              >
+            </ng-container>
+            <ng-container matColumnDef="paid">
+              <mat-header-cell *matHeaderCellDef>Paid</mat-header-cell>
+              <mat-cell *matCellDef="let p" data-label="Paid"
+                >৳ {{ p.amount_paid | number }}</mat-cell
+              >
+            </ng-container>
+            <ng-container matColumnDef="status">
+              <mat-header-cell *matHeaderCellDef>Status</mat-header-cell>
+              <mat-cell *matCellDef="let p" data-label="Status">
+                <mat-chip [class]="'status-' + p.status?.toLowerCase()">{{ p.status }}</mat-chip>
+              </mat-cell>
+            </ng-container>
+            <mat-header-row
+              *matHeaderRowDef="['tenant','unit','period','due','paid','status']"
+            ></mat-header-row>
+            <mat-row
+              *matRowDef="let row; columns: ['tenant','unit','period','due','paid','status']"
+            ></mat-row>
+          </mat-table>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Tab 3: Analytics -->
+    <mat-tab label="{{ 'REPORTS.ANALYTICS' | translate }}">
+      <ng-template mat-tab-label>
+        <mat-icon>analytics</mat-icon>
+        <span class="tab-label">{{ 'REPORTS.ANALYTICS' | translate }}</span>
+      </ng-template>
+
+      <div class="tab-content analytics-section">
+        <mat-spinner *ngIf="loadingMetrics" diameter="40" class="loading-spinner"></mat-spinner>
+
+        <div class="analytics-grid" *ngIf="!loadingMetrics">
+          <!-- Collection Summary -->
+          <mat-card class="analytics-card" *ngIf="collectionReport">
+            <mat-card-header>
+              <mat-card-title>{{ 'REPORTS.COLLECTION_TREND' | translate }}</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="stat-row">
+                <span class="stat-label">Collection Rate:</span>
+                <span class="stat-value"
+                  >{{ collectionReport.collection_rate | number: '1.1-2' }}%</span
+                >
+              </div>
+              <mat-progress-bar
+                mode="determinate"
+                [value]="collectionReport.collection_rate"
+              ></mat-progress-bar>
+
+              <div class="stat-row" style="margin-top: 12px">
+                <span class="stat-label">Total Due:</span>
+                <span class="stat-value">৳ {{ collectionReport.total_due | number }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Collected:</span>
+                <span class="stat-value">৳ {{ collectionReport.total_collected | number }}</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Pending:</span>
+                <span class="stat-value">৳ {{ collectionReport.total_pending | number }}</span>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Payment Methods Distribution -->
+          <mat-card class="analytics-card" *ngIf="paymentReport">
+            <mat-card-header>
+              <mat-card-title>{{ 'REPORTS.PAYMENT_METHODS' | translate }}</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="stat-row" *ngFor="let method of paymentReport.payment_methods | keyvalue">
+                <span class="stat-label">{{ method.key | titlecase }}:</span>
+                <span class="stat-value">{{ method.value }}</span>
+              </div>
+              <div class="stat-row" style="margin-top: 12px; font-weight: 600">
+                <span class="stat-label">Total Payments:</span>
+                <span class="stat-value">{{ paymentReport.total_payments }}</span>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Status Distribution -->
+          <mat-card class="analytics-card" *ngIf="paymentReport">
+            <mat-card-header>
+              <mat-card-title>Payment Status Distribution</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div
+                class="stat-row"
+                *ngFor="let status of paymentReport.status_distribution | keyvalue"
+              >
+                <span class="stat-label">{{ status.key | titlecase }}:</span>
+                <span class="stat-value">{{ status.value }}</span>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Trend Period -->
+          <mat-card class="analytics-card" *ngIf="collectionReport">
+            <mat-card-header>
+              <mat-card-title>Report Period</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <p>{{ collectionReport.report_period }}</p>
+              <p style="font-size: 12px; color: var(--text-secondary); margin-top: 8px">
+                Generated: {{ collectionReport.generated_at | date: 'medium' }}
+              </p>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>

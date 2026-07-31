@@ -18,7 +18,7 @@
 
   p {
     margin: 0;
-    color: rgba(0, 0, 0, 0.6);
+    color: var(--text-secondary);
   }
 }
 
@@ -35,9 +35,9 @@
 .end-date-info {
   margin-top: 16px;
   padding: 12px;
-  background-color: #e3f2fd;
+  background-color: var(--bg-chip-blue);
   border-radius: 4px;
-  color: #1565c0;
+  color: var(--text-chip-blue);
   font-size: 14px;
 
   strong {
@@ -56,5 +56,23 @@ mat-dialog-actions {
     display: inline-block;
     vertical-align: middle;
     margin-right: 8px;
+  }
+}
+
+@media (max-width: 600px) {
+  .dialog-content {
+    min-width: auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  mat-dialog-actions {
+    flex-wrap: wrap;
+
+    button {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
   }
 }

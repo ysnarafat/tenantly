@@ -1,9 +1,9 @@
 package services
 
 import (
-	"database/sql"
 	"testing"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/database"
 	"github.com/ysnarafat/tenantly/internal/models"
 	"github.com/ysnarafat/tenantly/internal/repositories"
@@ -11,10 +11,15 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func setupPropertyTestDB(t *testing.T) (*sql.DB, func()) {
-	db, err := sql.Open("postgres", "postgres://postgres:password@localhost:5432/tenantly_test?sslmode=disable")
+func setupPropertyTestDB(t *testing.T) (*sqlx.DB, func()) {
+	db, err := sqlx.Open("postgres", "postgres://postgres:password@localhost:5432/tenantly_test?sslmode=disable")
 	if err != nil {
 		t.Skip("Skipping test: PostgreSQL not available")
+	}
+
+	if err := db.Ping(); err != nil {
+		db.Close()
+		t.Skipf("Skipping test: PostgreSQL not available: %v", err)
 	}
 
 	// Create test tables
@@ -28,7 +33,7 @@ func setupPropertyTestDB(t *testing.T) (*sql.DB, func()) {
 	return db, cleanup
 }
 
-func createTestTables(t *testing.T, db *sql.DB) {
+func createTestTables(t *testing.T, db *sqlx.DB) {
 	// Create properties table for testing
 	_, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS properties (
@@ -113,7 +118,7 @@ func createTestTables(t *testing.T, db *sql.DB) {
 	}
 }
 
-func dropTestTables(t *testing.T, db *sql.DB) {
+func dropTestTables(t *testing.T, db *sqlx.DB) {
 	tables := []string{"units", "buildings", "properties", "audit_log"}
 	for _, table := range tables {
 		_, err := db.Exec("DROP TABLE IF EXISTS " + table + " CASCADE")
@@ -269,7 +274,7 @@ func TestPropertyService_GetProperty(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			property, err := service.GetProperty(tt.propertyID)
+			property, err := service.GetProperty(tt.propertyID, 0)
 
 			if tt.expectError {
 				if err == nil {
@@ -489,7 +494,7 @@ func TestPropertyService_UpdateProperty(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			property, err := service.UpdateProperty(tt.propertyID, tt.request, tt.userID)
+			property, err := service.UpdateProperty(tt.propertyID, tt.request, tt.userID, 0)
 
 			if tt.expectError {
 				if err == nil {
@@ -565,7 +570,7 @@ func TestPropertyService_DeleteProperty(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := service.DeleteProperty(tt.propertyID, tt.userID)
+			err := service.DeleteProperty(tt.propertyID, tt.userID, 0)
 
 			if tt.expectError {
 				if err == nil {
@@ -580,7 +585,7 @@ func TestPropertyService_DeleteProperty(t *testing.T) {
 			}
 
 			// Verify property is marked as inactive
-			property, err := service.GetProperty(tt.propertyID)
+			property, err := service.GetProperty(tt.propertyID, 0)
 			if err == nil && property.Active {
 				t.Errorf("Expected property to be inactive after deletion")
 			}

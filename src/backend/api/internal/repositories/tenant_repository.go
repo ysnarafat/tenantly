@@ -6,17 +6,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/models"
 	"github.com/ysnarafat/tenantly/internal/models/columns"
 )
 
 // TenantRepository implements the TenantRepositoryInterface
 type TenantRepository struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
 // NewTenantRepository creates a new TenantRepository
-func NewTenantRepository(db *sql.DB) *TenantRepository {
+func NewTenantRepository(db *sqlx.DB) *TenantRepository {
 	return &TenantRepository{db: db}
 }
 
@@ -195,6 +196,7 @@ func (r *TenantRepository) GetAll(page, pageSize, orgID int) ([]*models.Tenant, 
 			&tenant.NIDNumber,
 			&tenant.Address,
 			&tenant.Active,
+			&tenant.OrganizationID,
 			&tenant.CreatedAt,
 			&tenant.UpdatedAt,
 		)

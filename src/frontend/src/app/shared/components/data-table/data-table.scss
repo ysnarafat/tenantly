@@ -1,0 +1,140 @@
+:host {
+  display: block;
+}
+
+.dt-wrapper {
+  position: relative;
+}
+
+.dt-table-container {
+  overflow-x: auto;
+
+  &.dt-hidden {
+    display: none;
+  }
+}
+
+.dt-table {
+  width: 100%;
+
+  th.mat-header-cell {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-hint);
+    border-bottom: 2px solid var(--border-light);
+    padding: 10px 16px;
+    white-space: nowrap;
+  }
+
+  td.mat-cell {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-table);
+    vertical-align: middle;
+  }
+}
+
+.dt-row {
+  transition: background 0.1s;
+
+  &:hover {
+    background: var(--bg-hover) !important;
+  }
+}
+
+.dt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  text-align: center;
+
+  mat-icon {
+    font-size: 52px;
+    width: 52px;
+    height: 52px;
+    color: var(--border-strong);
+    margin-bottom: 16px;
+  }
+
+  h3 {
+    margin: 0 0 8px;
+    font-size: 18px;
+    color: var(--text-secondary);
+  }
+
+  p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+}
+
+mat-paginator {
+  border-top: 1px solid var(--border-light);
+}
+
+// ── Mobile: rows become stacked cards ─────────────────────────────────────────
+// Consumers must set `data-label="Column Name"` on each `td.mat-cell` (matching
+// the column's header text) — that's what renders as the row label below.
+@media (max-width: 768px) {
+  .dt-table-container {
+    overflow-x: visible;
+  }
+
+  .dt-table {
+    display: block;
+    width: 100%;
+
+    tr[mat-header-row] {
+      display: none;
+    }
+
+    tr.dt-row {
+      display: block;
+      margin-bottom: 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background: var(--bg-surface);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+
+      &:hover {
+        background: var(--bg-surface) !important;
+      }
+    }
+
+    td.mat-cell {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-light);
+      text-align: right;
+
+      &::before {
+        content: attr(data-label);
+        flex-shrink: 0;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--text-hint);
+        text-align: left;
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:empty,
+      &[data-label=''] {
+        display: none;
+      }
+    }
+  }
+}

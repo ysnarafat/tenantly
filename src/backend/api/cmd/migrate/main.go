@@ -39,7 +39,7 @@ func main() {
 	}
 	defer db.Close()
 
-	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
 	if err != nil {
 		log.Fatal("Failed to create postgres driver:", err)
 	}

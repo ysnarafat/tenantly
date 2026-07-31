@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -27,7 +27,7 @@ import (
 // BuildingIntegrationTestSuite provides comprehensive integration testing for building management API
 type BuildingIntegrationTestSuite struct {
 	suite.Suite
-	db              *sql.DB
+	db              *sqlx.DB
 	router          *gin.Engine
 	config          *config.Config
 	buildingHandler *BuildingHandler
@@ -54,7 +54,10 @@ func (suite *BuildingIntegrationTestSuite) SetupSuite() {
 	// Initialize test database
 	var err error
 	suite.db, err = database.Connect(suite.config.DatabaseURL)
-	require.NoError(suite.T(), err, "Failed to connect to test database")
+	if err != nil {
+		suite.T().Skipf("Skipping integration test: PostgreSQL not available: %v", err)
+		return
+	}
 
 	// Run migrations
 	err = database.RunMigrations(suite.config.DatabaseURL)
@@ -73,7 +76,7 @@ func (suite *BuildingIntegrationTestSuite) SetupSuite() {
 	buildingService := services.NewBuildingService(suite.buildingRepo, suite.propertyRepo, auditService, metadataValidator)
 
 	// Initialize handlers
-	userHandler := NewUserHandler(userService)
+	userHandler := NewUserHandler(userService, "", false)
 	propertyHandler := NewPropertyHandler(propertyService)
 	suite.buildingHandler = NewBuildingHandler(buildingService)
 
@@ -103,7 +106,7 @@ func (suite *BuildingIntegrationTestSuite) SetupTest() {
 func (suite *BuildingIntegrationTestSuite) setupTestRoutes(userHandler *UserHandler, propertyHandler *PropertyHandler, auditService *database.AuditService) {
 	// Add middleware
 	suite.router.Use(middleware.SecurityHeadersMiddleware())
-	suite.router.Use(middleware.CORS(suite.config.Environment))
+	suite.router.Use(middleware.CORS(suite.config.AllowedOrigins))
 	suite.router.Use(gin.Logger())
 	suite.router.Use(gin.Recovery())
 

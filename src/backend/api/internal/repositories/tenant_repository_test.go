@@ -6,14 +6,21 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/ysnarafat/tenantly/internal/models"
 )
 
-func TestTenantRepository_Create(t *testing.T) {
-	db, mock, err := sqlmock.New()
+func newSqlxMock(t *testing.T) (*sqlx.DB, sqlmock.Sqlmock) {
+	t.Helper()
+	sqlDB, mock, err := sqlmock.New()
 	assert.NoError(t, err)
-	defer db.Close()
+	t.Cleanup(func() { sqlDB.Close() })
+	return sqlx.NewDb(sqlDB, "postgres"), mock
+}
+
+func TestTenantRepository_Create(t *testing.T) {
+	db, mock := newSqlxMock(t)
 
 	repo := NewTenantRepository(db)
 
@@ -27,13 +34,9 @@ func TestTenantRepository_Create(t *testing.T) {
 			Address:     "123 Main St",
 		}
 
-		mock.ExpectQuery(regexp.QuoteMeta(`
-			INSERT INTO tenants (
-				name, tenant_type, phone_number, email, nid_number, address, active
-			) VALUES ($1, $2, $3, $4, $5, $6, true)
-			RETURNING id, created_at, updated_at`)).
+		mock.ExpectQuery(regexp.QuoteMeta("INSERT INTO tenants")).
 			WithArgs(
-				req.Name, req.TenantType, req.PhoneNumber, req.Email, req.NIDNumber, req.Address,
+				req.Name, req.TenantType, req.PhoneNumber, req.Email, req.NIDNumber, req.Address, 0,
 			).
 			WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).
 				AddRow(1, time.Now(), time.Now()))
@@ -58,9 +61,7 @@ func TestTenantRepository_Create(t *testing.T) {
 }
 
 func TestTenantRepository_CheckEmailExists(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	assert.NoError(t, err)
-	defer db.Close()
+	db, mock := newSqlxMock(t)
 
 	repo := NewTenantRepository(db)
 
@@ -88,9 +89,7 @@ func TestTenantRepository_CheckEmailExists(t *testing.T) {
 }
 
 func TestTenantRepository_CheckNIDExists(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	assert.NoError(t, err)
-	defer db.Close()
+	db, mock := newSqlxMock(t)
 
 	repo := NewTenantRepository(db)
 

@@ -22,6 +22,7 @@ import { Building } from '../../../core/models/building.model';
 import { Unit } from '../../../core/models/unit.model';
 import { Tenant } from '../../../core/models/tenant.model';
 import { LeaseType } from '../../../core/models/lease.model';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
 
 @Component({
   selector: 'app-create-lease-dialog',
@@ -115,7 +116,7 @@ export class CreateLeaseDialog implements OnInit {
           resolve();
         },
         error: (error: any) => {
-          console.error('Error loading properties:', error);
+          console.error('Error loading properties:', safeErrorMessage(error));
           this.snackBar.open('Error loading properties', 'Close', { duration: 3000 });
           resolve();
         },
@@ -132,7 +133,7 @@ export class CreateLeaseDialog implements OnInit {
           resolve();
         },
         error: (error) => {
-          console.error('Error loading tenants:', error);
+          console.error('Error loading tenants:', safeErrorMessage(error));
           this.snackBar.open('Error loading tenants', 'Close', { duration: 3000 });
           resolve();
         },
@@ -161,7 +162,7 @@ export class CreateLeaseDialog implements OnInit {
         }
       },
       error: (error: any) => {
-        console.error('Error loading buildings:', error);
+        console.error('Error loading buildings:', safeErrorMessage(error));
         this.snackBar.open('Error loading buildings', 'Close', { duration: 3000 });
         this.leaseForm.get('building_id')?.disable();
       },
@@ -187,7 +188,7 @@ export class CreateLeaseDialog implements OnInit {
         }
       },
       error: (error: any) => {
-        console.error('Error loading units:', error);
+        console.error('Error loading units:', safeErrorMessage(error));
         this.snackBar.open('Error loading units', 'Close', { duration: 3000 });
         this.leaseForm.get('unit_id')?.disable();
       },
@@ -276,7 +277,7 @@ export class CreateLeaseDialog implements OnInit {
         this.submitLoading = false;
       },
       error: (error) => {
-        console.error('Error creating lease:', error);
+        console.error('Error creating lease:', safeErrorMessage(error));
         const errorMessage = error.error?.message || 'Failed to create lease';
         this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
         this.submitLoading = false;

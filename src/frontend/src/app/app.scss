@@ -16,8 +16,11 @@ $nav-transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 // ── Sidenav ───────────────────────────────────────────────────────────────────
 .sidenav {
   width: $nav-expanded-width;
-  border-right: 1px solid rgba(0, 0, 0, 0.08) !important;
-  transition: width $nav-transition !important;
+  background-color: var(--sidenav-bg) !important;
+  border-right: 1px solid var(--nav-border-color) !important;
+  transition:
+    width $nav-transition,
+    background-color 0.25s !important;
   overflow-x: hidden !important;
 
   &.collapsed {
@@ -192,15 +195,17 @@ mat-nav-list {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.2px;
-  color: rgba(0, 0, 0, 0.35);
+  color: var(--nav-section-label-color);
   white-space: nowrap;
   flex-shrink: 0;
+  transition: color 0.25s;
 }
 
 .nav-section-line {
   flex: 1;
   height: 1px;
-  background: rgba(0, 0, 0, 0.07);
+  background: var(--nav-section-line-color);
+  transition: background 0.25s;
 }
 
 // ── Nav items ─────────────────────────────────────────────────────────────────
@@ -214,7 +219,7 @@ mat-nav-list {
   margin: 1px 8px;
   border-radius: 8px;
   text-decoration: none;
-  color: rgba(0, 0, 0, 0.7);
+  color: var(--nav-item-color);
   font-size: 0.875rem;
   font-weight: 400;
   cursor: pointer;
@@ -230,7 +235,7 @@ mat-nav-list {
     width: 20px;
     height: 20px;
     line-height: 20px;
-    color: rgba(0, 0, 0, 0.45);
+    color: var(--nav-icon-color);
     flex-shrink: 0;
     transition: color $nav-transition;
   }
@@ -243,25 +248,24 @@ mat-nav-list {
   }
 
   &:hover:not(.nav-active) {
-    background: rgba(0, 0, 0, 0.05);
-    color: rgba(0, 0, 0, 0.87);
+    background: var(--nav-hover-bg);
+    color: var(--nav-item-color);
+    filter: brightness(1.15);
 
     .nav-icon {
-      color: rgba(0, 0, 0, 0.7);
+      filter: brightness(1.15);
     }
   }
 
-  // Pill active style
   &.nav-active {
-    background: rgba(25, 118, 210, 0.1);
-    color: #1565c0;
+    background: var(--nav-active-bg);
+    color: var(--nav-active-color);
     font-weight: 600;
 
     .nav-icon {
-      color: #1565c0;
+      color: var(--nav-active-color);
     }
 
-    // Right-side accent bar
     &::after {
       content: '';
       position: absolute;
@@ -270,7 +274,7 @@ mat-nav-list {
       transform: translateY(-50%);
       width: 3px;
       height: 20px;
-      background: #1565c0;
+      background: var(--nav-active-color);
       border-radius: 2px;
     }
   }
@@ -281,6 +285,9 @@ mat-nav-list {
   padding: 20px;
   overflow-y: auto;
   overflow-x: hidden;
+  background-color: var(--bg-primary);
+  transition: background-color 0.25s;
+
   @media (max-width: 768px) {
     padding: 16px;
   }

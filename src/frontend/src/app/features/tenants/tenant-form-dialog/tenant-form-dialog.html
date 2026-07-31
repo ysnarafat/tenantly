@@ -30,9 +30,23 @@
         <!-- NID Number -->
         <mat-form-field appearance="outline">
           <mat-label>{{ 'TENANT_FORM_DIALOG.FIELDS.NID' | translate }}</mat-label>
-          <input matInput formControlName="nid_number" placeholder="Enter NID" />
+          <input
+            matInput
+            formControlName="nid_number"
+            placeholder="Enter NID"
+            [type]="isEditMode && !nidRevealed ? 'password' : 'text'"
+          />
           <mat-icon matPrefix>badge</mat-icon>
-          @if (tenantForm.get('nid_number')?.invalid) {
+          @if (canRevealPii && (isViewMode || isEditMode) && hasNid) {
+          <mat-icon
+            matSuffix
+            class="reveal-suffix-icon"
+            (click)="toggleNidReveal()"
+            [matTooltip]="(nidRevealed ? 'TENANT_LIST.MASKING.HIDE' : 'TENANT_LIST.MASKING.REVEAL') | translate"
+          >
+            {{ nidRevealed ? 'visibility_off' : 'visibility' }}
+          </mat-icon>
+          } @if (tenantForm.get('nid_number')?.invalid) {
           <mat-error>{{ getErrorMessage('nid_number') }}</mat-error>
           }
         </mat-form-field>
@@ -42,9 +56,23 @@
         <!-- Phone Number -->
         <mat-form-field appearance="outline">
           <mat-label>{{ 'TENANT_FORM_DIALOG.FIELDS.PHONE' | translate }}</mat-label>
-          <input matInput formControlName="phone_number" placeholder="Enter phone" />
+          <input
+            matInput
+            formControlName="phone_number"
+            placeholder="Enter phone"
+            [type]="isEditMode && !phoneRevealed ? 'password' : 'text'"
+          />
           <mat-icon matPrefix>phone</mat-icon>
-          @if (tenantForm.get('phone_number')?.invalid) {
+          @if (canRevealPii && (isViewMode || isEditMode) && hasPhone) {
+          <mat-icon
+            matSuffix
+            class="reveal-suffix-icon"
+            (click)="togglePhoneReveal()"
+            [matTooltip]="(phoneRevealed ? 'TENANT_LIST.MASKING.HIDE' : 'TENANT_LIST.MASKING.REVEAL') | translate"
+          >
+            {{ phoneRevealed ? 'visibility_off' : 'visibility' }}
+          </mat-icon>
+          } @if (tenantForm.get('phone_number')?.invalid) {
           <mat-error>{{ getErrorMessage('phone_number') }}</mat-error>
           }
         </mat-form-field>
@@ -84,12 +112,12 @@
     <button mat-button type="button" (click)="onCancel()">
       {{ 'COMMON.BUTTONS.CANCEL' | translate }}
     </button>
-    <button mat-raised-button color="primary" type="submit" [disabled]="tenantForm.invalid">
+    <button mat-flat-button color="primary" type="submit" [disabled]="tenantForm.invalid">
       {{ isEditMode ? ('TENANT_FORM_DIALOG.BUTTONS.UPDATE' | translate) :
       ('TENANT_FORM_DIALOG.BUTTONS.ADD' | translate) }}
     </button>
     } @else {
-    <button mat-raised-button color="primary" type="button" (click)="onCancel()">
+    <button mat-flat-button color="primary" type="button" (click)="onCancel()">
       {{ 'COMMON.BUTTONS.CLOSE' | translate }}
     </button>
     }

@@ -1,28 +1,36 @@
 -- Enhanced Building Management System Migration
 -- This migration enhances the existing buildings table to fully support the building management system requirements
 
--- Create building_type_enum with required values
-CREATE TYPE building_type_enum AS ENUM ('Residential', 'Commercial', 'Mixed');
+-- Create building_type_enum with required values (guarded: may already exist from a prior partial run)
+DO $$ BEGIN
+    CREATE TYPE building_type_enum AS ENUM ('Residential', 'Commercial', 'Mixed');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Add active_status column (rename from active for consistency with requirements)
-ALTER TABLE buildings ADD COLUMN active_status BOOLEAN DEFAULT true;
+ALTER TABLE buildings ADD COLUMN IF NOT EXISTS active_status BOOLEAN DEFAULT true;
 
--- Copy data from active to active_status
-UPDATE buildings SET active_status = active;
+-- Copy data from active to active_status (only meaningful while the old column still exists)
+DO $$ BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'buildings' AND column_name = 'active') THEN
+        UPDATE buildings SET active_status = active;
+    END IF;
+END $$;
 
 -- Drop the old active column
-ALTER TABLE buildings DROP COLUMN active;
+ALTER TABLE buildings DROP COLUMN IF EXISTS active;
 
 -- Modify building_type column to use the new enum type
--- First, add a temporary column with the enum type
-ALTER TABLE buildings ADD COLUMN building_type_new building_type_enum;
-
--- Update the new column with converted values
-UPDATE buildings SET building_type_new = building_type::building_type_enum;
-
--- Drop the old column and rename the new one
-ALTER TABLE buildings DROP COLUMN building_type;
-ALTER TABLE buildings RENAME COLUMN building_type_new TO building_type;
+-- First, add a temporary column with the enum type (skipped if already converted)
+DO $$ BEGIN
+    IF (SELECT data_type FROM information_schema.columns WHERE table_name = 'buildings' AND column_name = 'building_type') <> 'USER-DEFINED' THEN
+        ALTER TABLE buildings ADD COLUMN building_type_new building_type_enum;
+        UPDATE buildings SET building_type_new = building_type::building_type_enum;
+        ALTER TABLE buildings DROP COLUMN building_type;
+        ALTER TABLE buildings RENAME COLUMN building_type_new TO building_type;
+    END IF;
+END $$;
 
 -- Make building_type NOT NULL
 ALTER TABLE buildings ALTER COLUMN building_type SET NOT NULL;
@@ -32,12 +40,28 @@ ALTER TABLE buildings ALTER COLUMN building_name SET NOT NULL;
 ALTER TABLE buildings ALTER COLUMN building_code SET NOT NULL;
 ALTER TABLE buildings ALTER COLUMN property_id SET NOT NULL;
 
--- Add constraints for data validation
-ALTER TABLE buildings ADD CONSTRAINT chk_building_name_not_empty CHECK (LENGTH(TRIM(building_name)) > 0);
-ALTER TABLE buildings ADD CONSTRAINT chk_building_code_not_empty CHECK (LENGTH(TRIM(building_code)) > 0);
-ALTER TABLE buildings ADD CONSTRAINT chk_total_floors_positive CHECK (total_floors > 0);
-ALTER TABLE buildings ADD CONSTRAINT chk_construction_year_valid 
-    CHECK (construction_year IS NULL OR (construction_year >= 1800 AND construction_year <= EXTRACT(YEAR FROM CURRENT_DATE) + 5));
+-- Add constraints for data validation (guarded: may already exist from a prior partial run)
+DO $$ BEGIN
+    ALTER TABLE buildings ADD CONSTRAINT chk_building_name_not_empty CHECK (LENGTH(TRIM(building_name)) > 0);
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+    ALTER TABLE buildings ADD CONSTRAINT chk_building_code_not_empty CHECK (LENGTH(TRIM(building_code)) > 0);
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+    ALTER TABLE buildings ADD CONSTRAINT chk_total_floors_positive CHECK (total_floors > 0);
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+    ALTER TABLE buildings ADD CONSTRAINT chk_construction_year_valid
+        CHECK (construction_year IS NULL OR (construction_year >= 1800 AND construction_year <= EXTRACT(YEAR FROM CURRENT_DATE) + 5));
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Ensure the composite unique index exists for (property_id, building_code)
 -- The existing unique constraint already provides the required uniqueness
@@ -59,7 +83,7 @@ CREATE INDEX IF NOT EXISTS idx_buildings_property_type_active ON buildings(prope
 
 -- GIN index for building-specific metadata attributes (ensure it exists and is optimized)
 DROP INDEX IF EXISTS idx_buildings_metadata;
-CREATE INDEX idx_buildings_metadata_gin ON buildings USING GIN (metadata) WHERE metadata IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_buildings_metadata_gin ON buildings USING GIN (metadata) WHERE metadata IS NOT NULL;
 
 -- Additional performance indexes for common query patterns
 CREATE INDEX IF NOT EXISTS idx_buildings_floors ON buildings(total_floors) WHERE active_status = true;

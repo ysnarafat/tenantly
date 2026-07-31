@@ -197,7 +197,7 @@ func (s *UserService) Login(req *models.LoginRequest, clientIP, userAgent string
 
 	user, err := s.userRepo.GetByUsername(username)
 	if err != nil {
-		return nil, fmt.Errorf("no user found with that username")
+		return nil, fmt.Errorf("invalid credentials")
 	}
 
 	// Check if user is active
@@ -458,6 +458,24 @@ func (s *UserService) UpdateUser(id int, req *models.UpdateUserRequest) error {
 	}
 
 	return nil
+}
+
+// UpdateUserInOrganization updates a user only if they belong to orgID, preventing
+// cross-organization mutation (IDOR) by non-SUPER_ADMIN callers.
+func (s *UserService) UpdateUserInOrganization(id int, req *models.UpdateUserRequest, orgID int) error {
+	if _, err := s.GetUserByIDInOrganization(id, orgID); err != nil {
+		return fmt.Errorf("user not found")
+	}
+	return s.UpdateUser(id, req)
+}
+
+// DeleteUserInOrganization deletes a user only if they belong to orgID, preventing
+// cross-organization mutation (IDOR) by non-SUPER_ADMIN callers.
+func (s *UserService) DeleteUserInOrganization(id int, orgID int) error {
+	if _, err := s.GetUserByIDInOrganization(id, orgID); err != nil {
+		return fmt.Errorf("user not found")
+	}
+	return s.DeleteUser(id)
 }
 
 func (s *UserService) DeleteUser(id int) error {

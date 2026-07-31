@@ -33,6 +33,24 @@ func NewLeaseService(
 
 // CreateLease creates a new lease with validation
 func (s *LeaseService) CreateLease(req *models.CreateLeaseRequest, userID int) (*models.LeaseWithDetails, error) {
+	// Validate the unit and tenant belong to the caller's organization — prevents
+	// creating a lease that references another organization's unit/tenant (IDOR).
+	unit, err := s.unitRepo.GetByID(req.UnitID)
+	if err != nil {
+		return nil, fmt.Errorf("unit not found: %w", err)
+	}
+	if unit.OrganizationID != req.OrganizationID {
+		return nil, fmt.Errorf("unit not found")
+	}
+
+	tenant, err := s.tenantRepo.GetByID(req.TenantID)
+	if err != nil {
+		return nil, fmt.Errorf("tenant not found: %w", err)
+	}
+	if tenant.OrganizationID != req.OrganizationID {
+		return nil, fmt.Errorf("tenant not found")
+	}
+
 	// Validate unit doesn't have active lease
 	hasActiveLease, err := s.leaseRepo.HasActiveLeaseOnUnit(req.UnitID, nil)
 	if err != nil {

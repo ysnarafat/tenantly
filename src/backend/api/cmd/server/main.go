@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/gin-gonic/gin"
 	"github.com/ysnarafat/tenantly/internal/config"
 	"github.com/ysnarafat/tenantly/internal/database"
 	"github.com/ysnarafat/tenantly/internal/server"
@@ -37,6 +38,11 @@ func main() {
 	// Run migrations
 	if err := database.RunMigrations(cfg.DatabaseURL); err != nil {
 		log.Fatal("Failed to run migrations: ", err)
+	}
+
+	// Set Gin mode based on environment
+	if cfg.Environment == "production" {
+		gin.SetMode(gin.ReleaseMode)
 	}
 
 	// Initialize and start server

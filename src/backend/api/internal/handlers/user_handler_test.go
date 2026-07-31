@@ -89,6 +89,16 @@ func (m *MockUserService) DeleteUser(id int) error {
 	return args.Error(0)
 }
 
+func (m *MockUserService) UpdateUserInOrganization(id int, req *models.UpdateUserRequest, orgID int) error {
+	args := m.Called(id, req, orgID)
+	return args.Error(0)
+}
+
+func (m *MockUserService) DeleteUserInOrganization(id int, orgID int) error {
+	args := m.Called(id, orgID)
+	return args.Error(0)
+}
+
 func (m *MockUserService) GetUserByIDInOrganization(userID int, orgID int) (*models.User, error) {
 	args := m.Called(userID, orgID)
 	if args.Get(0) == nil {
@@ -128,17 +138,22 @@ func setupTestRouter() *gin.Engine {
 
 func TestUserHandler_CreateUser(t *testing.T) {
 	mockService := new(MockUserService)
-	handler := NewUserHandler(mockService)
+	handler := NewUserHandler(mockService, "", false)
 	router := setupTestRouter()
-
+	router.Use(func(c *gin.Context) {
+		c.Set("role", "SUPER_ADMIN")
+		c.Next()
+	})
 	router.POST("/users", handler.CreateUser)
 
 	t.Run("Success", func(t *testing.T) {
 		req := &models.CreateUserRequest{
-			Username: "testuser",
-			Email:    "test@example.com",
-			Password: "ValidPass123!",
-			Role:     "Admin",
+			Username:  "testuser",
+			Email:     "test@example.com",
+			Password:  "ValidPass123!",
+			FirstName: "Test",
+			LastName:  "User",
+			Role:      "Admin",
 		}
 
 		user := &models.User{
@@ -182,7 +197,7 @@ func TestUserHandler_CreateUser(t *testing.T) {
 
 func TestUserHandler_Login(t *testing.T) {
 	mockService := new(MockUserService)
-	handler := NewUserHandler(mockService)
+	handler := NewUserHandler(mockService, "", false)
 	router := setupTestRouter()
 
 	router.POST("/auth/login", handler.Login)
@@ -247,16 +262,12 @@ func TestUserHandler_Login(t *testing.T) {
 
 func TestUserHandler_RefreshToken(t *testing.T) {
 	mockService := new(MockUserService)
-	handler := NewUserHandler(mockService)
+	handler := NewUserHandler(mockService, "", false)
 	router := setupTestRouter()
 
 	router.POST("/auth/refresh", handler.RefreshToken)
 
 	t.Run("Success", func(t *testing.T) {
-		req := &models.RefreshTokenRequest{
-			RefreshToken: "valid-refresh-token",
-		}
-
 		loginResponse := &models.LoginResponse{
 			Token:        "new-jwt-token",
 			RefreshToken: "new-refresh-token",
@@ -270,10 +281,9 @@ func TestUserHandler_RefreshToken(t *testing.T) {
 
 		mockService.On("RefreshToken", "valid-refresh-token").Return(loginResponse, nil)
 
-		reqBody, _ := json.Marshal(req)
 		w := httptest.NewRecorder()
-		httpReq, _ := http.NewRequest("POST", "/auth/refresh", bytes.NewBuffer(reqBody))
-		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq, _ := http.NewRequest("POST", "/auth/refresh", nil)
+		httpReq.AddCookie(&http.Cookie{Name: "refresh_token", Value: "valid-refresh-token"})
 
 		router.ServeHTTP(w, httpReq)
 
@@ -283,23 +293,29 @@ func TestUserHandler_RefreshToken(t *testing.T) {
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
 		assert.Equal(t, loginResponse.Token, response.Token)
-		assert.Equal(t, loginResponse.RefreshToken, response.RefreshToken)
-		assert.NotEqual(t, req.RefreshToken, response.RefreshToken)
+		// The refresh token is never serialized in the JSON body — it's set as
+		// an httpOnly cookie instead.
+		assert.Empty(t, response.RefreshToken)
+
+		var sawRefreshCookie bool
+		for _, c := range w.Result().Cookies() {
+			if c.Name == "refresh_token" {
+				sawRefreshCookie = true
+				assert.Equal(t, "new-refresh-token", c.Value)
+				assert.True(t, c.HttpOnly)
+			}
+		}
+		assert.True(t, sawRefreshCookie, "expected a refresh_token cookie to be set")
 
 		mockService.AssertExpectations(t)
 	})
 
 	t.Run("Invalid refresh token", func(t *testing.T) {
-		req := &models.RefreshTokenRequest{
-			RefreshToken: "invalid-refresh-token",
-		}
-
 		mockService.On("RefreshToken", "invalid-refresh-token").Return(nil, assert.AnError)
 
-		reqBody, _ := json.Marshal(req)
 		w := httptest.NewRecorder()
-		httpReq, _ := http.NewRequest("POST", "/auth/refresh", bytes.NewBuffer(reqBody))
-		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq, _ := http.NewRequest("POST", "/auth/refresh", nil)
+		httpReq.AddCookie(&http.Cookie{Name: "refresh_token", Value: "invalid-refresh-token"})
 
 		router.ServeHTTP(w, httpReq)
 
@@ -313,40 +329,24 @@ func TestUserHandler_RefreshToken(t *testing.T) {
 		mockService.AssertExpectations(t)
 	})
 
-	t.Run("Missing refresh token", func(t *testing.T) {
-		req := &models.RefreshTokenRequest{
-			RefreshToken: "",
-		}
-
-		reqBody, _ := json.Marshal(req)
+	t.Run("Missing refresh token cookie", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		httpReq, _ := http.NewRequest("POST", "/auth/refresh", bytes.NewBuffer(reqBody))
-		httpReq.Header.Set("Content-Type", "application/json")
+		httpReq, _ := http.NewRequest("POST", "/auth/refresh", nil)
 
 		router.ServeHTTP(w, httpReq)
 
-		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, http.StatusUnauthorized, w.Code)
 
 		var response map[string]string
 		err := json.Unmarshal(w.Body.Bytes(), &response)
 		assert.NoError(t, err)
-		assert.Equal(t, "INVALID_REQUEST", response["code"])
-	})
-
-	t.Run("Malformed JSON", func(t *testing.T) {
-		w := httptest.NewRecorder()
-		httpReq, _ := http.NewRequest("POST", "/auth/refresh", bytes.NewBuffer([]byte("invalid json")))
-		httpReq.Header.Set("Content-Type", "application/json")
-
-		router.ServeHTTP(w, httpReq)
-
-		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, "TOKEN_REFRESH_FAILED", response["code"])
 	})
 }
 
 func TestUserHandler_Logout(t *testing.T) {
 	mockService := new(MockUserService)
-	handler := NewUserHandler(mockService)
+	handler := NewUserHandler(mockService, "", false)
 	router := setupTestRouter()
 
 	// Middleware to set user context
@@ -395,7 +395,7 @@ func TestUserHandler_Logout(t *testing.T) {
 
 func TestUserHandler_ChangePassword(t *testing.T) {
 	mockService := new(MockUserService)
-	handler := NewUserHandler(mockService)
+	handler := NewUserHandler(mockService, "", false)
 	router := setupTestRouter()
 
 	// Middleware to set user context
@@ -429,7 +429,7 @@ func TestUserHandler_ChangePassword(t *testing.T) {
 
 func TestUserHandler_ResetPassword(t *testing.T) {
 	mockService := new(MockUserService)
-	handler := NewUserHandler(mockService)
+	handler := NewUserHandler(mockService, "", false)
 	router := setupTestRouter()
 
 	router.POST("/auth/reset-password", handler.ResetPassword)
@@ -456,7 +456,7 @@ func TestUserHandler_ResetPassword(t *testing.T) {
 
 func TestUserHandler_ConfirmPasswordReset(t *testing.T) {
 	mockService := new(MockUserService)
-	handler := NewUserHandler(mockService)
+	handler := NewUserHandler(mockService, "", false)
 	router := setupTestRouter()
 
 	router.POST("/auth/confirm-reset-password", handler.ConfirmPasswordReset)
@@ -484,9 +484,12 @@ func TestUserHandler_ConfirmPasswordReset(t *testing.T) {
 
 func TestUserHandler_GetUsers(t *testing.T) {
 	mockService := new(MockUserService)
-	handler := NewUserHandler(mockService)
+	handler := NewUserHandler(mockService, "", false)
 	router := setupTestRouter()
-
+	router.Use(func(c *gin.Context) {
+		c.Set("role", "SUPER_ADMIN")
+		c.Next()
+	})
 	router.GET("/users", handler.GetUsers)
 
 	t.Run("Success", func(t *testing.T) {
@@ -527,10 +530,13 @@ func TestUserHandler_GetUsers(t *testing.T) {
 
 func TestUserHandler_UpdateUser(t *testing.T) {
 	mockService := new(MockUserService)
-	handler := NewUserHandler(mockService)
+	handler := NewUserHandler(mockService, "", false)
 	router := setupTestRouter()
 
-	router.PUT("/users/:id", handler.UpdateUser)
+	router.PUT("/users/:id", func(c *gin.Context) {
+		c.Set("role", "SUPER_ADMIN")
+		handler.UpdateUser(c)
+	})
 
 	t.Run("Success", func(t *testing.T) {
 		req := &models.UpdateUserRequest{
@@ -566,10 +572,13 @@ func TestUserHandler_UpdateUser(t *testing.T) {
 
 func TestUserHandler_DeleteUser(t *testing.T) {
 	mockService := new(MockUserService)
-	handler := NewUserHandler(mockService)
+	handler := NewUserHandler(mockService, "", false)
 	router := setupTestRouter()
 
-	router.DELETE("/users/:id", handler.DeleteUser)
+	router.DELETE("/users/:id", func(c *gin.Context) {
+		c.Set("role", "SUPER_ADMIN")
+		handler.DeleteUser(c)
+	})
 
 	t.Run("Success", func(t *testing.T) {
 		mockService.On("DeleteUser", 1).Return(nil)

@@ -21,7 +21,7 @@
         >
       </div>
     </div>
-    <button *ngIf="canEdit()" mat-raised-button color="primary" (click)="createLease()">
+    <button *ngIf="canEdit()" mat-flat-button color="primary" (click)="createLease()">
       <mat-icon>add</mat-icon>
       {{ 'LEASE_LIST.BUTTONS.NEW_LEASE' | translate }}
     </button>
@@ -49,69 +49,29 @@
       </button>
     </mat-form-field>
 
-    <div class="filter-group">
-      <span class="filter-label">{{ 'LEASE_LIST.FILTERS.STATUS_LABEL' | translate }}</span>
-      <div class="filter-pills">
-        <button
-          class="pill"
-          [class.selected]="statusFilter === 'all'"
-          (click)="setStatusFilter('all')"
-        >
-          {{ 'LEASE_LIST.FILTERS.ALL' | translate }}
-        </button>
-        <button
-          class="pill pill-active"
-          [class.selected]="statusFilter === 'active'"
-          (click)="setStatusFilter('active')"
-        >
-          {{ 'LEASE_LIST.STATS.ACTIVE' | translate }}
-        </button>
-        <button
-          class="pill pill-expiring"
-          [class.selected]="statusFilter === 'expiring'"
-          (click)="setStatusFilter('expiring')"
-        >
-          {{ 'LEASE_LIST.STATS.EXPIRING' | translate }}
-        </button>
-        <button
-          class="pill pill-expired"
-          [class.selected]="statusFilter === 'expired'"
-          (click)="setStatusFilter('expired')"
-        >
-          {{ 'LEASE_LIST.STATS.EXPIRED' | translate }}
-        </button>
-        <button
-          class="pill pill-inactive"
-          [class.selected]="statusFilter === 'inactive'"
-          (click)="setStatusFilter('inactive')"
-        >
-          {{ 'LEASE_LIST.STATS.INACTIVE' | translate }}
-        </button>
-      </div>
-    </div>
+    <mat-form-field appearance="outline" class="filter-select">
+      <mat-label>{{ 'LEASE_LIST.FILTERS.STATUS_LABEL' | translate }}</mat-label>
+      <mat-select [(ngModel)]="statusFilter" (ngModelChange)="setStatusFilter($event)">
+        <mat-option value="all">{{ 'LEASE_LIST.FILTERS.ALL' | translate }}</mat-option>
+        <mat-option value="active">{{ 'LEASE_LIST.STATS.ACTIVE' | translate }}</mat-option>
+        <mat-option value="expiring">{{ 'LEASE_LIST.STATS.EXPIRING' | translate }}</mat-option>
+        <mat-option value="expired">{{ 'LEASE_LIST.STATS.EXPIRED' | translate }}</mat-option>
+        <mat-option value="inactive">{{ 'LEASE_LIST.STATS.INACTIVE' | translate }}</mat-option>
+      </mat-select>
+    </mat-form-field>
 
-    <div class="filter-group">
-      <span class="filter-label">{{ 'LEASE_LIST.FILTERS.TYPE_LABEL' | translate }}</span>
-      <div class="filter-pills">
-        <button class="pill" [class.selected]="typeFilter === 'all'" (click)="setTypeFilter('all')">
-          {{ 'LEASE_LIST.FILTERS.ALL' | translate }}
-        </button>
-        <button
-          class="pill"
-          [class.selected]="typeFilter === 'Residential'"
-          (click)="setTypeFilter('Residential')"
+    <mat-form-field appearance="outline" class="filter-select">
+      <mat-label>{{ 'LEASE_LIST.FILTERS.TYPE_LABEL' | translate }}</mat-label>
+      <mat-select [(ngModel)]="typeFilter" (ngModelChange)="setTypeFilter($event)">
+        <mat-option value="all">{{ 'LEASE_LIST.FILTERS.ALL' | translate }}</mat-option>
+        <mat-option value="Residential"
+          >{{ 'LEASE_LIST.FILTERS.RESIDENTIAL' | translate }}</mat-option
         >
-          {{ 'LEASE_LIST.FILTERS.RESIDENTIAL' | translate }}
-        </button>
-        <button
-          class="pill"
-          [class.selected]="typeFilter === 'Commercial'"
-          (click)="setTypeFilter('Commercial')"
+        <mat-option value="Commercial"
+          >{{ 'LEASE_LIST.FILTERS.COMMERCIAL' | translate }}</mat-option
         >
-          {{ 'LEASE_LIST.FILTERS.COMMERCIAL' | translate }}
-        </button>
-      </div>
-    </div>
+      </mat-select>
+    </mat-form-field>
 
     <span *ngIf="hasActiveFilters" class="results-count">
       {{ filteredLeases.length }} {{ filteredLeases.length === 1 ? ('COMMON.PAGINATION.RESULT' |
@@ -123,10 +83,10 @@
   <mat-card class="content-card">
     <mat-card-content>
       <!-- Loading -->
-      <div *ngIf="loading" class="loading-state">
-        <mat-spinner diameter="40"></mat-spinner>
-        <p>{{ 'LEASE_LIST.LOADING' | translate }}</p>
-      </div>
+      <app-loading-spinner
+        *ngIf="loading"
+        [message]="'LEASE_LIST.LOADING' | translate"
+      ></app-loading-spinner>
 
       <ng-container *ngIf="!loading">
         <!-- Table -->
@@ -135,7 +95,11 @@
             <!-- Unit Info Column -->
             <ng-container matColumnDef="unit_info">
               <th mat-header-cell *matHeaderCellDef>{{ 'LEASE_LIST.TABLE.UNIT' | translate }}</th>
-              <td mat-cell *matCellDef="let lease">
+              <td
+                mat-cell
+                *matCellDef="let lease"
+                [attr.data-label]="'LEASE_LIST.TABLE.UNIT' | translate"
+              >
                 <div class="unit-cell">
                   <div class="unit-number">Unit {{ lease.unit_number }}</div>
                   <div class="unit-sub">{{ lease.building_name }} · {{ lease.property_name }}</div>
@@ -146,7 +110,11 @@
             <!-- Tenant Column -->
             <ng-container matColumnDef="tenant_name">
               <th mat-header-cell *matHeaderCellDef>{{ 'LEASE_LIST.TABLE.TENANT' | translate }}</th>
-              <td mat-cell *matCellDef="let lease">
+              <td
+                mat-cell
+                *matCellDef="let lease"
+                [attr.data-label]="'LEASE_LIST.TABLE.TENANT' | translate"
+              >
                 <div class="tenant-cell">
                   <div class="tenant-name">{{ lease.tenant_name }}</div>
                   <div *ngIf="lease.tenant_phone" class="tenant-phone">
@@ -159,7 +127,11 @@
             <!-- Lease Type Column -->
             <ng-container matColumnDef="lease_type">
               <th mat-header-cell *matHeaderCellDef>{{ 'LEASE_LIST.TABLE.TYPE' | translate }}</th>
-              <td mat-cell *matCellDef="let lease">
+              <td
+                mat-cell
+                *matCellDef="let lease"
+                [attr.data-label]="'LEASE_LIST.TABLE.TYPE' | translate"
+              >
                 <span class="type-badge" [class.commercial]="lease.lease_type === 'Commercial'">
                   {{ lease.lease_type }}
                 </span>
@@ -171,7 +143,11 @@
               <th mat-header-cell *matHeaderCellDef>
                 {{ 'LEASE_LIST.TABLE.MONTHLY_RENT' | translate }}
               </th>
-              <td mat-cell *matCellDef="let lease">
+              <td
+                mat-cell
+                *matCellDef="let lease"
+                [attr.data-label]="'LEASE_LIST.TABLE.MONTHLY_RENT' | translate"
+              >
                 <span class="rent-value">{{ formatCurrency(lease.monthly_rent) }}</span>
               </td>
             </ng-container>
@@ -181,7 +157,11 @@
               <th mat-header-cell *matHeaderCellDef>
                 {{ 'LEASE_LIST.TABLE.DURATION' | translate }}
               </th>
-              <td mat-cell *matCellDef="let lease">
+              <td
+                mat-cell
+                *matCellDef="let lease"
+                [attr.data-label]="'LEASE_LIST.TABLE.DURATION' | translate"
+              >
                 <div class="duration-cell">
                   <div class="duration-dates">
                     {{ formatDate(lease.start_date) }} → {{ formatDate(lease.end_date) }}
@@ -196,7 +176,11 @@
             <!-- Status Column -->
             <ng-container matColumnDef="status">
               <th mat-header-cell *matHeaderCellDef>{{ 'LEASE_LIST.TABLE.STATUS' | translate }}</th>
-              <td mat-cell *matCellDef="let lease">
+              <td
+                mat-cell
+                *matCellDef="let lease"
+                [attr.data-label]="'LEASE_LIST.TABLE.STATUS' | translate"
+              >
                 <span class="status-badge" [ngClass]="getStatusClass(lease)">
                   <span class="status-dot"></span>
                   {{ getStatusText(lease) }}
@@ -209,7 +193,11 @@
               <th mat-header-cell *matHeaderCellDef class="actions-header">
                 {{ 'LEASE_LIST.TABLE.ACTIONS' | translate }}
               </th>
-              <td mat-cell *matCellDef="let lease">
+              <td
+                mat-cell
+                *matCellDef="let lease"
+                [attr.data-label]="'LEASE_LIST.TABLE.ACTIONS' | translate"
+              >
                 <div class="actions-cell">
                   <button
                     mat-icon-button
@@ -344,20 +332,11 @@
             {{ hasActiveFilters ? ('COMMON.EMPTY_STATE.TRY_ADJUST' | translate) :
             ('LEASE_LIST.EMPTY_STATE.CREATE_FIRST' | translate) }}
           </p>
-          <button
-            *ngIf="!hasActiveFilters && canEdit()"
-            mat-raised-button
-            color="primary"
-            (click)="createLease()"
-          >
-            <mat-icon>add</mat-icon>
-            {{ 'LEASE_LIST.BUTTONS.NEW_LEASE' | translate }}
-          </button>
         </div>
 
         <!-- Pagination -->
         <mat-paginator
-          *ngIf="filteredLeases.length > pageSize"
+          *ngIf="filteredLeases.length > 0"
           [length]="filteredLeases.length"
           [pageSize]="pageSize"
           [pageIndex]="pageIndex"

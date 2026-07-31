@@ -23,5 +23,8 @@
       "Bash(git stash *)",
       "Bash(git config *)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "angular-cli"
+  ]
 }

@@ -7,18 +7,400 @@ body {
 body {
   margin: 0;
   font-family: 'Noto Sans Bengali', Roboto, 'Helvetica Neue', sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition:
+    background-color 0.25s,
+    color 0.25s;
 }
 
-/* Custom theme colors for Tenantly */
-:root {
+// ── CSS Custom Properties ─────────────────────────────────────────────────────
+
+:root,
+[data-theme='light'] {
+  // Brand
   --primary-color: #1976d2;
   --accent-color: #ff4081;
   --warn-color: #f44336;
   --success-color: #4caf50;
   --warning-color: #ff9800;
+  --color-primary: #1976d2;
+  --color-primary-dark: #1565c0;
+
+  // Backgrounds
+  --bg-primary: #ffffff;
+  --bg-secondary: #fafafa;
+  --bg-surface: #ffffff;
+  --bg-hover: #f9f9f9;
+  --bg-selected: #f3f8ff;
+  --bg-code: #f5f5f5;
+  --bg-detail: #f3f8ff;
+
+  // Chip/badge backgrounds
+  --bg-chip-blue: #e3f2fd;
+  --bg-chip-green: #e8f5e9;
+  --bg-chip-orange: #fff3e0;
+  --bg-chip-red: #fce4ec;
+  --bg-chip-purple: #f3e5f5;
+  --bg-chip-grey: #f5f5f5;
+
+  // Text
+  --text-primary: #1a1a1a;
+  --text-secondary: #424242;
+  --text-muted: #9e9e9e;
+  --text-disabled: #bdbdbd;
+  --text-hint: #757575;
+
+  // Chip text
+  --text-chip-blue: #1565c0;
+  --text-chip-green: #2e7d32;
+  --text-chip-orange: #e65100;
+  --text-chip-red: #c62828;
+  --text-chip-purple: #6a1b9a;
+  --text-chip-grey: #757575;
+
+  // Borders
+  --border-color: #e0e0e0;
+  --border-light: #f0f0f0;
+  --border-table: #f5f5f5;
+  --border-strong: #cccccc;
+
+  // Shadows
+  --shadow-card: rgba(0, 0, 0, 0.08);
+  --shadow-toolbar: rgba(0, 0, 0, 0.15);
+
+  // Due-list specific
+  --card-bg: #ffffff;
+  --card-bg-secondary: #f9f9f9;
+  --table-header-bg: #fafafa;
+  --table-row-hover: #f9f9f9;
+  --color-success: #4caf50;
+  --color-primary-dark: #1565c0;
+
+  // Sidenav
+  --nav-item-color: rgba(0, 0, 0, 0.7);
+  --nav-icon-color: rgba(0, 0, 0, 0.45);
+  --nav-hover-bg: rgba(0, 0, 0, 0.05);
+  --nav-active-bg: rgba(25, 118, 210, 0.1);
+  --nav-active-color: #1565c0;
+  --nav-section-label-color: rgba(0, 0, 0, 0.35);
+  --nav-section-line-color: rgba(0, 0, 0, 0.07);
+  --nav-border-color: rgba(0, 0, 0, 0.08);
+  --sidenav-bg: #ffffff;
 }
 
-/* Global utility classes */
+[data-theme='dark'] {
+  // Brand
+  --primary-color: #64b5f6;
+  --color-primary: #64b5f6;
+  --color-primary-dark: #42a5f5;
+
+  // Backgrounds
+  --bg-primary: #121212;
+  --bg-secondary: #1e1e1e;
+  --bg-surface: #1e1e1e;
+  --bg-hover: #2a2a2a;
+  --bg-selected: #0d2137;
+  --bg-code: #2a2a2a;
+  --bg-detail: #0d1929;
+
+  // Chip/badge backgrounds
+  --bg-chip-blue: #0d2137;
+  --bg-chip-green: #0d2012;
+  --bg-chip-orange: #211500;
+  --bg-chip-red: #210d10;
+  --bg-chip-purple: #1a0d22;
+  --bg-chip-grey: #2a2a2a;
+
+  // Text
+  --text-primary: #e4e4e4;
+  --text-secondary: #b0b0b0;
+  --text-muted: #6e6e6e;
+  --text-disabled: #555555;
+  --text-hint: #9e9e9e;
+
+  // Chip text
+  --text-chip-blue: #90caf9;
+  --text-chip-green: #81c784;
+  --text-chip-orange: #ffb74d;
+  --text-chip-red: #ef9a9a;
+  --text-chip-purple: #ce93d8;
+  --text-chip-grey: #9e9e9e;
+
+  // Due-list specific
+  --card-bg: #1e1e1e;
+  --card-bg-secondary: #252525;
+  --table-header-bg: #2a2a2a;
+  --table-row-hover: #2a2a2a;
+  --color-success: #66bb6a;
+  --color-primary-dark: #42a5f5;
+
+  // Borders
+  --border-color: #333333;
+  --border-light: #2a2a2a;
+  --border-table: #2a2a2a;
+  --border-strong: #444444;
+
+  // Shadows
+  --shadow-card: rgba(0, 0, 0, 0.4);
+  --shadow-toolbar: rgba(0, 0, 0, 0.4);
+
+  // Sidenav
+  --nav-item-color: rgba(255, 255, 255, 0.7);
+  --nav-icon-color: rgba(255, 255, 255, 0.45);
+  --nav-hover-bg: rgba(255, 255, 255, 0.06);
+  --nav-active-bg: rgba(100, 181, 246, 0.15);
+  --nav-active-color: #90caf9;
+  --nav-section-label-color: rgba(255, 255, 255, 0.35);
+  --nav-section-line-color: rgba(255, 255, 255, 0.1);
+  --nav-border-color: rgba(255, 255, 255, 0.08);
+  --sidenav-bg: #1e1e1e;
+}
+
+// ── Angular Material Dark Mode Token Overrides ────────────────────────────────
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  // App background / content
+  --mat-sidenav-container-background-color: var(--sidenav-bg);
+  --mat-sidenav-content-background-color: var(--bg-primary);
+
+  // Toolbar already uses color="primary" — keeps its blue color
+  // but we override the icon colors for the user menu etc. via text color
+
+  // Cards
+  --mdc-elevated-card-container-color: var(--bg-surface);
+  --mdc-outlined-card-container-color: var(--bg-surface);
+
+  // Table
+  --mat-table-background-color: var(--bg-surface);
+  --mat-table-header-headline-color: var(--text-hint);
+  --mat-table-row-item-label-text-color: var(--text-primary);
+  --mat-table-row-item-outline-color: var(--border-table);
+
+  // Paginator
+  --mat-paginator-container-background-color: var(--bg-surface);
+  --mat-paginator-enabled-icon-color: var(--text-hint);
+  --mat-paginator-label-text-color: var(--text-secondary);
+
+  // Form fields (filled)
+  --mdc-filled-text-field-container-color: #2a2a2a;
+  --mdc-filled-text-field-label-text-color: var(--text-hint);
+  --mdc-filled-text-field-input-text-color: var(--text-primary);
+  --mdc-filled-text-field-active-indicator-color: var(--border-color);
+  --mdc-filled-text-field-hover-active-indicator-color: var(--text-hint);
+
+  // Form fields (outlined)
+  --mdc-outlined-text-field-outline-color: var(--border-color);
+  --mdc-outlined-text-field-hover-outline-color: var(--text-hint);
+  --mdc-outlined-text-field-label-text-color: var(--text-hint);
+  --mdc-outlined-text-field-input-text-color: var(--text-primary);
+
+  // Select
+  --mat-select-enabled-trigger-text-color: var(--text-primary);
+  --mat-select-placeholder-text-color: var(--text-hint);
+  --mat-select-panel-background-color: #2a2a2a;
+  --mat-option-label-text-color: var(--text-primary);
+  --mat-option-hover-state-layer-color: rgba(255, 255, 255, 0.08);
+  --mat-option-selected-state-label-text-color: var(--color-primary);
+  --mat-option-selected-state-layer-color: rgba(100, 181, 246, 0.12);
+  --mat-select-trigger-text-color: var(--text-primary);
+
+  // Menu (user menu, context menus)
+  --mat-menu-container-color: #2a2a2a;
+  --mat-menu-item-label-text-color: var(--text-primary);
+  --mat-menu-item-icon-color: var(--text-secondary);
+  --mat-menu-item-hover-state-layer-color: rgba(255, 255, 255, 0.08);
+
+  // Dialog
+  --mdc-dialog-container-color: var(--bg-surface);
+  --mat-dialog-headline-color: var(--text-primary);
+  --mat-dialog-supporting-text-color: var(--text-secondary);
+
+  // Chips
+  --mdc-chip-outline-color: var(--border-color);
+  --mdc-chip-label-text-color: var(--text-primary);
+  --mdc-chip-elevated-container-color: #2a2a2a;
+
+  // Divider
+  --mat-divider-color: var(--border-color);
+
+  // Tooltip
+  --mdc-plain-tooltip-container-color: #424242;
+  --mdc-plain-tooltip-supporting-text-color: #e4e4e4;
+
+  // Checkbox / Radio
+  --mdc-checkbox-unselected-icon-color: var(--text-hint);
+  --mdc-radio-unselected-icon-color: var(--text-hint);
+
+  // Icons in forms
+  --mat-form-field-leading-icon-color: var(--text-hint);
+  --mat-form-field-trailing-icon-color: var(--text-hint);
+}
+
+// ── Dialog overrides ──────────────────────────────────────────────────────────
+
+.cdk-overlay-backdrop,
+.cdk-overlay-dark-backdrop {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme='dark'] .cdk-overlay-backdrop {
+  background-color: rgba(0, 0, 0, 0.65) !important;
+}
+
+.mat-mdc-dialog-container {
+  background-color: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+}
+
+.mat-mdc-dialog-surface {
+  background-color: var(--bg-surface) !important;
+  opacity: 1 !important;
+}
+
+// ── Mobile: dialogs go full-screen ────────────────────────────────────────────
+// Targets only overlay panes that host a dialog (`:has()`), so menus, selects,
+// autocomplete panels and tooltips — which also render through `.cdk-overlay-pane`
+// — are left untouched.
+@media (max-width: 600px) {
+  .cdk-overlay-pane:has(.mat-mdc-dialog-container) {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100%;
+    max-height: 100% !important;
+    margin: 0 !important;
+  }
+
+  .mat-mdc-dialog-container {
+    --mdc-dialog-container-shape: 0;
+  }
+
+  .mat-mdc-dialog-surface {
+    border-radius: 0 !important;
+    height: 100%;
+    max-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mat-mdc-dialog-title {
+    flex: 0 0 auto;
+  }
+
+  .mat-mdc-dialog-content {
+    flex: 1 1 auto;
+    max-height: none !important;
+  }
+
+  .mat-mdc-dialog-actions {
+    flex: 0 0 auto;
+    position: sticky;
+    bottom: 0;
+    background-color: var(--bg-surface);
+    z-index: 1;
+    box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.08);
+  }
+}
+
+// ── Surface overrides ─────────────────────────────────────────────────────────
+// Angular Material sets container-color tokens directly on the component's own
+// selector (e.g. `.mat-mdc-card { --mdc-elevated-card-container-color: #fff }`).
+// That always wins over a value inherited from `[data-theme='dark']` on <html>,
+// since same-specificity rules resolve by proximity to the element, not by the
+// ancestor override. Force the rendered property directly, same as the dialog fix above.
+
+.mat-mdc-card,
+.mat-mdc-menu-panel,
+.mat-mdc-select-panel,
+.mat-mdc-autocomplete-panel {
+  background-color: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+}
+
+// ── Accessibility: interactive-control contrast in dark mode ──────────────────
+// Subtle dividers (--border-color/--border-light) are intentionally low-contrast;
+// controls people operate (toggles, outlined buttons, form field outlines) need
+// WCAG's 3:1 non-text contrast minimum, so they get their own, stronger tokens.
+
+[data-theme='dark'] {
+  // Form field outline (was --border-color, too close to --bg-primary to read as a boundary)
+  --mdc-outlined-text-field-outline-color: rgba(255, 255, 255, 0.3);
+  --mdc-outlined-text-field-hover-outline-color: rgba(255, 255, 255, 0.5);
+
+  // Outlined/stroked buttons
+  --mdc-outlined-button-outline-color: rgba(255, 255, 255, 0.35);
+
+  // Slide toggle (unselected/off state was left at Material's light-mode default)
+  --mdc-switch-unselected-track-color: #5c5c5c;
+  --mdc-switch-unselected-hover-track-color: #6a6a6a;
+  --mdc-switch-unselected-pressed-track-color: #6a6a6a;
+  --mdc-switch-unselected-focus-track-color: #6a6a6a;
+  --mdc-switch-unselected-handle-color: #cfcfcf;
+  --mdc-switch-unselected-hover-handle-color: #e0e0e0;
+  --mdc-switch-unselected-pressed-handle-color: #e0e0e0;
+  --mdc-switch-unselected-focus-handle-color: #e0e0e0;
+  --mdc-switch-disabled-unselected-track-color: #444444;
+  --mdc-switch-disabled-unselected-handle-color: #757575;
+}
+
+// ── Material color-variant bindings ───────────────────────────────────────────
+// This app has no per-component Material Sass theme (no `@include mat.button-theme()`
+// etc.) — only the raw M3 system-token CSS (prebuilt-themes/azure-blue.css). MDC
+// component CSS reads component-level tokens (e.g. --mat-button-filled-container-color)
+// that fall back to --mat-sys-primary by default; the `.mat-warn` host class alone
+// does nothing without a theme mixin binding it to --mat-sys-error. Without this,
+// color="warn" buttons/icons silently render as primary blue instead of red.
+.mat-mdc-unelevated-button.mat-warn,
+.mat-mdc-raised-button.mat-warn {
+  --mat-button-filled-container-color: var(--mat-sys-error);
+  --mat-button-filled-label-text-color: var(--mat-sys-on-error);
+  --mat-button-protected-container-color: var(--mat-sys-error);
+  --mat-button-protected-label-text-color: var(--mat-sys-on-error);
+}
+
+.mat-mdc-outlined-button.mat-warn {
+  --mat-button-outlined-label-text-color: var(--mat-sys-error);
+}
+
+.mat-mdc-button.mat-warn {
+  --mat-button-text-label-text-color: var(--mat-sys-error);
+}
+
+.mat-mdc-icon-button.mat-warn {
+  --mat-icon-button-icon-color: var(--mat-sys-error);
+}
+
+mat-icon.mat-warn {
+  --mat-icon-color: var(--mat-sys-error);
+}
+
+.mat-dialog-title {
+  color: var(--text-primary) !important;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+mat-dialog-content {
+  color: var(--text-secondary) !important;
+}
+
+.mat-mdc-form-field {
+  color: var(--text-primary) !important;
+}
+
+.mat-mdc-input-element {
+  color: var(--text-primary) !important;
+}
+
+.mat-mdc-form-field .mat-mdc-input-element::placeholder {
+  color: var(--text-hint);
+  opacity: 1;
+}
+
+// ── Global utility classes ────────────────────────────────────────────────────
+
 .text-center {
   text-align: center;
 }
@@ -41,7 +423,6 @@ body {
 .mt-4 {
   margin-top: 1.5rem;
 }
-
 .mb-1 {
   margin-bottom: 0.25rem;
 }
@@ -54,7 +435,6 @@ body {
 .mb-4 {
   margin-bottom: 1.5rem;
 }
-
 .p-1 {
   padding: 0.25rem;
 }
@@ -67,7 +447,6 @@ body {
 .p-4 {
   padding: 1.5rem;
 }
-
 .w-100 {
   width: 100%;
 }
@@ -95,52 +474,15 @@ body {
 .summary-card {
   text-align: center;
   padding: 1.5rem;
-}
 
-.summary-card h2 {
-  margin: 0;
-  font-size: 2rem;
-  font-weight: 300;
-}
+  h2 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 300;
+  }
 
-.summary-card p {
-  margin: 0.5rem 0 0 0;
-  color: rgba(0, 0, 0, 0.6);
-}
-
-/* Dialog/Modal styles for better visibility */
-.cdk-overlay-backdrop {
-  background-color: rgba(0, 0, 0, 0.5) !important;
-}
-
-.cdk-overlay-dark-backdrop {
-  background-color: rgba(0, 0, 0, 0.5) !important;
-}
-
-.mat-mdc-dialog-container {
-  background-color: #ffffff !important;
-  color: rgba(0, 0, 0, 0.87) !important;
-}
-
-.mat-mdc-dialog-surface {
-  background-color: #ffffff !important;
-  opacity: 1 !important;
-}
-
-.mat-dialog-title {
-  color: rgba(0, 0, 0, 0.87) !important;
-  font-size: 1.5rem;
-  font-weight: 500;
-}
-
-mat-dialog-content {
-  color: rgba(0, 0, 0, 0.87) !important;
-}
-
-.mat-mdc-form-field {
-  color: rgba(0, 0, 0, 0.87) !important;
-}
-
-.mat-mdc-input-element {
-  color: rgba(0, 0, 0, 0.87) !important;
+  p {
+    margin: 0.5rem 0 0;
+    color: var(--text-muted);
+  }
 }

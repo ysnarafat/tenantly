@@ -11,7 +11,7 @@
 
     h1 {
       margin: 0;
-      color: #333;
+      color: var(--text-primary);
       font-size: 2rem;
     }
 
@@ -50,12 +50,12 @@
             font-size: 2rem;
             font-weight: 600;
             margin-bottom: 8px;
-            color: #333;
+            color: var(--text-primary);
           }
 
           .stat-label {
             font-size: 0.875rem;
-            color: #666;
+            color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.5px;
           }
@@ -144,10 +144,10 @@
           align-items: center;
           gap: 8px;
           font-size: 1.25rem;
-          color: #333;
+          color: var(--text-primary);
 
           mat-icon {
-            color: #666;
+            color: var(--text-muted);
           }
         }
       }
@@ -158,7 +158,7 @@
           justify-content: space-between;
           align-items: center;
           padding: 12px 0;
-          border-bottom: 1px solid #eee;
+          border-bottom: 1px solid var(--border-light);
 
           &:last-child {
             border-bottom: none;
@@ -172,7 +172,7 @@
 
             .tenant-name {
               font-size: 0.875rem;
-              color: #666;
+              color: var(--text-muted);
             }
           }
 
@@ -189,14 +189,14 @@
           align-items: center;
           gap: 12px;
           padding: 12px 0;
-          border-bottom: 1px solid #eee;
+          border-bottom: 1px solid var(--border-light);
 
           &:last-child {
             border-bottom: none;
           }
 
           .file-icon {
-            color: #666;
+            color: var(--text-muted);
           }
 
           .attachment-info {
@@ -209,7 +209,7 @@
 
             .upload-date {
               font-size: 0.875rem;
-              color: #666;
+              color: var(--text-muted);
             }
           }
         }
@@ -217,7 +217,7 @@
 
       .empty-message {
         text-align: center;
-        color: #666;
+        color: var(--text-muted);
         padding: 24px;
         font-style: italic;
       }
@@ -227,7 +227,7 @@
   .loading-container {
     text-align: center;
     padding: 48px;
-    color: #666;
+    color: var(--text-muted);
   }
 }
 

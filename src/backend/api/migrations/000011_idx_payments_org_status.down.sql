@@ -1,0 +1,1 @@
+DROP INDEX CONCURRENTLY IF EXISTS idx_payments_org_status_month_year;

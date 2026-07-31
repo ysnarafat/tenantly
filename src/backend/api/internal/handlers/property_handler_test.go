@@ -2,14 +2,15 @@ package handlers
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/database"
 	"github.com/ysnarafat/tenantly/internal/models"
 	"github.com/ysnarafat/tenantly/internal/repositories"
@@ -18,10 +19,15 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func setupPropertyHandlerTestDB(t *testing.T) (*sql.DB, func()) {
-	db, err := sql.Open("postgres", "postgres://postgres:password@localhost:5432/tenantly_test?sslmode=disable")
+func setupPropertyHandlerTestDB(t *testing.T) (*sqlx.DB, func()) {
+	db, err := sqlx.Open("postgres", "postgres://postgres:password@localhost:5432/tenantly_test?sslmode=disable")
 	if err != nil {
 		t.Skip("Skipping test: PostgreSQL not available")
+	}
+
+	if err := db.Ping(); err != nil {
+		db.Close()
+		t.Skipf("Skipping test: PostgreSQL not available: %v", err)
 	}
 
 	// Create test tables
@@ -35,7 +41,7 @@ func setupPropertyHandlerTestDB(t *testing.T) (*sql.DB, func()) {
 	return db, cleanup
 }
 
-func createPropertyHandlerTestTables(t *testing.T, db *sql.DB) {
+func createPropertyHandlerTestTables(t *testing.T, db *sqlx.DB) {
 	// Create properties table for testing
 	_, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS properties (
@@ -75,7 +81,7 @@ func createPropertyHandlerTestTables(t *testing.T, db *sql.DB) {
 	}
 }
 
-func dropPropertyHandlerTestTables(t *testing.T, db *sql.DB) {
+func dropPropertyHandlerTestTables(t *testing.T, db *sqlx.DB) {
 	tables := []string{"properties", "audit_log"}
 	for _, table := range tables {
 		_, err := db.Exec("DROP TABLE IF EXISTS " + table + " CASCADE")
@@ -162,6 +168,17 @@ func TestPropertyHandler_CreateProperty(t *testing.T) {
 				PropertyType: models.PropertyTypeResidential,
 			},
 			expectedStatus: http.StatusConflict,
+			expectError:    true,
+		},
+		{
+			name: "Address exceeds max length",
+			requestBody: models.CreatePropertyRequest{
+				PropertyName: "Test Property 5",
+				PropertyCode: "TEST005",
+				Address:      strings.Repeat("a", 501),
+				PropertyType: models.PropertyTypeResidential,
+			},
+			expectedStatus: http.StatusBadRequest,
 			expectError:    true,
 		},
 	}
@@ -460,6 +477,15 @@ func TestPropertyHandler_UpdateProperty(t *testing.T) {
 			name:           "Invalid request body",
 			propertyID:     strconv.Itoa(propertyID),
 			requestBody:    "invalid json",
+			expectedStatus: http.StatusBadRequest,
+			expectError:    true,
+		},
+		{
+			name:       "Address exceeds max length",
+			propertyID: strconv.Itoa(propertyID),
+			requestBody: models.UpdatePropertyRequest{
+				Address: stringPtr(strings.Repeat("a", 501)),
+			},
 			expectedStatus: http.StatusBadRequest,
 			expectError:    true,
 		},

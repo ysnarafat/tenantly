@@ -10,7 +10,7 @@ import (
 )
 
 // ---------------------------------------------------------------------------
-// MockPaymentRepo – implements interfaces.PaymentRepositoryInterface
+// MockPaymentRepo â€“ implements interfaces.PaymentRepositoryInterface
 // ---------------------------------------------------------------------------
 
 type MockPaymentRepo struct {
@@ -159,7 +159,7 @@ func (m *MockPaymentRepo) GetBuildingPaymentsInPeriod(buildingID int, startDate,
 	return result, len(result), nil
 }
 
-func (m *MockPaymentRepo) GetDashboardSummary() (*models.DashboardSummary, error) {
+func (m *MockPaymentRepo) GetDashboardSummary(orgID int) (*models.DashboardSummary, error) {
 	if m.shouldFailDashboard {
 		return nil, errors.New("dashboard summary failed")
 	}
@@ -194,8 +194,33 @@ func (m *MockPaymentRepo) CheckPaymentExists(unitID, month, year int) (bool, err
 	return false, nil
 }
 
+func (m *MockPaymentRepo) GetAgingBuckets(orgID int) (map[string]int64, error) {
+	return map[string]int64{"current": 0, "30d": 0, "60d": 0, "90d+": 0}, nil
+}
+
+func (m *MockPaymentRepo) GetMonthlyCollectionTrend(orgID int, months int) ([]*models.MonthlyCollectionTrend, error) {
+	return make([]*models.MonthlyCollectionTrend, 0), nil
+}
+
+func (m *MockPaymentRepo) GetTenantPaymentSummary(orgID int) ([]*models.TenantReportEntry, error) {
+	return make([]*models.TenantReportEntry, 0), nil
+}
+
+func (m *MockPaymentRepo) GetPaymentAnalyticsByPeriod(orgID int, startDate, endDate time.Time) (*models.PaymentAnalyticsResult, error) {
+	return &models.PaymentAnalyticsResult{
+		MethodCounts:  map[string]int64{},
+		StatusCounts:  map[string]int64{},
+		DailyTrend:    map[string]int64{},
+		TotalPayments: 0,
+	}, nil
+}
+
+func (m *MockPaymentRepo) GetBatchPropertyPaymentStats(propertyIDs []int, startDate, endDate time.Time) (map[int]any, error) {
+	return map[int]any{}, nil
+}
+
 // ---------------------------------------------------------------------------
-// MockPaymentUnitRepo – implements interfaces.UnitRepositoryInterface
+// MockPaymentUnitRepo â€“ implements interfaces.UnitRepositoryInterface
 // ---------------------------------------------------------------------------
 
 type MockPaymentUnitRepo struct {
@@ -256,7 +281,7 @@ func (m *MockPaymentUnitRepo) GetBuildingUnitTypeDistribution(buildingID int) (i
 }
 
 // ---------------------------------------------------------------------------
-// MockPaymentBuildingRepo – implements interfaces.BuildingRepositoryInterface
+// MockPaymentBuildingRepo â€“ implements interfaces.BuildingRepositoryInterface
 // ---------------------------------------------------------------------------
 
 type MockPaymentBuildingRepo struct {
@@ -326,7 +351,7 @@ func (m *MockPaymentBuildingRepo) GetBuildingUnits(buildingID int, offset, limit
 }
 
 // ---------------------------------------------------------------------------
-// MockPaymentPropertyRepo – implements interfaces.PropertyRepositoryInterface
+// MockPaymentPropertyRepo â€“ implements interfaces.PropertyRepositoryInterface
 // ---------------------------------------------------------------------------
 
 type MockPaymentPropertyRepo struct {
@@ -378,7 +403,7 @@ func (m *MockPaymentPropertyRepo) HasActiveBuildings(propertyID int) (bool, erro
 func (m *MockPaymentPropertyRepo) HasActiveUnits(propertyID int) (bool, error) { return false, nil }
 
 // ---------------------------------------------------------------------------
-// MockPaymentAuditService – implements interfaces.AuditServiceInterface
+// MockPaymentAuditService â€“ implements interfaces.AuditServiceInterface
 // ---------------------------------------------------------------------------
 
 type MockPaymentAuditService struct {
@@ -418,7 +443,7 @@ func (m *MockPaymentAuditService) LogCriticalAction(userID int, action string, d
 }
 
 // ---------------------------------------------------------------------------
-// MockPaymentUserRepo – implements interfaces.UserRepositoryInterface
+// MockPaymentUserRepo â€“ implements interfaces.UserRepositoryInterface
 // ---------------------------------------------------------------------------
 
 type MockPaymentUserRepo struct {
@@ -546,32 +571,35 @@ func newPaymentServiceWithMocks() (
 
 func sampleUnit(id, buildingID, propertyID int) *models.Unit {
 	return &models.Unit{
-		ID:         id,
-		BuildingID: buildingID,
-		PropertyID: propertyID,
-		UnitNumber: "U-101",
-		UnitType:   models.UnitTypeApartment,
-		Active:     true,
+		ID:             id,
+		BuildingID:     buildingID,
+		PropertyID:     propertyID,
+		OrganizationID: 1,
+		UnitNumber:     "U-101",
+		UnitType:       models.UnitTypeApartment,
+		Active:         true,
 	}
 }
 
 func sampleBuilding(id, propertyID int) *models.Building {
 	return &models.Building{
-		ID:           id,
-		PropertyID:   propertyID,
-		BuildingName: "Block A",
-		BuildingCode: "BLK-A",
-		BuildingType: models.BuildingTypeResidential,
-		ActiveStatus: true,
+		ID:             id,
+		PropertyID:     propertyID,
+		OrganizationID: 1,
+		BuildingName:   "Block A",
+		BuildingCode:   "BLK-A",
+		BuildingType:   models.BuildingTypeResidential,
+		ActiveStatus:   true,
 	}
 }
 
 func sampleProperty(id int) *models.Property {
 	return &models.Property{
-		ID:           id,
-		PropertyName: "Sunrise Residency",
-		PropertyCode: "SR-001",
-		Active:       true,
+		ID:             id,
+		OrganizationID: 1,
+		PropertyName:   "Sunrise Residency",
+		PropertyCode:   "SR-001",
+		Active:         true,
 	}
 }
 
@@ -603,7 +631,7 @@ func TestCreatePayment(t *testing.T) {
 		wantAuditCall bool
 	}{
 		{
-			name: "happy path – creates payment and logs audit",
+			name: "happy path â€“ creates payment and logs audit",
 			setupMocks: func(u *MockPaymentUnitRepo, b *MockPaymentBuildingRepo, p *MockPaymentPropertyRepo, pay *MockPaymentRepo) {
 				u.addUnit(sampleUnit(1, 2, 3))
 				b.addBuilding(sampleBuilding(2, 3))
@@ -737,7 +765,7 @@ func TestGetPayment(t *testing.T) {
 		errContains string
 	}{
 		{
-			name:        "happy path – returns payment with details",
+			name:        "happy path â€“ returns payment with details",
 			seedPayment: true,
 			paymentID:   1,
 			wantErr:     false,
@@ -772,7 +800,7 @@ func TestGetPayment(t *testing.T) {
 
 			payRepo.shouldFailGetByID = tc.repoFail
 
-			pwd, err := svc.GetPayment(tc.paymentID)
+			pwd, err := svc.GetPayment(tc.paymentID, 1)
 
 			if tc.wantErr {
 				if err == nil {
@@ -812,7 +840,7 @@ func TestUpdatePayment(t *testing.T) {
 		wantAuditCall bool
 	}{
 		{
-			name:          "happy path – updates status and amount paid",
+			name:          "happy path â€“ updates status and amount paid",
 			req:           &models.UpdatePaymentRequest{Status: &paidStatus, AmountPaid: &amount},
 			wantErr:       false,
 			wantAuditCall: true,
@@ -848,7 +876,7 @@ func TestUpdatePayment(t *testing.T) {
 			payRepo.shouldFailGetByID = tc.getByIDFail
 			payRepo.shouldFailUpdate = tc.updateFail
 
-			updated, err := svc.UpdatePayment(created.ID, tc.req, 99)
+			updated, err := svc.UpdatePayment(created.ID, tc.req, 99, 1)
 
 			if tc.wantErr {
 				if err == nil {
@@ -878,7 +906,7 @@ func TestUpdatePayment(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// TestGetPayments – pagination boundary tests
+// TestGetPayments â€“ pagination boundary tests
 // ---------------------------------------------------------------------------
 
 func TestGetPayments(t *testing.T) {
@@ -1049,7 +1077,7 @@ func TestGetPaymentsByBuilding(t *testing.T) {
 			errContains:  "failed to get payments by building",
 		},
 		{
-			name:         "page normalization – page 0",
+			name:         "page normalization â€“ page 0",
 			buildingID:   2,
 			seedBuilding: true,
 			page:         0,
@@ -1057,7 +1085,7 @@ func TestGetPaymentsByBuilding(t *testing.T) {
 			wantErr:      false,
 		},
 		{
-			name:         "pageSize normalization – pageSize 200",
+			name:         "pageSize normalization â€“ pageSize 200",
 			buildingID:   2,
 			seedBuilding: true,
 			page:         1,
@@ -1151,7 +1179,7 @@ func TestGetPaymentsByProperty(t *testing.T) {
 			errContains:  "failed to get payments by property",
 		},
 		{
-			name:         "page normalization – negative page",
+			name:         "page normalization â€“ negative page",
 			propertyID:   3,
 			seedProperty: true,
 			page:         -1,
@@ -1159,7 +1187,7 @@ func TestGetPaymentsByProperty(t *testing.T) {
 			wantErr:      false,
 		},
 		{
-			name:         "pageSize normalization – exceeds 100",
+			name:         "pageSize normalization â€“ exceeds 100",
 			propertyID:   3,
 			seedProperty: true,
 			page:         1,
@@ -1219,7 +1247,7 @@ func TestGenerateBuildingPaymentReport(t *testing.T) {
 		errContains string
 	}{
 		{
-			name:       "happy path – report generated",
+			name:       "happy path â€“ report generated",
 			buildingID: 2,
 			seed:       true,
 			wantErr:    false,
@@ -1281,7 +1309,7 @@ func TestGenerateBuildingPaymentReport(t *testing.T) {
 			payRepo.shouldFailStats = tc.statsFail
 			payRepo.shouldFailPeriod = tc.periodFail
 
-			report, err := svc.GenerateBuildingPaymentReport(tc.buildingID, start, end)
+			report, err := svc.GenerateBuildingPaymentReport(tc.buildingID, 1, start, end)
 
 			if tc.wantErr {
 				if err == nil {
@@ -1333,7 +1361,7 @@ func TestGeneratePropertyPaymentReport(t *testing.T) {
 		errContains string
 	}{
 		{
-			name:       "happy path – property report with building breakdowns",
+			name:       "happy path â€“ property report with building breakdowns",
 			propertyID: 3,
 			seed:       true,
 			wantErr:    false,
@@ -1386,7 +1414,7 @@ func TestGeneratePropertyPaymentReport(t *testing.T) {
 			bldgRepo.shouldFail = tc.bldgFail
 			payRepo.shouldFailStats = tc.statsFail
 
-			report, err := svc.GeneratePropertyPaymentReport(tc.propertyID, start, end)
+			report, err := svc.GeneratePropertyPaymentReport(tc.propertyID, 1, start, end)
 
 			if tc.wantErr {
 				if err == nil {
@@ -1420,7 +1448,7 @@ func TestGeneratePropertyPaymentReport(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 // When GetBuildingPaymentStats fails for an individual building, the report
-// should still be generated – that building is simply omitted from breakdowns.
+// should still be generated â€“ that building is simply omitted from breakdowns.
 func TestGeneratePropertyPaymentReport_BuildingBreakdownSkipOnError(t *testing.T) {
 	start := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	end := time.Date(2026, 5, 31, 0, 0, 0, 0, time.UTC)
@@ -1435,7 +1463,7 @@ func TestGeneratePropertyPaymentReport_BuildingBreakdownSkipOnError(t *testing.T
 	// Property stats succeed but per-building stats fail
 	payRepo.shouldFailStats = true
 
-	report, err := svc.GeneratePropertyPaymentReport(3, start, end)
+	report, err := svc.GeneratePropertyPaymentReport(3, 1, start, end)
 	if err == nil {
 		// The service returns an error when property stats fail; that's expected
 		// because GetPropertyPaymentStats uses the same shouldFailStats flag.
@@ -1462,7 +1490,7 @@ func TestGetDashboardSummaryWithBuildingContext(t *testing.T) {
 		errContains       string
 	}{
 		{
-			name:          "happy path – summary with building count set",
+			name:          "happy path â€“ summary with building count set",
 			buildingCount: 3,
 			wantErr:       false,
 		},
@@ -1498,7 +1526,7 @@ func TestGetDashboardSummaryWithBuildingContext(t *testing.T) {
 				}
 			}
 
-			summary, err := svc.GetDashboardSummaryWithBuildingContext()
+			summary, err := svc.GetDashboardSummaryWithBuildingContext(1)
 
 			if tc.wantErr {
 				if err == nil {
@@ -1562,7 +1590,7 @@ func TestProcessBulkPayments(t *testing.T) {
 			wantAuditCalls: 0,
 		},
 		{
-			name: "all requests fail – unit not found",
+			name: "all requests fail â€“ unit not found",
 			requests: func() []*models.CreatePaymentRequest {
 				return []*models.CreatePaymentRequest{
 					sampleCreateRequest(1, 2, 3),
@@ -1632,35 +1660,35 @@ func TestGetPaymentAnalyticsByBuilding(t *testing.T) {
 		errContains   string
 	}{
 		{
-			name:         "happy path – month period",
+			name:         "happy path â€“ month period",
 			buildingID:   2,
 			period:       "month",
 			seedBuilding: true,
 			wantErr:      false,
 		},
 		{
-			name:         "happy path – quarter period",
+			name:         "happy path â€“ quarter period",
 			buildingID:   2,
 			period:       "quarter",
 			seedBuilding: true,
 			wantErr:      false,
 		},
 		{
-			name:         "happy path – year period",
+			name:         "happy path â€“ year period",
 			buildingID:   2,
 			period:       "year",
 			seedBuilding: true,
 			wantErr:      false,
 		},
 		{
-			name:         "happy path – default period (unknown string)",
+			name:         "happy path â€“ default period (unknown string)",
 			buildingID:   2,
 			period:       "unknown",
 			seedBuilding: true,
 			wantErr:      false,
 		},
 		{
-			name:         "happy path – empty period defaults to month",
+			name:         "happy path â€“ empty period defaults to month",
 			buildingID:   2,
 			period:       "",
 			seedBuilding: true,
@@ -1742,7 +1770,7 @@ func TestGetPaymentAnalyticsByBuilding(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// TestAuditLogging – cross-cutting concern: audit calls on create and update
+// TestAuditLogging â€“ cross-cutting concern: audit calls on create and update
 // ---------------------------------------------------------------------------
 
 func TestAuditLogging(t *testing.T) {
@@ -1789,7 +1817,7 @@ func TestAuditLogging(t *testing.T) {
 
 		paidStatus := models.PaymentStatusPaid
 		userID := 77
-		_, err = svc.UpdatePayment(created.ID, &models.UpdatePaymentRequest{Status: &paidStatus}, userID)
+		_, err = svc.UpdatePayment(created.ID, &models.UpdatePaymentRequest{Status: &paidStatus}, userID, 1)
 		if err != nil {
 			t.Fatalf("update failed: %v", err)
 		}
