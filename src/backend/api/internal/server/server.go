@@ -292,6 +292,7 @@ func (s *Server) setupRoutes() {
 				payments.POST("/generate-monthly", middleware.RequireAdminOrPropertyManager(), paymentHandler.GenerateMonthlyPayments)
 				payments.GET("/search", middleware.RequireAnyRole(), paymentHandler.SearchLeases)
 				payments.GET("/:id", middleware.RequireAnyRole(), paymentHandler.GetPayment)
+				payments.GET("/:id/receipt", middleware.RequireAnyRole(), paymentHandler.DownloadReceipt)
 				payments.PUT("/:id", middleware.RequireAdminOrPropertyManager(), paymentHandler.UpdatePayment)
 				payments.GET("/building/:building_id/report", middleware.RequireAnyRole(), paymentHandler.GetBuildingPaymentReport)
 				payments.GET("/property/:property_id/report", middleware.RequireAnyRole(), paymentHandler.GetPropertyPaymentReport)

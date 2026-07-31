@@ -33,6 +33,7 @@ type mockPaymentService struct {
 	canAccessPaymentFn       func(userID int, userRole string, payment *models.PaymentWithDetails, userOrgID int) bool
 	logAccessFn              func(userID int, action string, paymentID int, allowed bool)
 	searchLeasesFn           func(orgID int, query string) (*models.LeaseSearchResponse, error)
+	generateReceiptPDFFn     func(paymentID, orgID int) ([]byte, error)
 }
 
 func (m *mockPaymentService) CreatePayment(req *models.CreatePaymentRequest, userID int) (*models.Payment, error) {
@@ -138,6 +139,13 @@ func (m *mockPaymentService) SearchLeases(orgID int, query string) (*models.Leas
 
 func (m *mockPaymentService) GenerateMonthlyPayments(req *models.GenerateMonthlyPaymentsRequest, orgID, userID int) (*models.GenerateMonthlyPaymentsResult, error) {
 	return &models.GenerateMonthlyPaymentsResult{}, nil
+}
+
+func (m *mockPaymentService) GenerateReceiptPDF(paymentID, orgID int) ([]byte, error) {
+	if m.generateReceiptPDFFn == nil {
+		return []byte("%PDF-fake"), nil
+	}
+	return m.generateReceiptPDFFn(paymentID, orgID)
 }
 
 // Ensure the mock satisfies the interface at compile time.

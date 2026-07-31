@@ -246,6 +246,7 @@ type PaymentRepositoryInterface interface {
 	GetActiveLeasesForPeriod(orgID, month, year int, buildingID *int) ([]*models.LeaseSearchResult, error)
 	CheckPaymentExists(unitID, month, year int) (bool, error)
 	GetBatchPropertyPaymentStats(propertyIDs []int, startDate, endDate time.Time) (map[int]any, error)
+	NextReceiptNumber(orgID int, yearMonth string) (string, error)
 }
 
 // PaymentServiceInterface defines the interface for payment service operations
@@ -265,6 +266,7 @@ type PaymentServiceInterface interface {
 	LogPaymentAccess(userID int, action string, paymentID int, allowed bool)
 	SearchLeases(orgID int, query string) (*models.LeaseSearchResponse, error)
 	GenerateMonthlyPayments(req *models.GenerateMonthlyPaymentsRequest, orgID, userID int) (*models.GenerateMonthlyPaymentsResult, error)
+	GenerateReceiptPDF(paymentID, orgID int) ([]byte, error)
 }
 
 // TenantRepositoryInterface defines the interface for tenant repository operations

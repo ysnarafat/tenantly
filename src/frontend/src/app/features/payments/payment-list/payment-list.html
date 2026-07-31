@@ -250,6 +250,15 @@
                   <button mat-icon-button (click)="openUpdateDialog(p)" matTooltip="Edit payment">
                     <mat-icon>edit</mat-icon>
                   </button>
+                  @if (p.amount_paid > 0) {
+                    <button
+                      mat-icon-button
+                      (click)="downloadReceipt(p)"
+                      matTooltip="Download receipt"
+                    >
+                      <mat-icon>receipt_long</mat-icon>
+                    </button>
+                  }
                 </td>
               </ng-container>
             </app-data-table>
@@ -291,6 +300,12 @@
                     <mat-icon>edit</mat-icon>
                     <span class="edit-text">Update</span>
                   </button>
+                  @if (p.amount_paid > 0) {
+                    <button mat-button (click)="downloadReceipt(p)">
+                      <mat-icon>receipt_long</mat-icon>
+                      <span class="edit-text">Receipt</span>
+                    </button>
+                  }
                 </mat-card-actions>
               </mat-card>
               }
@@ -499,6 +514,15 @@
                           >
                             <mat-icon>edit</mat-icon>
                           </button>
+                          @if (p.amount_paid > 0) {
+                            <button
+                              mat-icon-button
+                              (click)="downloadReceipt(p)"
+                              matTooltip="Download receipt"
+                            >
+                              <mat-icon>receipt_long</mat-icon>
+                            </button>
+                          }
                         </td>
                       </tr>
                       }

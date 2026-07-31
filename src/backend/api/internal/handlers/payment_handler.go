@@ -34,6 +34,10 @@ func (h *PaymentHandler) CreatePayment(c *gin.Context) {
 
 	payment, err := h.paymentService.CreatePayment(&req, userID)
 	if err != nil {
+		if err.Error() == "a payment already exists for this unit for the selected month/year" {
+			respondError(c, http.StatusConflict, "PAYMENT_ALREADY_EXISTS", "A payment already exists for this unit for the selected month/year", err)
+			return
+		}
 		respondError(c, http.StatusBadRequest, "CREATE_PAYMENT_FAILED", "Failed to create payment", err)
 		return
 	}
@@ -73,6 +77,43 @@ func (h *PaymentHandler) GetPayment(c *gin.Context) {
 	h.paymentService.LogPaymentAccess(userID, "GET", id, true)
 
 	c.JSON(http.StatusOK, payment)
+}
+
+// DownloadReceipt handles GET /payments/:id/receipt — streams a PDF receipt.
+func (h *PaymentHandler) DownloadReceipt(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payment ID"})
+		return
+	}
+
+	userID := c.GetInt("user_id")
+	userRole := c.GetString("role")
+	orgID := c.GetInt("org_id")
+
+	payment, err := h.paymentService.GetPayment(id, orgID)
+	if err != nil {
+		respondError(c, http.StatusNotFound, "GET_PAYMENT_FAILED", "Payment not found", err)
+		return
+	}
+
+	if !h.paymentService.CanUserAccessPayment(userID, userRole, payment, orgID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions to access this payment"})
+		h.paymentService.LogPaymentAccess(userID, "DOWNLOAD_RECEIPT", id, false)
+		return
+	}
+
+	pdfBytes, err := h.paymentService.GenerateReceiptPDF(id, orgID)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "GENERATE_RECEIPT_FAILED", "Failed to generate receipt", err)
+		return
+	}
+
+	h.paymentService.LogPaymentAccess(userID, "DOWNLOAD_RECEIPT", id, true)
+
+	filename := fmt.Sprintf("receipt-%s.pdf", payment.ReceiptNumber)
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+	c.Data(http.StatusOK, "application/pdf", pdfBytes)
 }
 
 // UpdatePayment handles PUT /payments/:id

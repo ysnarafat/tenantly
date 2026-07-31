@@ -108,6 +108,45 @@ func TestPaymentRepository_Create(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// TestPaymentRepository_Create_StatusIsServerDerived
+// ---------------------------------------------------------------------------
+
+func TestPaymentRepository_Create_StatusIsServerDerived(t *testing.T) {
+	db, cleanup := testutil.SetupTestDB(t)
+	defer cleanup()
+
+	orgID := testutil.CreateTestOrganization(t, db)
+	propID := testutil.CreateTestProperty(t, db)
+	bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
+	unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+	tenantID := testutil.CreateTestTenant(t, db, orgID)
+
+	repo := NewPaymentRepository(db)
+
+	// A client claiming Status=Paid with AmountPaid=0 must not be trusted —
+	// status is always derived from amount_paid vs amount_due.
+	claimedPaid := models.PaymentStatusPaid
+	payment, err := repo.Create(&models.CreatePaymentRequest{
+		UnitID:         unitID,
+		TenantID:       tenantID,
+		BuildingID:     bldgID,
+		PropertyID:     propID,
+		OrganizationID: orgID,
+		Month:          6,
+		Year:           2026,
+		AmountDue:      5000.0,
+		AmountPaid:     nil,
+		Status:         &claimedPaid,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if payment.Status != models.PaymentStatusDue {
+		t.Errorf("expected server-derived status %q, got %q", models.PaymentStatusDue, payment.Status)
+	}
+}
+
+// ---------------------------------------------------------------------------
 // TestPaymentRepository_GetByID
 // ---------------------------------------------------------------------------
 

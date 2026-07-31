@@ -55,6 +55,10 @@ export class PaymentService {
     return this.http.post(`${this.apiUrl}/bulk`, requests);
   }
 
+  downloadReceipt(id: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${id}/receipt`, { responseType: 'blob' });
+  }
+
   getDashboardSummary(): Observable<DashboardSummary> {
     return this.http.get<DashboardSummary>(`${environment.apiUrl}/dashboard/summary`);
   }

@@ -92,6 +92,8 @@ export interface LeaseSearchResult {
   lease_end_date: string; // ISO 8601 date
   monthly_rent: number;
   active: boolean;
+  /** Sum of unpaid amounts (Due/Partial/Overdue) across all periods for this unit. */
+  outstanding_balance: number;
 }
 
 export interface LeaseSearchResponse {

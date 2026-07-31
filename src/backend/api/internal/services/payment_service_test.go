@@ -14,21 +14,24 @@ import (
 // ---------------------------------------------------------------------------
 
 type MockPaymentRepo struct {
-	payments            map[int]*models.PaymentWithDetails
-	nextID              int
-	shouldFailCreate    bool
-	shouldFailGetByID   bool
-	shouldFailUpdate    bool
-	shouldFailList      bool
-	shouldFailStats     bool
-	shouldFailPeriod    bool
-	shouldFailDashboard bool
-	shouldFailBldgLevel bool
-	shouldFailAnalytics bool
-	dashboardResult     *models.DashboardSummary
-	buildingLevelResult map[string]interface{}
-	analyticsResult     *models.BuildingPaymentAnalytics
-	auditLog            []string
+	payments                map[int]*models.PaymentWithDetails
+	nextID                  int
+	shouldFailCreate        bool
+	shouldFailGetByID       bool
+	shouldFailUpdate        bool
+	shouldFailList          bool
+	shouldFailStats         bool
+	shouldFailPeriod        bool
+	shouldFailDashboard     bool
+	shouldFailBldgLevel     bool
+	shouldFailAnalytics     bool
+	shouldReturnExists      bool
+	shouldFailReceiptNumber bool
+	receiptCounter          int
+	dashboardResult         *models.DashboardSummary
+	buildingLevelResult     map[string]interface{}
+	analyticsResult         *models.BuildingPaymentAnalytics
+	auditLog                []string
 }
 
 func newMockPaymentRepo() *MockPaymentRepo {
@@ -191,7 +194,15 @@ func (m *MockPaymentRepo) GetActiveLeasesForPeriod(orgID, month, year int, build
 }
 
 func (m *MockPaymentRepo) CheckPaymentExists(unitID, month, year int) (bool, error) {
-	return false, nil
+	return m.shouldReturnExists, nil
+}
+
+func (m *MockPaymentRepo) NextReceiptNumber(orgID int, yearMonth string) (string, error) {
+	if m.shouldFailReceiptNumber {
+		return "", errors.New("failed to generate receipt number")
+	}
+	m.receiptCounter++
+	return fmt.Sprintf("ORG%d-%s-%04d", orgID, yearMonth, m.receiptCounter), nil
 }
 
 func (m *MockPaymentRepo) GetAgingBuckets(orgID int) (map[string]int64, error) {
@@ -711,6 +722,19 @@ func TestCreatePayment(t *testing.T) {
 			userID:      99,
 			wantErr:     true,
 			errContains: "failed to create payment",
+		},
+		{
+			name: "duplicate payment for unit/month/year is rejected",
+			setupMocks: func(u *MockPaymentUnitRepo, b *MockPaymentBuildingRepo, p *MockPaymentPropertyRepo, pay *MockPaymentRepo) {
+				u.addUnit(sampleUnit(1, 2, 3))
+				b.addBuilding(sampleBuilding(2, 3))
+				p.addProperty(sampleProperty(3))
+				pay.shouldReturnExists = true
+			},
+			req:         sampleCreateRequest(1, 2, 3),
+			userID:      99,
+			wantErr:     true,
+			errContains: "a payment already exists for this unit for the selected month/year",
 		},
 	}
 
