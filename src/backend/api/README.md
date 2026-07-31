@@ -16,7 +16,7 @@ Go REST API for the Tenantly platform, built with Gin.
 ```bash
 cp .env.example .env          # configure DB_URL and JWT_SECRET
 go mod download
-go run cmd/server/main.go migrate
+go run cmd/migrate/main.go up # apply migrations (also runs automatically on server startup)
 go run cmd/server/main.go     # or: air
 ```
 
@@ -57,6 +57,7 @@ internal/
 ├── middleware/    # JWT auth, logging, CORS
 ├── config/        # Environment loading
 ├── database/      # Connection pool + migration runner
+├── server/        # Gin server setup + route registration
 └── testutil/      # Shared mocks for table-driven tests
 
 cmd/server/        # Entry point

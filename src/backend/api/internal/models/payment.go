@@ -46,9 +46,11 @@ type CreatePaymentRequest struct {
 	Status         *PaymentStatus `json:"status" binding:"omitempty,oneof=Paid Due Partial Overdue"`
 	PaymentMethod  *string        `json:"payment_method" binding:"omitempty"`
 	PaymentDate    *string        `json:"payment_date" binding:"omitempty"`
-	ReceiptNumber  *string        `json:"receipt_number" binding:"omitempty"`
-	Notes          *string        `json:"notes" binding:"omitempty"`
-	DueDate        string         `json:"due_date" binding:"omitempty"`
+	// ReceiptNumber is ignored on create — the server always generates it via
+	// PaymentRepository.NextReceiptNumber. Accepted here only for JSON binding.
+	ReceiptNumber *string `json:"receipt_number" binding:"omitempty"`
+	Notes         *string `json:"notes" binding:"omitempty"`
+	DueDate       string  `json:"due_date" binding:"omitempty"`
 }
 
 type UpdatePaymentRequest struct {
@@ -124,6 +126,10 @@ type LeaseSearchResult struct {
 	LeaseEndDate   time.Time `json:"lease_end_date" db:"lease_end_date"`
 	MonthlyRent    float64   `json:"monthly_rent" db:"monthly_rent"`
 	Active         bool      `json:"active" db:"active"`
+	// OutstandingBalance is the sum of (amount_due - amount_paid) across all
+	// of this unit's Due/Partial/Overdue payment records — i.e. total arrears,
+	// not just the current month's rent.
+	OutstandingBalance float64 `json:"outstanding_balance" db:"outstanding_balance"`
 }
 
 // LeaseSearchResponse represents paginated search results

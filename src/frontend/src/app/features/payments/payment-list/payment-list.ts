@@ -305,8 +305,8 @@ export class PaymentList implements OnInit {
     ref.afterClosed().subscribe((req: CreatePaymentRequest | undefined) => {
       if (req) {
         this.paymentService.createPayment(req).subscribe({
-          next: () => {
-            this.showSuccess('Payment created');
+          next: (payment) => {
+            this.showSuccess(`Payment created — Receipt ${payment.receipt_number}`);
             this.loadPayments();
             this.loadSummary();
             if (this.activeTab() === 1) this.loadTreePayments();
@@ -335,6 +335,20 @@ export class PaymentList implements OnInit {
           error: (err) => this.showError(err?.error?.error ?? 'Failed to update payment'),
         });
       }
+    });
+  }
+
+  downloadReceipt(payment: PaymentWithDetails): void {
+    this.paymentService.downloadReceipt(payment.id).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `receipt-${payment.receipt_number || payment.id}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => this.showError('Failed to download receipt'),
     });
   }
 
@@ -449,6 +463,16 @@ export interface PaymentCreatePrefill {
             <span class="sep">›</span>
             <span class="rent">৳{{ selectedLease()!.monthly_rent | number: '1.0-0' }}/mo</span>
           </div>
+          @if (selectedLease()!.outstanding_balance > 0) {
+            <div class="balance-hint balance-hint--due">
+              Carrying forward outstanding balance of ৳{{
+                selectedLease()!.outstanding_balance | number: '1.0-0'
+              }}
+              from prior periods
+            </div>
+          } @else {
+            <div class="balance-hint balance-hint--clear">New month — full rent due</div>
+          }
         }
 
         <!-- Search loading indicator -->
@@ -512,10 +536,7 @@ export interface PaymentCreatePrefill {
           </mat-form-field>
         </div>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Receipt Number</mat-label>
-          <input matInput formControlName="receipt_number" />
-        </mat-form-field>
+        <p class="receipt-note">A receipt number will be generated automatically on save.</p>
 
         <mat-form-field appearance="outline">
           <mat-label>Notes</mat-label>
@@ -593,6 +614,17 @@ export interface PaymentCreatePrefill {
         font-weight: 600;
         color: #2196f3;
       }
+      .balance-hint {
+        font-size: 12px;
+        margin-top: -6px;
+        padding: 4px 10px;
+      }
+      .balance-hint--due {
+        color: #e65100;
+      }
+      .balance-hint--clear {
+        color: #888;
+      }
       .sep {
         color: #aaa;
       }
@@ -604,6 +636,11 @@ export interface PaymentCreatePrefill {
         color: #999;
         padding: 6px 10px;
         margin-top: -4px;
+      }
+      .receipt-note {
+        font-size: 12px;
+        color: #888;
+        margin: -8px 0 0;
       }
     `,
   ],
@@ -647,7 +684,6 @@ export class PaymentCreateDialog implements OnInit {
     payment_method: [''],
     amount_paid: [null, [Validators.min(0)]],
     payment_date: [''],
-    receipt_number: [''],
     notes: [''],
   });
 
@@ -704,12 +740,13 @@ export class PaymentCreateDialog implements OnInit {
 
   onLeaseSelected(lease: LeaseSearchResult): void {
     this.selectedLease.set(lease);
+    const amountDue = lease.outstanding_balance > 0 ? lease.outstanding_balance : lease.monthly_rent;
     this.form.patchValue({
       unit_id: lease.unit_id,
       tenant_id: lease.tenant_id,
       building_id: lease.building_id,
       property_id: lease.property_id,
-      amount_due: lease.monthly_rent,
+      amount_due: amountDue,
     });
   }
 
@@ -728,7 +765,6 @@ export class PaymentCreateDialog implements OnInit {
         payment_method: val.payment_method || undefined,
         amount_paid: val.amount_paid != null ? val.amount_paid : undefined,
         payment_date: val.payment_date || undefined,
-        receipt_number: val.receipt_number || undefined,
         notes: val.notes || undefined,
       };
       this.dialogRef.close(req);

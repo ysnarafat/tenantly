@@ -69,6 +69,24 @@ func (s *PaymentService) CreatePayment(req *models.CreatePaymentRequest, userID 
 		return nil, fmt.Errorf("property not found: %w", err)
 	}
 
+	// Reject a second payment for the same unit/month/year up front so the
+	// user sees a clear error instead of a raw DB unique-constraint failure.
+	exists, err := s.paymentRepo.CheckPaymentExists(req.UnitID, req.Month, req.Year)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check existing payment: %w", err)
+	}
+	if exists {
+		return nil, fmt.Errorf("a payment already exists for this unit for the selected month/year")
+	}
+
+	// Receipt numbers are always server-generated — a client-supplied value is
+	// discarded so numbering stays sequential and collision-free per org/period.
+	receiptNumber, err := s.paymentRepo.NextReceiptNumber(req.OrganizationID, fmt.Sprintf("%04d%02d", req.Year, req.Month))
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate receipt number: %w", err)
+	}
+	req.ReceiptNumber = &receiptNumber
+
 	// Create payment with building context
 	payment, err := s.paymentRepo.Create(req)
 	if err != nil {
