@@ -78,9 +78,7 @@ Apply the same pattern to any module that develops significant analytical querie
 
 ## Multi-Tenancy
 
-Migration `000007_admin_hierarchy_phase1` added `organization_id` to every data table (`users`, `properties`, `buildings`, `units`, `tenants`, `leases`, `payments`). All repository queries must be scoped by `organization_id`.
-
-Migration `000008_user_organization_roles` introduced the `user_organization_roles` table — a user can belong to multiple organisations with different roles.
+Migration `000002_multi_tenancy` added `organization_id` to every data table (`users`, `properties`, `buildings`, `units`, `tenants`, `leases`, `payments`) and introduced the `user_organization_roles` table — a user can belong to multiple organisations with different roles. All repository queries must be scoped by `organization_id`.
 
 ### Role System
 
@@ -115,7 +113,7 @@ Tests are table-driven. Mocks for all interfaces live in `internal/testutil/` �
 
 ## Development Seed Users
 
-Migration `000009_test_seed_users` inserts test accounts for every role. Run it (or apply the SQL via `psql`) after initial setup.
+Migration `000002_multi_tenancy` inserts test accounts for every role. Run it (or apply the SQL via `psql`) after initial setup.
 
 **Password for all accounts: `Test@1234`**
 
