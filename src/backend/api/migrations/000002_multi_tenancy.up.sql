@@ -26,6 +26,19 @@ CREATE TABLE user_invitations (
     updated_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC')
 );
 
+-- Create user_organization_roles junction table for multi-organization support
+-- This allows a user to belong to multiple organizations with different roles
+CREATE TABLE user_organization_roles (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    organization_id INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    role VARCHAR(50) NOT NULL
+        CHECK (role IN ('SUPER_ADMIN', 'ORG_ADMIN', 'Admin', 'PropertyManager', 'Accountant')),
+    created_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    updated_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    UNIQUE(user_id, organization_id)
+);
+
 -- Insert default organization for existing data
 INSERT INTO organizations (name, slug, subscription_tier)
 VALUES ('Default Organization', 'default', 'basic');
@@ -70,11 +83,19 @@ ALTER TABLE payments ADD COLUMN organization_id INTEGER REFERENCES organizations
 UPDATE payments SET organization_id = 1;
 ALTER TABLE payments ALTER COLUMN organization_id SET NOT NULL;
 
+-- Backfill user_organization_roles from users.organization_id
+INSERT INTO user_organization_roles (user_id, organization_id, role)
+SELECT id, organization_id, role
+FROM users
+WHERE organization_id IS NOT NULL;
+
 -- Create indexes for performance
 CREATE INDEX idx_organizations_slug ON organizations(slug);
 CREATE INDEX idx_organizations_active ON organizations(active);
 CREATE INDEX idx_user_invitations_org ON user_invitations(organization_id);
 CREATE INDEX idx_user_invitations_token ON user_invitations(invitation_token);
+CREATE INDEX idx_user_org_roles_user_id ON user_organization_roles(user_id);
+CREATE INDEX idx_user_org_roles_org_id ON user_organization_roles(organization_id);
 CREATE INDEX idx_users_org_id ON users(organization_id);
 CREATE INDEX idx_users_status ON users(status);
 CREATE INDEX idx_properties_org_id ON properties(organization_id);
@@ -83,3 +104,95 @@ CREATE INDEX idx_units_org_id ON units(organization_id);
 CREATE INDEX idx_tenants_org_id ON tenants(organization_id);
 CREATE INDEX idx_leases_org_id ON leases(organization_id);
 CREATE INDEX idx_payments_org_id ON payments(organization_id);
+
+-- Test seed users for development/testing
+-- Password for all users: Test@1234
+-- Create a second test organization
+INSERT INTO organizations (name, slug, subscription_tier)
+VALUES ('Acme Properties', 'acme-properties', 'professional')
+ON CONFLICT (slug) DO NOTHING;
+
+-- SUPER_ADMIN: no org, global access
+INSERT INTO users (username, email, password_hash, role, active, first_name, last_name, organization_id, status)
+VALUES (
+    'superadmin',
+    'superadmin@test.com',
+    '$2a$10$JsI.o99k0.p8chToHtaGGu7931Y5CCeHGmVkOkvJT.uhI44vWPqBW',
+    'SUPER_ADMIN',
+    true,
+    'Super',
+    'Admin',
+    NULL,
+    'active'
+) ON CONFLICT (username) DO NOTHING;
+
+-- ORG_ADMIN: manages Default Organization (id=1)
+INSERT INTO users (username, email, password_hash, role, active, first_name, last_name, organization_id, status)
+VALUES (
+    'orgadmin',
+    'orgadmin@test.com',
+    '$2a$10$JsI.o99k0.p8chToHtaGGu7931Y5CCeHGmVkOkvJT.uhI44vWPqBW',
+    'ORG_ADMIN',
+    true,
+    'Org',
+    'Admin',
+    1,
+    'active'
+) ON CONFLICT (username) DO NOTHING;
+
+-- Admin: under Default Organization
+INSERT INTO users (username, email, password_hash, role, active, first_name, last_name, organization_id, status)
+VALUES (
+    'adminuser',
+    'admin@test.com',
+    '$2a$10$JsI.o99k0.p8chToHtaGGu7931Y5CCeHGmVkOkvJT.uhI44vWPqBW',
+    'Admin',
+    true,
+    'Admin',
+    'User',
+    1,
+    'active'
+) ON CONFLICT (username) DO NOTHING;
+
+-- PropertyManager: under Default Organization
+INSERT INTO users (username, email, password_hash, role, active, first_name, last_name, organization_id, status)
+VALUES (
+    'propmanager',
+    'propmanager@test.com',
+    '$2a$10$JsI.o99k0.p8chToHtaGGu7931Y5CCeHGmVkOkvJT.uhI44vWPqBW',
+    'PropertyManager',
+    true,
+    'Property',
+    'Manager',
+    1,
+    'active'
+) ON CONFLICT (username) DO NOTHING;
+
+-- Accountant: under Default Organization
+INSERT INTO users (username, email, password_hash, role, active, first_name, last_name, organization_id, status)
+VALUES (
+    'accountant',
+    'accountant@test.com',
+    '$2a$10$JsI.o99k0.p8chToHtaGGu7931Y5CCeHGmVkOkvJT.uhI44vWPqBW',
+    'Accountant',
+    true,
+    'Account',
+    'Ant',
+    1,
+    'active'
+) ON CONFLICT (username) DO NOTHING;
+
+-- ORG_ADMIN for second org (Acme Properties)
+INSERT INTO users (username, email, password_hash, role, active, first_name, last_name, organization_id, status)
+SELECT
+    'acmeadmin',
+    'acmeadmin@test.com',
+    '$2a$10$JsI.o99k0.p8chToHtaGGu7931Y5CCeHGmVkOkvJT.uhI44vWPqBW',
+    'ORG_ADMIN',
+    true,
+    'Acme',
+    'Admin',
+    id,
+    'active'
+FROM organizations WHERE slug = 'acme-properties'
+ON CONFLICT (username) DO NOTHING;

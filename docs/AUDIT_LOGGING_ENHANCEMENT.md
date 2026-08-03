@@ -154,7 +154,7 @@ Audit logging is currently stubbed in Phase 3 (Angular UI placeholder) with back
 - `internal/models/audit_log.go` - Model definition
 - `internal/repositories/audit_log_repository.go` - Database access
 - `internal/models/audit_log.go` - Structs
-- `migrations/000007_admin_hierarchy_phase1.up.sql` - Schema
+- `migrations/000001_initial_schema.up.sql` - Schema
 
 **Frontend (Phase 3, Stubs)**
 - `src/frontend/src/app/core/models/audit-log.model.ts` - TS interface
