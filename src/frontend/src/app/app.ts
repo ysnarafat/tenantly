@@ -33,7 +33,14 @@ import { ThemeService } from './core/services/theme.service';
 import { OrganizationSelector } from './shared/organization-selector/organization-selector';
 import { avatarColorFor, avatarInitials } from './shared/utils/avatar.utils';
 
-const AUTH_ROUTE_PREFIXES = ['/home', '/login', '/select-organization', '/401', '/404'];
+const AUTH_ROUTE_PREFIXES = [
+  '/home',
+  '/login',
+  '/select-organization',
+  '/401',
+  '/unauthorized',
+  '/404',
+];
 
 const SIDENAV_COLLAPSED_KEY = 'tenantly-sidenav-collapsed';
 

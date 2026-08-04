@@ -40,7 +40,7 @@ describe('superAdminGuard', () => {
     const guard = superAdminGuard();
     guard.subscribe((result) => {
       expect(result).toBe(false);
-      expect(router.navigate).toHaveBeenCalledWith(['/401']);
+      expect(router.navigate).toHaveBeenCalledWith(['/unauthorized']);
       done();
     });
   });
@@ -78,7 +78,7 @@ describe('superAdminGuard', () => {
     const guard = superAdminGuard();
     guard.subscribe(() => {
       setTimeout(() => {
-        expect(router.navigate).toHaveBeenCalledWith(['/401']);
+        expect(router.navigate).toHaveBeenCalledWith(['/unauthorized']);
         done();
       }, 0);
     });

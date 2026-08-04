@@ -1,0 +1,17 @@
+<div class="error-page" [class.tone-warn]="tone === 'warn'">
+  <div class="error-plate">
+    <div class="plate-badge">
+      <mat-icon aria-hidden="true">{{ icon }}</mat-icon>
+    </div>
+    <div class="plate-code">{{ code }}</div>
+    <div class="plate-rule"></div>
+    <div class="plate-status">{{ status }}</div>
+  </div>
+
+  <h1 class="error-title">{{ title }}</h1>
+  <p class="error-message">{{ message }}</p>
+
+  <div class="error-actions">
+    <ng-content></ng-content>
+  </div>
+</div>

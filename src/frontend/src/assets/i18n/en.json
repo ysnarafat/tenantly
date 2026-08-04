@@ -950,5 +950,21 @@
   },
   "LEASE_CUSTOM_FIELDS": {
     "SECTION_TITLE": "Custom Fields"
+  },
+  "ERROR_PAGES": {
+    "ACTIONS": {
+      "BACK_TO_DASHBOARD": "Back to dashboard",
+      "GO_BACK": "Go back"
+    },
+    "UNAUTHORIZED": {
+      "STATUS": "Forbidden",
+      "TITLE": "You don't have a key to this area",
+      "MESSAGE": "Your role doesn't include access to this page. If you need it, ask an organization admin to update your permissions."
+    },
+    "NOT_FOUND": {
+      "STATUS": "Not found",
+      "TITLE": "We can't find that page",
+      "MESSAGE": "The address you entered doesn't lead anywhere. It may have been moved, or the link might be mistyped."
+    }
   }
 }
