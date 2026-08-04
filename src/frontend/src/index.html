@@ -2,9 +2,54 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Tenantly - Property Rental Management</title>
+    <title>Tenantly — Property Rental Management</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!--
+      SEO & social metadata. These are the defaults crawlers see in the initial
+      HTML; SeoService keeps the title, description, canonical, and og/twitter
+      tags current per route at runtime (the app is client-rendered).
+    -->
+    <meta
+      name="description"
+      content="Tenantly is a property rental management system for the Bangladesh market — manage properties, buildings, units, leases, tenants, and rent payments in one place."
+    />
+    <meta
+      name="keywords"
+      content="property management, rental management, Bangladesh, tenants, leases, rent collection, real estate"
+    />
+    <meta name="author" content="Tenantly" />
+    <meta name="application-name" content="Tenantly" />
+    <meta name="robots" content="index, follow" />
+
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#1976d2" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121212" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tenantly" />
+    <meta property="og:title" content="Tenantly — Property Rental Management" />
+    <meta
+      property="og:description"
+      content="Manage properties, buildings, units, leases, tenants, and rent payments in one place."
+    />
+    <meta property="og:locale" content="en" />
+    <meta property="og:locale:alternate" content="bn" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Tenantly — Property Rental Management" />
+    <meta
+      name="twitter:description"
+      content="Manage properties, buildings, units, leases, tenants, and rent payments in one place."
+    />
+
+    <!-- iOS / mobile web app -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Tenantly" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <!--
       Content-Security-Policy: defense-in-depth against XSS. Angular Material
       injects component styles via inline <style> tags at runtime, hence
@@ -23,6 +68,7 @@
       content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://localhost:8080; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
     />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="manifest" href="site.webmanifest" />
     <link rel="preconnect" href="https://fonts.gstatic.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&family=Noto+Sans+Bengali:wght@400;500;700&display=swap"

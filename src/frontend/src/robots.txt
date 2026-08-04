@@ -1,0 +1,9 @@
+# Tenantly — robots directives
+# The app is a single-page app; authenticated data is loaded via the API and is
+# never rendered into static HTML, so allowing crawlers here exposes nothing.
+
+User-agent: *
+Allow: /
+
+# TODO: replace app.tenantly.com with the production origin before launch.
+Sitemap: https://app.tenantly.com/sitemap.xml

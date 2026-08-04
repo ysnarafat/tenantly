@@ -13,6 +13,9 @@ import { PropertyEffects } from './features/properties/store/property.effects';
 import { BuildingEffects } from './features/properties/store/building.effects';
 import { UnitEffects } from './features/properties/store/unit.effects';
 
+// `title` sets the document title via AppTitleStrategy (see core/seo). Kept as
+// plain strings so the tab title is correct on first paint, independent of the
+// app's async translations.
 export const routes: Routes = [
   {
     path: '',
@@ -21,11 +24,13 @@ export const routes: Routes = [
   },
   {
     path: 'login',
+    title: 'Sign in',
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
     canActivate: [GuestGuard],
   },
   {
     path: 'select-organization',
+    title: 'Select organization',
     loadComponent: () =>
       import('./features/auth/organization-picker/organization-picker').then(
         (m) => m.OrganizationPicker
@@ -34,11 +39,13 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard',
+    title: 'Dashboard',
     loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
     canActivate: [AuthGuard],
   },
   {
     path: 'properties',
+    title: 'Properties',
     loadComponent: () =>
       import('./features/properties/property-list/property-list.component').then(
         (m) => m.PropertyListComponent
@@ -53,33 +60,39 @@ export const routes: Routes = [
   },
   {
     path: 'tenants',
+    title: 'Tenants',
     loadComponent: () =>
       import('./features/tenants/tenant-list/tenant-list').then((m) => m.TenantList),
     canActivate: [AuthGuard],
   },
   {
     path: 'leases',
+    title: 'Lease Management',
     loadComponent: () => import('./features/leases/lease-list/lease-list').then((m) => m.LeaseList),
     canActivate: [AuthGuard],
   },
   {
     path: 'leases/due',
+    title: 'Rent Due',
     loadComponent: () => import('./features/leases/due-list/due-list').then((m) => m.DueList),
     canActivate: [AuthGuard],
   },
   {
     path: 'payments',
+    title: 'Payments',
     loadComponent: () =>
       import('./features/payments/payment-list/payment-list').then((m) => m.PaymentList),
     canActivate: [AuthGuard],
   },
   {
     path: 'reports',
+    title: 'Reports & Analysis',
     loadComponent: () => import('./features/reports/report-analysis').then((m) => m.ReportAnalysis),
     canActivate: [AuthGuard],
   },
   {
     path: 'documents',
+    title: 'Documents',
     loadComponent: () =>
       import('./features/attachments/attachment-list/attachment-list').then(
         (m) => m.AttachmentList
@@ -88,6 +101,7 @@ export const routes: Routes = [
   },
   {
     path: 'users',
+    title: 'User Management',
     loadComponent: () => import('./features/users/user-list/user-list').then((m) => m.UserList),
     canActivate: [AuthGuard, userManagementGuard],
   },
@@ -97,6 +111,7 @@ export const routes: Routes = [
     children: [
       {
         path: 'organizations',
+        title: 'Organizations',
         loadComponent: () =>
           import('./features/admin/organization-management/organization-list').then(
             (m) => m.OrganizationListComponent
@@ -105,6 +120,7 @@ export const routes: Routes = [
       },
       {
         path: 'organizations/new',
+        title: 'New organization',
         loadComponent: () =>
           import('./features/admin/organization-management/organization-create').then(
             (m) => m.OrganizationCreateComponent
@@ -113,6 +129,7 @@ export const routes: Routes = [
       },
       {
         path: 'invitations',
+        title: 'Invitations',
         loadComponent: () =>
           import('./features/admin/user-onboarding/pending-invitations').then(
             (m) => m.PendingInvitationsComponent
@@ -120,16 +137,19 @@ export const routes: Routes = [
       },
       {
         path: 'invitations/new',
+        title: 'Invite user',
         loadComponent: () =>
           import('./features/admin/user-onboarding/invite-user').then((m) => m.InviteUserComponent),
       },
       {
         path: 'users',
+        title: 'User Management',
         loadComponent: () => import('./features/users/user-list/user-list').then((m) => m.UserList),
         canActivate: [userManagementGuard],
       },
       {
         path: 'users/new',
+        title: 'New user',
         loadComponent: () =>
           import('./features/admin/user-management/create-user').then((m) => m.CreateUserComponent),
         canActivate: [userManagementGuard],
@@ -150,6 +170,7 @@ export const routes: Routes = [
   // 403 — reached when a role guard blocks access
   {
     path: 'unauthorized',
+    title: 'Access denied',
     loadComponent: () =>
       import('./features/errors/unauthorized/unauthorized').then((m) => m.Unauthorized),
     canActivate: [AuthGuard],
@@ -157,6 +178,7 @@ export const routes: Routes = [
   // 404 — render in place so the mistyped address is preserved in the URL bar
   {
     path: '**',
+    title: 'Page not found',
     loadComponent: () => import('./features/errors/not-found/not-found').then((m) => m.NotFound),
   },
 ];
