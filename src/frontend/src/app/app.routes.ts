@@ -221,6 +221,7 @@ export const routes: Routes = [
   {
     path: '**',
     // render in place so the mistyped address is preserved in the URL bar
+    title: 'Page not found',
     loadComponent: () => import('./features/errors/not-found/not-found').then((m) => m.NotFound),
   },
 ];
