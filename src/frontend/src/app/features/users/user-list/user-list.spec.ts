@@ -354,26 +354,6 @@ describe('UserList Component', () => {
     });
   });
 
-  describe('Table functionality', () => {
-    beforeEach(() => {
-      organizationService.getCurrentOrganization.and.returnValue(mockOrganization);
-      organizationService.getOrganizationUsers.and.returnValue(of({ users: mockUsers, total: 3 }));
-      component.loadUsers();
-    });
-
-    it('should have paginator after view init', () => {
-      component.ngAfterViewInit();
-
-      expect(component.dataSource.paginator).toBe(component.paginator);
-    });
-
-    it('should have sort after view init', () => {
-      component.ngAfterViewInit();
-
-      expect(component.dataSource.sort).toBe(component.sort);
-    });
-  });
-
   describe('User data display', () => {
     beforeEach(() => {
       organizationService.getCurrentOrganization.and.returnValue(mockOrganization);

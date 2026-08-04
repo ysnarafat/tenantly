@@ -128,7 +128,7 @@ describe('PaymentList', () => {
     });
 
     it('should initialise filterYear to the current year', () => {
-      expect(component.filterYear).toBe(new Date().getFullYear().toString());
+      expect(component.filterYear).toBe(new Date().getFullYear());
     });
 
     it('should initialise page signal to 1 and pageSize signal to 20', () => {
@@ -206,7 +206,7 @@ describe('PaymentList', () => {
     });
 
     it('should include year filter as a number when filterYear is set', () => {
-      component.filterYear = '2025';
+      component.filterYear = 2025;
 
       component.loadPayments();
 
@@ -287,11 +287,11 @@ describe('PaymentList', () => {
     });
 
     it('should reset filterYear to the current year', () => {
-      component.filterYear = '2020';
+      component.filterYear = 2020;
 
       component.clearFilters();
 
-      expect(component.filterYear).toBe(new Date().getFullYear().toString());
+      expect(component.filterYear).toBe(new Date().getFullYear());
     });
 
     it('should reset page signal to 1', () => {
@@ -313,14 +313,14 @@ describe('PaymentList', () => {
     it('should reset all filters simultaneously', () => {
       component.filterStatus = 'Due';
       component.filterMonth = '3';
-      component.filterYear = '2024';
+      component.filterYear = 2024;
       component.page.set(7);
 
       component.clearFilters();
 
       expect(component.filterStatus).toBe('');
       expect(component.filterMonth).toBe('');
-      expect(component.filterYear).toBe(new Date().getFullYear().toString());
+      expect(component.filterYear).toBe(new Date().getFullYear());
       expect(component.page()).toBe(1);
     });
   });
