@@ -154,6 +154,13 @@ export const routes: Routes = [
     redirectTo: 'documents',
     pathMatch: 'full',
   },
+  // 403 — reached when a role guard blocks access
+  {
+    path: 'unauthorized',
+    loadComponent: () =>
+      import('./features/errors/unauthorized/unauthorized').then((m) => m.Unauthorized),
+    canActivate: [AuthGuard],
+  },
   {
     path: '401',
     loadComponent: () =>

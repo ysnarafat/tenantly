@@ -648,6 +648,32 @@
     "LOADING": "সংযুক্তি লোড হচ্ছে...",
     "NO_DESCRIPTION": "কোনো বিবরণ নেই"
   },
+  "NAV": {
+    "SUBTITLE": "সম্পত্তি ব্যবস্থাপনা",
+    "SECTIONS": {
+      "WORKSPACE": "কর্মক্ষেত্র",
+      "ADMIN": "প্রশাসন"
+    },
+    "ITEMS": {
+      "DASHBOARD": "ড্যাশবোর্ড",
+      "PROPERTIES": "সম্পত্তি",
+      "TENANTS": "ভাড়াটেরা",
+      "LEASES": "লীজ",
+      "PAYMENTS": "পেমেন্ট",
+      "REPORTS": "রিপোর্ট",
+      "DOCUMENTS": "ডকুমেন্ট",
+      "ORGANIZATIONS": "সংগঠনসমূহ",
+      "INVITATIONS": "আমন্ত্রণ",
+      "USERS": "ব্যবহারকারী"
+    },
+    "USER_MENU": {
+      "LOGOUT": "লগআউট"
+    },
+    "TOOLTIPS": {
+      "LIGHT_MODE": "লাইট মোডে স্যুইচ করুন",
+      "DARK_MODE": "ডার্ক মোডে স্যুইচ করুন"
+    }
+  },
   "HOMEPAGE": {
     "SEO": {
       "TITLE": "Tenantly - বাংলাদেশের জন্য সম্পত্তি ও ভাড়া ব্যবস্থাপনা",

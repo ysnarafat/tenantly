@@ -40,7 +40,7 @@ describe('superAdminGuard', () => {
     const guard = superAdminGuard();
     guard.subscribe((result) => {
       expect(result).toBe(false);
-      expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+      expect(router.navigate).toHaveBeenCalledWith(['/unauthorized']);
       done();
     });
   });
@@ -72,13 +72,13 @@ describe('superAdminGuard', () => {
     });
   });
 
-  it('should navigate to dashboard when access denied', (done) => {
+  it('should navigate to unauthorized when access denied', (done) => {
     store.select.and.returnValue(of(false));
 
     const guard = superAdminGuard();
     guard.subscribe(() => {
       setTimeout(() => {
-        expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
+        expect(router.navigate).toHaveBeenCalledWith(['/unauthorized']);
         done();
       }, 0);
     });

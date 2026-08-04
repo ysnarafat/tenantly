@@ -648,6 +648,32 @@
     "LOADING": "Loading attachments...",
     "NO_DESCRIPTION": "No description"
   },
+  "NAV": {
+    "SUBTITLE": "Property Management",
+    "SECTIONS": {
+      "WORKSPACE": "Workspace",
+      "ADMIN": "Admin"
+    },
+    "ITEMS": {
+      "DASHBOARD": "Dashboard",
+      "PROPERTIES": "Properties",
+      "TENANTS": "Tenants",
+      "LEASES": "Leases",
+      "PAYMENTS": "Payments",
+      "REPORTS": "Reports",
+      "DOCUMENTS": "Documents",
+      "ORGANIZATIONS": "Organizations",
+      "INVITATIONS": "Invitations",
+      "USERS": "Users"
+    },
+    "USER_MENU": {
+      "LOGOUT": "Logout"
+    },
+    "TOOLTIPS": {
+      "LIGHT_MODE": "Switch to light mode",
+      "DARK_MODE": "Switch to dark mode"
+    }
+  },
   "HOMEPAGE": {
     "SEO": {
       "TITLE": "Tenantly - Property & Rent Management for Bangladesh",
