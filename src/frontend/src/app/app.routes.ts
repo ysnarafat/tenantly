@@ -147,8 +147,16 @@ export const routes: Routes = [
     redirectTo: 'documents',
     pathMatch: 'full',
   },
+  // 403 — reached when a role guard blocks access
+  {
+    path: 'unauthorized',
+    loadComponent: () =>
+      import('./features/errors/unauthorized/unauthorized').then((m) => m.Unauthorized),
+    canActivate: [AuthGuard],
+  },
+  // 404 — render in place so the mistyped address is preserved in the URL bar
   {
     path: '**',
-    redirectTo: '/dashboard',
+    loadComponent: () => import('./features/errors/not-found/not-found').then((m) => m.NotFound),
   },
 ];

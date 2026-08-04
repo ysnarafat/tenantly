@@ -6,7 +6,7 @@
     </button>
     <div class="app-branding">
       <span class="app-title">Tenantly</span>
-      <span class="app-subtitle">Property Management</span>
+      <span class="app-subtitle">{{ 'NAV.SUBTITLE' | translate }}</span>
     </div>
     <app-organization-selector></app-organization-selector>
     <span class="spacer"></span>
@@ -15,7 +15,11 @@
       mat-icon-button
       (click)="themeService.toggle()"
       class="theme-toggle"
-      [matTooltip]="themeService.isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
+      [matTooltip]="
+        themeService.isDark()
+          ? ('NAV.TOOLTIPS.LIGHT_MODE' | translate)
+          : ('NAV.TOOLTIPS.DARK_MODE' | translate)
+      "
     >
       <mat-icon>{{ themeService.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
     </button>
@@ -55,7 +59,7 @@
         <mat-divider></mat-divider>
         <button mat-menu-item (click)="logout()">
           <mat-icon>logout</mat-icon>
-          <span>Logout</span>
+          <span>{{ 'NAV.USER_MENU.LOGOUT' | translate }}</span>
         </button>
       </mat-menu>
     </div>
@@ -78,54 +82,57 @@
           routerLink="/dashboard"
           routerLinkActive="nav-active"
           (click)="onNavigate()"
-          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Dashboard' : ''"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? ('NAV.ITEMS.DASHBOARD' | translate) : ''"
           matTooltipPosition="right"
         >
           <mat-icon class="nav-icon">dashboard</mat-icon>
-          <span class="nav-label">Dashboard</span>
+          <span class="nav-label">{{ 'NAV.ITEMS.DASHBOARD' | translate }}</span>
         </a>
 
         @if (hasWorkspaceNav()) {
         <div class="nav-section-header">
-          <span class="nav-section-label">Workspace</span>
+          <span class="nav-section-label">{{ 'NAV.SECTIONS.WORKSPACE' | translate }}</span>
           <div class="nav-section-line"></div>
         </div>
 
-        @if (canManageProperties()) {
+        @if (canViewProperties()) {
         <a
           class="nav-item"
           routerLink="/properties"
           routerLinkActive="nav-active"
           (click)="onNavigate()"
-          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Properties' : ''"
+          [matTooltip]="
+            sidenavCollapsed() && !isMobile() ? ('NAV.ITEMS.PROPERTIES' | translate) : ''
+          "
           matTooltipPosition="right"
         >
           <mat-icon class="nav-icon">meeting_room</mat-icon>
-          <span class="nav-label">Properties</span>
+          <span class="nav-label">{{ 'NAV.ITEMS.PROPERTIES' | translate }}</span>
         </a>
-        } @if (canManageTenants()) {
+        } @if (canViewTenants()) {
         <a
           class="nav-item"
           routerLink="/tenants"
           routerLinkActive="nav-active"
           (click)="onNavigate()"
-          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Tenants' : ''"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? ('NAV.ITEMS.TENANTS' | translate) : ''"
           matTooltipPosition="right"
         >
           <mat-icon class="nav-icon">people</mat-icon>
-          <span class="nav-label">Tenants</span>
+          <span class="nav-label">{{ 'NAV.ITEMS.TENANTS' | translate }}</span>
         </a>
+        } @if (canViewLeases()) {
         <a
           class="nav-item"
           routerLink="/leases"
           routerLinkActive="nav-active"
-          [routerLinkActiveOptions]="{exact: true}"
+          [routerLinkActiveOptions]="{ exact: true }"
           (click)="onNavigate()"
-          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Leases' : ''"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? ('NAV.ITEMS.LEASES' | translate) : ''"
           matTooltipPosition="right"
         >
           <mat-icon class="nav-icon">assignment</mat-icon>
-          <span class="nav-label">Leases</span>
+          <span class="nav-label">{{ 'NAV.ITEMS.LEASES' | translate }}</span>
         </a>
         } @if (canViewPayments()) {
         <a
@@ -133,27 +140,41 @@
           routerLink="/payments"
           routerLinkActive="nav-active"
           (click)="onNavigate()"
-          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Payments' : ''"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? ('NAV.ITEMS.PAYMENTS' | translate) : ''"
           matTooltipPosition="right"
         >
           <mat-icon class="nav-icon">payment</mat-icon>
-          <span class="nav-label">Payments</span>
+          <span class="nav-label">{{ 'NAV.ITEMS.PAYMENTS' | translate }}</span>
         </a>
-        } @if (canManageDocuments()) {
+        } @if (canViewReports()) {
+        <a
+          class="nav-item"
+          routerLink="/reports"
+          routerLinkActive="nav-active"
+          (click)="onNavigate()"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? ('NAV.ITEMS.REPORTS' | translate) : ''"
+          matTooltipPosition="right"
+        >
+          <mat-icon class="nav-icon">assessment</mat-icon>
+          <span class="nav-label">{{ 'NAV.ITEMS.REPORTS' | translate }}</span>
+        </a>
+        } @if (canViewDocuments()) {
         <a
           class="nav-item"
           routerLink="/documents"
           routerLinkActive="nav-active"
           (click)="onNavigate()"
-          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Documents' : ''"
+          [matTooltip]="
+            sidenavCollapsed() && !isMobile() ? ('NAV.ITEMS.DOCUMENTS' | translate) : ''
+          "
           matTooltipPosition="right"
         >
           <mat-icon class="nav-icon">folder</mat-icon>
-          <span class="nav-label">Documents</span>
+          <span class="nav-label">{{ 'NAV.ITEMS.DOCUMENTS' | translate }}</span>
         </a>
         } } @if (hasAdminNav()) {
         <div class="nav-section-header">
-          <span class="nav-section-label">Admin</span>
+          <span class="nav-section-label">{{ 'NAV.SECTIONS.ADMIN' | translate }}</span>
           <div class="nav-section-line"></div>
         </div>
 
@@ -163,11 +184,13 @@
           routerLink="/admin/organizations"
           routerLinkActive="nav-active"
           (click)="onNavigate()"
-          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Organizations' : ''"
+          [matTooltip]="
+            sidenavCollapsed() && !isMobile() ? ('NAV.ITEMS.ORGANIZATIONS' | translate) : ''
+          "
           matTooltipPosition="right"
         >
           <mat-icon class="nav-icon">apartment</mat-icon>
-          <span class="nav-label">Organizations</span>
+          <span class="nav-label">{{ 'NAV.ITEMS.ORGANIZATIONS' | translate }}</span>
         </a>
         } @if (canInviteUsers()) {
         <a
@@ -175,11 +198,13 @@
           routerLink="/admin/invitations"
           routerLinkActive="nav-active"
           (click)="onNavigate()"
-          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Invitations' : ''"
+          [matTooltip]="
+            sidenavCollapsed() && !isMobile() ? ('NAV.ITEMS.INVITATIONS' | translate) : ''
+          "
           matTooltipPosition="right"
         >
           <mat-icon class="nav-icon">mail_outline</mat-icon>
-          <span class="nav-label">Invitations</span>
+          <span class="nav-label">{{ 'NAV.ITEMS.INVITATIONS' | translate }}</span>
         </a>
         } @if (canManageUsers()) {
         <a
@@ -187,11 +212,11 @@
           routerLink="/users"
           routerLinkActive="nav-active"
           (click)="onNavigate()"
-          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Users' : ''"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? ('NAV.ITEMS.USERS' | translate) : ''"
           matTooltipPosition="right"
         >
           <mat-icon class="nav-icon">admin_panel_settings</mat-icon>
-          <span class="nav-label">Users</span>
+          <span class="nav-label">{{ 'NAV.ITEMS.USERS' | translate }}</span>
         </a>
         } }
       </nav>

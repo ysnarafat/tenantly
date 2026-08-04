@@ -11,6 +11,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { TranslateModule } from '@ngx-translate/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthFacade } from './store/auth/auth.facade';
 import { PermissionService } from './core/services/permission.service';
@@ -47,6 +48,7 @@ const AUTH_ROUTE_PREFIXES = ['/login', '/select-organization'];
     MatTooltipModule,
     MatMenuModule,
     MatDividerModule,
+    TranslateModule,
     OrganizationSelector,
   ],
   templateUrl: './app.html',
@@ -72,16 +74,19 @@ export class App implements OnInit {
   // Computed permission signals
   isSuperAdmin = computed(() => this.permissions.isSuperAdmin());
   isOrgAdmin = computed(() => this.permissions.isOrgAdmin());
-  canManageProperties = computed(() =>
-    this.permissions.hasPermission(Permission.MANAGE_PROPERTIES)
-  );
-  canManageTenants = computed(() => this.permissions.hasPermission(Permission.MANAGE_TENANTS));
-  canManageDocuments = computed(() => this.permissions.hasPermission(Permission.MANAGE_DOCUMENTS));
+  // Workspace nav is gated on view access, so read-only roles (e.g. Accountant)
+  // still see the sections they're allowed to open.
+  canViewProperties = computed(() => this.permissions.hasPermission(Permission.VIEW_PROPERTIES));
+  canViewTenants = computed(() => this.permissions.hasPermission(Permission.VIEW_TENANTS));
+  canViewLeases = computed(() => this.permissions.hasPermission(Permission.VIEW_LEASES));
+  canViewPayments = computed(() => this.permissions.hasPermission(Permission.VIEW_PAYMENTS));
+  canViewReports = computed(() => this.permissions.hasPermission(Permission.VIEW_REPORTS));
+  canViewDocuments = computed(() => this.permissions.hasPermission(Permission.VIEW_DOCUMENTS));
+
+  // Admin nav is gated on management capability, matching the route guards.
   canManageUsers = computed(() => this.permissions.hasPermission(Permission.MANAGE_USERS));
   canManageOrganizations = computed(() => this.permissions.canManageOrganizations());
   canInviteUsers = computed(() => this.permissions.canInviteUsers());
-  canViewPayments = computed(() => this.permissions.hasPermission(Permission.VIEW_PAYMENTS));
-  canViewReports = computed(() => this.permissions.hasPermission(Permission.VIEW_REPORTS));
 
   // Computed derived state
   sidenavMode = computed(() => (this.isMobile() ? ('over' as const) : ('side' as const)));
@@ -116,11 +121,12 @@ export class App implements OnInit {
 
   hasWorkspaceNav = computed(
     () =>
-      this.canManageProperties() ||
-      this.canManageTenants() ||
+      this.canViewProperties() ||
+      this.canViewTenants() ||
+      this.canViewLeases() ||
       this.canViewPayments() ||
       this.canViewReports() ||
-      this.canManageDocuments()
+      this.canViewDocuments()
   );
 
   isOnAuthRoute = computed(() =>
