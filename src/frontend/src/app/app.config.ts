@@ -1,5 +1,5 @@
 import { ApplicationConfig, importProvidersFrom, isDevMode, APP_INITIALIZER } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, TitleStrategy } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
@@ -10,6 +10,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 
 import { routes } from './app.routes';
+import { AppTitleStrategy } from './core/seo/app-title-strategy';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
 import { slowRequestInterceptor } from './core/interceptors/slow-request.interceptor';
 import { reducers, metaReducers } from './store';
@@ -19,6 +20,7 @@ import { LanguageService } from './core/services/language.service';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
+    { provide: TitleStrategy, useClass: AppTitleStrategy },
     provideHttpClient(withInterceptors([authInterceptor, slowRequestInterceptor])),
     importProvidersFrom(MatSnackBarModule),
     {

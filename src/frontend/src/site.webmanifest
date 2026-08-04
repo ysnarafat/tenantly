@@ -1,0 +1,11 @@
+{
+  "name": "Tenantly — Property Rental Management",
+  "short_name": "Tenantly",
+  "description": "Property rental management for the Bangladesh market — properties, leases, tenants, and payments.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1976d2",
+  "icons": [{ "src": "favicon.ico", "sizes": "48x48", "type": "image/x-icon" }]
+}
