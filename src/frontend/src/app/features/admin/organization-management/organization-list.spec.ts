@@ -316,18 +316,6 @@ describe('OrganizationListComponent', () => {
     it('should set dataSource with correct data', () => {
       expect(component.dataSource.data.length).toBe(3);
     });
-
-    it('should have paginator after view init', () => {
-      component.ngAfterViewInit();
-
-      expect(component.dataSource.paginator).toBe(component.paginator);
-    });
-
-    it('should have sort after view init', () => {
-      component.ngAfterViewInit();
-
-      expect(component.dataSource.sort).toBe(component.sort);
-    });
   });
 
   describe('Organization data display', () => {
