@@ -31,7 +31,7 @@ const AVATAR_COLORS = [
   '#00695c',
 ];
 
-const AUTH_ROUTE_PREFIXES = ['/login', '/select-organization'];
+const AUTH_ROUTE_PREFIXES = ['/login', '/select-organization', '/401', '/404'];
 
 @Component({
   selector: 'app-root',

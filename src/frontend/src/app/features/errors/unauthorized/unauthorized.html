@@ -1,0 +1,40 @@
+<div class="error-bg">
+  <div class="brand-header">
+    <mat-icon class="brand-icon">apartment</mat-icon>
+    <span class="brand-name">TENANTLY</span>
+  </div>
+
+  <div class="board-wrap">
+    <div class="chain chain-left"></div>
+    <div class="chain chain-right"></div>
+
+    <div class="board">
+      <span class="nail nail-left"></span>
+      <span class="nail nail-right"></span>
+      <div class="hazard-edge hazard-top"></div>
+
+      <div class="board-inner">
+        <mat-icon class="lock-icon">lock</mat-icon>
+
+        <h1 class="code">401</h1>
+        <p class="headline">ENTRY RESTRICTED</p>
+        <p class="bn-line">প্রবেশ নিষেধ</p>
+        <p class="subtext">
+          You don't have permission to view this page. If you think this is a mistake, contact
+          your organization admin.
+        </p>
+
+        <div class="actions">
+          <a mat-flat-button color="primary" class="primary-btn" [routerLink]="homeLink">{{
+            homeLabel
+          }}</a>
+          <button type="button" class="text-btn" (click)="goBack()">Go back</button>
+        </div>
+      </div>
+
+      <div class="hazard-edge hazard-bottom"></div>
+    </div>
+  </div>
+
+  <p class="footer-note">Tenantly &mdash; Property Management</p>
+</div>
