@@ -5,7 +5,7 @@ import { filter } from 'rxjs/operators';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
+import { MatSidenavModule, MatSidenav, MatSidenavContainer } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
@@ -54,6 +54,7 @@ const AUTH_ROUTE_PREFIXES = ['/login', '/select-organization', '/401', '/404'];
 })
 export class App implements OnInit {
   @ViewChild('sidenav') sidenav!: MatSidenav;
+  @ViewChild(MatSidenavContainer) sidenavContainer!: MatSidenavContainer;
 
   public authFacade = inject(AuthFacade);
   public permissions = inject(PermissionService);
@@ -87,11 +88,6 @@ export class App implements OnInit {
   sidenavMode = computed(() => (this.isMobile() ? ('over' as const) : ('side' as const)));
   sidenavOpened = computed(() => !this.isMobile());
   fixedTopGap = computed(() => (this.isMobile() ? 64 : 0));
-
-  sidenavWidth = computed(() => {
-    if (this.isMobile()) return '280px';
-    return this.sidenavCollapsed() ? '64px' : '260px';
-  });
 
   // User avatar
   userInitials = computed(() => {
@@ -180,6 +176,14 @@ export class App implements OnInit {
       this.sidenav?.toggle();
     } else {
       this.sidenavCollapsed.update((v) => !v);
+      // MatSidenavContainer only recalculates the content margin on drawer
+      // open/close or viewport resize — a pure CSS width change (our
+      // .collapsed class) isn't one of its triggers, so the reserved space
+      // for the sidenav never updates on its own. Nudge it manually, once
+      // now and once after the width transition ($nav-transition in
+      // app.scss) finishes so the final width is captured.
+      this.sidenavContainer?.updateContentMargins();
+      setTimeout(() => this.sidenavContainer?.updateContentMargins(), 250);
     }
   }
 }
