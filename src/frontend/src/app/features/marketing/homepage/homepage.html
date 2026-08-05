@@ -1,0 +1,152 @@
+<div class="homepage">
+  <header class="hp-nav">
+    <div class="hp-brand">
+      <mat-icon class="hp-brand-icon" aria-hidden="true">apartment</mat-icon>
+      <span class="hp-brand-name">TENANTLY</span>
+    </div>
+
+    <nav class="hp-nav-actions">
+      <a class="hp-nav-link" href="#faq">{{ 'HOMEPAGE.NAV.FAQ' | translate }}</a>
+
+      @if (themeService.darkModeEnabled) {
+      <button
+        mat-icon-button
+        (click)="themeService.toggle()"
+        [attr.aria-label]="themeService.isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
+      >
+        <mat-icon>{{ themeService.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
+      }
+
+      <button
+        mat-icon-button
+        (click)="languageService.toggle()"
+        [attr.aria-label]="languageService.currentLang() === 'en' ? 'বাংলায় দেখুন' : 'View in English'"
+      >
+        <mat-icon>language</mat-icon>
+      </button>
+
+      <a mat-flat-button class="hp-nav-cta" routerLink="/login"
+        >{{ 'HOMEPAGE.NAV.LOGIN' | translate }}</a
+      >
+    </nav>
+  </header>
+
+  <main>
+    <section class="hp-hero">
+      <div class="hp-hero-copy">
+        <span class="hp-eyebrow">{{ 'HOMEPAGE.HERO.EYEBROW' | translate }}</span>
+        <h1 class="hp-hero-title">
+          <span class="hp-hero-title-line">{{ 'HOMEPAGE.HERO.TITLE_LINE1' | translate }}</span>
+          <span class="hp-hero-title-line">{{ 'HOMEPAGE.HERO.TITLE_LINE2' | translate }}</span>
+        </h1>
+        <p class="hp-hero-subtitle">{{ 'HOMEPAGE.HERO.SUBTITLE' | translate }}</p>
+        <div class="hp-hero-actions">
+          <a mat-flat-button class="hp-cta-primary" routerLink="/login">
+            {{ 'HOMEPAGE.HERO.CTA_LOGIN' | translate }}
+          </a>
+          <a class="hp-cta-secondary" href="mailto:{{ contactEmail }}">
+            {{ 'HOMEPAGE.HERO.CTA_CONTACT' | translate }}
+            <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+          </a>
+        </div>
+      </div>
+
+      <div class="hp-hero-visual" aria-hidden="true">
+        <div class="hp-ledger-page">
+          <div class="hp-ledger-holes">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <div class="hp-ledger-lines"></div>
+          <p class="hp-ledger-scribble">{{ 'HOMEPAGE.HERO.LEDGER_SCRIBBLE' | translate }}</p>
+        </div>
+
+        <div class="hp-flow-arrow">
+          <svg viewBox="0 0 24 40" fill="none">
+            <path
+              d="M12 2v28M4 22l8 10 8-10"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+
+        <div class="hp-ledger-row">
+          <mat-icon class="hp-row-icon">home_work</mat-icon>
+          <span class="hp-row-label">{{ 'HOMEPAGE.HERO.LEDGER_ROW_LABEL' | translate }}</span>
+          <span class="hp-row-method">{{ 'HOMEPAGE.HERO.LEDGER_ROW_METHOD' | translate }}</span>
+          <span class="hp-row-status">{{ 'HOMEPAGE.HERO.LEDGER_ROW_STATUS' | translate }}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="hp-features">
+      <span class="hp-eyebrow hp-eyebrow-on-dark"
+        >{{ 'HOMEPAGE.FEATURES.EYEBROW' | translate }}</span
+      >
+      <h2 class="hp-section-title">{{ 'HOMEPAGE.FEATURES.TITLE' | translate }}</h2>
+
+      <div class="hp-features-grid">
+        @for (feature of features; track feature.key) {
+        <article class="hp-feature-card">
+          <mat-icon class="hp-feature-icon" aria-hidden="true">{{ feature.icon }}</mat-icon>
+          <h3>{{ ('HOMEPAGE.FEATURES.' + feature.key + '_TITLE') | translate }}</h3>
+          <p>{{ ('HOMEPAGE.FEATURES.' + feature.key + '_BODY') | translate }}</p>
+        </article>
+        }
+      </div>
+    </section>
+
+    <section class="hp-faq" id="faq">
+      <span class="hp-eyebrow">{{ 'HOMEPAGE.FAQ.EYEBROW' | translate }}</span>
+      <h2 class="hp-section-title">{{ 'HOMEPAGE.FAQ.TITLE' | translate }}</h2>
+
+      <div class="hp-faq-list">
+        @for (key of faqKeys; track key; let i = $index) {
+        <div class="hp-faq-item" [class.open]="openFaq() === key">
+          <button
+            class="hp-faq-question"
+            type="button"
+            (click)="toggleFaq(key)"
+            [attr.aria-expanded]="openFaq() === key"
+            [attr.aria-controls]="'faq-answer-' + key"
+          >
+            <span class="hp-faq-index">{{ entryNumber(i) }}</span>
+            <span class="hp-faq-question-text"
+              >{{ ('HOMEPAGE.FAQ.' + key + '_Q') | translate }}</span
+            >
+            <mat-icon class="hp-faq-caret">expand_more</mat-icon>
+          </button>
+          <div class="hp-faq-answer-wrap" [id]="'faq-answer-' + key">
+            <p class="hp-faq-answer">{{ ('HOMEPAGE.FAQ.' + key + '_A') | translate }}</p>
+          </div>
+        </div>
+        }
+      </div>
+    </section>
+
+    <section class="hp-final-cta">
+      <h2>{{ 'HOMEPAGE.CTA.TITLE' | translate }}</h2>
+      <p>{{ 'HOMEPAGE.CTA.SUBTITLE' | translate }}</p>
+      <div class="hp-final-cta-actions">
+        <a mat-flat-button class="hp-cta-primary" routerLink="/login">
+          {{ 'HOMEPAGE.CTA.LOGIN' | translate }}
+        </a>
+        <a class="hp-cta-secondary" href="mailto:{{ contactEmail }}">
+          {{ 'HOMEPAGE.CTA.CONTACT' | translate }}
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="hp-footer">
+    <div class="hp-footer-brand">
+      <mat-icon aria-hidden="true">apartment</mat-icon>
+      <span>TENANTLY</span>
+    </div>
+    <p class="hp-footer-tagline">{{ 'HOMEPAGE.FOOTER.TAGLINE' | translate }}</p>
+    <p class="hp-footer-rights">{{ 'HOMEPAGE.FOOTER.RIGHTS' | translate }}</p>
+  </footer>
+</div>

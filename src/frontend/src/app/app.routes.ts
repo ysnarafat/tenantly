@@ -18,8 +18,13 @@ import { UnitEffects } from './features/properties/store/unit.effects';
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: '/dashboard',
+    redirectTo: '/home',
     pathMatch: 'full',
+  },
+  {
+    path: 'home',
+    loadComponent: () => import('./features/marketing/homepage/homepage').then((m) => m.Homepage),
+    canActivate: [GuestGuard],
   },
   {
     path: 'login',

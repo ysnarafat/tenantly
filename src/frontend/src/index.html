@@ -2,9 +2,32 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Tenantly - Property Rental Management</title>
+    <title>Tenantly - Property & Rent Management for Bangladesh</title>
+    <meta
+      name="description"
+      content="Tenantly is property and rent management built for Bangladesh — track units, tenants, and every cash, bank transfer, bKash, or Nagad payment, in English or বাংলা."
+    />
+    <meta name="robots" content="index, follow" />
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Open Graph / Twitter card: read by link-preview bots, which generally
+         don't execute JS, so these stay static rather than Angular-managed. -->
+    <meta property="og:site_name" content="Tenantly" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Tenantly - Property & Rent Management for Bangladesh" />
+    <meta
+      property="og:description"
+      content="Track units, tenants, and every cash, bank transfer, bKash, or Nagad payment — bilingual, one login for your whole team."
+    />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="bn_BD" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Tenantly - Property & Rent Management for Bangladesh" />
+    <meta
+      name="twitter:description"
+      content="Track units, tenants, and every cash, bank transfer, bKash, or Nagad payment — bilingual, one login for your whole team."
+    />
     <!--
       Content-Security-Policy: defense-in-depth against XSS. Angular Material
       injects component styles via inline <style> tags at runtime, hence
@@ -25,10 +48,104 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
     <link rel="preconnect" href="https://fonts.gstatic.com" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&family=Noto+Sans+Bengali:wght@400;500;700&family=Alfa+Slab+One&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&family=Noto+Sans+Bengali:wght@400;500;700&family=Alfa+Slab+One&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Caveat:wght@600&display=swap"
       rel="stylesheet"
     />
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+
+    <!--
+      Structured data for the homepage. Written statically (English) rather
+      than injected by Angular: a script tag with a non-executable MIME type
+      like application/ld+json is never subject to the script-src directive
+      above (browsers don't treat it as "script" either way), but it can't
+      reflect the active UI language since this shell is served before any
+      Angular/ngx-translate code runs.
+    -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "SoftwareApplication",
+            "name": "Tenantly",
+            "applicationCategory": "BusinessApplication",
+            "operatingSystem": "Web",
+            "description": "Tenantly is property and rent management built for Bangladesh — track every unit, tenant, and payment made in cash, bank transfer, bKash, or Nagad, in English or বাংলা, from any device.",
+            "areaServed": "BD",
+            "availableLanguage": ["en", "bn"]
+          },
+          {
+            "@type": "FAQPage",
+            "mainEntity": [
+              {
+                "@type": "Question",
+                "name": "Do I need to be good with computers to use this?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. If you can use WhatsApp or send a bKash payment, you already have the skills you need — add a property, add a tenant, record a payment. There's nothing to install; it runs in your browser."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Do I have to give up my paper rent-book on day one?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No. Bring your records over at your own pace — add existing tenants and leases whenever you're ready. Nothing forces you to migrate everything at once."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What if my property manager or accountant isn't tech-savvy either?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Each person gets their own simple login, scoped to their job. Your accountant only sees payments and reports; your property manager only sees their buildings and tenants. Less on the screen means less to learn."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does it really work in Bangla?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes — every menu, label, and message in the system switches between English and Bangla with one tap, independently for each person on your team."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is this a new payment method I have to learn?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "No new payment method to learn. Keep collecting rent exactly as you do now — cash, bank transfer, bKash, or Nagad — and record it in Tenantly so you and your accountant always know what's paid and what's due."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What happens when a tenant pays late?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Tenantly sends an automatic SMS and email reminder once rent is overdue — the first nudge doesn't have to come from you."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is my tenants' NID and personal information safe?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes. National ID numbers are encrypted at rest, and sensitive actions require a second verification step, so a guessed password alone isn't enough to reach that data."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "What does it cost?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "It depends on how many properties and team members you need. Talk to us and we'll work out a plan that fits your portfolio."
+                }
+              }
+            ]
+          }
+        ]
+      }
+    </script>
   </head>
   <body class="mat-typography">
     <app-root></app-root>
