@@ -6,15 +6,26 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { Store } from '@ngrx/store';
+import { Actions, ofType } from '@ngrx/effects';
 import { AppState } from '../../store';
 import * as AuthSelectors from '../../store/auth/auth.selectors';
 import * as AuthActions from '../../store/auth/auth.actions';
 import { OrganizationService } from '../../core/services/organization.service';
 import { UserOrganization } from '../../core/models/organization.model';
+import { avatarColorFor, avatarInitials } from '../utils/avatar.utils';
+
+const ROLE_LABELS: Record<string, string> = {
+  SUPER_ADMIN: 'Super Admin',
+  ORG_ADMIN: 'Org Admin',
+  Admin: 'Admin',
+  PropertyManager: 'Property Manager',
+  Accountant: 'Accountant',
+};
 
 @Component({
   selector: 'app-organization-selector',
@@ -27,28 +38,55 @@ import { UserOrganization } from '../../core/models/organization.model';
     MatTooltipModule,
     MatDividerModule,
     MatProgressSpinnerModule,
+    MatSnackBarModule,
   ],
   template: `
     <div class="org-selector">
-      <!-- Organization Selector Button -->
       <button
         mat-button
         [matMenuTriggerFor]="orgMenu"
         class="org-button"
         [disabled]="isLoading()"
-        matTooltip="Switch Organization"
+        matTooltip="Switch organization"
+        aria-label="Switch organization"
       >
-        <mat-icon class="org-icon">domain</mat-icon>
-        <span class="org-name">{{ currentOrgName() }}</span>
-        <mat-icon class="dropdown-icon">expand_more</mat-icon>
+        <!--
+          Everything lives inside one wrapper span rather than as direct
+          children of the button. mat-button internally re-projects any
+          top-level <mat-icon> into its own slot, separate from the rest of
+          the label — which split the chevron from the avatar/name onto a
+          different line. Angular's content projection only inspects direct
+          children, so nesting the icon in here keeps the whole row intact
+          regardless of how Material's internals handle it.
+        -->
+        <span class="org-button-content">
+          <span
+            class="org-avatar"
+            [style.background-color]="avatarColorFor(currentOrgName())"
+            aria-hidden="true"
+          >
+            {{ avatarInitials(currentOrgName()) }}
+          </span>
+          <span class="org-name">{{ currentOrgName() }}</span>
+          @if (isLoading()) {
+            <mat-spinner class="org-spinner" diameter="16"></mat-spinner>
+          } @else {
+            <mat-icon class="dropdown-icon">expand_more</mat-icon>
+          }
+        </span>
       </button>
+      <span class="sr-only" role="status" aria-live="polite">
+        {{ isLoading() ? 'Switching organization…' : '' }}
+      </span>
 
-      <!-- Organization Menu -->
       <mat-menu #orgMenu="matMenu" class="org-menu">
-        <!-- Current Organization Indicator -->
         <div class="menu-header">
           <span class="menu-title">Organizations</span>
         </div>
+
+        @if (userOrganizations().length === 0) {
+          <div class="empty-orgs">No organizations yet</div>
+        }
 
         @for (org of userOrganizations(); track org.id) {
           <button
@@ -56,35 +94,39 @@ import { UserOrganization } from '../../core/models/organization.model';
             (click)="selectOrganization(org)"
             class="org-menu-item"
             [class.active]="isCurrentOrg(org.organization_id)"
+            [attr.aria-current]="isCurrentOrg(org.organization_id) ? 'true' : null"
           >
-            <mat-icon class="org-icon-menu">
+            <!-- Single wrapper span, same reason as the trigger button above:
+                 mat-menu-item projects <mat-icon> into its own slot too. -->
+            <span class="org-menu-row">
+              <span
+                class="org-avatar org-avatar-sm"
+                [style.background-color]="avatarColorFor(org.organization.name)"
+                aria-hidden="true"
+              >
+                {{ avatarInitials(org.organization.name) }}
+              </span>
+              <span class="org-menu-content">
+                <span class="org-menu-name">{{ org.organization.name }}</span>
+                <span class="org-menu-role">{{ formatRole(org.role) }}</span>
+              </span>
               @if (isCurrentOrg(org.organization_id)) {
-                check_circle
-              } @else {
-                radio_button_unchecked
+                <mat-icon class="org-check" aria-hidden="true">check_circle</mat-icon>
               }
-            </mat-icon>
-            <div class="org-menu-content">
-              <span class="org-menu-name">{{ org.organization.name }}</span>
-              <span class="org-menu-role">{{ org.role }}</span>
-            </div>
+            </span>
           </button>
         }
 
-        @if (userOrganizations().length > 0) {
+        @if (isSuperAdmin()) {
           <mat-divider class="menu-divider"></mat-divider>
+          <button mat-menu-item (click)="manageOrganizations()" class="manage-orgs">
+            <span class="manage-orgs-row">
+              <mat-icon aria-hidden="true">settings</mat-icon>
+              <span>Manage Organizations</span>
+            </span>
+          </button>
         }
-
-        <!-- Manage Organizations -->
-        <button mat-menu-item (click)="manageOrganizations()" class="manage-orgs">
-          <mat-icon>settings</mat-icon>
-          <span>Manage Organizations</span>
-        </button>
       </mat-menu>
-
-      @if (isLoading()) {
-        <mat-spinner diameter="20" class="loading-spinner"></mat-spinner>
-      }
     </div>
   `,
   styles: [
@@ -95,13 +137,21 @@ import { UserOrganization } from '../../core/models/organization.model';
         position: relative;
       }
 
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+      }
+
       .org-button {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 4px 12px;
+        // padding !important: Material's own .mat-mdc-button:has(mat-icon)
+        // rule overrides padding at higher specificity than a plain class
+        // selector; this needs to win so the pill shape stays consistent.
+        padding: 4px 12px 4px 4px !important;
         border-radius: 20px;
-        transition: all 0.3s ease;
+        transition: background-color 0.2s ease;
         background-color: rgba(255, 255, 255, 0.1);
 
         &:hover:not(:disabled) {
@@ -109,14 +159,37 @@ import { UserOrganization } from '../../core/models/organization.model';
         }
 
         &:disabled {
-          opacity: 0.7;
+          opacity: 0.8;
         }
       }
 
-      .org-icon {
-        font-size: 18px;
-        width: 18px;
-        height: 18px;
+      .org-button-content {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+      }
+
+      .org-avatar {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+
+      .org-avatar-sm {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+        margin-top: 2px;
       }
 
       .org-name {
@@ -132,31 +205,31 @@ import { UserOrganization } from '../../core/models/organization.model';
         font-size: 18px;
         width: 18px;
         height: 18px;
-        margin-left: 4px;
-        transition: transform 0.3s ease;
+        transition: transform 0.2s ease;
       }
 
-      .org-button:disabled .dropdown-icon {
+      .org-button[aria-expanded='true'] .dropdown-icon {
         transform: rotate(180deg);
       }
 
-      .loading-spinner {
-        position: absolute;
-        right: -35px;
+      .org-spinner {
+        ::ng-deep circle {
+          stroke: currentColor;
+        }
       }
 
-      /* Menu Styles */
       ::ng-deep .org-menu {
         .mat-mdc-menu-content {
           padding: 0 !important;
-          max-height: 400px;
+          max-height: 420px;
           overflow-y: auto;
+          width: 300px;
         }
 
         .mat-mdc-menu-item {
           height: auto !important;
           line-height: normal !important;
-          padding: 8px 12px !important;
+          padding: 10px 16px !important;
         }
       }
 
@@ -164,39 +237,29 @@ import { UserOrganization } from '../../core/models/organization.model';
         padding: 12px 16px;
         font-size: 12px;
         font-weight: 600;
-        color: rgba(0, 0, 0, 0.54);
+        color: var(--text-secondary);
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+        border-bottom: 1px solid var(--border-color);
       }
 
-      .menu-title {
-        display: block;
+      .empty-orgs {
+        padding: 16px;
+        font-size: 13px;
+        color: var(--text-hint);
+        text-align: center;
       }
 
-      .org-menu-item {
+      .org-menu-item.active {
+        background-color: var(--bg-selected);
+      }
+
+      .org-menu-row {
         display: flex;
+        flex-wrap: nowrap;
         align-items: flex-start;
         gap: 12px;
-        padding: 8px 12px !important;
-        transition: background-color 0.2s ease;
-
-        &:hover {
-          background-color: rgba(0, 0, 0, 0.04);
-        }
-
-        &.active {
-          background-color: rgba(63, 81, 181, 0.08);
-          color: #3f51b5;
-        }
-      }
-
-      .org-icon-menu {
-        flex-shrink: 0;
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-        margin-top: 2px;
+        width: 100%;
       }
 
       .org-menu-content {
@@ -204,32 +267,44 @@ import { UserOrganization } from '../../core/models/organization.model';
         flex-direction: column;
         gap: 2px;
         flex: 1;
+        min-width: 0;
       }
 
       .org-menu-name {
         display: block;
         font-size: 14px;
         font-weight: 500;
-        color: rgba(0, 0, 0, 0.87);
+        color: var(--text-primary);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
       .org-menu-role {
         display: block;
         font-size: 12px;
-        color: rgba(0, 0, 0, 0.54);
+        color: var(--text-secondary);
+      }
+
+      .org-check {
+        flex-shrink: 0;
+        margin-top: 2px;
+        color: var(--color-primary);
       }
 
       .menu-divider {
-        margin: 8px 0 !important;
+        margin: 4px 0 !important;
       }
 
       .manage-orgs {
-        color: #3f51b5;
-        font-weight: 500;
+        color: var(--color-primary);
+      }
 
-        mat-icon {
-          margin-right: 8px;
-        }
+      .manage-orgs-row {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 8px;
       }
     `,
   ],
@@ -238,12 +313,18 @@ export class OrganizationSelector implements OnInit, OnDestroy {
   private router = inject(Router);
   private orgService = inject(OrganizationService);
   private store = inject(Store<AppState>);
+  private actions$ = inject(Actions);
+  private snackBar = inject(MatSnackBar);
   private destroy$ = new Subject<void>();
 
-  // State signals
+  readonly avatarColorFor = avatarColorFor;
+  readonly avatarInitials = avatarInitials;
+
   userOrganizations = signal<UserOrganization[]>([]);
   currentOrganizationId = signal<number | null>(null);
+  isSuperAdmin = signal(false);
   isLoading = signal(false);
+
   currentOrgName = computed(() => {
     const orgs = this.userOrganizations();
     const currentId = this.currentOrganizationId();
@@ -254,7 +335,6 @@ export class OrganizationSelector implements OnInit, OnDestroy {
   });
 
   ngOnInit() {
-    // Initialize organizations from store
     this.store
       .select(AuthSelectors.selectUserOrganizations)
       .pipe(takeUntil(this.destroy$))
@@ -262,22 +342,37 @@ export class OrganizationSelector implements OnInit, OnDestroy {
         this.userOrganizations.set(orgs || []);
       });
 
-    // Initialize current organization
     this.store
       .select(AuthSelectors.selectCurrentOrganizationId)
       .pipe(takeUntil(this.destroy$))
       .subscribe((orgId) => {
         this.currentOrganizationId.set(orgId);
-        this.isLoading.set(false);
       });
 
-    // Restore organization context on init
+    this.store
+      .select(AuthSelectors.selectIsSuperAdmin)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((isSA) => this.isSuperAdmin.set(isSA));
+
+    this.actions$
+      .pipe(ofType(AuthActions.switchOrganizationSuccess), takeUntil(this.destroy$))
+      .subscribe(() => this.isLoading.set(false));
+
+    this.actions$
+      .pipe(ofType(AuthActions.switchOrganizationFailure), takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.isLoading.set(false);
+        this.snackBar.open('Could not switch organization. Please try again.', 'Close', {
+          duration: 4000,
+        });
+      });
+
     this.orgService.restoreOrganizationContext();
   }
 
   selectOrganization(organization: UserOrganization) {
     if (this.isCurrentOrg(organization.organization_id)) {
-      return; // Already selected
+      return;
     }
 
     this.isLoading.set(true);
@@ -290,9 +385,12 @@ export class OrganizationSelector implements OnInit, OnDestroy {
     return this.currentOrganizationId() === orgId;
   }
 
+  formatRole(role: string): string {
+    return ROLE_LABELS[role] || role;
+  }
+
   manageOrganizations() {
-    // Navigate to organization management page
-    this.router.navigate(['/settings/organizations']);
+    this.router.navigate(['/admin/organizations']);
   }
 
   ngOnDestroy() {

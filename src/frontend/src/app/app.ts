@@ -19,19 +19,9 @@ import { User } from './core/services/auth.service';
 import { LanguageService } from './core/services/language.service';
 import { ThemeService } from './core/services/theme.service';
 import { OrganizationSelector } from './shared/organization-selector/organization-selector';
+import { avatarColorFor, avatarInitials } from './shared/utils/avatar.utils';
 
-const AVATAR_COLORS = [
-  '#1565c0',
-  '#2e7d32',
-  '#c62828',
-  '#6a1b9a',
-  '#0277bd',
-  '#e65100',
-  '#37474f',
-  '#00695c',
-];
-
-const AUTH_ROUTE_PREFIXES = ['/login', '/select-organization', '/401', '/404'];
+const AUTH_ROUTE_PREFIXES = ['/home', '/login', '/select-organization', '/401', '/404'];
 
 @Component({
   selector: 'app-root',
@@ -90,16 +80,9 @@ export class App implements OnInit {
   fixedTopGap = computed(() => (this.isMobile() ? 64 : 0));
 
   // User avatar
-  userInitials = computed(() => {
-    const name = this.user()?.username || '';
-    return name.slice(0, 2).toUpperCase() || '?';
-  });
+  userInitials = computed(() => avatarInitials(this.user()?.username || ''));
 
-  userAvatarColor = computed(() => {
-    const name = this.user()?.username || '';
-    const idx = (name.charCodeAt(0) || 0) % AVATAR_COLORS.length;
-    return AVATAR_COLORS[idx];
-  });
+  userAvatarColor = computed(() => avatarColorFor(this.user()?.username || ''));
 
   hasAdminNav = computed(
     () =>
