@@ -34,7 +34,7 @@ import { UserInvitation, Organization } from '../../../core/models';
   template: `
     <div class="invitations-container">
       <div class="header">
-        <h2>Pending Invitations</h2>
+        <h1>Pending Invitations</h1>
         <button mat-raised-button color="primary" (click)="inviteUser()">
           <mat-icon>person_add</mat-icon>
           Invite User
@@ -114,14 +114,24 @@ import { UserInvitation, Organization } from '../../../core/models';
     `
       .invitations-container {
         padding: 24px;
-        max-width: 1000px;
+        max-width: 1400px;
         margin: 0 auto;
+      }
+      @media (max-width: 768px) {
+        .invitations-container {
+          padding: 16px;
+        }
+      }
+      @media (max-width: 480px) {
+        .invitations-container {
+          padding: 12px;
+        }
       }
       .header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 16px;
+        margin-bottom: 24px;
         flex-wrap: wrap;
         gap: 8px;
       }
@@ -129,8 +139,9 @@ import { UserInvitation, Organization } from '../../../core/models';
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
       }
-      h2 {
+      h1 {
         margin: 0;
+        font-size: 28px;
       }
       .filters {
         margin-bottom: 16px;
