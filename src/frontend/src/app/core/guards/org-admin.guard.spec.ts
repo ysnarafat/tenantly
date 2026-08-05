@@ -62,7 +62,7 @@ describe('orgAdminGuard', () => {
     const guard = orgAdminGuard();
     guard.subscribe((result) => {
       expect(result).toBe(false);
-      expect(router.navigate).toHaveBeenCalledWith(['/unauthorized']);
+      expect(router.navigate).toHaveBeenCalledWith(['/401']);
       done();
     });
   });
@@ -73,7 +73,7 @@ describe('orgAdminGuard', () => {
     const guard = orgAdminGuard();
     guard.subscribe((result) => {
       expect(result).toBe(false);
-      expect(router.navigate).toHaveBeenCalledWith(['/unauthorized']);
+      expect(router.navigate).toHaveBeenCalledWith(['/401']);
       done();
     });
   });
@@ -108,7 +108,7 @@ describe('orgAdminGuard', () => {
     const guard = orgAdminGuard();
     guard.subscribe(() => {
       setTimeout(() => {
-        expect(router.navigate).toHaveBeenCalledWith(['/unauthorized']);
+        expect(router.navigate).toHaveBeenCalledWith(['/401']);
         done();
       }, 0);
     });
@@ -164,7 +164,7 @@ describe('orgAdminGuard', () => {
           expect(result).toBe(shouldAllow);
 
           if (!shouldAllow) {
-            expect(router.navigate).toHaveBeenCalledWith(['/unauthorized']);
+            expect(router.navigate).toHaveBeenCalledWith(['/401']);
           } else {
             expect(router.navigate).not.toHaveBeenCalled();
           }
