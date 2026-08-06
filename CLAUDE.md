@@ -372,7 +372,8 @@ go test -v ./internal/repositories/...
 
 ## 🤖 Claude Code Behaviour
 
-- **Commits**: Never add a `Co-Authored-By` trailer to any commit.
+- **Commit authorship**: Never add a `Co-Authored-By` trailer to any commit, and never attribute a commit to any Claude/Anthropic model. Commits show only the human author's authorship.
+- **Commit body**: Do not write a commit body by default — use a single-line subject only. Only when a change genuinely requires a body (e.g. non-obvious rationale, breaking change, migration notes) should one be added, and in that case ask the user for confirmation before including it.
 
 ---
 
