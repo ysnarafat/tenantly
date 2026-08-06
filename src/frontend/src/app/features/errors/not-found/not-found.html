@@ -26,9 +26,9 @@
         </p>
 
         <div class="contact-strip">
-          <a class="strip-link" [routerLink]="homeLink">{{
-            homeLink === '/dashboard' ? 'Dashboard' : 'Login'
-          }}</a>
+          <a class="strip-link" [routerLink]="homeLink"
+            >{{ homeLink === '/dashboard' ? 'Dashboard' : 'Login' }}</a
+          >
           <span class="strip-divider">&bull;</span>
           <button type="button" class="strip-link strip-btn" (click)="goBack()">Go back</button>
         </div>
