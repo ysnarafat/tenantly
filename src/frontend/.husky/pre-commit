@@ -1,0 +1,5 @@
+# Format staged frontend files with Prettier before committing.
+# Git runs hooks from the repo root, so move into the frontend package first
+# (that is where lint-staged, its config, and node_modules live).
+cd "$(dirname "$0")/.." || exit 1
+npx lint-staged
