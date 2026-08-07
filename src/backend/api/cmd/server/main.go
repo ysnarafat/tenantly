@@ -34,7 +34,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Failed to connect to database: ", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Run migrations
 	if err := database.RunMigrations(cfg.DatabaseURL); err != nil {

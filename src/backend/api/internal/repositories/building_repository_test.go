@@ -27,123 +27,6 @@ func createTestProperty(t *testing.T, db *sqlx.DB) int {
 	return testutil.CreateTestProperty(t, db)
 }
 
-// Simple metadata validator for testing purposes.
-type testMetadataValidator struct{}
-
-func (v *testMetadataValidator) ValidateMetadata(buildingType models.BuildingType, metadata models.BuildingMetadata) error {
-	if metadata == nil {
-		return nil // Empty metadata is allowed
-	}
-	switch buildingType {
-	case models.BuildingTypeResidential:
-		return v.validateResidentialMetadata(metadata)
-	case models.BuildingTypeCommercial:
-		return v.validateCommercialMetadata(metadata)
-	case models.BuildingTypeMixed:
-		return v.validateMixedMetadata(metadata)
-	default:
-		return fmt.Errorf("invalid building type: %s", buildingType)
-	}
-}
-
-func (v *testMetadataValidator) validateResidentialMetadata(metadata models.BuildingMetadata) error {
-	if amenities, exists := metadata["amenities"]; exists {
-		if amenitiesList, ok := amenities.([]string); ok {
-			validAmenities := map[string]bool{"gym": true, "swimming_pool": true, "playground": true, "community_hall": true, "rooftop_garden": true, "library": true, "prayer_room": true}
-			for _, amenity := range amenitiesList {
-				if !validAmenities[amenity] {
-					return fmt.Errorf("invalid amenity: %s", amenity)
-				}
-			}
-		}
-	}
-	if securityType, exists := metadata["security_type"]; exists {
-		if securityTypeStr, ok := securityType.(string); ok {
-			validTypes := map[string]bool{"24_hour_guard": true, "cctv_only": true, "card_access": true, "basic": true}
-			if !validTypes[securityTypeStr] {
-				return fmt.Errorf("invalid security_type: %s", securityTypeStr)
-			}
-		}
-	}
-	if staffCount, exists := metadata["maintenance_staff_count"]; exists {
-		var count int
-		switch v := staffCount.(type) {
-		case float64:
-			count = int(v)
-		case int:
-			count = v
-		default:
-			return fmt.Errorf("maintenance_staff_count must be an integer")
-		}
-		if count < 0 {
-			return fmt.Errorf("maintenance_staff_count cannot be negative")
-		}
-	}
-	return nil
-}
-
-func (v *testMetadataValidator) validateCommercialMetadata(metadata models.BuildingMetadata) error {
-	if businessHours, exists := metadata["business_hours"]; exists {
-		if hoursMap, ok := businessHours.(map[string]interface{}); ok {
-			for key, value := range hoursMap {
-				if valueStr, ok := value.(string); ok {
-					if len(valueStr) != 11 || valueStr[2] != ':' || valueStr[5] != '-' || valueStr[8] != ':' {
-						return fmt.Errorf("invalid business_hours.%s format", key)
-					}
-				}
-			}
-		}
-	}
-	if securitySystem, exists := metadata["security_system"]; exists {
-		if systemMap, ok := securitySystem.(map[string]interface{}); ok {
-			if systemType, exists := systemMap["type"]; exists {
-				if typeStr, ok := systemType.(string); ok {
-					validTypes := map[string]bool{"basic_cctv": true, "advanced_cctv": true, "full_security": true}
-					if !validTypes[typeStr] {
-						return fmt.Errorf("invalid security_system.type: %s", typeStr)
-					}
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func (v *testMetadataValidator) validateMixedMetadata(metadata models.BuildingMetadata) error {
-	if residentialSection, exists := metadata["residential_section"]; exists {
-		if sectionMap, ok := residentialSection.(map[string]interface{}); ok {
-			if floors, exists := sectionMap["floors"]; exists {
-				if floorsStr, ok := floors.(string); ok {
-					if err := v.validateFloorRange(floorsStr); err != nil {
-						return fmt.Errorf("invalid residential_section.floors: %w", err)
-					}
-				}
-			}
-		}
-	}
-	if commercialSection, exists := metadata["commercial_section"]; exists {
-		if sectionMap, ok := commercialSection.(map[string]interface{}); ok {
-			if floors, exists := sectionMap["floors"]; exists {
-				if floorsStr, ok := floors.(string); ok {
-					if err := v.validateFloorRange(floorsStr); err != nil {
-						return fmt.Errorf("invalid commercial_section.floors: %w", err)
-					}
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func (v *testMetadataValidator) validateFloorRange(r string) error {
-	var min, max int
-	n, err := fmt.Sscanf(r, "%d-%d", &min, &max)
-	if err != nil || n != 2 || min > max {
-		return fmt.Errorf("invalid floor range: %s", r)
-	}
-	return nil
-}
-
 func TestBuildingRepository_Create(t *testing.T) {
 	repo, db, cleanup := setupBuildingRepository(t)
 	defer cleanup()
@@ -221,7 +104,7 @@ func TestBuildingRepository_GetByID(t *testing.T) {
 					t.Errorf("Expected no error but got: %v", err)
 				}
 				if result == nil {
-					t.Errorf("Expected building but got nil")
+					t.Fatal("Expected building but got nil")
 				}
 				if result.ID != tt.buildingID {
 					t.Errorf("Expected building ID %d, got %d", tt.buildingID, result.ID)
@@ -288,7 +171,7 @@ func TestBuildingRepository_GetByPropertyAndCode(t *testing.T) {
 					t.Errorf("Expected no error but got: %v", err)
 				}
 				if result == nil {
-					t.Errorf("Expected building but got nil")
+					t.Fatal("Expected building but got nil")
 				}
 				if result.BuildingCode != tt.buildingCode {
 					t.Errorf("Expected building code %s, got %s", tt.buildingCode, result.BuildingCode)

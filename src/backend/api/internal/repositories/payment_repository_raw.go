@@ -169,7 +169,7 @@ func (r *PaymentRepository) GetWithDetailsAndFilters(filters map[string]interfac
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to query payments: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	payments := make([]*models.PaymentWithDetails, 0, limit)
 	for rows.Next() {
@@ -233,7 +233,7 @@ func (r *PaymentRepository) GetActiveLeasesForPeriod(orgID, month, year int, bui
 	if err != nil {
 		return nil, fmt.Errorf("failed to query active leases for period: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var results []*models.LeaseSearchResult
 	for rows.Next() {
@@ -294,7 +294,7 @@ func (r *PaymentRepository) GetTenantPaymentSummary(orgID int) ([]*models.Tenant
 	if err != nil {
 		return nil, fmt.Errorf("failed to query tenant summary: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var entries []*models.TenantReportEntry
 	for rows.Next() {
@@ -346,7 +346,7 @@ func (r *PaymentRepository) GetPaymentAnalyticsByPeriod(orgID int, startDate, en
 	if err != nil {
 		return nil, fmt.Errorf("failed to query payment methods: %w", err)
 	}
-	defer methodRows.Close()
+	defer func() { _ = methodRows.Close() }()
 	for methodRows.Next() {
 		var method string
 		var cnt int64
@@ -371,7 +371,7 @@ func (r *PaymentRepository) GetPaymentAnalyticsByPeriod(orgID int, startDate, en
 	if err != nil {
 		return nil, fmt.Errorf("failed to query status distribution: %w", err)
 	}
-	defer statusRows.Close()
+	defer func() { _ = statusRows.Close() }()
 	for statusRows.Next() {
 		var status string
 		var cnt int64
@@ -396,7 +396,7 @@ func (r *PaymentRepository) GetPaymentAnalyticsByPeriod(orgID int, startDate, en
 	if err != nil {
 		return nil, fmt.Errorf("failed to query daily trend: %w", err)
 	}
-	defer dailyRows.Close()
+	defer func() { _ = dailyRows.Close() }()
 	for dailyRows.Next() {
 		var day string
 		var cnt int64
@@ -459,7 +459,7 @@ func (r *PaymentRepository) GetMonthlyCollectionTrend(orgID int, months int) ([]
 	if err != nil {
 		return nil, fmt.Errorf("failed to get monthly trend: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	trend := make([]*models.MonthlyCollectionTrend, 0, months)
 	for rows.Next() {

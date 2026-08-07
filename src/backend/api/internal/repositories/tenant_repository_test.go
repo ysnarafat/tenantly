@@ -17,7 +17,7 @@ func newSqlxMock(t *testing.T) (*sqlx.DB, sqlmock.Sqlmock) {
 	t.Helper()
 	sqlDB, mock, err := sqlmock.New()
 	assert.NoError(t, err)
-	t.Cleanup(func() { sqlDB.Close() })
+	t.Cleanup(func() { _ = sqlDB.Close() })
 	return sqlx.NewDb(sqlDB, "postgres"), mock
 }
 

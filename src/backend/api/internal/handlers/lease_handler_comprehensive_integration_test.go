@@ -112,7 +112,7 @@ func (suite *LeaseIntegrationTestSuite) TearDownSuite() {
 
 	// Close database connection
 	if suite.db != nil {
-		suite.db.Close()
+		_ = suite.db.Close()
 	}
 }
 
@@ -250,22 +250,22 @@ func (suite *LeaseIntegrationTestSuite) createTestData() {
 func (suite *LeaseIntegrationTestSuite) cleanupTestData() {
 	// Clean up in reverse order of creation
 	if suite.testUnit != nil {
-		suite.unitRepo.Delete(suite.testUnit.ID)
+		_ = suite.unitRepo.Delete(suite.testUnit.ID)
 	}
 	if suite.testBuilding != nil {
-		suite.buildingRepo.SoftDelete(suite.testBuilding.ID)
+		_ = suite.buildingRepo.SoftDelete(suite.testBuilding.ID)
 	}
 	if suite.testProperty != nil {
-		suite.propertyRepo.Delete(suite.testProperty.ID)
+		_ = suite.propertyRepo.Delete(suite.testProperty.ID)
 	}
 	if suite.testTenant != nil {
-		suite.tenantRepo.Update(suite.testTenant.ID, map[string]interface{}{"active": false})
+		_ = suite.tenantRepo.Update(suite.testTenant.ID, map[string]interface{}{"active": false})
 	}
 	if suite.testUser != nil {
-		suite.userRepo.Delete(suite.testUser.ID)
+		_ = suite.userRepo.Delete(suite.testUser.ID)
 	}
 	if suite.testOrg != nil {
-		suite.orgRepo.Delete(suite.testOrg.ID)
+		_ = suite.orgRepo.Delete(suite.testOrg.ID)
 	}
 }
 
@@ -273,7 +273,7 @@ func (suite *LeaseIntegrationTestSuite) cleanupLeaseTestData() {
 	// Clean up leases created during tests
 	leases, _, _ := suite.leaseRepo.GetAll(1, 100, suite.testOrg.ID)
 	for _, lease := range leases {
-		suite.leaseRepo.Delete(lease.ID)
+		_ = suite.leaseRepo.Delete(lease.ID)
 	}
 }
 
@@ -292,7 +292,7 @@ func (suite *LeaseIntegrationTestSuite) generateAuthToken() string {
 
 	if w.Code == http.StatusOK {
 		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
+		_ = json.Unmarshal(w.Body.Bytes(), &response)
 		if token, ok := response["token"].(string); ok {
 			return "Bearer " + token
 		}

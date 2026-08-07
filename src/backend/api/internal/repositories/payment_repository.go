@@ -308,7 +308,7 @@ func (r *PaymentRepository) GetBatchPropertyPaymentStats(propertyIDs []int, star
 	if err != nil {
 		return nil, fmt.Errorf("failed to get batch property payment stats: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	result := make(map[int]any, len(propertyIDs))
 	for rows.Next() {
@@ -449,7 +449,7 @@ func (r *PaymentRepository) SearchLeases(orgID int, query string) ([]*models.Lea
 	if err != nil {
 		return nil, fmt.Errorf("failed to search leases: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var results []*models.LeaseSearchResult
 	for rows.Next() {

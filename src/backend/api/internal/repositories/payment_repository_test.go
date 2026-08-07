@@ -490,7 +490,7 @@ func TestPaymentRepository_GetBuildingPaymentStats(t *testing.T) {
 		// Create payments with different statuses
 		paidAmount := 5000.0
 		paidStatus := models.PaymentStatusPaid
-		repo.Create(&models.CreatePaymentRequest{
+		_, _ = repo.Create(&models.CreatePaymentRequest{
 			UnitID:         unitID,
 			TenantID:       tenantID,
 			BuildingID:     bldgID,
@@ -501,7 +501,7 @@ func TestPaymentRepository_GetBuildingPaymentStats(t *testing.T) {
 			AmountDue:      5000.0,
 		})
 		paymentID := 1
-		repo.Update(paymentID, &models.UpdatePaymentRequest{
+		_, _ = repo.Update(paymentID, &models.UpdatePaymentRequest{
 			Status:     &paidStatus,
 			AmountPaid: &paidAmount,
 		})

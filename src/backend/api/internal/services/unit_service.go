@@ -68,7 +68,7 @@ func (s *UnitService) CreateUnit(req *models.CreateUnitRequest, userID, orgID in
 	}
 
 	// Log audit with building context
-	s.auditService.LogUserAction(userID, "CREATE", "units", &unit.ID, nil, map[string]interface{}{
+	_ = s.auditService.LogUserAction(userID, "CREATE", "units", &unit.ID, nil, map[string]interface{}{
 		"unit_id":     unit.ID,
 		"building_id": unit.BuildingID,
 		"property_id": unit.PropertyID,
@@ -120,7 +120,7 @@ func (s *UnitService) UpdateUnit(id int, req *models.UpdateUnitRequest, userID, 
 	}
 
 	// Log audit with building context
-	s.auditService.LogUserAction(userID, "UPDATE", "units", &id, existingUnit, updatedUnit)
+	_ = s.auditService.LogUserAction(userID, "UPDATE", "units", &id, existingUnit, updatedUnit)
 
 	return updatedUnit, nil
 }
@@ -152,7 +152,7 @@ func (s *UnitService) DeleteUnit(id, userID, orgID int) error {
 	}
 
 	// Log audit with building context
-	s.auditService.LogUserAction(userID, "DELETE", "units", &id, existingUnit, nil)
+	_ = s.auditService.LogUserAction(userID, "DELETE", "units", &id, existingUnit, nil)
 
 	return nil
 }

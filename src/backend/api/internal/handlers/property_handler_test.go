@@ -26,7 +26,7 @@ func setupPropertyHandlerTestDB(t *testing.T) (*sqlx.DB, func()) {
 	}
 
 	if err := db.Ping(); err != nil {
-		db.Close()
+		_ = db.Close()
 		t.Skipf("Skipping test: PostgreSQL not available: %v", err)
 	}
 
@@ -35,7 +35,7 @@ func setupPropertyHandlerTestDB(t *testing.T) (*sqlx.DB, func()) {
 
 	cleanup := func() {
 		dropPropertyHandlerTestTables(t, db)
-		db.Close()
+		_ = db.Close()
 	}
 
 	return db, cleanup
@@ -339,7 +339,7 @@ func TestPropertyHandler_GetProperty(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	var createResponse map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &createResponse)
+	_ = json.Unmarshal(w.Body.Bytes(), &createResponse)
 	property := createResponse["property"].(map[string]interface{})
 	propertyID := int(property["id"].(float64))
 
@@ -431,7 +431,7 @@ func TestPropertyHandler_UpdateProperty(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	var createResponse map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &createResponse)
+	_ = json.Unmarshal(w.Body.Bytes(), &createResponse)
 	property := createResponse["property"].(map[string]interface{})
 	propertyID := int(property["id"].(float64))
 
@@ -545,7 +545,7 @@ func TestPropertyHandler_DeleteProperty(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	var createResponse map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &createResponse)
+	_ = json.Unmarshal(w.Body.Bytes(), &createResponse)
 	property := createResponse["property"].(map[string]interface{})
 	propertyID := int(property["id"].(float64))
 

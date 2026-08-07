@@ -50,7 +50,7 @@ func SetupTestDBWithConfig(t *testing.T, config *TestDBConfig) (*sqlx.DB, func()
 	}
 
 	if err := runMigrations(db); err != nil {
-		db.Close()
+		_ = db.Close()
 		t.Fatalf("Failed to run migrations: %v", err)
 	}
 
@@ -58,7 +58,7 @@ func SetupTestDBWithConfig(t *testing.T, config *TestDBConfig) (*sqlx.DB, func()
 		if err := dropAllTables(db); err != nil {
 			t.Logf("Warning: Failed to cleanup database: %v", err)
 		}
-		db.Close()
+		_ = db.Close()
 	}
 
 	return db, cleanup
@@ -76,7 +76,7 @@ func runMigrations(db *sqlx.DB) error {
 	if err != nil {
 		return fmt.Errorf("failed to create migrate instance: %w", err)
 	}
-	defer m.Close()
+	defer func() { _, _ = m.Close() }()
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("failed to run migrations: %w", err)
@@ -97,7 +97,7 @@ func dropAllTables(db *sqlx.DB) error {
 	if err != nil {
 		return err
 	}
-	defer m.Close()
+	defer func() { _, _ = m.Close() }()
 
 	if err := m.Down(); err != nil && err != migrate.ErrNoChange {
 		return err

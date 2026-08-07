@@ -316,7 +316,7 @@ func (r *UnitRepository) GetByBuildingWithDetails(buildingID int, limit, offset,
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get units: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var units []*models.UnitWithDetails
 	for rows.Next() {
@@ -381,7 +381,7 @@ func (r *UnitRepository) GetByPropertyWithDetails(propertyID int, limit, offset,
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get units: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var units []*models.UnitWithDetails
 	for rows.Next() {
@@ -452,7 +452,7 @@ func (r *UnitRepository) GetBuildingUnitTypeDistribution(buildingID int) (interf
 	if err != nil {
 		return nil, fmt.Errorf("failed to get unit type distribution: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	distribution := make(map[string]int)
 	for rows.Next() {
@@ -480,7 +480,7 @@ func (r *UnitRepository) GetByOrganizationID(orgID int) ([]*models.Unit, error) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get units by organization: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var units []*models.Unit
 	for rows.Next() {

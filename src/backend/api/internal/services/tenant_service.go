@@ -54,7 +54,7 @@ func (s *TenantService) CreateTenant(req *models.CreateTenantRequest, userID int
 	}
 
 	// Log audit — record only the non-sensitive NID last-four, never the full value.
-	s.auditService.LogUserAction(userID, "CREATE", "tenants", &tenant.ID, nil, map[string]interface{}{
+	_ = s.auditService.LogUserAction(userID, "CREATE", "tenants", &tenant.ID, nil, map[string]interface{}{
 		"tenant_id":     tenant.ID,
 		"name":          tenant.Name,
 		"tenant_type":   tenant.TenantType,

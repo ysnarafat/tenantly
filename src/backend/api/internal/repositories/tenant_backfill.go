@@ -37,7 +37,7 @@ func BackfillTenantNID(db *sqlx.DB, nid *appcrypto.NIDProtector) error {
 	if err != nil {
 		return fmt.Errorf("failed to query tenants for NID back-fill: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	type pending struct {
 		id        int

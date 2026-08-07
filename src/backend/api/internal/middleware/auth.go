@@ -55,7 +55,7 @@ func AuthRequired(jwtSecret string, auditService *database.AuditService) gin.Han
 		if err != nil {
 			// Log failed authentication attempt
 			if auditService != nil {
-				auditService.LogSystemAction(
+				_ = auditService.LogSystemAction(
 					models.AuditActionLogin,
 					models.TableUsers,
 					nil,
@@ -136,7 +136,7 @@ func AuthRequired(jwtSecret string, auditService *database.AuditService) gin.Han
 
 		// Log successful authentication
 		if auditService != nil {
-			auditService.LogUserAction(
+			_ = auditService.LogUserAction(
 				int(userID),
 				"ACCESS",
 				models.TableUsers,
@@ -187,12 +187,8 @@ func RequireRole(roles ...string) gin.HandlerFunc {
 			}
 		}
 
-		// Log unauthorized access attempt
-		userID, _ := c.Get("user_id")
-		if _, ok := userID.(int); ok {
-			// Note: We'd need to pass auditService here, but for now we'll skip logging
-			// This could be improved by using dependency injection or context
-		}
+		// Note: unauthorized access attempts are audit-logged by the security
+		// middleware layer, which has the auditService dependency injected.
 
 		c.JSON(http.StatusForbidden, gin.H{
 			"error": fmt.Sprintf("Access denied. Required roles: %v, user role: %s", roles, role),

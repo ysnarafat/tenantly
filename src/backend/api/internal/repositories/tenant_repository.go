@@ -233,7 +233,7 @@ func (r *TenantRepository) GetAll(page, pageSize, orgID int) ([]*models.Tenant, 
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get all tenants: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var tenants []*models.Tenant
 	for rows.Next() {
