@@ -7,7 +7,6 @@ services:
       JWT_EXPIRATION: 8h
       ENVIRONMENT: development
     volumes:
-      - ./src/backend/api:/app
       - ./src/backend/api/migrations:/app/migrations
 
   frontend:
