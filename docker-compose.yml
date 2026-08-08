@@ -16,6 +16,12 @@ services:
     networks:
       - tenantly-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   # Go API Service
   api:
@@ -28,11 +34,19 @@ services:
     expose:
       - "8080"
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - tenantly-network
     volumes:
       - ./src/backend/api/migrations:/app/migrations
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8080/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   # Angular Frontend
   frontend:
@@ -45,9 +59,17 @@ services:
     expose:
       - "8080"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     networks:
       - tenantly-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8080/"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   # Nginx Reverse Proxy
   nginx:
@@ -56,10 +78,13 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - api
-      - frontend
+      api:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
     networks:
       - tenantly-network
+    restart: unless-stopped
 
   # C# Notification Service
   notification-service:

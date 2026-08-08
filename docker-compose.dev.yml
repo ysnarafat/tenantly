@@ -2,7 +2,12 @@ services:
   api:
     container_name: tenantly-api-dev    
     environment:
-      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-password}@postgres:5432/tenantly?sslmode=disable
+      # Must match postgres's own POSTGRES_PASSWORD default in
+      # docker-compose.yml — a different fallback here than there means
+      # Postgres gets initialized with one password while the API tries to
+      # connect with another whenever POSTGRES_PASSWORD isn't actually set,
+      # which is a guaranteed, permanent auth failure (not a startup race).
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-change-this-in-production}@postgres:5432/tenantly?sslmode=disable
       JWT_SECRET: your-secret-key-change-in-production
       JWT_EXPIRATION: 8h
       ENVIRONMENT: development

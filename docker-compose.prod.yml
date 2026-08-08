@@ -28,8 +28,9 @@ services:
 
   # Angular Frontend (Production)
   frontend:
-    args:
-      BUILD_CONFIGURATION: production
+    build:
+      args:
+        BUILD_CONFIGURATION: production
     restart: always
 
   nginx:
