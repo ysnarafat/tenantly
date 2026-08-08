@@ -158,6 +158,9 @@ export class InviteUserComponent implements OnInit {
   callerOrgName = signal<string>('');
 
   private callerUser = toSignal(this.store.select(AuthSelectors.selectUser));
+  private callerOrganizations = toSignal(this.store.select(AuthSelectors.selectUserOrganizations), {
+    initialValue: [],
+  });
   isSuperAdmin = computed(() => this.callerUser()?.role === 'SUPER_ADMIN');
 
   allowedRoles = [
@@ -185,11 +188,13 @@ export class InviteUserComponent implements OnInit {
         });
       } else if (user.organization_id) {
         this.form.patchValue({ organizationId: user.organization_id });
-        this.organizationService.getOrganization(user.organization_id).subscribe({
-          next: (org) => this.callerOrgName.set(org.name),
-          error: () =>
-            this.snackBar.open('Failed to load organization', 'Close', { duration: 3000 }),
-        });
+        // GET /organizations/:id is SUPER_ADMIN-only too — look the caller's
+        // own org name up in their login-derived org list instead of a call
+        // that would just 403.
+        const org = this.callerOrganizations().find(
+          (o) => o.organization_id === user.organization_id
+        );
+        this.callerOrgName.set(org?.organization.name || '');
       }
     });
   }

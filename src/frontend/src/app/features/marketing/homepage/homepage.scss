@@ -1,0 +1,696 @@
+// ── Design tokens ───────────────────────────────────────────────────────────
+// A dusk-to-daylight palette: the hero opens on the same indigo-to-gold dusk
+// gradient as the login screen (an evening spent chasing rent), the body
+// settles into warm "ledger paper" tones, and the closing band returns to
+// ink to bookend the page — night framing a tidy day.
+:host {
+  display: block;
+
+  --hp-ink: #1c1b3a;
+  --hp-ink-soft: #2a2856;
+  --hp-violet: #4b4bd6;
+  --hp-violet-soft: #8c8ce8;
+  --hp-terracotta: #c1673e;
+  --hp-marigold: #efa94e;
+  --hp-paper: #fbf6ec;
+  --hp-surface: #ffffff;
+  --hp-jute: #e7dcc6;
+  --hp-text: #241f3d;
+  --hp-text-soft: #5b5573;
+  --hp-cream: #fbf5ea;
+}
+
+:host-context([data-theme='dark']) {
+  --hp-paper: #15142b;
+  --hp-surface: #1c1b3a;
+  --hp-jute: #322f5c;
+  --hp-text: #f2eee2;
+  --hp-text-soft: #b8b3d6;
+  --hp-terracotta: #d9824f;
+  --hp-marigold: #f3bd68;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.homepage {
+  overflow-x: hidden;
+  background: var(--hp-paper);
+  font-family: 'Roboto', 'Noto Sans Bengali', sans-serif;
+}
+
+// ── Shared section scaffolding ───────────────────────────────────────────────
+.hp-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--hp-terracotta);
+
+  &::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--hp-marigold);
+  }
+
+  &.hp-eyebrow-on-dark {
+    color: var(--hp-marigold);
+  }
+}
+
+.hp-section-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  color: var(--hp-text);
+  letter-spacing: -0.01em;
+  margin: 10px 0 0;
+}
+
+.hp-cta-primary {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  padding: 0 28px !important;
+  border-radius: 50px !important;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+  color: #fff !important;
+  background: linear-gradient(100deg, var(--hp-terracotta), var(--hp-marigold)) !important;
+  box-shadow: 0 10px 30px rgba(193, 103, 62, 0.35);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 36px rgba(193, 103, 62, 0.45);
+  }
+}
+
+.hp-cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 46px;
+  padding: 0 8px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--hp-cream);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.18s ease;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    transition: transform 0.18s ease;
+  }
+
+  &:hover {
+    border-color: var(--hp-marigold);
+
+    mat-icon {
+      transform: translateX(3px);
+    }
+  }
+}
+
+// ── Nav ───────────────────────────────────────────────────────────────────────
+$hp-nav-height: 56px;
+
+.hp-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  height: $hp-nav-height;
+  padding: 0 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  // A plain opaque background rather than a translucent + backdrop-filter
+  // blur: combined with `position: sticky`, blur compositing has a known
+  // Chromium glitch where the blurred backdrop can paint a stale snapshot
+  // of unrelated content from elsewhere on the page.
+  background: var(--hp-ink);
+  border-radius: 0 0 18px 18px;
+}
+
+.hp-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+
+  .hp-brand-icon {
+    color: var(--hp-marigold);
+    filter: drop-shadow(0 2px 8px rgba(239, 169, 78, 0.4));
+  }
+
+  .hp-brand-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 1.15rem;
+    letter-spacing: 3px;
+  }
+}
+
+.hp-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  .hp-nav-link {
+    color: rgba(255, 255, 255, 0.85);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 0 14px;
+    transition: color 0.15s ease;
+
+    &:hover {
+      color: var(--hp-marigold);
+    }
+  }
+
+  button.mat-mdc-icon-button {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .hp-nav-cta {
+    margin-left: 8px;
+    height: 38px !important;
+    padding: 0 22px !important;
+    border-radius: 50px !important;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--hp-ink) !important;
+    background: var(--hp-marigold) !important;
+  }
+}
+
+// ── Hero ───────────────────────────────────────────────────────────────────────
+.hp-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  align-items: center;
+  gap: 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: calc(100vh - #{$hp-nav-height});
+  padding: 20px 24px;
+  color: var(--hp-cream);
+
+  background:
+    radial-gradient(ellipse 900px 500px at 15% 100%, rgba(239, 169, 78, 0.22), transparent),
+    linear-gradient(180deg, #211f52 0%, #3d3aad 42%, #6c58c4 70%, #c1673e 100%);
+  margin-top: -1px; // seam under the sticky nav's rounded corners
+}
+
+.hp-hero-title {
+  margin: 10px 0 12px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: clamp(1.9rem, 3.4vw, 3rem);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+
+  .hp-hero-title-line {
+    display: block;
+
+    &:last-child {
+      color: var(--hp-marigold);
+    }
+  }
+}
+
+.hp-hero-subtitle {
+  max-width: 46ch;
+  font-size: 0.98rem;
+  line-height: 1.55;
+  color: rgba(251, 246, 236, 0.85);
+  margin: 0 0 22px;
+}
+
+.hp-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+// ── Hero signature visual: paper ledger entry → clean digital row ─────────────
+.hp-hero-visual {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.hp-ledger-page {
+  position: relative;
+  width: min(280px, 100%);
+  padding: 20px 20px 18px 36px;
+  background: var(--hp-cream);
+  color: var(--hp-ink);
+  border-radius: 4px;
+  transform: rotate(-4deg);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.28);
+  animation: hp-settle-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+
+  .hp-ledger-holes {
+    position: absolute;
+    left: 12px;
+    top: 16px;
+    bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--hp-jute);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+    }
+  }
+
+  .hp-ledger-lines {
+    position: absolute;
+    inset: 16px 14px 14px 36px;
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 22px,
+      var(--hp-jute) 23px
+    );
+    opacity: 0.6;
+  }
+
+  .hp-ledger-scribble {
+    position: relative;
+    margin: 18px 0 6px;
+    font-family: 'Caveat', cursive;
+    font-size: 1.35rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--hp-ink);
+  }
+}
+
+.hp-flow-arrow {
+  color: var(--hp-marigold);
+  // Drawn pointing down natively rather than rotated with `transform` — a
+  // rotated box keeps its pre-rotation width/height for layout purposes,
+  // so a rotated horizontal arrow would visually overflow the flex column's
+  // reserved space instead of taking up the vertical room it appears to.
+  width: 20px;
+  height: 32px;
+  opacity: 0;
+  animation: hp-fade-in 0.5s ease 0.55s both;
+
+  svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+}
+
+.hp-ledger-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(280px, 100%);
+  padding: 13px 18px;
+  background: var(--hp-surface);
+  border-radius: 14px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22);
+  opacity: 0;
+  animation: hp-rise-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) 0.75s both;
+
+  .hp-row-icon {
+    color: var(--hp-violet);
+    flex-shrink: 0;
+  }
+
+  .hp-row-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--hp-text);
+  }
+
+  .hp-row-method {
+    margin-left: auto;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--hp-text-soft);
+  }
+
+  .hp-row-status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #2e7d32;
+    background: #e8f5e9;
+    padding: 4px 10px;
+    border-radius: 20px;
+  }
+}
+
+@keyframes hp-settle-in {
+  from {
+    opacity: 0;
+    transform: rotate(-14deg) translateY(-24px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-4deg) translateY(0) scale(1);
+  }
+}
+
+@keyframes hp-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes hp-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// ── Features ────────────────────────────────────────────────────────────────
+.hp-features {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 88px 24px;
+}
+
+.hp-features-grid {
+  margin-top: 40px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.hp-feature-card {
+  padding: 30px 26px;
+  background: var(--hp-surface);
+  border: 1px solid var(--hp-jute);
+  border-radius: 18px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+
+  h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 1.12rem;
+    color: var(--hp-text);
+    margin: 18px 0 10px;
+  }
+
+  p {
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--hp-text-soft);
+    margin: 0;
+  }
+
+  .hp-feature-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    font-size: 24px;
+    border-radius: 12px;
+    color: var(--hp-terracotta);
+    background: color-mix(in srgb, var(--hp-terracotta) 14%, transparent);
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 36px rgba(28, 27, 58, 0.1);
+  }
+}
+
+// ── FAQ ─────────────────────────────────────────────────────────────────────
+.hp-faq {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 88px 24px 100px;
+}
+
+.hp-faq-list {
+  margin-top: 32px;
+  border-top: 1px solid var(--hp-jute);
+}
+
+.hp-faq-item {
+  border-bottom: 1px solid var(--hp-jute);
+}
+
+.hp-faq-question {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--hp-text);
+
+  .hp-faq-index {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--hp-terracotta);
+    flex-shrink: 0;
+  }
+
+  .hp-faq-question-text {
+    flex: 1;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500;
+    font-size: 1.02rem;
+  }
+
+  .hp-faq-caret {
+    color: var(--hp-text-soft);
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--hp-violet);
+    outline-offset: 2px;
+  }
+}
+
+.hp-faq-item.open .hp-faq-caret {
+  transform: rotate(180deg);
+}
+
+.hp-faq-answer-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  transition: grid-template-rows 0.3s ease;
+
+  p {
+    min-height: 0;
+  }
+}
+
+.hp-faq-item.open .hp-faq-answer-wrap {
+  grid-template-rows: 1fr;
+}
+
+.hp-faq-answer {
+  overflow: hidden;
+  margin: 0;
+  padding: 0 4px 22px 42px;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--hp-text-soft);
+}
+
+// ── Final CTA ───────────────────────────────────────────────────────────────
+.hp-final-cta {
+  text-align: center;
+  padding: 96px 24px;
+  background: linear-gradient(180deg, var(--hp-ink) 0%, #2a2856 100%);
+  color: var(--hp-cream);
+
+  h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(1.9rem, 3.4vw, 2.6rem);
+    margin: 0 0 14px;
+  }
+
+  p {
+    max-width: 52ch;
+    margin: 0 auto 36px;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: rgba(251, 246, 236, 0.78);
+  }
+}
+
+.hp-final-cta-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  flex-wrap: wrap;
+}
+
+// ── Footer ──────────────────────────────────────────────────────────────────
+.hp-footer {
+  text-align: center;
+  padding: 40px 24px 48px;
+  background: var(--hp-ink);
+  color: rgba(251, 246, 236, 0.6);
+
+  .hp-footer-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--hp-cream);
+    margin-bottom: 10px;
+
+    mat-icon {
+      color: var(--hp-marigold);
+    }
+
+    span {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      letter-spacing: 2px;
+      font-size: 0.95rem;
+    }
+  }
+
+  p {
+    margin: 4px 0;
+    font-size: 0.82rem;
+  }
+}
+
+// ── Responsive ──────────────────────────────────────────────────────────────
+@media (max-width: 1024px) {
+  .hp-features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .hp-hero {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    padding: 40px 24px 56px;
+    text-align: center;
+  }
+
+  .hp-hero-subtitle {
+    margin-inline: auto;
+  }
+
+  .hp-hero-actions {
+    justify-content: center;
+  }
+
+  .hp-hero-visual {
+    margin-top: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .hp-nav {
+    padding: 14px 16px;
+  }
+
+  .hp-nav-actions .hp-nav-link {
+    display: none;
+  }
+
+  .hp-features,
+  .hp-faq {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .hp-features-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .hp-hero {
+    padding: 40px 12px 56px;
+  }
+
+  .hp-features,
+  .hp-faq {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .hp-final-cta-actions {
+    flex-direction: column;
+    gap: 16px;
+  }
+}
+
+// ── Reduced motion ────────────────────────────────────────────────────────────
+@media (prefers-reduced-motion: reduce) {
+  .hp-ledger-page,
+  .hp-flow-arrow,
+  .hp-ledger-row {
+    animation: none;
+    opacity: 1;
+  }
+
+  .hp-feature-card,
+  .hp-cta-primary,
+  .hp-cta-secondary,
+  .hp-faq-caret,
+  .hp-faq-answer-wrap {
+    transition: none;
+  }
+}

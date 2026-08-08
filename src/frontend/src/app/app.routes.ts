@@ -4,6 +4,8 @@ import { GuestGuard } from './core/guards/guest.guard';
 import { superAdminGuard } from './core/guards/super-admin.guard';
 import { orgAdminGuard } from './core/guards/org-admin.guard';
 import { userManagementGuard } from './core/guards/user-management.guard';
+import { permissionGuard } from './core/guards/permission.guard';
+import { Permission } from './core/models/role.model';
 import { provideState } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
 import { propertyReducer } from './features/properties/store/property.reducer';
@@ -16,8 +18,13 @@ import { UnitEffects } from './features/properties/store/unit.effects';
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: '/dashboard',
+    redirectTo: '/home',
     pathMatch: 'full',
+  },
+  {
+    path: 'home',
+    loadComponent: () => import('./features/marketing/homepage/homepage').then((m) => m.Homepage),
+    canActivate: [GuestGuard],
   },
   {
     path: 'login',
@@ -43,7 +50,7 @@ export const routes: Routes = [
       import('./features/properties/property-list/property-list.component').then(
         (m) => m.PropertyListComponent
       ),
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, permissionGuard(Permission.MANAGE_PROPERTIES)],
     providers: [
       provideState('properties', propertyReducer),
       provideState('buildings', buildingReducer),
@@ -55,28 +62,28 @@ export const routes: Routes = [
     path: 'tenants',
     loadComponent: () =>
       import('./features/tenants/tenant-list/tenant-list').then((m) => m.TenantList),
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, permissionGuard(Permission.MANAGE_TENANTS)],
   },
   {
     path: 'leases',
     loadComponent: () => import('./features/leases/lease-list/lease-list').then((m) => m.LeaseList),
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, permissionGuard(Permission.MANAGE_TENANTS)],
   },
   {
     path: 'leases/due',
     loadComponent: () => import('./features/leases/due-list/due-list').then((m) => m.DueList),
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, permissionGuard(Permission.MANAGE_TENANTS)],
   },
   {
     path: 'payments',
     loadComponent: () =>
       import('./features/payments/payment-list/payment-list').then((m) => m.PaymentList),
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, permissionGuard(Permission.VIEW_PAYMENTS)],
   },
   {
     path: 'reports',
     loadComponent: () => import('./features/reports/report-analysis').then((m) => m.ReportAnalysis),
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, permissionGuard(Permission.VIEW_REPORTS)],
   },
   {
     path: 'documents',
@@ -84,7 +91,7 @@ export const routes: Routes = [
       import('./features/attachments/attachment-list/attachment-list').then(
         (m) => m.AttachmentList
       ),
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, permissionGuard(Permission.MANAGE_DOCUMENTS)],
   },
   {
     path: 'users',
@@ -148,7 +155,16 @@ export const routes: Routes = [
     pathMatch: 'full',
   },
   {
+    path: '401',
+    loadComponent: () =>
+      import('./features/errors/unauthorized/unauthorized').then((m) => m.Unauthorized),
+  },
+  {
+    path: '404',
+    loadComponent: () => import('./features/errors/not-found/not-found').then((m) => m.NotFound),
+  },
+  {
     path: '**',
-    redirectTo: '/dashboard',
+    redirectTo: '/404',
   },
 ];

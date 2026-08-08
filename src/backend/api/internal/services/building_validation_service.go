@@ -200,11 +200,8 @@ func (v *BuildingValidationService) ValidateConstructionYear(year *int) error {
 		}
 	}
 
-	// Business rule: warn if construction year is in the future
-	if *year > currentYear {
-		// This is allowed but could be logged as a warning
-		// For now, we'll allow it as it might be for planned constructions
-	}
+	// Business rule: construction years up to maxYear in the future are allowed
+	// (e.g. planned constructions); this could be surfaced as a warning in future.
 
 	return nil
 }
@@ -227,11 +224,9 @@ func (v *BuildingValidationService) ValidateFloorCountAndElevatorRequirement(tot
 		}
 	}
 
-	// Business rule: Buildings with more than 4 floors should have an elevator
-	if totalFloors > 4 && !hasElevator {
-		// This is a warning, not an error - we'll allow it but could log a warning
-		// In a real system, this might be configurable based on local building codes
-	}
+	// Business rule: buildings with more than 4 floors should have an elevator.
+	// This is a warning, not an error - allowed, but could be logged and made
+	// configurable based on local building codes in future.
 
 	return nil
 }
@@ -410,20 +405,14 @@ func (v *BuildingValidationService) ValidateElevatorRequirement(totalFloors int,
 	// Business rules for elevator requirements based on building type
 	switch buildingType {
 	case models.BuildingTypeCommercial:
-		// Commercial buildings with more than 3 floors should have elevators
-		if totalFloors > 3 && !hasElevator {
-			// This is a warning, not an error - we'll allow it but could log a warning
-		}
+		// Commercial buildings with more than 3 floors should have elevators.
+		// This is a warning, not an error - allowed, but could be logged in future.
 	case models.BuildingTypeResidential:
-		// Residential buildings with more than 4 floors should have elevators
-		if totalFloors > 4 && !hasElevator {
-			// This is a warning, not an error - we'll allow it but could log a warning
-		}
+		// Residential buildings with more than 4 floors should have elevators.
+		// This is a warning, not an error - allowed, but could be logged in future.
 	case models.BuildingTypeMixed:
-		// Mixed buildings with more than 3 floors should have elevators due to commercial use
-		if totalFloors > 3 && !hasElevator {
-			// This is a warning, not an error - we'll allow it but could log a warning
-		}
+		// Mixed buildings with more than 3 floors should have elevators due to commercial use.
+		// This is a warning, not an error - allowed, but could be logged in future.
 	}
 
 	return nil

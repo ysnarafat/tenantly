@@ -34,6 +34,15 @@ export class TenantService {
     return this.http.get<TenantWithLeases>(`${this.apiUrl}/${id}`);
   }
 
+  // Fetches the full, decrypted NID from the role-gated reveal endpoint. Requires
+  // a valid MFA step-up token (sent as a header); every call is audit-logged
+  // server-side.
+  getTenantNid(id: number, stepUpToken: string): Observable<{ nid_number: string }> {
+    return this.http.get<{ nid_number: string }>(`${this.apiUrl}/${id}/nid`, {
+      headers: { 'X-Step-Up-Token': stepUpToken },
+    });
+  }
+
   updateTenant(id: number, tenant: UpdateTenantRequest): Observable<Tenant> {
     return this.http.put<Tenant>(`${this.apiUrl}/${id}`, tenant);
   }

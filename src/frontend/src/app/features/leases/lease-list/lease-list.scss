@@ -1,6 +1,6 @@
 .lease-list-container {
   padding: 24px;
-  max-width: 1300px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -505,5 +505,11 @@ mat-paginator {
         }
       }
     }
+  }
+}
+
+@media (max-width: 480px) {
+  .lease-list-container {
+    padding: 12px;
   }
 }

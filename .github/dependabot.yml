@@ -4,8 +4,7 @@ updates:
   - package-ecosystem: npm
     directory: /src/frontend
     schedule:
-      interval: weekly
-      day: saturday
+      interval: monthly
       time: "09:00"
     open-pull-requests-limit: 5
     reviewers:
@@ -29,8 +28,7 @@ updates:
   - package-ecosystem: gomod
     directory: /src/backend/api
     schedule:
-      interval: weekly
-      day: saturday
+      interval: monthly
       time: "09:30"
     open-pull-requests-limit: 5
     reviewers:
@@ -54,8 +52,7 @@ updates:
   - package-ecosystem: nuget
     directory: /src/backend/notification-service
     schedule:
-      interval: weekly
-      day: saturday
+      interval: monthly
       time: "10:00"
     open-pull-requests-limit: 5
     reviewers:

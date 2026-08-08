@@ -53,7 +53,7 @@ func (s *PropertyService) CreateProperty(req *models.CreatePropertyRequest, user
 	}
 
 	// Log audit
-	s.auditService.LogUserAction(userID, "CREATE", "properties", &property.ID, nil, property)
+	_ = s.auditService.LogUserAction(userID, "CREATE", "properties", &property.ID, nil, property)
 
 	return property, nil
 }
@@ -145,7 +145,7 @@ func (s *PropertyService) UpdateProperty(id int, req *models.UpdatePropertyReque
 	}
 
 	// Log audit
-	s.auditService.LogUserAction(userID, "UPDATE", "properties", &id, existingProperty, updatedProperty)
+	_ = s.auditService.LogUserAction(userID, "UPDATE", "properties", &id, existingProperty, updatedProperty)
 
 	return updatedProperty, nil
 }
@@ -186,7 +186,7 @@ func (s *PropertyService) DeleteProperty(id int, userID, orgID int) error {
 	}
 
 	// Log audit
-	s.auditService.LogUserAction(userID, "DELETE", "properties", &id, existingProperty, nil)
+	_ = s.auditService.LogUserAction(userID, "DELETE", "properties", &id, existingProperty, nil)
 
 	return nil
 }

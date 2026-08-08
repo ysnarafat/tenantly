@@ -174,7 +174,7 @@ func (s *UserService) CreateUser(req *models.CreateUserRequest) (*models.User, e
 
 	// Log user creation
 	if s.auditService != nil {
-		s.auditService.LogSystemAction(
+		_ = s.auditService.LogSystemAction(
 			models.AuditActionCreate,
 			models.TableUsers,
 			&user.ID,
@@ -204,7 +204,7 @@ func (s *UserService) Login(req *models.LoginRequest, clientIP, userAgent string
 	if !user.Active {
 		// Log failed login attempt for inactive user
 		if s.auditService != nil {
-			s.auditService.LogUserAction(
+			_ = s.auditService.LogUserAction(
 				user.ID,
 				models.AuditActionLogin,
 				models.TableUsers,
@@ -226,7 +226,7 @@ func (s *UserService) Login(req *models.LoginRequest, clientIP, userAgent string
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
 		// Log failed login attempt
 		if s.auditService != nil {
-			s.auditService.LogUserAction(
+			_ = s.auditService.LogUserAction(
 				user.ID,
 				models.AuditActionLogin,
 				models.TableUsers,
@@ -252,7 +252,7 @@ func (s *UserService) Login(req *models.LoginRequest, clientIP, userAgent string
 
 	// Log successful login
 	if s.auditService != nil {
-		s.auditService.LogUserAction(
+		_ = s.auditService.LogUserAction(
 			user.ID,
 			models.AuditActionLogin,
 			models.TableUsers,
@@ -448,7 +448,7 @@ func (s *UserService) UpdateUser(id int, req *models.UpdateUserRequest) error {
 
 	// Log user update
 	if s.auditService != nil {
-		s.auditService.LogSystemAction(
+		_ = s.auditService.LogSystemAction(
 			models.AuditActionUpdate,
 			models.TableUsers,
 			&id,
@@ -492,7 +492,7 @@ func (s *UserService) DeleteUser(id int) error {
 
 	// Log user deletion
 	if s.auditService != nil {
-		s.auditService.LogSystemAction(
+		_ = s.auditService.LogSystemAction(
 			models.AuditActionDelete,
 			models.TableUsers,
 			&id,
@@ -634,7 +634,7 @@ func (s *UserService) RefreshToken(refreshTokenString string) (*models.LoginResp
 
 	// Log token refresh
 	if s.auditService != nil {
-		s.auditService.LogUserAction(
+		_ = s.auditService.LogUserAction(
 			user.ID,
 			"TOKEN_REFRESH",
 			models.TableUsers,
@@ -658,7 +658,7 @@ func (s *UserService) RefreshToken(refreshTokenString string) (*models.LoginResp
 func (s *UserService) Logout(userID int, clientIP, userAgent string) error {
 	// Log logout
 	if s.auditService != nil {
-		s.auditService.LogUserAction(
+		_ = s.auditService.LogUserAction(
 			userID,
 			models.AuditActionLogout,
 			models.TableUsers,
@@ -711,7 +711,7 @@ func (s *UserService) ChangePassword(userID int, currentPassword, newPassword st
 
 	// Log password change
 	if s.auditService != nil {
-		s.auditService.LogUserAction(
+		_ = s.auditService.LogUserAction(
 			userID,
 			"PASSWORD_CHANGE",
 			models.TableUsers,
@@ -733,7 +733,7 @@ func (s *UserService) ResetPassword(email string) error {
 		// Don't reveal if email exists or not for security
 		// Still log the attempt for security monitoring
 		if s.auditService != nil {
-			s.auditService.LogSystemAction(
+			_ = s.auditService.LogSystemAction(
 				"PASSWORD_RESET_REQUEST",
 				models.TableUsers,
 				nil,
@@ -773,7 +773,7 @@ func (s *UserService) ResetPassword(email string) error {
 
 	// Log password reset request
 	if s.auditService != nil {
-		s.auditService.LogUserAction(
+		_ = s.auditService.LogUserAction(
 			user.ID,
 			"PASSWORD_RESET_REQUEST",
 			models.TableUsers,
@@ -837,7 +837,7 @@ func (s *UserService) ConfirmPasswordReset(token, newPassword string) error {
 	if err := s.userRepo.MarkResetTokenUsed(resetToken.ID); err != nil {
 		// Log error but don't fail the operation
 		if s.auditService != nil {
-			s.auditService.LogSystemAction(
+			_ = s.auditService.LogSystemAction(
 				"PASSWORD_RESET_TOKEN_CLEANUP_FAILED",
 				models.TableUsers,
 				&user.ID,
@@ -852,7 +852,7 @@ func (s *UserService) ConfirmPasswordReset(token, newPassword string) error {
 
 	// Log successful password reset
 	if s.auditService != nil {
-		s.auditService.LogUserAction(
+		_ = s.auditService.LogUserAction(
 			user.ID,
 			"PASSWORD_RESET_COMPLETED",
 			models.TableUsers,
@@ -989,7 +989,7 @@ func (s *UserService) RegisterWithInvitation(req *models.RegisterWithInvitationR
 
 	// Log user creation
 	if s.auditService != nil {
-		s.auditService.LogSystemAction(
+		_ = s.auditService.LogSystemAction(
 			models.AuditActionCreate,
 			models.TableUsers,
 			&user.ID,

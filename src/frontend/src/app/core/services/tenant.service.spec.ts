@@ -14,7 +14,7 @@ describe('TenantService', () => {
     tenant_type: 'Individual',
     email: 'john@example.com',
     phone_number: '1234567890',
-    nid_number: 'NID123',
+    nid_last_four: 'D123',
     address: '123 Main St',
     active: true,
     created_at: new Date().toISOString(),

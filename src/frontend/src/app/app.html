@@ -139,6 +139,18 @@
           <mat-icon class="nav-icon">payment</mat-icon>
           <span class="nav-label">Payments</span>
         </a>
+        } @if (canViewReports()) {
+        <a
+          class="nav-item"
+          routerLink="/reports"
+          routerLinkActive="nav-active"
+          (click)="onNavigate()"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? 'Reports' : ''"
+          matTooltipPosition="right"
+        >
+          <mat-icon class="nav-icon">bar_chart</mat-icon>
+          <span class="nav-label">Reports</span>
+        </a>
         } @if (canManageDocuments()) {
         <a
           class="nav-item"

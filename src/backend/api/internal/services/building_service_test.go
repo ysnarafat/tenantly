@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"sort"
 	"testing"
 	"time"
 
@@ -83,6 +84,9 @@ func (m *TestBuildingRepository) GetByPropertyID(propertyID int) ([]*models.Buil
 			buildings = append(buildings, building)
 		}
 	}
+	// m.buildings is a map, so range order is randomized; sort by ID
+	// (== creation order here) so callers/tests see a stable order.
+	sort.Slice(buildings, func(i, j int) bool { return buildings[i].ID < buildings[j].ID })
 	return buildings, nil
 }
 
@@ -541,7 +545,7 @@ func TestBuildingService_ValidateBuildingCodeUniqueness(t *testing.T) {
 		BuildingCode: "B001",
 		ActiveStatus: true,
 	}
-	buildingRepo.Create(existingBuilding)
+	_ = buildingRepo.Create(existingBuilding)
 
 	// Test duplicate building code
 	err := service.ValidateBuildingCodeUniqueness(1, "B001", nil)
@@ -700,7 +704,7 @@ func TestBuildingService_CreateBuilding_DuplicateCode(t *testing.T) {
 		TotalFloors:  3,
 		ActiveStatus: true,
 	}
-	buildingRepo.Create(existingBuilding)
+	_ = buildingRepo.Create(existingBuilding)
 
 	// Try to create building with same code
 	req := &models.CreateBuildingRequest{
@@ -898,7 +902,7 @@ func TestBuildingService_UpdateBuilding_Success(t *testing.T) {
 		HasElevator:  false,
 		ActiveStatus: true,
 	}
-	buildingRepo.Create(existingBuilding)
+	_ = buildingRepo.Create(existingBuilding)
 
 	// Update request
 	newName := "Updated Building"
@@ -969,7 +973,7 @@ func TestBuildingService_UpdateBuilding_InvalidMetadata(t *testing.T) {
 		TotalFloors:  3,
 		ActiveStatus: true,
 	}
-	buildingRepo.Create(existingBuilding)
+	_ = buildingRepo.Create(existingBuilding)
 
 	metadataValidator.SetShouldFail(true)
 
@@ -1006,7 +1010,7 @@ func TestBuildingService_UpdateBuilding_RepositoryFailure(t *testing.T) {
 		TotalFloors:  3,
 		ActiveStatus: true,
 	}
-	buildingRepo.Create(existingBuilding)
+	_ = buildingRepo.Create(existingBuilding)
 
 	buildingRepo.SetShouldFailUpdate(true)
 
@@ -1044,7 +1048,7 @@ func TestBuildingService_DeleteBuilding_Success(t *testing.T) {
 		TotalFloors:  3,
 		ActiveStatus: true,
 	}
-	buildingRepo.Create(building)
+	_ = buildingRepo.Create(building)
 
 	err := service.DeleteBuilding(1, 0)
 
@@ -1076,7 +1080,7 @@ func TestBuildingService_DeleteBuilding_WithActiveUnits(t *testing.T) {
 		TotalFloors:  3,
 		ActiveStatus: true,
 	}
-	buildingRepo.Create(building)
+	_ = buildingRepo.Create(building)
 	buildingRepo.SetHasActiveUnits(1, true)
 
 	err := service.DeleteBuilding(1, 0)
@@ -1127,7 +1131,7 @@ func TestBuildingService_DeleteBuilding_RepositoryFailure(t *testing.T) {
 		TotalFloors:  3,
 		ActiveStatus: true,
 	}
-	buildingRepo.Create(building)
+	_ = buildingRepo.Create(building)
 
 	buildingRepo.SetShouldFailDelete(true)
 
@@ -1344,7 +1348,7 @@ func TestBuildingService_GetBuildingAnalytics_Success(t *testing.T) {
 		TotalFloors:  3,
 		ActiveStatus: true,
 	}
-	buildingRepo.Create(building)
+	_ = buildingRepo.Create(building)
 
 	building.OrganizationID = 1
 	analytics, err := service.GetBuildingAnalytics(1, 1)
@@ -1409,7 +1413,7 @@ func TestBuildingService_CalculateBuildingRevenue_Success(t *testing.T) {
 		TotalFloors:  3,
 		ActiveStatus: true,
 	}
-	buildingRepo.Create(building)
+	_ = buildingRepo.Create(building)
 
 	revenue, err := service.CalculateBuildingRevenue(1)
 
@@ -1447,7 +1451,7 @@ func TestBuildingService_GetPropertyBuildingAnalytics_Success(t *testing.T) {
 	}
 
 	for _, building := range buildings {
-		buildingRepo.Create(building)
+		_ = buildingRepo.Create(building)
 	}
 
 	analyticsResults, err := service.GetPropertyBuildingAnalytics(1)
@@ -1510,7 +1514,7 @@ func TestBuildingService_SearchBuildings_Success(t *testing.T) {
 	}
 
 	for _, building := range buildings {
-		buildingRepo.Create(building)
+		_ = buildingRepo.Create(building)
 	}
 
 	// Search by building type
@@ -1584,7 +1588,7 @@ func TestBuildingService_GetBuildingsByProperty_Success(t *testing.T) {
 	}
 
 	for _, building := range buildings {
-		buildingRepo.Create(building)
+		_ = buildingRepo.Create(building)
 	}
 
 	results, err := service.GetBuildingsByProperty(1)
@@ -1639,7 +1643,7 @@ func TestBuildingService_GetBuildingByPropertyAndCode_Success(t *testing.T) {
 		TotalFloors:  3,
 		ActiveStatus: true,
 	}
-	buildingRepo.Create(building)
+	_ = buildingRepo.Create(building)
 
 	result, err := service.GetBuildingByPropertyAndCode(1, "TB001")
 
@@ -1700,11 +1704,9 @@ func TestBuildingService_AuditLogging_CreateBuilding(t *testing.T) {
 		t.Fatal("Expected building but got nil")
 	}
 
-	// Verify audit logging was called (in a real implementation, you'd check the audit service mock)
-	// For this test, we just verify the operation completed successfully
+	// Verify audit logging was called
 	if !auditService.loggedActions {
-		// In a real mock, you'd track calls to LogSystemAction
-		// For now, we just verify the service completed without error
+		t.Error("Expected audit logging to be called for building creation")
 	}
 }
 
@@ -1721,7 +1723,7 @@ func TestBuildingService_AuditLogging_UpdateBuilding(t *testing.T) {
 		TotalFloors:  3,
 		ActiveStatus: true,
 	}
-	buildingRepo.Create(existingBuilding)
+	_ = buildingRepo.Create(existingBuilding)
 
 	newName := "Updated Building"
 	req := &models.UpdateBuildingRequest{
@@ -1740,7 +1742,7 @@ func TestBuildingService_AuditLogging_UpdateBuilding(t *testing.T) {
 
 	// Verify audit logging was called
 	if !auditService.loggedActions {
-		// In a real mock, you'd verify LogSystemAction was called with UPDATE action
+		t.Error("Expected audit logging to be called for building update")
 	}
 }
 
@@ -1757,7 +1759,7 @@ func TestBuildingService_AuditLogging_DeleteBuilding(t *testing.T) {
 		TotalFloors:  3,
 		ActiveStatus: true,
 	}
-	buildingRepo.Create(building)
+	_ = buildingRepo.Create(building)
 
 	err := service.DeleteBuilding(1, 0)
 
@@ -1767,7 +1769,7 @@ func TestBuildingService_AuditLogging_DeleteBuilding(t *testing.T) {
 
 	// Verify audit logging was called
 	if !auditService.loggedActions {
-		// In a real mock, you'd verify LogSystemAction was called with DELETE action
+		t.Error("Expected audit logging to be called for building deletion")
 	}
 }
 

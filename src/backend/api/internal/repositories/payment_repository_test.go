@@ -17,56 +17,23 @@ func TestPaymentRepository_Create(t *testing.T) {
 		name    string
 		req     *models.CreatePaymentRequest
 		wantErr bool
-		setup   func(t *testing.T) (int, int, int, int)
 	}{
 		{
 			name: "creates payment with all required fields",
-			setup: func(t *testing.T) (int, int, int, int) {
-				db, cleanup := testutil.SetupTestDB(t)
-				defer cleanup()
-
-				orgID := testutil.CreateTestOrganization(t, db)
-				propID := testutil.CreateTestProperty(t, db)
-				bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
-				unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
-
-				return orgID, propID, bldgID, unitID
-			},
 			req: &models.CreatePaymentRequest{
-				UnitID:         1,
-				TenantID:       1,
-				BuildingID:     1,
-				PropertyID:     1,
-				OrganizationID: 1,
-				Month:          5,
-				Year:           2026,
-				AmountDue:      5000.0,
+				Month:     5,
+				Year:      2026,
+				AmountDue: 5000.0,
 			},
 			wantErr: false,
 		},
 		{
 			name: "handles leap year dates correctly",
-			setup: func(t *testing.T) (int, int, int, int) {
-				db, cleanup := testutil.SetupTestDB(t)
-				defer cleanup()
-
-				orgID := testutil.CreateTestOrganization(t, db)
-				propID := testutil.CreateTestProperty(t, db)
-				bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
-				unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
-
-				return orgID, propID, bldgID, unitID
-			},
 			req: &models.CreatePaymentRequest{
-				UnitID:         1,
-				TenantID:       1,
-				BuildingID:     1,
-				PropertyID:     1,
-				OrganizationID: 1,
-				Month:          2,
-				Year:           2024,
-				AmountDue:      3500.0,
-				DueDate:        "2024-02-29",
+				Month:     2,
+				Year:      2024,
+				AmountDue: 3500.0,
+				DueDate:   "2024-02-29",
 			},
 			wantErr: false,
 		},
@@ -81,11 +48,13 @@ func TestPaymentRepository_Create(t *testing.T) {
 			propID := testutil.CreateTestProperty(t, db)
 			bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
 			unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+			tenantID := testutil.CreateTestTenant(t, db, orgID)
 
 			tc.req.OrganizationID = orgID
 			tc.req.PropertyID = propID
 			tc.req.BuildingID = bldgID
 			tc.req.UnitID = unitID
+			tc.req.TenantID = tenantID
 
 			repo := NewPaymentRepository(db)
 			payment, err := repo.Create(tc.req)
@@ -490,7 +459,7 @@ func TestPaymentRepository_GetBuildingPaymentStats(t *testing.T) {
 		// Create payments with different statuses
 		paidAmount := 5000.0
 		paidStatus := models.PaymentStatusPaid
-		repo.Create(&models.CreatePaymentRequest{
+		_, _ = repo.Create(&models.CreatePaymentRequest{
 			UnitID:         unitID,
 			TenantID:       tenantID,
 			BuildingID:     bldgID,
@@ -501,7 +470,7 @@ func TestPaymentRepository_GetBuildingPaymentStats(t *testing.T) {
 			AmountDue:      5000.0,
 		})
 		paymentID := 1
-		repo.Update(paymentID, &models.UpdatePaymentRequest{
+		_, _ = repo.Update(paymentID, &models.UpdatePaymentRequest{
 			Status:     &paidStatus,
 			AmountPaid: &paidAmount,
 		})
@@ -682,22 +651,22 @@ func TestPaymentRepository_GetAgingBuckets(t *testing.T) {
 
 		// Each bucket should contain at least the amount we inserted
 		if buckets["current"] < 1000 {
-			t.Errorf("current bucket: got %d, want >= 1000", buckets["current"])
+			t.Errorf("current bucket: got %v, want >= 1000", buckets["current"])
 		}
 		if buckets["30d"] < 2000 {
-			t.Errorf("30d bucket: got %d, want >= 2000", buckets["30d"])
+			t.Errorf("30d bucket: got %v, want >= 2000", buckets["30d"])
 		}
 		if buckets["60d"] < 3000 {
-			t.Errorf("60d bucket: got %d, want >= 3000", buckets["60d"])
+			t.Errorf("60d bucket: got %v, want >= 3000", buckets["60d"])
 		}
 		if buckets["90d+"] < 4000 {
-			t.Errorf("90d+ bucket: got %d, want >= 4000", buckets["90d+"])
+			t.Errorf("90d+ bucket: got %v, want >= 4000", buckets["90d+"])
 		}
 
 		// All bucket values must be non-negative
 		for key, val := range buckets {
 			if val < 0 {
-				t.Errorf("bucket %q has negative value %d", key, val)
+				t.Errorf("bucket %q has negative value %v", key, val)
 			}
 		}
 	})
@@ -722,7 +691,7 @@ func TestPaymentRepository_GetAgingBuckets(t *testing.T) {
 			if val, ok := buckets[key]; !ok {
 				t.Errorf("missing bucket key %q", key)
 			} else if val != 0 {
-				t.Errorf("bucket %q: got %d, want 0 for empty org", key, val)
+				t.Errorf("bucket %q: got %v, want 0 for empty org", key, val)
 			}
 		}
 	})
@@ -796,10 +765,10 @@ func TestPaymentRepository_GetMonthlyCollectionTrend(t *testing.T) {
 		}
 
 		if found.AmountDue < 5000 {
-			t.Errorf("AmountDue: got %d, want >= 5000", found.AmountDue)
+			t.Errorf("AmountDue: got %v, want >= 5000", found.AmountDue)
 		}
 		if found.AmountCollected < 5000 {
-			t.Errorf("AmountCollected: got %d, want >= 5000", found.AmountCollected)
+			t.Errorf("AmountCollected: got %v, want >= 5000", found.AmountCollected)
 		}
 		if found.CollectionRate <= 0 {
 			t.Errorf("CollectionRate: got %f, want > 0 for a fully paid month", found.CollectionRate)

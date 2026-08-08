@@ -94,7 +94,7 @@ func (suite *BuildingIntegrationTestSuite) TearDownSuite() {
 
 	// Close database connection
 	if suite.db != nil {
-		suite.db.Close()
+		_ = suite.db.Close()
 	}
 }
 
@@ -183,10 +183,10 @@ func (suite *BuildingIntegrationTestSuite) createTestData() {
 func (suite *BuildingIntegrationTestSuite) cleanupTestData() {
 	// Clean up in reverse order of creation
 	if suite.testProperty != nil {
-		suite.propertyRepo.Delete(suite.testProperty.ID)
+		_ = suite.propertyRepo.Delete(suite.testProperty.ID)
 	}
 	if suite.testUser != nil {
-		suite.userRepo.Delete(suite.testUser.ID)
+		_ = suite.userRepo.Delete(suite.testUser.ID)
 	}
 }
 
@@ -195,7 +195,7 @@ func (suite *BuildingIntegrationTestSuite) cleanupBuildingTestData() {
 	if suite.testProperty != nil {
 		buildings, _ := suite.buildingRepo.GetByPropertyID(suite.testProperty.ID)
 		for _, building := range buildings {
-			suite.buildingRepo.SoftDelete(building.ID)
+			_ = suite.buildingRepo.SoftDelete(building.ID)
 		}
 	}
 }
@@ -215,7 +215,7 @@ func (suite *BuildingIntegrationTestSuite) generateAuthToken() string {
 
 	if w.Code == http.StatusOK {
 		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
+		_ = json.Unmarshal(w.Body.Bytes(), &response)
 		if token, ok := response["token"].(string); ok {
 			return "Bearer " + token
 		}

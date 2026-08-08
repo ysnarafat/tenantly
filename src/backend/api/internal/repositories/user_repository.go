@@ -86,7 +86,7 @@ func (r *UserRepository) GetAll(activeOnly bool) ([]*models.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var users []*models.User
 	for rows.Next() {
@@ -144,7 +144,7 @@ func (r *UserRepository) GetByOrganizationID(orgID int, activeOnly bool) ([]*mod
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var users []*models.User
 	for rows.Next() {

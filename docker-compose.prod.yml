@@ -22,12 +22,15 @@ services:
       DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your production environment}@postgres:5432/tenantly?sslmode=disable
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in your production environment (openssl rand -base64 32)}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:?Set CORS_ALLOWED_ORIGINS to your production frontend origin(s)}
+      NID_ENCRYPTION_KEY: ${NID_ENCRYPTION_KEY:?Set NID_ENCRYPTION_KEY (base64-encoded 32 bytes, openssl rand -base64 32)}
+      NID_HASH_PEPPER: ${NID_HASH_PEPPER:?Set NID_HASH_PEPPER to a secret value}
     restart: always
 
   # Angular Frontend (Production)
   frontend:
-    args:
-      BUILD_CONFIGURATION: production
+    build:
+      args:
+        BUILD_CONFIGURATION: production
     restart: always
 
   nginx:

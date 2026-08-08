@@ -211,7 +211,7 @@ func (r *LeaseRepository) GetAll(page, pageSize, orgID int) ([]*models.LeaseWith
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get leases: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	leases := []*models.LeaseWithDetails{}
 	for rows.Next() {
@@ -291,7 +291,7 @@ func (r *LeaseRepository) GetByUnitID(unitID int, page, pageSize, orgID int) ([]
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get leases: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	leases := []*models.LeaseWithDetails{}
 	for rows.Next() {
@@ -371,7 +371,7 @@ func (r *LeaseRepository) GetByTenantID(tenantID int, page, pageSize, orgID int)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get leases: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	leases := []*models.LeaseWithDetails{}
 	for rows.Next() {
@@ -615,7 +615,7 @@ func (r *LeaseRepository) GetLeasesDueForMonth(orgID int) ([]models.LeaseDue, er
 	if err != nil {
 		return nil, fmt.Errorf("failed to query due leases: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var leasesDue []models.LeaseDue
 	for rows.Next() {
@@ -721,7 +721,7 @@ func (r *LeaseRepository) GetActiveLeases(orgID int) ([]*models.LeaseWithDetails
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var leases []*models.LeaseWithDetails
 	for rows.Next() {

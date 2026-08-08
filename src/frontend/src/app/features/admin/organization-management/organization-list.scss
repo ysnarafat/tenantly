@@ -1,5 +1,7 @@
 .organization-list-container {
   padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
 
   .header {
     display: flex;
@@ -69,5 +71,10 @@
         max-width: unset;
       }
     }
+  }
+}
+@media (max-width: 480px) {
+  .organization-list-container {
+    padding: 12px;
   }
 }

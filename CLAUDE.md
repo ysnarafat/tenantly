@@ -372,7 +372,12 @@ go test -v ./internal/repositories/...
 
 ## 🤖 Claude Code Behaviour
 
-- **Commits**: Never add a `Co-Authored-By` trailer to any commit.
+- **Commit authorship**: Never add a `Co-Authored-By` trailer to any commit, and never attribute a commit to any Claude/Anthropic model. Commits show only the human author's authorship.
+- **Commit body**: Do not write a commit body by default — use a single-line subject only. Only when a change genuinely requires a body (e.g. non-obvious rationale, breaking change, migration notes) should one be added, and in that case ask the user for confirmation before including it.
+- **Format before committing (required)**: CI runs `prettier --check` (frontend) and `gofmt -s -l` (backend) over the whole tree, so any unformatted file fails the check. Before committing, always format the files you touched:
+  - Frontend: from `src/frontend`, run `npm run format` (or `npx prettier --write <files>`). Prettier config: single quotes, `trailingComma: es5`, `printWidth: 100`, LF line endings.
+  - Backend: from `src/backend/api`, run `gofmt -s -w <files>` (or `gofmt -s -w .`).
+  - Line endings are LF everywhere (enforced by `.gitattributes`). On Windows, `core.autocrlf=true` makes the working tree CRLF — that is normal and CI is unaffected; do not "fix" phantom CRLF diffs that `git ls-files --eol` shows as `i/lf`.
 
 ---
 

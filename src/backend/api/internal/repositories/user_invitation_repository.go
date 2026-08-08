@@ -158,7 +158,7 @@ func (r *UserInvitationRepository) GetPendingByOrganization(orgID int) ([]*model
 	if err != nil {
 		return nil, fmt.Errorf("failed to query pending invitations: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var invitations []*models.UserInvitation
 	for rows.Next() {
@@ -263,7 +263,7 @@ func (r *UserInvitationRepository) GetByOrganization(orgID int) ([]*models.UserI
 	if err != nil {
 		return nil, fmt.Errorf("failed to query invitations: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var invitations []*models.UserInvitation
 	for rows.Next() {

@@ -299,7 +299,7 @@ func TestBuildingValidationService_ValidateBuildingCodeUniqueness(t *testing.T) 
 		TotalFloors:  3,
 		ActiveStatus: true,
 	}
-	buildingRepo.Create(existingBuilding)
+	_ = buildingRepo.Create(existingBuilding)
 
 	tests := []struct {
 		name        string
@@ -671,7 +671,7 @@ func TestBuildingValidationService_ValidateBuildingUpdate(t *testing.T) {
 		TotalFloors:  3,
 		ActiveStatus: true,
 	}
-	buildingRepo.Create(existingBuilding)
+	_ = buildingRepo.Create(existingBuilding)
 
 	validFloors := 5
 	invalidFloors := 0
@@ -753,7 +753,7 @@ func TestBuildingValidationService_ValidateDeletionConstraints(t *testing.T) {
 		TotalFloors:  3,
 		ActiveStatus: true,
 	}
-	buildingRepo.Create(existingBuilding)
+	_ = buildingRepo.Create(existingBuilding)
 
 	tests := []struct {
 		name        string

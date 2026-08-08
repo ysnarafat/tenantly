@@ -162,19 +162,19 @@
             <div class="pii-cell">
               <span
                 class="mono-val"
-                [class.masked-val]="!isNidRevealed(tenant.id) && !!tenant.nid_number && !isAccountantRole"
-                [class.restricted-val]="isAccountantRole && !!tenant.nid_number"
+                [class.masked-val]="!isNidRevealed(tenant.id) && !!tenant.nid_last_four && !isAccountantRole"
+                [class.restricted-val]="isAccountantRole && !!tenant.nid_last_four"
                 >{{ getDisplayNid(tenant) }}</span
               >
               <mat-icon
-                *ngIf="canRevealPii && tenant.nid_number"
+                *ngIf="canRevealPii && tenant.nid_last_four"
                 class="reveal-toggle-icon"
                 (click)="toggleNidReveal(tenant.id)"
                 [matTooltip]="(isNidRevealed(tenant.id) ? 'TENANT_LIST.MASKING.HIDE' : 'TENANT_LIST.MASKING.REVEAL') | translate"
                 >{{ isNidRevealed(tenant.id) ? 'visibility_off' : 'visibility' }}</mat-icon
               >
               <mat-icon
-                *ngIf="isAccountantRole && tenant.nid_number"
+                *ngIf="isAccountantRole && tenant.nid_last_four"
                 class="restricted-icon"
                 [matTooltip]="'TENANT_LIST.MASKING.RESTRICTED_TOOLTIP' | translate"
                 >lock</mat-icon

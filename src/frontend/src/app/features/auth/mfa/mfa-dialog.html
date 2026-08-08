@@ -1,0 +1,51 @@
+<h2 mat-dialog-title>
+  {{ needsEnrollment ? 'Set up two-factor authentication' : 'Verify your identity' }}
+</h2>
+
+<mat-dialog-content class="mfa-dialog">
+  @if (loading()) {
+  <div class="mfa-loading">
+    <mat-spinner diameter="32"></mat-spinner>
+  </div>
+  } @if (needsEnrollment && secret()) {
+  <p class="mfa-instructions">
+    Add this account to an authenticator app (Google Authenticator, Authy, 1Password, …) by entering
+    the key below, then enter the 6-digit code it shows.
+  </p>
+  <div class="mfa-secret">
+    <span class="mfa-secret-label">Setup key</span>
+    <code class="mfa-secret-value">{{ secret() }}</code>
+  </div>
+  <details class="mfa-uri">
+    <summary>Show setup URI</summary>
+    <code class="mfa-uri-value">{{ otpauthUri() }}</code>
+  </details>
+  } @else if (!needsEnrollment) {
+  <p class="mfa-instructions">
+    Enter the current 6-digit code from your authenticator app to reveal this sensitive information.
+  </p>
+  }
+
+  <mat-form-field appearance="outline" class="mfa-code-field">
+    <mat-label>6-digit code</mat-label>
+    <input
+      matInput
+      [(ngModel)]="code"
+      inputmode="numeric"
+      autocomplete="one-time-code"
+      maxlength="6"
+      (keyup.enter)="submit()"
+    />
+  </mat-form-field>
+
+  @if (error()) {
+  <p class="mfa-error">{{ error() }}</p>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="cancel()">Cancel</button>
+  <button mat-raised-button color="primary" type="button" (click)="submit()" [disabled]="loading()">
+    Verify
+  </button>
+</mat-dialog-actions>

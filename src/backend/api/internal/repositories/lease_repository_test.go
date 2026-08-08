@@ -288,14 +288,28 @@ func TestLeaseRepository_HasActiveLeaseOnUnit(t *testing.T) {
 		t.Fatalf("Failed to create lease: %v", err)
 	}
 
-	// Check after creating lease
-	hasLease, err = repo.HasActiveLeaseOnUnit(unitID, &createdLease.ID)
+	// Check after creating lease. excludeLeaseID is for excluding the lease
+	// under edit when updating (so it doesn't collide with itself) — passing
+	// the just-created lease's own ID here would exclude the only lease on
+	// the unit and always report false, so this checks with no exclusion.
+	hasLease, err = repo.HasActiveLeaseOnUnit(unitID, nil)
 	if err != nil {
 		t.Fatalf("Failed to check active lease: %v", err)
 	}
 
 	if !hasLease {
 		t.Error("Expected active lease for unit")
+	}
+
+	// The lease's own ID should still correctly exclude itself, leaving no
+	// *other* active lease on the unit.
+	hasLease, err = repo.HasActiveLeaseOnUnit(unitID, &createdLease.ID)
+	if err != nil {
+		t.Fatalf("Failed to check active lease excluding self: %v", err)
+	}
+
+	if hasLease {
+		t.Error("Expected no *other* active lease for unit when excluding the one just created")
 	}
 }
 

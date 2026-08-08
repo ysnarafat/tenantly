@@ -659,3 +659,9 @@ mat-chip-set {
     color: var(--text-chip-blue);
   }
 }
+
+@media (max-width: 480px) {
+  .report-analysis-container {
+    padding: 12px;
+  }
+}

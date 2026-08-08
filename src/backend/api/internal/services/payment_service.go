@@ -76,7 +76,7 @@ func (s *PaymentService) CreatePayment(req *models.CreatePaymentRequest, userID 
 	}
 
 	// Log audit with complete building context
-	s.auditService.LogUserAction(userID, "CREATE", "payments", &payment.ID, nil, map[string]interface{}{
+	_ = s.auditService.LogUserAction(userID, "CREATE", "payments", &payment.ID, nil, map[string]interface{}{
 		"payment_id":    payment.ID,
 		"unit_id":       payment.UnitID,
 		"building_id":   payment.BuildingID,
@@ -123,7 +123,7 @@ func (s *PaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequest,
 	}
 
 	// Log audit with building context
-	s.auditService.LogUserAction(userID, "UPDATE", "payments", &id, map[string]interface{}{
+	_ = s.auditService.LogUserAction(userID, "UPDATE", "payments", &id, map[string]interface{}{
 		"payment_id":      existingPayment.ID,
 		"building_name":   existingPayment.BuildingName,
 		"building_code":   existingPayment.BuildingCode,
@@ -435,9 +435,9 @@ func (s *PaymentService) LogPaymentAccess(userID int, action string, paymentID i
 	}
 
 	if allowed {
-		s.auditService.LogUserAction(userID, action, "payments", &paymentID, nil, accessLog)
+		_ = s.auditService.LogUserAction(userID, action, "payments", &paymentID, nil, accessLog)
 	} else {
-		s.auditService.LogUserAction(userID, fmt.Sprintf("%s_DENIED", action), "payments", &paymentID, nil, accessLog)
+		_ = s.auditService.LogUserAction(userID, fmt.Sprintf("%s_DENIED", action), "payments", &paymentID, nil, accessLog)
 	}
 }
 
@@ -508,7 +508,7 @@ func (s *PaymentService) GenerateMonthlyPayments(req *models.GenerateMonthlyPaym
 		result.Generated++
 	}
 
-	s.auditService.LogUserAction(userID, "GENERATE_MONTHLY", "payments", nil, nil, map[string]interface{}{
+	_ = s.auditService.LogUserAction(userID, "GENERATE_MONTHLY", "payments", nil, nil, map[string]interface{}{
 		"month":       req.Month,
 		"year":        req.Year,
 		"org_id":      orgID,

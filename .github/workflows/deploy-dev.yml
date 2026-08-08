@@ -32,7 +32,7 @@ jobs:
       - name: Deploy with Docker Compose
         run: |
           ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=5 ${{ secrets.DEV_USER }}@${{ secrets.DEV_HOST }} "
-            cd /home/${{ secrets.DEV_USER }}/tenantly &&
+            cd /home/${{ secrets.DEV_USER }}/tenantly-dev &&
             docker compose -f docker-compose.yml -f docker-compose.dev.yml pull &&
             docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
           "

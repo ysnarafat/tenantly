@@ -9,8 +9,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "file_path=$(node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{try{process.stdout.write(JSON.parse(d).tool_input.file_path||'')}catch(e){}})\"); if [[ \"$file_path\" == *.go ]]; then gofmt -w \"$file_path\" && go vet \"$(dirname \"$file_path\")/...\"; fi; true",
-            "statusMessage": "Formatting & vetting Go file...",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/go-format-lint.sh\"",
+            "statusMessage": "Formatting & linting Go file (gofmt -s + golangci-lint)...",
             "shell": "bash"
           },
           {

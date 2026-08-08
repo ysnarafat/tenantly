@@ -28,7 +28,6 @@ type MockPaymentRepo struct {
 	dashboardResult     *models.DashboardSummary
 	buildingLevelResult map[string]interface{}
 	analyticsResult     *models.BuildingPaymentAnalytics
-	auditLog            []string
 }
 
 func newMockPaymentRepo() *MockPaymentRepo {
@@ -194,8 +193,8 @@ func (m *MockPaymentRepo) CheckPaymentExists(unitID, month, year int) (bool, err
 	return false, nil
 }
 
-func (m *MockPaymentRepo) GetAgingBuckets(orgID int) (map[string]int64, error) {
-	return map[string]int64{"current": 0, "30d": 0, "60d": 0, "90d+": 0}, nil
+func (m *MockPaymentRepo) GetAgingBuckets(orgID int) (map[string]float64, error) {
+	return map[string]float64{"current": 0, "30d": 0, "60d": 0, "90d+": 0}, nil
 }
 
 func (m *MockPaymentRepo) GetMonthlyCollectionTrend(orgID int, months int) ([]*models.MonthlyCollectionTrend, error) {

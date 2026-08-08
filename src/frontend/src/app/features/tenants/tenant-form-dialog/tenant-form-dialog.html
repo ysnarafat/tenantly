@@ -33,11 +33,11 @@
           <input
             matInput
             formControlName="nid_number"
-            placeholder="Enter NID"
-            [type]="isEditMode && !nidRevealed ? 'password' : 'text'"
+            [placeholder]="isEditMode ? 'Leave blank to keep current NID' : 'Enter NID'"
+            type="text"
           />
           <mat-icon matPrefix>badge</mat-icon>
-          @if (canRevealPii && (isViewMode || isEditMode) && hasNid) {
+          @if (canRevealPii && isViewMode && hasNid) {
           <mat-icon
             matSuffix
             class="reveal-suffix-icon"
@@ -46,6 +46,8 @@
           >
             {{ nidRevealed ? 'visibility_off' : 'visibility' }}
           </mat-icon>
+          } @if (isEditMode) {
+          <mat-hint>Leave blank to keep the current NID unchanged</mat-hint>
           } @if (tenantForm.get('nid_number')?.invalid) {
           <mat-error>{{ getErrorMessage('nid_number') }}</mat-error>
           }

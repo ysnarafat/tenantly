@@ -4,8 +4,20 @@
 
 .property-list-container {
   padding: 24px;
-  max-width: 1300px;
+  max-width: 1400px;
   margin: 0 auto;
+}
+
+// ── Responsive ───────────────────────────────────────────────────────────────
+@media (max-width: 768px) {
+  .property-list-container {
+    padding: 16px;
+  }
+}
+@media (max-width: 480px) {
+  .property-list-container {
+    padding: 12px;
+  }
 }
 
 // ── Header ──────────────────────────────────────────────────────────────────
