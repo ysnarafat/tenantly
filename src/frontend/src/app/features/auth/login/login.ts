@@ -61,16 +61,6 @@ export class Login implements OnInit {
 
     this.authService.error$.pipe(takeUntilDestroyed()).subscribe((error) => this.error.set(error));
 
-    // Listen for authentication success — navigation is handled by auth effects
-    this.authService.isAuthenticated$
-      .pipe(
-        takeUntilDestroyed(),
-        filter((isAuth) => isAuth)
-      )
-      .subscribe(() => {
-        this.snackBar.open('Login successful!', 'Close', { duration: 3000 });
-      });
-
     // Listen for errors
     this.authService.error$
       .pipe(
