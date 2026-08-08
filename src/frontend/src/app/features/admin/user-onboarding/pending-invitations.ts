@@ -18,6 +18,7 @@ import { OrganizationService } from '../../../core/services/organization.service
 import { UserInvitation, Organization } from '../../../core/models';
 import { AppState } from '../../../store';
 import * as AuthSelectors from '../../../store/auth/auth.selectors';
+import { actWithUndo } from '../../../shared/utils/undo-toast.utils';
 
 @Component({
   selector: 'app-pending-invitations',
@@ -274,20 +275,27 @@ export class PendingInvitationsComponent implements OnInit {
   }
 
   revokeInvitation(inv: UserInvitation): void {
-    if (!confirm(`Revoke invitation for ${inv.email}?`)) return;
-    if (!this.selectedOrgId) return;
+    const orgId = this.selectedOrgId;
+    if (!orgId) return;
 
-    this.invitationService.revokeInvitation(inv.id, this.selectedOrgId).subscribe({
-      next: () => {
-        this.snackBar.open('Invitation revoked', 'Close', { duration: 3000 });
-        if (this.selectedOrgId) this.loadInvitations(this.selectedOrgId);
-      },
-      error: (err) => {
-        this.snackBar.open(err.error?.error || 'Failed to revoke invitation', 'Close', {
-          duration: 5000,
+    const previousInvitations = this.invitations();
+    this.invitations.set(previousInvitations.filter((i) => i.id !== inv.id));
+
+    actWithUndo(
+      this.snackBar,
+      `Invitation for ${inv.email} revoked`,
+      () => {
+        this.invitationService.revokeInvitation(inv.id, orgId).subscribe({
+          error: (err) => {
+            this.snackBar.open(err.error?.error || 'Failed to revoke invitation', 'Close', {
+              duration: 5000,
+            });
+            this.loadInvitations(orgId);
+          },
         });
       },
-    });
+      { onUndo: () => this.invitations.set(previousInvitations) }
+    );
   }
 
   inviteUser(): void {

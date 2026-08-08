@@ -15,6 +15,7 @@ import { Organization } from '../../../core/models';
 import { OrganizationService } from '../../../core/services/organization.service';
 import { DataTable } from '../../../shared/components/data-table/data-table';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { actWithUndo } from '../../../shared/utils/undo-toast.utils';
 
 @Component({
   selector: 'app-organization-list',
@@ -97,18 +98,23 @@ export class OrganizationListComponent implements OnInit {
   }
 
   deleteOrganization(org: Organization): void {
-    if (confirm(`Are you sure you want to delete organization "${org.name}"?`)) {
-      this.organizationService.deleteOrganization(org.id).subscribe({
-        next: () => {
-          this.snackBar.open('Organization deleted successfully', 'Close', { duration: 3000 });
-          this.loadOrganizations();
-        },
-        error: (error) => {
-          console.error('Error deleting organization:', safeErrorMessage(error));
-          this.snackBar.open('Failed to delete organization', 'Close', { duration: 3000 });
-        },
-      });
-    }
+    const previousData = this.dataSource.data;
+    this.dataSource.data = previousData.filter((o) => o.id !== org.id);
+
+    actWithUndo(
+      this.snackBar,
+      `Organization "${org.name}" deleted`,
+      () => {
+        this.organizationService.deleteOrganization(org.id).subscribe({
+          error: (error) => {
+            console.error('Error deleting organization:', safeErrorMessage(error));
+            this.snackBar.open('Failed to delete organization', 'Close', { duration: 3000 });
+            this.loadOrganizations();
+          },
+        });
+      },
+      { onUndo: () => (this.dataSource.data = previousData) }
+    );
   }
 
   getSubscriptionTierColor(tier: string): string {

@@ -1,16 +1,34 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { of, throwError } from 'rxjs';
+import { of, throwError, Subject } from 'rxjs';
 import { UserList } from './user-list';
-import { OrganizationService } from '../../../core/services/organization.service';
+import { UserService } from '../../../core/services/user.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { User } from '../../../core/services/auth.service';
+
+// actWithUndo drives a real MatSnackBarRef's onAction()/afterDismissed() —
+// this stub lets tests simulate "undo clicked" vs. "toast timed out" without
+// a real timer.
+function createSnackBarRefStub() {
+  const action = new Subject<void>();
+  const dismissed = new Subject<{ dismissedByAction: boolean }>();
+  return {
+    ref: { onAction: () => action.asObservable(), afterDismissed: () => dismissed.asObservable() },
+    clickUndo: () => {
+      action.next();
+      dismissed.next({ dismissedByAction: true });
+    },
+    timeOut: () => dismissed.next({ dismissedByAction: false }),
+  };
+}
 
 describe('UserList Component', () => {
   let component: UserList;
   let fixture: ComponentFixture<UserList>;
-  let organizationService: jasmine.SpyObj<OrganizationService>;
+  let userService: jasmine.SpyObj<UserService>;
   let permissionService: jasmine.SpyObj<PermissionService>;
+  let router: jasmine.SpyObj<Router>;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
 
   const mockUsers: User[] = [
@@ -43,39 +61,32 @@ describe('UserList Component', () => {
     },
   ];
 
-  const mockOrganization = {
-    id: 1,
-    name: 'Test Org',
-    slug: 'test-org',
-    subscriptionTier: 'professional' as const,
-    maxUsers: 50,
-    active: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-
   beforeEach(async () => {
-    const organizationServiceSpy = jasmine.createSpyObj('OrganizationService', [
-      'getOrganizationUsers',
-      'getCurrentOrganization',
+    const userServiceSpy = jasmine.createSpyObj('UserService', [
+      'getUsers',
+      'updateUser',
+      'deleteUser',
     ]);
     const permissionServiceSpy = jasmine.createSpyObj('PermissionService', ['canManageOrgAdmins']);
+    const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
     const snackBarSpy = jasmine.createSpyObj('MatSnackBar', ['open']);
 
     await TestBed.configureTestingModule({
       imports: [UserList],
       providers: [
-        { provide: OrganizationService, useValue: organizationServiceSpy },
+        { provide: UserService, useValue: userServiceSpy },
         { provide: PermissionService, useValue: permissionServiceSpy },
+        { provide: Router, useValue: routerSpy },
         { provide: MatSnackBar, useValue: snackBarSpy },
       ],
     }).compileComponents();
 
-    organizationService = TestBed.inject(
-      OrganizationService
-    ) as jasmine.SpyObj<OrganizationService>;
+    userService = TestBed.inject(UserService) as jasmine.SpyObj<UserService>;
     permissionService = TestBed.inject(PermissionService) as jasmine.SpyObj<PermissionService>;
+    router = TestBed.inject(Router) as jasmine.SpyObj<Router>;
     snackBar = TestBed.inject(MatSnackBar) as jasmine.SpyObj<MatSnackBar>;
+
+    userService.getUsers.and.returnValue(of({ users: mockUsers, total: 3 }));
 
     fixture = TestBed.createComponent(UserList);
     component = fixture.componentInstance;
@@ -87,34 +98,26 @@ describe('UserList Component', () => {
     });
 
     it('should load users on init', () => {
-      organizationService.getCurrentOrganization.and.returnValue(mockOrganization);
-      organizationService.getOrganizationUsers.and.returnValue(of({ users: mockUsers, total: 3 }));
-
       fixture.detectChanges();
 
-      expect(organizationService.getOrganizationUsers).toHaveBeenCalledWith(1);
+      expect(userService.getUsers).toHaveBeenCalledWith(true);
       expect(component.dataSource.data).toEqual(mockUsers);
     });
 
-    it('should show error when no organization selected', () => {
-      organizationService.getCurrentOrganization.and.returnValue(null);
+    it('should handle error when loading users', () => {
+      userService.getUsers.and.returnValue(throwError(() => new Error('Load failed')));
 
       component.loadUsers();
 
-      expect(snackBar.open).toHaveBeenCalledWith('No organization selected', 'Close', {
+      expect(snackBar.open).toHaveBeenCalledWith('Failed to load users', 'Close', {
         duration: 3000,
       });
+      expect(component.loading()).toBe(false);
     });
   });
 
   describe('Data loading', () => {
-    beforeEach(() => {
-      organizationService.getCurrentOrganization.and.returnValue(mockOrganization);
-    });
-
     it('should populate table with users', () => {
-      organizationService.getOrganizationUsers.and.returnValue(of({ users: mockUsers, total: 3 }));
-
       component.loadUsers();
 
       expect(component.dataSource.data).toEqual(mockUsers);
@@ -122,31 +125,31 @@ describe('UserList Component', () => {
     });
 
     it('should handle empty users list', () => {
-      organizationService.getOrganizationUsers.and.returnValue(of({ users: [], total: 0 }));
+      userService.getUsers.and.returnValue(of({ users: [], total: 0 }));
 
       component.loadUsers();
 
       expect(component.dataSource.data).toEqual([]);
       expect(component.loading()).toBe(false);
     });
+  });
 
-    it('should handle error when loading users', () => {
-      organizationService.getOrganizationUsers.and.returnValue(
-        throwError(() => new Error('Load failed'))
-      );
+  describe('showInactive toggle', () => {
+    it('should request all users (including inactive) when toggled on', () => {
+      component.toggleShowInactive(true);
 
-      component.loadUsers();
+      expect(userService.getUsers).toHaveBeenCalledWith(false);
+    });
 
-      expect(snackBar.open).toHaveBeenCalledWith('Failed to load users', 'Close', {
-        duration: 3000,
-      });
+    it('should request only active users when toggled off', () => {
+      component.toggleShowInactive(false);
+
+      expect(userService.getUsers).toHaveBeenCalledWith(true);
     });
   });
 
   describe('Search functionality', () => {
     beforeEach(() => {
-      organizationService.getCurrentOrganization.and.returnValue(mockOrganization);
-      organizationService.getOrganizationUsers.and.returnValue(of({ users: mockUsers, total: 3 }));
       component.loadUsers();
     });
 
@@ -190,8 +193,6 @@ describe('UserList Component', () => {
 
   describe('Role filtering', () => {
     beforeEach(() => {
-      organizationService.getCurrentOrganization.and.returnValue(mockOrganization);
-      organizationService.getOrganizationUsers.and.returnValue(of({ users: mockUsers, total: 3 }));
       component.loadUsers();
     });
 
@@ -228,8 +229,6 @@ describe('UserList Component', () => {
 
   describe('Combined search and filter', () => {
     beforeEach(() => {
-      organizationService.getCurrentOrganization.and.returnValue(mockOrganization);
-      organizationService.getOrganizationUsers.and.returnValue(of({ users: mockUsers, total: 3 }));
       component.loadUsers();
     });
 
@@ -254,48 +253,145 @@ describe('UserList Component', () => {
 
   describe('User actions', () => {
     beforeEach(() => {
-      organizationService.getCurrentOrganization.and.returnValue(mockOrganization);
-      organizationService.getOrganizationUsers.and.returnValue(of({ users: mockUsers, total: 3 }));
       component.loadUsers();
     });
 
-    it('should call deactivateUser', () => {
-      spyOn(window, 'confirm').and.returnValue(true);
+    it('should optimistically deactivate the user and show an undo toast', () => {
+      const stub = createSnackBarRefStub();
+      snackBar.open.and.returnValue(stub.ref as never);
       const user = mockUsers[0];
 
       component.deactivateUser(user);
 
-      expect(window.confirm).toHaveBeenCalled();
-      expect(snackBar.open).toHaveBeenCalled();
+      expect(component.allUsers().find((u) => u.id === user.id)?.active).toBe(false);
+      expect(snackBar.open).toHaveBeenCalledWith(
+        `${user.username} deactivated`,
+        'Undo',
+        jasmine.objectContaining({ duration: 5000 })
+      );
+      expect(userService.updateUser).not.toHaveBeenCalled();
     });
 
-    it('should not deactivate when cancelled', () => {
-      spyOn(window, 'confirm').and.returnValue(false);
+    it('should call updateUser once the deactivate toast times out', () => {
+      const stub = createSnackBarRefStub();
+      snackBar.open.and.returnValue(stub.ref as never);
+      userService.updateUser.and.returnValue(of({ message: 'ok' }));
       const user = mockUsers[0];
-      snackBar.open.calls.reset();
 
       component.deactivateUser(user);
+      stub.timeOut();
 
-      expect(snackBar.open).not.toHaveBeenCalled();
+      expect(userService.updateUser).toHaveBeenCalledWith(user.id, { active: false });
     });
 
-    it('should call deleteUser', () => {
-      spyOn(window, 'confirm').and.returnValue(true);
+    it('should restore the user and skip updateUser when Undo is clicked on deactivate', () => {
+      const stub = createSnackBarRefStub();
+      snackBar.open.and.returnValue(stub.ref as never);
+      const user = mockUsers[0];
+
+      component.deactivateUser(user);
+      stub.clickUndo();
+
+      expect(component.allUsers().find((u) => u.id === user.id)?.active).toBe(true);
+      expect(userService.updateUser).not.toHaveBeenCalled();
+    });
+
+    it('should optimistically activate the user and show an undo toast', () => {
+      const stub = createSnackBarRefStub();
+      snackBar.open.and.returnValue(stub.ref as never);
+      const user = mockUsers[2];
+
+      component.activateUser(user);
+
+      expect(component.allUsers().find((u) => u.id === user.id)?.active).toBe(true);
+      expect(snackBar.open).toHaveBeenCalledWith(
+        `${user.username} activated`,
+        'Undo',
+        jasmine.objectContaining({ duration: 5000 })
+      );
+      expect(userService.updateUser).not.toHaveBeenCalled();
+    });
+
+    it('should call updateUser once the activate toast times out', () => {
+      const stub = createSnackBarRefStub();
+      snackBar.open.and.returnValue(stub.ref as never);
+      userService.updateUser.and.returnValue(of({ message: 'ok' }));
+      const user = mockUsers[2];
+
+      component.activateUser(user);
+      stub.timeOut();
+
+      expect(userService.updateUser).toHaveBeenCalledWith(user.id, { active: true });
+    });
+
+    it('should optimistically remove the user and show an undo toast on delete', () => {
+      const stub = createSnackBarRefStub();
+      snackBar.open.and.returnValue(stub.ref as never);
       const user = mockUsers[0];
 
       component.deleteUser(user);
 
-      expect(window.confirm).toHaveBeenCalled();
-      expect(snackBar.open).toHaveBeenCalled();
+      expect(component.allUsers().find((u) => u.id === user.id)).toBeUndefined();
+      expect(snackBar.open).toHaveBeenCalledWith(
+        `${user.username} deleted`,
+        'Undo',
+        jasmine.objectContaining({ duration: 5000 })
+      );
+      expect(userService.deleteUser).not.toHaveBeenCalled();
     });
 
-    it('should call promoteUser', () => {
+    it('should call deleteUser once the delete toast times out', () => {
+      const stub = createSnackBarRefStub();
+      snackBar.open.and.returnValue(stub.ref as never);
+      userService.deleteUser.and.returnValue(of({ message: 'ok' }));
+      const user = mockUsers[0];
+
+      component.deleteUser(user);
+      stub.timeOut();
+
+      expect(userService.deleteUser).toHaveBeenCalledWith(user.id);
+    });
+
+    it('should restore the user and skip deleteUser when Undo is clicked on delete', () => {
+      const stub = createSnackBarRefStub();
+      snackBar.open.and.returnValue(stub.ref as never);
+      const user = mockUsers[0];
+
+      component.deleteUser(user);
+      stub.clickUndo();
+
+      expect(component.allUsers().find((u) => u.id === user.id)).toEqual(user);
+      expect(userService.deleteUser).not.toHaveBeenCalled();
+    });
+
+    it('should show an error and reload when the deferred deactivate fails', () => {
+      const stub = createSnackBarRefStub();
+      snackBar.open.and.returnValue(stub.ref as never);
+      userService.updateUser.and.returnValue(
+        throwError(() => ({ error: { error: 'Failed to deactivate user' } }))
+      );
+      userService.getUsers.calls.reset();
+      userService.getUsers.and.returnValue(of({ users: mockUsers, total: 3 }));
+      const user = mockUsers[0];
+
+      component.deactivateUser(user);
+      stub.timeOut();
+
+      expect(snackBar.open).toHaveBeenCalledWith('Failed to deactivate user', 'Close', {
+        duration: 5000,
+      });
+      expect(userService.getUsers).toHaveBeenCalled();
+    });
+
+    it('should navigate to the promote page', () => {
       permissionService.canManageOrgAdmins.and.returnValue(true);
       const user = mockUsers[0];
 
       component.promoteUser(user);
 
-      expect(snackBar.open).toHaveBeenCalled();
+      expect(router.navigate).toHaveBeenCalledWith(['/admin/users/promote'], {
+        queryParams: { userId: user.id },
+      });
     });
   });
 
@@ -356,8 +452,6 @@ describe('UserList Component', () => {
 
   describe('User data display', () => {
     beforeEach(() => {
-      organizationService.getCurrentOrganization.and.returnValue(mockOrganization);
-      organizationService.getOrganizationUsers.and.returnValue(of({ users: mockUsers, total: 3 }));
       component.loadUsers();
     });
 
@@ -374,27 +468,11 @@ describe('UserList Component', () => {
       expect(inactiveUser).toBeDefined();
       expect(inactiveUser?.active).toBe(false);
     });
-
-    it('should display first_name when available', () => {
-      const userWithName = { ...mockUsers[0], first_name: 'John' };
-      organizationService.getOrganizationUsers.and.returnValue(
-        of({ users: [userWithName], total: 1 })
-      );
-
-      component.loadUsers();
-
-      // The component uses first_name || username pattern
-      expect(component.dataSource.data[0].first_name).toBe('John');
-    });
   });
 
   describe('Error handling', () => {
-    beforeEach(() => {
-      organizationService.getCurrentOrganization.and.returnValue(mockOrganization);
-    });
-
     it('should handle http errors when loading', () => {
-      organizationService.getOrganizationUsers.and.returnValue(
+      userService.getUsers.and.returnValue(
         throwError(() => ({ status: 500, statusText: 'Server Error' }))
       );
 
@@ -406,7 +484,7 @@ describe('UserList Component', () => {
     });
 
     it('should handle 403 forbidden error', () => {
-      organizationService.getOrganizationUsers.and.returnValue(
+      userService.getUsers.and.returnValue(
         throwError(() => ({ status: 403, statusText: 'Forbidden' }))
       );
 

@@ -18,6 +18,7 @@ import { UserService } from '../../../core/services/user.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { DataTable } from '../../../shared/components/data-table/data-table';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { actWithUndo } from '../../../shared/utils/undo-toast.utils';
 
 @Component({
   selector: 'app-user-list',
@@ -104,46 +105,72 @@ export class UserList implements OnInit {
     this.selectedRole.set(role);
   }
 
+  private replaceUser(id: number, updated: User): void {
+    this.allUsers.update((users) => users.map((u) => (u.id === id ? updated : u)));
+  }
+
   deactivateUser(user: User): void {
-    if (!confirm(`Deactivate ${user.username}?`)) return;
-    this.userService.updateUser(user.id, { active: false }).subscribe({
-      next: () => {
-        this.snackBar.open('User deactivated', 'Close', { duration: 3000 });
-        this.loadUsers();
+    this.replaceUser(user.id, { ...user, active: false });
+
+    actWithUndo(
+      this.snackBar,
+      `${user.username} deactivated`,
+      () => {
+        this.userService.updateUser(user.id, { active: false }).subscribe({
+          next: () => {
+            if (!this.showInactive()) this.loadUsers();
+          },
+          error: (err) => {
+            this.snackBar.open(err.error?.error || 'Failed to deactivate user', 'Close', {
+              duration: 5000,
+            });
+            this.loadUsers();
+          },
+        });
       },
-      error: (err) =>
-        this.snackBar.open(err.error?.error || 'Failed to deactivate user', 'Close', {
-          duration: 5000,
-        }),
-    });
+      { onUndo: () => this.replaceUser(user.id, user) }
+    );
   }
 
   activateUser(user: User): void {
-    if (!confirm(`Activate ${user.username}?`)) return;
-    this.userService.updateUser(user.id, { active: true }).subscribe({
-      next: () => {
-        this.snackBar.open('User activated', 'Close', { duration: 3000 });
-        this.loadUsers();
+    this.replaceUser(user.id, { ...user, active: true });
+
+    actWithUndo(
+      this.snackBar,
+      `${user.username} activated`,
+      () => {
+        this.userService.updateUser(user.id, { active: true }).subscribe({
+          error: (err) => {
+            this.snackBar.open(err.error?.error || 'Failed to activate user', 'Close', {
+              duration: 5000,
+            });
+            this.loadUsers();
+          },
+        });
       },
-      error: (err) =>
-        this.snackBar.open(err.error?.error || 'Failed to activate user', 'Close', {
-          duration: 5000,
-        }),
-    });
+      { onUndo: () => this.replaceUser(user.id, user) }
+    );
   }
 
   deleteUser(user: User): void {
-    if (!confirm(`Permanently delete ${user.username}? This cannot be undone.`)) return;
-    this.userService.deleteUser(user.id).subscribe({
-      next: () => {
-        this.snackBar.open('User deleted', 'Close', { duration: 3000 });
-        this.loadUsers();
+    const previousUsers = this.allUsers();
+    this.allUsers.set(previousUsers.filter((u) => u.id !== user.id));
+
+    actWithUndo(
+      this.snackBar,
+      `${user.username} deleted`,
+      () => {
+        this.userService.deleteUser(user.id).subscribe({
+          error: (err) => {
+            this.snackBar.open(err.error?.error || 'Failed to delete user', 'Close', {
+              duration: 5000,
+            });
+            this.loadUsers();
+          },
+        });
       },
-      error: (err) =>
-        this.snackBar.open(err.error?.error || 'Failed to delete user', 'Close', {
-          duration: 5000,
-        }),
-    });
+      { onUndo: () => this.allUsers.set(previousUsers) }
+    );
   }
 
   promoteUser(user: User): void {
