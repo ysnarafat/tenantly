@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"sort"
 	"testing"
 	"time"
 
@@ -83,6 +84,9 @@ func (m *TestBuildingRepository) GetByPropertyID(propertyID int) ([]*models.Buil
 			buildings = append(buildings, building)
 		}
 	}
+	// m.buildings is a map, so range order is randomized; sort by ID
+	// (== creation order here) so callers/tests see a stable order.
+	sort.Slice(buildings, func(i, j int) bool { return buildings[i].ID < buildings[j].ID })
 	return buildings, nil
 }
 
