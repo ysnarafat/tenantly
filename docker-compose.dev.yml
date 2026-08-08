@@ -18,7 +18,13 @@ services:
     container_name: tenantly-frontend-dev
     build:
       args:
-        BUILD_CONFIGURATION: development
+        # NOT "development" — that's ng serve's local-machine configuration
+        # (baked-in http://localhost:8080/api/v1, correct only when there's
+        # no nginx in front and the API runs on the same machine as the
+        # browser). This container always sits behind nginx, which already
+        # proxies /api/ on the same origin, so it needs the relative apiUrl
+        # instead — see angular.json's "container-dev" configuration.
+        BUILD_CONFIGURATION: container-dev
     environment:
       - NODE_ENV=development
 
