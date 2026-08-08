@@ -115,7 +115,7 @@ func sampleCollectionSummaryReport() *models.CollectionSummaryReport {
 		TotalCollected: 151000,
 		TotalPending:   49000,
 		TotalOverdue:   10000,
-		AgingBuckets:   map[string]int64{"0-30": 5000, "31-60": 3000, "60+": 2000},
+		AgingBuckets:   map[string]float64{"0-30": 5000, "31-60": 3000, "60+": 2000},
 		MonthlyTrend:   []*models.MonthlyCollectionTrend{},
 		ReportPeriod:   "2026-05-01 to 2026-06-01",
 		GeneratedAt:    time.Now(),

@@ -77,7 +77,7 @@ type CollectionSummaryReport struct {
 	TotalCollected int64                     `json:"total_collected"`
 	TotalPending   int64                     `json:"total_pending"`
 	TotalOverdue   int64                     `json:"total_overdue"`
-	AgingBuckets   map[string]int64          `json:"aging_buckets"`
+	AgingBuckets   map[string]float64        `json:"aging_buckets"`
 	MonthlyTrend   []*MonthlyCollectionTrend `json:"monthly_trend"`
 	ReportPeriod   string                    `json:"report_period"`
 	GeneratedAt    time.Time                 `json:"generated_at"`
@@ -87,8 +87,8 @@ type CollectionSummaryReport struct {
 type MonthlyCollectionTrend struct {
 	Month           time.Time `json:"month"`
 	CollectionRate  float64   `json:"collection_rate"`
-	AmountDue       int64     `json:"amount_due"`
-	AmountCollected int64     `json:"amount_collected"`
+	AmountDue       float64   `json:"amount_due"`
+	AmountCollected float64   `json:"amount_collected"`
 }
 
 // PaymentAnalysisReport returns payment analysis data

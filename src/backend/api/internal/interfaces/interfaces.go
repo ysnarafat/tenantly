@@ -236,7 +236,7 @@ type PaymentRepositoryInterface interface {
 	GetSystemPaymentStats(startDate, endDate time.Time) (any, error)
 	GetBuildingPaymentsInPeriod(buildingID int, startDate, endDate time.Time, limit, offset int) ([]*models.PaymentWithDetails, int, error)
 	GetDashboardSummary(orgID int) (*models.DashboardSummary, error)
-	GetAgingBuckets(orgID int) (map[string]int64, error)
+	GetAgingBuckets(orgID int) (map[string]float64, error)
 	GetMonthlyCollectionTrend(orgID int, months int) ([]*models.MonthlyCollectionTrend, error)
 	GetTenantPaymentSummary(orgID int) ([]*models.TenantReportEntry, error)
 	GetPaymentAnalyticsByPeriod(orgID int, startDate, endDate time.Time) (*models.PaymentAnalyticsResult, error)

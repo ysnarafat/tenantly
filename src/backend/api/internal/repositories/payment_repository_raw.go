@@ -413,26 +413,29 @@ func (r *PaymentRepository) GetPaymentAnalyticsByPeriod(orgID int, startDate, en
 }
 
 // GetAgingBuckets returns outstanding balances bucketed by how many months overdue they are.
-func (r *PaymentRepository) GetAgingBuckets(orgID int) (map[string]int64, error) {
+func (r *PaymentRepository) GetAgingBuckets(orgID int) (map[string]float64, error) {
 	now := time.Now()
 	currentYear, currentMonth := now.Year(), int(now.Month())
-	// month index = year*12 + month; current bucket = this month or future
+	// month index = year*12 + month; current bucket = this month or future.
+	// amount_due/amount_paid are numeric(10,2); COALESCE(..., 0) avoids a
+	// bare SQL NULL when no rows match a bucket (lib/pq can't scan NULL into
+	// a plain, non-pointer Go numeric type).
 	query := `
 		SELECT
-			SUM(CASE WHEN (year * 12 + month) >= ($2 * 12 + $3)     THEN GREATEST(amount_due - amount_paid, 0) ELSE 0 END),
-			SUM(CASE WHEN (year * 12 + month) = ($2 * 12 + $3) - 1  THEN GREATEST(amount_due - amount_paid, 0) ELSE 0 END),
-			SUM(CASE WHEN (year * 12 + month) = ($2 * 12 + $3) - 2  THEN GREATEST(amount_due - amount_paid, 0) ELSE 0 END),
-			SUM(CASE WHEN (year * 12 + month) < ($2 * 12 + $3) - 2  THEN GREATEST(amount_due - amount_paid, 0) ELSE 0 END)
+			COALESCE(SUM(CASE WHEN (year * 12 + month) >= ($2 * 12 + $3)     THEN GREATEST(amount_due - amount_paid, 0) ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN (year * 12 + month) = ($2 * 12 + $3) - 1  THEN GREATEST(amount_due - amount_paid, 0) ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN (year * 12 + month) = ($2 * 12 + $3) - 2  THEN GREATEST(amount_due - amount_paid, 0) ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN (year * 12 + month) < ($2 * 12 + $3) - 2  THEN GREATEST(amount_due - amount_paid, 0) ELSE 0 END), 0)
 		FROM payments
 		WHERE organization_id = $1
 		  AND status IN ('Due', 'Partial', 'Overdue')`
 
-	var current, d30, d60, d90plus int64
+	var current, d30, d60, d90plus float64
 	err := r.db.QueryRow(query, orgID, currentYear, currentMonth).Scan(&current, &d30, &d60, &d90plus)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get aging buckets: %w", err)
 	}
-	return map[string]int64{
+	return map[string]float64{
 		"current": current,
 		"30d":     d30,
 		"60d":     d60,
@@ -464,13 +467,13 @@ func (r *PaymentRepository) GetMonthlyCollectionTrend(orgID int, months int) ([]
 	trend := make([]*models.MonthlyCollectionTrend, 0, months)
 	for rows.Next() {
 		var year, month int
-		var amountDue, amountCollected int64
+		var amountDue, amountCollected float64
 		if err := rows.Scan(&year, &month, &amountDue, &amountCollected); err != nil {
 			return nil, fmt.Errorf("failed to scan trend row: %w", err)
 		}
 		rate := 0.0
 		if amountDue > 0 {
-			rate = float64(amountCollected) / float64(amountDue) * 100
+			rate = amountCollected / amountDue * 100
 		}
 		trend = append(trend, &models.MonthlyCollectionTrend{
 			Month:           time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC),
