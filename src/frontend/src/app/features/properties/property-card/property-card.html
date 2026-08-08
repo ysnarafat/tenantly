@@ -24,8 +24,15 @@
     <div class="buildings-section">
       <div class="section-header">
         <h3>Buildings</h3>
-        <button mat-mini-fab color="primary" matTooltip="Add Building" (click)="onAddBuilding()">
+        <button
+          mat-flat-button
+          color="primary"
+          class="add-building-btn"
+          matTooltip="Add Building"
+          (click)="onAddBuilding()"
+        >
           <mat-icon>add</mat-icon>
+          Add
         </button>
       </div>
 
@@ -56,6 +63,14 @@
           </div>
           <button
             mat-icon-button
+            matTooltip="Building Details"
+            (click)="onViewBuildingDetails(building, $event)"
+            class="building-info-btn"
+          >
+            <mat-icon>info_outline</mat-icon>
+          </button>
+          <button
+            mat-icon-button
             matTooltip="Edit Building"
             (click)="onEditBuilding(building, $event)"
             class="building-edit-btn"
@@ -73,13 +88,14 @@
           <div class="section-header">
             <h4>Units</h4>
             <button
-              mat-mini-fab
+              mat-flat-button
               color="accent"
               matTooltip="Add Unit"
-              class="small-fab"
+              class="add-unit-btn"
               (click)="onAddUnit(building)"
             >
               <mat-icon>add</mat-icon>
+              Add
             </button>
           </div>
 
@@ -107,6 +123,13 @@
                     <mat-icon>payments</mat-icon>
                   </button>
                 </span>
+                <button
+                  mat-icon-button
+                  (click)="onViewUnitDetails(unit, building)"
+                  matTooltip="Unit Details"
+                >
+                  <mat-icon>info_outline</mat-icon>
+                </button>
                 <button mat-icon-button (click)="onEditUnit(unit, building)" matTooltip="Edit Unit">
                   <mat-icon>edit</mat-icon>
                 </button>

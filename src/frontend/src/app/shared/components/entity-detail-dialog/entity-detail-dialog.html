@@ -1,0 +1,25 @@
+<h2 mat-dialog-title class="dialog-title">
+  @if (data.icon) {
+  <mat-icon>{{ data.icon }}</mat-icon>
+  }
+  <div class="title-text">
+    {{ data.title }} @if (data.subtitle) {
+    <span class="subtitle">{{ data.subtitle }}</span>
+    }
+  </div>
+</h2>
+
+<mat-dialog-content>
+  <dl class="detail-list">
+    @for (row of data.rows; track row.label) {
+    <div class="detail-row">
+      <dt>{{ row.label }}</dt>
+      <dd>{{ row.value }}</dd>
+    </div>
+    }
+  </dl>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Close</button>
+</mat-dialog-actions>

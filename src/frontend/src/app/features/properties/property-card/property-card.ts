@@ -60,6 +60,11 @@ export class PropertyCardComponent {
     building: BuildingWithUnits;
     property: DisplayedProperty;
   }>();
+  @Output() viewBuildingDetails = new EventEmitter<BuildingWithUnits>();
+  @Output() viewUnitDetails = new EventEmitter<{
+    unit: UnitWithDetails;
+    building: BuildingWithUnits;
+  }>();
 
   onToggleProperty() {
     this.toggleProperty.emit(this.property);
@@ -100,6 +105,15 @@ export class PropertyCardComponent {
 
   onAddPayment(unit: UnitWithDetails, building: BuildingWithUnits) {
     this.addPayment.emit({ unit, building, property: this.property });
+  }
+
+  onViewBuildingDetails(building: BuildingWithUnits, event: Event) {
+    event.stopPropagation();
+    this.viewBuildingDetails.emit(building);
+  }
+
+  onViewUnitDetails(unit: UnitWithDetails, building: BuildingWithUnits) {
+    this.viewUnitDetails.emit({ unit, building });
   }
 
   getPropertyTypeColor(type: string): string {

@@ -74,6 +74,8 @@
           (editUnit)="editUnit($event.unit, $event.building, $event.property)"
           (deleteUnit)="deleteUnit($event.unit, $event.building)"
           (addPayment)="addPaymentForUnit($event.unit, $event.building, $event.property)"
+          (viewBuildingDetails)="viewBuildingDetails($event)"
+          (viewUnitDetails)="viewUnitDetails($event.unit, $event.building)"
         />
       }
     </div>
