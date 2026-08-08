@@ -1,24 +1,25 @@
 <mat-card class="property-card">
   <mat-card-header>
     <mat-icon mat-card-avatar>business</mat-icon>
-    <mat-card-title>{{ property.property_name }}</mat-card-title>
-    <mat-card-subtitle>{{ property.property_code }}</mat-card-subtitle>
+    <div class="property-name-block">
+      <strong class="property-name">{{ property.property_name }}</strong>
+      <span class="property-code">{{ property.property_code }}</span>
+    </div>
+    <div class="property-meta">
+      <mat-chip [color]="getPropertyTypeColor(property.property_type)" selected class="type-chip">
+        {{ property.property_type }}
+      </mat-chip>
+      <span class="address-line">
+        <mat-icon class="pin-icon">location_on</mat-icon>
+        {{ property.address }}@if (property.city) {, {{ property.city }}}
+      </span>
+      @if (property.total_buildings && property.total_buildings > 0) {
+      <span class="building-count">{{ property.total_buildings }} Building(s)</span>
+      }
+    </div>
   </mat-card-header>
 
   <mat-card-content>
-    <div class="property-info">
-      <div class="info-row">
-        <mat-icon>location_on</mat-icon>
-        <span>{{ property.address }}@if (property.city) {, {{ property.city }}}</span>
-        <mat-chip [color]="getPropertyTypeColor(property.property_type)" selected>
-          {{ property.property_type }}
-        </mat-chip>
-        @if (property.total_buildings && property.total_buildings > 0) {
-        <span class="building-count">{{ property.total_buildings }} Building(s)</span>
-        }
-      </div>
-    </div>
-
     <!-- Buildings Section -->
     @if (property.expanded) {
     <div class="buildings-section">
