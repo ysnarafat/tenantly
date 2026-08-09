@@ -175,6 +175,7 @@ func (s *Server) setupRoutes() {
 				users.POST("", middleware.RequireSuperAdminOrAdmin(), userHandler.CreateUser)
 				users.GET("/:id", middleware.RequireAnyRole(), userHandler.GetUser)
 				users.PUT("/:id", middleware.RequireSuperAdminOrAdmin(), userHandler.UpdateUser)
+				users.PUT("/:id/reset-password", middleware.RequireSuperAdminOrAdmin(), userHandler.AdminResetPassword)
 				users.DELETE("/:id", middleware.RequireSuperAdminOrAdmin(), userHandler.DeleteUser)
 			}
 

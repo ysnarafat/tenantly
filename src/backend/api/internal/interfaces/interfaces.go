@@ -112,6 +112,8 @@ type UserServiceInterface interface {
 	DeleteUser(id int) error
 	UpdateUserInOrganization(id int, req *models.UpdateUserRequest, orgID int) error
 	DeleteUserInOrganization(id int, orgID int) error
+	AdminResetPassword(id int, newPassword string) error
+	AdminResetPasswordInOrganization(id int, newPassword string, orgID int) error
 	SetOrganization(userID int, req *models.SetOrganizationRequest) (*models.SetOrganizationResponse, error)
 }
 

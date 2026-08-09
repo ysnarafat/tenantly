@@ -380,6 +380,43 @@ func (h *UserHandler) UpdateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "User updated successfully"})
 }
 
+// AdminResetPassword lets an admin set a new password for another user in
+// their organization directly — for when the user is locked out and can't
+// use self-service email reset. Same SUPER_ADMIN-vs-org-scoped branching as
+// UpdateUser, so a non-SUPER_ADMIN caller can only reset passwords for users
+// in their own organization.
+func (h *UserHandler) AdminResetPassword(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	var req models.AdminResetPasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request format", err)
+		return
+	}
+
+	callerRole, _ := c.Get("role")
+	if callerRole == "SUPER_ADMIN" {
+		err = h.userService.AdminResetPassword(id, req.NewPassword)
+	} else {
+		orgID, ok := callerOrgID(c)
+		if !ok {
+			c.JSON(http.StatusForbidden, gin.H{"error": "no organization context"})
+			return
+		}
+		err = h.userService.AdminResetPasswordInOrganization(id, req.NewPassword, orgID)
+	}
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "ADMIN_PASSWORD_RESET_FAILED", "Failed to reset password", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Password reset successfully"})
+}
+
 func (h *UserHandler) DeleteUser(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
