@@ -224,6 +224,7 @@ export class CreateLeaseDialog implements OnInit {
           this.snackBar,
           this.translate.instant('CREATE_LEASE_DIALOG.ERRORS.LOAD_BUILDINGS')
         );
+        this.leaseForm.get('building_id')?.disable();
       },
     });
   }
@@ -258,6 +259,7 @@ export class CreateLeaseDialog implements OnInit {
         console.error('Error loading units:', safeErrorMessage(error));
         this.unitsLoading = false;
         notifyError(this.snackBar, this.translate.instant('CREATE_LEASE_DIALOG.ERRORS.LOAD_UNITS'));
+        this.leaseForm.get('unit_id')?.disable();
       },
     });
   }
