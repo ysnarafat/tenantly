@@ -2,6 +2,7 @@ import { createReducer, on } from '@ngrx/store';
 import { User } from '../../core/services/auth.service';
 import { UserOrganization } from '../../core/models/organization.model';
 import * as AuthActions from './auth.actions';
+import { authStorage } from '../../shared/utils/auth-storage.utils';
 
 export interface AuthState {
   user: User | null;
@@ -18,17 +19,17 @@ export interface AuthState {
 // stored in localStorage — it lives only in an httpOnly cookie the backend
 // sets and reads directly, so it's not readable (or storable) here.
 const initializeFromStorage = (): AuthState => {
-  const token = localStorage.getItem('tenantly_token');
-  const userStr = localStorage.getItem('tenantly_user');
-  const expiresAt = localStorage.getItem('tenantly_expires_at');
+  const token = authStorage.getItem('tenantly_token');
+  const userStr = authStorage.getItem('tenantly_user');
+  const expiresAt = authStorage.getItem('tenantly_expires_at');
 
   if (token && userStr && expiresAt) {
     const user = JSON.parse(userStr);
     const isExpired = new Date() >= new Date(expiresAt);
 
     if (!isExpired) {
-      const orgId = localStorage.getItem('tenantly_current_org_id');
-      const orgsStr = localStorage.getItem('tenantly_organizations');
+      const orgId = authStorage.getItem('tenantly_current_org_id');
+      const orgsStr = authStorage.getItem('tenantly_organizations');
       const userOrganizations = orgsStr ? JSON.parse(orgsStr) : [];
       return {
         user,
@@ -238,17 +239,17 @@ export const authReducer = createReducer(
 
   // Initialize Auth (load from localStorage)
   on(AuthActions.initializeAuth, (state) => {
-    const token = localStorage.getItem('tenantly_token');
-    const userStr = localStorage.getItem('tenantly_user');
-    const expiresAt = localStorage.getItem('tenantly_expires_at');
+    const token = authStorage.getItem('tenantly_token');
+    const userStr = authStorage.getItem('tenantly_user');
+    const expiresAt = authStorage.getItem('tenantly_expires_at');
 
     if (token && userStr && expiresAt) {
       const user = JSON.parse(userStr);
       const isExpired = new Date() >= new Date(expiresAt);
 
       if (!isExpired) {
-        const orgId = localStorage.getItem('tenantly_current_org_id');
-        const orgsStr = localStorage.getItem('tenantly_organizations');
+        const orgId = authStorage.getItem('tenantly_current_org_id');
+        const orgsStr = authStorage.getItem('tenantly_organizations');
         const userOrganizations = orgsStr ? JSON.parse(orgsStr) : state.userOrganizations;
         return {
           ...state,

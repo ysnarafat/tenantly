@@ -23,6 +23,7 @@ import { Unit } from '../../../core/models/unit.model';
 import { Tenant } from '../../../core/models/tenant.model';
 import { LeaseType } from '../../../core/models/lease.model';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
 
 @Component({
   selector: 'app-create-lease-dialog',
@@ -117,7 +118,7 @@ export class CreateLeaseDialog implements OnInit {
         },
         error: (error: any) => {
           console.error('Error loading properties:', safeErrorMessage(error));
-          this.snackBar.open('Error loading properties', 'Close', { duration: 3000 });
+          notifyError(this.snackBar, 'Error loading properties');
           resolve();
         },
       });
@@ -134,7 +135,7 @@ export class CreateLeaseDialog implements OnInit {
         },
         error: (error) => {
           console.error('Error loading tenants:', safeErrorMessage(error));
-          this.snackBar.open('Error loading tenants', 'Close', { duration: 3000 });
+          notifyError(this.snackBar, 'Error loading tenants');
           resolve();
         },
       });
@@ -163,7 +164,7 @@ export class CreateLeaseDialog implements OnInit {
       },
       error: (error: any) => {
         console.error('Error loading buildings:', safeErrorMessage(error));
-        this.snackBar.open('Error loading buildings', 'Close', { duration: 3000 });
+        notifyError(this.snackBar, 'Error loading buildings');
         this.leaseForm.get('building_id')?.disable();
       },
     });
@@ -189,7 +190,7 @@ export class CreateLeaseDialog implements OnInit {
       },
       error: (error: any) => {
         console.error('Error loading units:', safeErrorMessage(error));
-        this.snackBar.open('Error loading units', 'Close', { duration: 3000 });
+        notifyError(this.snackBar, 'Error loading units');
         this.leaseForm.get('unit_id')?.disable();
       },
     });
@@ -253,7 +254,7 @@ export class CreateLeaseDialog implements OnInit {
   onSubmit() {
     if (this.leaseForm.invalid) {
       this.leaseForm.markAllAsTouched();
-      this.snackBar.open('Please fill all required fields', 'Close', { duration: 3000 });
+      notifyError(this.snackBar, 'Please fill all required fields');
       return;
     }
 
@@ -272,14 +273,14 @@ export class CreateLeaseDialog implements OnInit {
 
     this.leaseService.createLease(request).subscribe({
       next: () => {
-        this.snackBar.open('Lease created successfully', 'Close', { duration: 3000 });
+        notifySuccess(this.snackBar, 'Lease created successfully');
         this.dialogRef.close(true);
         this.submitLoading = false;
       },
       error: (error) => {
         console.error('Error creating lease:', safeErrorMessage(error));
         const errorMessage = error.error?.message || 'Failed to create lease';
-        this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
+        notifyError(this.snackBar, errorMessage);
         this.submitLoading = false;
       },
     });

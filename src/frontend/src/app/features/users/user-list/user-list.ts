@@ -11,13 +11,17 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatDialog } from '@angular/material/dialog';
 import { TranslateModule } from '@ngx-translate/core';
 import { Router } from '@angular/router';
 import { User } from '../../../core/services/auth.service';
 import { UserService } from '../../../core/services/user.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { DataTable } from '../../../shared/components/data-table/data-table';
+import { ResetPasswordDialogComponent } from '../reset-password-dialog/reset-password-dialog';
+import { ConfirmDialogComponent } from '../../../shared/components/confirm-dialog/confirm-dialog';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
 import { actWithUndo } from '../../../shared/utils/undo-toast.utils';
 
 @Component({
@@ -47,6 +51,7 @@ export class UserList implements OnInit {
   private permissionService = inject(PermissionService);
   private snackBar = inject(MatSnackBar);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
 
   loading = signal(false);
   searchTerm = signal('');
@@ -71,6 +76,7 @@ export class UserList implements OnInit {
   });
 
   canPromoteUsers = computed(() => this.permissionService.canManageOrgAdmins());
+  activeCount = computed(() => this.allUsers().filter((u) => u.active).length);
 
   ngOnInit(): void {
     this.loadUsers();
@@ -86,7 +92,7 @@ export class UserList implements OnInit {
       },
       error: (error) => {
         console.error('Error loading users:', safeErrorMessage(error));
-        this.snackBar.open('Failed to load users', 'Close', { duration: 3000 });
+        notifyError(this.snackBar, 'Failed to load users');
         this.loading.set(false);
       },
     });
@@ -110,46 +116,58 @@ export class UserList implements OnInit {
   }
 
   deactivateUser(user: User): void {
-    this.replaceUser(user.id, { ...user, active: false });
-
-    actWithUndo(
-      this.snackBar,
-      `${user.username} deactivated`,
-      () => {
-        this.userService.updateUser(user.id, { active: false }).subscribe({
-          next: () => {
-            if (!this.showInactive()) this.loadUsers();
-          },
-          error: (err) => {
-            this.snackBar.open(err.error?.error || 'Failed to deactivate user', 'Close', {
-              duration: 5000,
-            });
-            this.loadUsers();
-          },
-        });
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Deactivate user',
+        message: `${user.username} will be immediately signed out and won't be able to log back in until reactivated. You can reactivate them anytime.`,
+        confirmLabel: 'Deactivate',
+        tone: 'warn',
       },
-      { onUndo: () => this.replaceUser(user.id, user) }
-    );
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) return;
+
+      this.userService.updateUser(user.id, { active: false }).subscribe({
+        next: () => {
+          notifySuccess(this.snackBar, `${user.username} deactivated`);
+          if (!this.showInactive()) {
+            this.loadUsers();
+          } else {
+            this.replaceUser(user.id, { ...user, active: false });
+          }
+        },
+        error: (err) => {
+          notifyError(this.snackBar, err.error?.error || 'Failed to deactivate user');
+        },
+      });
+    });
   }
 
   activateUser(user: User): void {
-    this.replaceUser(user.id, { ...user, active: true });
-
-    actWithUndo(
-      this.snackBar,
-      `${user.username} activated`,
-      () => {
-        this.userService.updateUser(user.id, { active: true }).subscribe({
-          error: (err) => {
-            this.snackBar.open(err.error?.error || 'Failed to activate user', 'Close', {
-              duration: 5000,
-            });
-            this.loadUsers();
-          },
-        });
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '400px',
+      data: {
+        title: 'Activate user',
+        message: `${user.username} will be able to log in again immediately.`,
+        confirmLabel: 'Activate',
       },
-      { onUndo: () => this.replaceUser(user.id, user) }
-    );
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (!confirmed) return;
+
+      this.userService.updateUser(user.id, { active: true }).subscribe({
+        next: () => {
+          notifySuccess(this.snackBar, `${user.username} activated`);
+          this.replaceUser(user.id, { ...user, active: true });
+        },
+        error: (err) => {
+          notifyError(this.snackBar, err.error?.error || 'Failed to activate user');
+        },
+      });
+    });
   }
 
   deleteUser(user: User): void {
@@ -162,9 +180,7 @@ export class UserList implements OnInit {
       () => {
         this.userService.deleteUser(user.id).subscribe({
           error: (err) => {
-            this.snackBar.open(err.error?.error || 'Failed to delete user', 'Close', {
-              duration: 5000,
-            });
+            notifyError(this.snackBar, err.error?.error || 'Failed to delete user');
             this.loadUsers();
           },
         });
@@ -175,6 +191,26 @@ export class UserList implements OnInit {
 
   promoteUser(user: User): void {
     this.router.navigate(['/admin/users/promote'], { queryParams: { userId: user.id } });
+  }
+
+  resetPassword(user: User): void {
+    const dialogRef = this.dialog.open(ResetPasswordDialogComponent, {
+      width: '420px',
+      data: { username: user.username },
+    });
+
+    dialogRef.afterClosed().subscribe((newPassword: string | null) => {
+      if (!newPassword) return;
+
+      this.userService.adminResetPassword(user.id, newPassword).subscribe({
+        next: () => {
+          notifySuccess(this.snackBar, `Password reset for ${user.username}`);
+        },
+        error: (err) => {
+          notifyError(this.snackBar, err.error?.error || 'Failed to reset password');
+        },
+      });
+    });
   }
 
   createUser(): void {

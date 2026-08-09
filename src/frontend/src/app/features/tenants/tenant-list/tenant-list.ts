@@ -5,6 +5,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
+import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatInputModule } from '@angular/material/input';
@@ -30,6 +31,7 @@ import {
   RESTRICTED_LABEL,
 } from '../../../shared/utils/pii-mask.utils';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
 import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm-delete-dialog/confirm-delete-dialog';
 
 @Component({
@@ -43,6 +45,7 @@ import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm
     MatIconModule,
     MatDialogModule,
     MatTableModule,
+    MatSortModule,
     MatPaginatorModule,
     MatInputModule,
     MatFormFieldModule,
@@ -98,7 +101,7 @@ export class TenantList implements OnInit {
           error: (err) => {
             this.mfaService.clearStepUp();
             console.error('Error revealing NID:', safeErrorMessage(err));
-            this.snackBar.open('Failed to reveal NID', 'Close', { duration: 3000 });
+            notifyError(this.snackBar, 'Failed to reveal NID');
             const state = this.revealState.get(id) ?? { nid: false, phone: false };
             this.revealState.set(id, { ...state, nid: false });
           },
@@ -148,6 +151,15 @@ export class TenantList implements OnInit {
 
   displayedColumns: string[] = ['name', 'type', 'contact', 'nid', 'status', 'created', 'actions'];
 
+  sortState: Sort = { active: '', direction: '' };
+
+  private readonly sortAccessors: Record<string, (t: Tenant) => string | number> = {
+    name: (t) => t.name?.toLowerCase() ?? '',
+    type: (t) => t.tenant_type ?? '',
+    status: (t) => (t.active ? 1 : 0),
+    created: (t) => new Date(t.created_at).getTime(),
+  };
+
   ngOnInit() {
     this.loadTenants();
   }
@@ -162,7 +174,7 @@ export class TenantList implements OnInit {
       },
       error: (err) => {
         console.error('Error fetching tenants:', safeErrorMessage(err));
-        this.snackBar.open('Failed to load tenants', 'Close', { duration: 3000 });
+        notifyError(this.snackBar, 'Failed to load tenants');
         this.loading = false;
       },
     });
@@ -187,8 +199,30 @@ export class TenantList implements OnInit {
     if (this.typeFilter !== 'all') result = result.filter((t) => t.tenant_type === this.typeFilter);
 
     this.filteredTenants = result;
+    this.applySort();
     this.pageIndex = 0;
     this.updatePagedData();
+  }
+
+  onSortChange(sort: Sort) {
+    this.sortState = sort;
+    this.applySort();
+    this.updatePagedData();
+  }
+
+  private applySort() {
+    const { active, direction } = this.sortState;
+    const accessor = this.sortAccessors[active];
+    if (!direction || !accessor) return;
+
+    const dir = direction === 'asc' ? 1 : -1;
+    this.filteredTenants = [...this.filteredTenants].sort((a, b) => {
+      const valueA = accessor(a);
+      const valueB = accessor(b);
+      if (valueA < valueB) return -dir;
+      if (valueA > valueB) return dir;
+      return 0;
+    });
   }
 
   updatePagedData() {
@@ -242,13 +276,11 @@ export class TenantList implements OnInit {
       if (result) {
         this.tenantService.createTenant(result).subscribe({
           next: () => {
-            this.snackBar.open('Tenant created successfully', 'Close', { duration: 3000 });
+            notifySuccess(this.snackBar, 'Tenant created successfully');
             this.loadTenants();
           },
           error: (err) => {
-            this.snackBar.open(err.error?.message || 'Failed to create tenant', 'Close', {
-              duration: 3000,
-            });
+            notifyError(this.snackBar, err.error?.message || 'Failed to create tenant');
           },
         });
       }
@@ -273,13 +305,11 @@ export class TenantList implements OnInit {
         const cleanedResult = cleanEmptyFields(result);
         this.tenantService.updateTenant(tenant.id, cleanedResult).subscribe({
           next: () => {
-            this.snackBar.open('Tenant updated successfully', 'Close', { duration: 3000 });
+            notifySuccess(this.snackBar, 'Tenant updated successfully');
             this.loadTenants();
           },
           error: (err) => {
-            this.snackBar.open(err.error?.message || 'Failed to update tenant', 'Close', {
-              duration: 3000,
-            });
+            notifyError(this.snackBar, err.error?.message || 'Failed to update tenant');
           },
         });
       }
@@ -296,13 +326,11 @@ export class TenantList implements OnInit {
       if (confirmed) {
         this.tenantService.deleteTenant(tenant.id).subscribe({
           next: () => {
-            this.snackBar.open('Tenant deleted', 'Close', { duration: 3000 });
+            notifySuccess(this.snackBar, 'Tenant deleted');
             this.loadTenants();
           },
           error: (err) => {
-            this.snackBar.open(err.error?.message || 'Failed to delete tenant', 'Close', {
-              duration: 3000,
-            });
+            notifyError(this.snackBar, err.error?.message || 'Failed to delete tenant');
           },
         });
       }

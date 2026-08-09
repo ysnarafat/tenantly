@@ -495,18 +495,40 @@
                     </thead>
                     <tbody>
                       @for (p of building.payments; track p.id) {
-                      <tr>
-                        <td>{{ p.tenant_name || '—' }}</td>
-                        <td class="unit-cell">{{ p.unit_number }}</td>
-                        <td class="period-cell">{{ monthName(p.month) }} {{ p.year }}</td>
-                        <td class="num mono">{{ p.amount_due | number:'1.0-0' }}</td>
-                        <td class="num mono">{{ p.amount_paid | number:'1.0-0' }}</td>
-                        <td>
+                      <tr class="bldg-row">
+                        <td [attr.data-label]="'PAYMENT_LIST.TABLE.TENANT_UNIT' | translate">
+                          {{ p.tenant_name || '—' }}
+                        </td>
+                        <td
+                          class="unit-cell"
+                          [attr.data-label]="'PAYMENT_LIST.TABLE.UNIT' | translate"
+                        >
+                          {{ p.unit_number }}
+                        </td>
+                        <td
+                          class="period-cell"
+                          [attr.data-label]="'PAYMENT_LIST.TABLE.PERIOD' | translate"
+                        >
+                          {{ monthName(p.month) }} {{ p.year }}
+                        </td>
+                        <td
+                          class="num mono"
+                          [attr.data-label]="'PAYMENT_LIST.TABLE.AMOUNT_DUE' | translate"
+                        >
+                          {{ p.amount_due | number:'1.0-0' }}
+                        </td>
+                        <td
+                          class="num mono"
+                          [attr.data-label]="'PAYMENT_LIST.TABLE.AMOUNT_PAID' | translate"
+                        >
+                          {{ p.amount_paid | number:'1.0-0' }}
+                        </td>
+                        <td [attr.data-label]="'PAYMENT_LIST.TABLE.STATUS' | translate">
                           <span [class]="'inline-badge status-' + p.status.toLowerCase()"
                             >{{ p.status }}</span
                           >
                         </td>
-                        <td class="action-cell">
+                        <td class="action-cell" data-label="">
                           <button
                             mat-icon-button
                             (click)="openUpdateDialog(p)"

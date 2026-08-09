@@ -37,7 +37,7 @@
         align-items: center;
         gap: 8px;
         background-color: var(--color-primary);
-        color: var(--bg-primary);
+        color: #ffffff;
         border-radius: 8px;
         padding: 8px 16px;
         transition: all 0.3s ease;
@@ -121,7 +121,7 @@
           align-items: center;
           justify-content: center;
           background-color: var(--color-primary);
-          color: var(--bg-primary);
+          color: #ffffff;
 
           mat-icon {
             font-size: 32px;

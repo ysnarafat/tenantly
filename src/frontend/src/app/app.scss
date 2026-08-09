@@ -2,6 +2,19 @@ $nav-expanded-width: 260px;
 $nav-collapsed-width: 64px;
 $nav-transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
+// ── Navigation loader ───────────────────────────────────────────────────────
+// Shown while a route change is pending (see app.ts's NAVIGATION_LOADER_DELAY_MS)
+// — fixed above everything, including the toolbar, so it reads as "the app is
+// working" rather than a piece of any one page.
+.nav-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  height: 3px;
+}
+
 .app-container {
   height: 100vh;
   display: flex;
@@ -55,10 +68,14 @@ $nav-transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ── Toolbar ───────────────────────────────────────────────────────────────────
+// Matches the sidenav's tint so the two form one continuous frame around the
+// content area, in both light and dark theme.
 .app-toolbar {
   position: relative;
   z-index: 2;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  background-color: var(--sidenav-bg) !important;
+  color: var(--text-primary) !important;
 }
 
 .menu-button {

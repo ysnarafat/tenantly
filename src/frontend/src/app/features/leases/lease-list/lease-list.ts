@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
+import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
@@ -23,6 +24,7 @@ import { EditLeaseDialog } from '../edit-lease-dialog/edit-lease-dialog';
 import { LoadingSpinner } from '../../../shared/components/loading-spinner/loading-spinner';
 import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm-delete-dialog/confirm-delete-dialog';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
 
 @Component({
   selector: 'app-lease-list',
@@ -31,6 +33,7 @@ import { safeErrorMessage } from '../../../shared/utils/error.utils';
     CommonModule,
     FormsModule,
     MatTableModule,
+    MatSortModule,
     MatButtonModule,
     MatIconModule,
     MatCardModule,
@@ -78,6 +81,17 @@ export class LeaseList implements OnInit {
   ];
   expandableColumns = [...this.displayedColumns, 'expandedDetail'];
 
+  sortState: Sort = { active: '', direction: '' };
+
+  private readonly sortAccessors: Record<string, (l: LeaseWithDetails) => string | number> = {
+    tenant_name: (l) => l.tenant_name?.toLowerCase() ?? '',
+    lease_type: (l) => l.lease_type ?? '',
+    monthly_rent: (l) => l.monthly_rent,
+    duration: (l) => l.duration_months,
+    status: (l) =>
+      ({ active: 0, expiring: 1, expired: 2, inactive: 3 })[this.getStatusClass(l)] ?? 99,
+  };
+
   ngOnInit() {
     this.loadLeases();
   }
@@ -92,7 +106,7 @@ export class LeaseList implements OnInit {
       },
       error: (error) => {
         console.error('Error loading leases:', safeErrorMessage(error));
-        this.snackBar.open('Error loading leases', 'Close', { duration: 3000 });
+        notifyError(this.snackBar, 'Error loading leases');
         this.loading = false;
       },
     });
@@ -123,9 +137,31 @@ export class LeaseList implements OnInit {
     if (this.typeFilter !== 'all') result = result.filter((l) => l.lease_type === this.typeFilter);
 
     this.filteredLeases = result;
+    this.applySort();
     this.pageIndex = 0;
     this.expandedLease = null;
     this.updatePagedData();
+  }
+
+  onSortChange(sort: Sort) {
+    this.sortState = sort;
+    this.applySort();
+    this.updatePagedData();
+  }
+
+  private applySort() {
+    const { active, direction } = this.sortState;
+    const accessor = this.sortAccessors[active];
+    if (!direction || !accessor) return;
+
+    const dir = direction === 'asc' ? 1 : -1;
+    this.filteredLeases = [...this.filteredLeases].sort((a, b) => {
+      const valueA = accessor(a);
+      const valueB = accessor(b);
+      if (valueA < valueB) return -dir;
+      if (valueA > valueB) return dir;
+      return 0;
+    });
   }
 
   updatePagedData() {
@@ -215,12 +251,12 @@ export class LeaseList implements OnInit {
       if (confirmed) {
         this.leaseService.deleteLease(lease.id).subscribe({
           next: () => {
-            this.snackBar.open('Lease deleted', 'Close', { duration: 3000 });
+            notifySuccess(this.snackBar, 'Lease deleted');
             this.loadLeases();
           },
           error: (error) => {
             console.error('Error deleting lease:', safeErrorMessage(error));
-            this.snackBar.open('Error deleting lease', 'Close', { duration: 3000 });
+            notifyError(this.snackBar, 'Error deleting lease');
           },
         });
       }

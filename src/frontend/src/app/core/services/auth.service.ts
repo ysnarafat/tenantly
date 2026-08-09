@@ -7,6 +7,7 @@ import { AppState } from '../../store';
 import * as AuthSelectors from '../../store/auth/auth.selectors';
 import * as AuthActions from '../../store/auth/auth.actions';
 import { UserOrganization } from '../models/organization.model';
+import { authStorage } from '../../shared/utils/auth-storage.utils';
 
 export interface LoginRequest {
   username: string;
@@ -52,7 +53,6 @@ export class AuthService {
   private http = inject(HttpClient);
   private store = inject(Store<AppState>);
   private readonly TOKEN_KEY = 'tenantly_token';
-  private readonly USER_KEY = 'tenantly_user';
   private readonly EXPIRES_AT_KEY = 'tenantly_expires_at';
 
   // NgRx store selectors for reactive access
@@ -98,7 +98,7 @@ export class AuthService {
   }
 
   getToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY);
+    return authStorage.getItem(this.TOKEN_KEY);
   }
 
   getUser(): User | null {
@@ -132,7 +132,7 @@ export class AuthService {
   }
 
   isTokenExpired(): boolean {
-    const expiresAt = localStorage.getItem(this.EXPIRES_AT_KEY);
+    const expiresAt = authStorage.getItem(this.EXPIRES_AT_KEY);
     if (!expiresAt) return true;
 
     const expiryDate = new Date(expiresAt);
@@ -196,28 +196,5 @@ export class AuthService {
 
   isAccountant$(): Observable<boolean> {
     return this.store.select(AuthSelectors.selectIsAccountant);
-  }
-
-  private hasToken(): boolean {
-    return !!localStorage.getItem(this.TOKEN_KEY);
-  }
-
-  private storeAuthData(response: LoginResponse): void {
-    localStorage.setItem(this.TOKEN_KEY, response.token);
-    localStorage.setItem(this.USER_KEY, JSON.stringify(response.user));
-    localStorage.setItem(
-      this.EXPIRES_AT_KEY,
-      typeof response.expires_at === 'string'
-        ? response.expires_at
-        : new Date(response.expires_at).toISOString()
-    );
-    // Note: NgRx effects will handle state updates
-  }
-
-  private clearAuthData(): void {
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.USER_KEY);
-    localStorage.removeItem(this.EXPIRES_AT_KEY);
-    // Note: NgRx effects will handle state updates
   }
 }

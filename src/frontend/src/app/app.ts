@@ -1,7 +1,17 @@
 import { Component, inject, OnInit, ViewChild, signal, computed, effect } from '@angular/core';
 
-import { RouterOutlet, RouterModule, Router, NavigationEnd } from '@angular/router';
-import { filter } from 'rxjs/operators';
+import {
+  RouterOutlet,
+  RouterModule,
+  Router,
+  NavigationEnd,
+  NavigationStart,
+  NavigationCancel,
+  NavigationError,
+  NavigationSkipped,
+} from '@angular/router';
+import { filter, switchMap, map } from 'rxjs/operators';
+import { timer, of, EMPTY } from 'rxjs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -10,6 +20,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { TranslateModule } from '@ngx-translate/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -23,6 +34,11 @@ import { OrganizationSelector } from './shared/organization-selector/organizatio
 import { avatarColorFor, avatarInitials } from './shared/utils/avatar.utils';
 
 const AUTH_ROUTE_PREFIXES = ['/home', '/login', '/select-organization', '/401', '/404'];
+
+// Only surface the bar once a navigation has been pending this long — most
+// route changes resolve near-instantly (chunk already cached), and flashing
+// a loader for those reads as jank rather than feedback.
+const NAVIGATION_LOADER_DELAY_MS = 150;
 
 @Component({
   selector: 'app-root',
@@ -38,6 +54,7 @@ const AUTH_ROUTE_PREFIXES = ['/home', '/login', '/select-organization', '/401', 
     MatTooltipModule,
     MatMenuModule,
     MatDividerModule,
+    MatProgressBarModule,
     TranslateModule,
     OrganizationSelector,
   ],
@@ -61,6 +78,7 @@ export class App implements OnInit {
   user = signal<User | null>(null);
   isMobile = signal(false);
   sidenavCollapsed = signal(false);
+  navigating = signal(false);
 
   // Computed permission signals
   isSuperAdmin = computed(() => this.permissions.isSuperAdmin());
@@ -125,6 +143,29 @@ export class App implements OnInit {
         takeUntilDestroyed()
       )
       .subscribe((event) => this.currentUrl.set(event.urlAfterRedirects));
+
+    // switchMap cancels the pending delay timer as soon as a NavigationEnd/
+    // Cancel/Error/Skipped event arrives, so a fast navigation never flashes
+    // the loader — only one that outlives NAVIGATION_LOADER_DELAY_MS does.
+    this.router.events
+      .pipe(
+        switchMap((event) => {
+          if (event instanceof NavigationStart) {
+            return timer(NAVIGATION_LOADER_DELAY_MS).pipe(map(() => true));
+          }
+          if (
+            event instanceof NavigationEnd ||
+            event instanceof NavigationCancel ||
+            event instanceof NavigationError ||
+            event instanceof NavigationSkipped
+          ) {
+            return of(false);
+          }
+          return EMPTY;
+        }),
+        takeUntilDestroyed()
+      )
+      .subscribe((navigating) => this.navigating.set(navigating));
 
     this.authFacade.userRole$
       .pipe(takeUntilDestroyed())

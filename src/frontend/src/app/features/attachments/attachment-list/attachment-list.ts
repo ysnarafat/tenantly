@@ -1,6 +1,7 @@
 import { Component, OnInit, inject, Input } from '@angular/core';
 
 import { MatTableModule } from '@angular/material/table';
+import { MatSortModule } from '@angular/material/sort';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
@@ -21,12 +22,14 @@ import {
 import { AuthService } from '../../../core/services/auth.service';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
 import { actWithUndo } from '../../../shared/utils/undo-toast.utils';
+import { notifyError } from '../../../shared/utils/notify.utils';
 
 @Component({
   selector: 'app-attachment-list',
   standalone: true,
   imports: [
     MatTableModule,
+    MatSortModule,
     MatButtonModule,
     MatIconModule,
     MatCardModule,
@@ -90,7 +93,7 @@ export class AttachmentList implements OnInit {
       },
       error: (error) => {
         console.error('Error loading attachments:', safeErrorMessage(error));
-        this.snackBar.open('Error loading attachments', 'Close', { duration: 3000 });
+        notifyError(this.snackBar, 'Error loading attachments');
         this.loading = false;
       },
     });
@@ -186,7 +189,7 @@ export class AttachmentList implements OnInit {
       },
       error: (error) => {
         console.error('Error downloading attachment:', safeErrorMessage(error));
-        this.snackBar.open('Error downloading attachment', 'Close', { duration: 3000 });
+        notifyError(this.snackBar, 'Error downloading attachment');
       },
     });
   }
@@ -220,7 +223,7 @@ export class AttachmentList implements OnInit {
         this.attachmentService.deleteAttachment(attachment.id).subscribe({
           error: (error) => {
             console.error('Error deleting attachment:', safeErrorMessage(error));
-            this.snackBar.open('Error deleting attachment', 'Close', { duration: 3000 });
+            notifyError(this.snackBar, 'Error deleting attachment');
             this.loadAttachments();
           },
         });

@@ -1,6 +1,8 @@
-@if (showShell()) {
+@if (navigating()) {
+<mat-progress-bar mode="indeterminate" class="nav-progress-bar"></mat-progress-bar>
+} @if (showShell()) {
 <div class="app-container">
-  <mat-toolbar color="primary" class="app-toolbar">
+  <mat-toolbar class="app-toolbar">
     <button mat-icon-button (click)="toggleSidenav()" class="menu-button">
       <mat-icon>{{ sidenavCollapsed() && !isMobile() ? 'menu_open' : 'menu' }}</mat-icon>
     </button>

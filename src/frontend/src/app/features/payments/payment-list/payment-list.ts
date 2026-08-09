@@ -48,6 +48,7 @@ import { debounceTime, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { DataTable } from '../../../shared/components/data-table/data-table';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
 
 interface BuildingNode {
   building_id: number;
@@ -226,7 +227,7 @@ export class PaymentList implements OnInit {
       },
       error: (err) => {
         this.loading.set(false);
-        this.showError('Failed to load payments');
+        notifyError(this.snackBar, 'Failed to load payments');
         console.error(safeErrorMessage(err));
       },
     });
@@ -244,7 +245,7 @@ export class PaymentList implements OnInit {
       },
       error: () => {
         this.treeLoading.set(false);
-        this.showError('Failed to load tree view');
+        notifyError(this.snackBar, 'Failed to load tree view');
       },
     });
   }
@@ -283,9 +284,9 @@ export class PaymentList implements OnInit {
             this.loading.set(false);
             const msg = `Generated ${result.generated} · Skipped ${result.skipped} · Failed ${result.failed}`;
             if (result.failed > 0) {
-              this.showError(msg);
+              notifyError(this.snackBar, msg);
             } else {
-              this.showSuccess(msg);
+              notifySuccess(this.snackBar, msg);
             }
             this.loadPayments();
             this.loadSummary();
@@ -293,7 +294,7 @@ export class PaymentList implements OnInit {
           },
           error: (err) => {
             this.loading.set(false);
-            this.showError(err?.error?.error ?? 'Failed to generate payments');
+            notifyError(this.snackBar, err?.error?.error ?? 'Failed to generate payments');
           },
         });
       }
@@ -306,12 +307,13 @@ export class PaymentList implements OnInit {
       if (req) {
         this.paymentService.createPayment(req).subscribe({
           next: (payment) => {
-            this.showSuccess(`Payment created — Receipt ${payment.receipt_number}`);
+            notifySuccess(this.snackBar, `Payment created — Receipt ${payment.receipt_number}`);
             this.loadPayments();
             this.loadSummary();
             if (this.activeTab() === 1) this.loadTreePayments();
           },
-          error: (err) => this.showError(err?.error?.error ?? 'Failed to create payment'),
+          error: (err) =>
+            notifyError(this.snackBar, err?.error?.error ?? 'Failed to create payment'),
         });
       }
     });
@@ -327,12 +329,13 @@ export class PaymentList implements OnInit {
       if (req) {
         this.paymentService.updatePayment(payment.id, req).subscribe({
           next: () => {
-            this.showSuccess('Payment updated');
+            notifySuccess(this.snackBar, 'Payment updated');
             this.loadPayments();
             this.loadSummary();
             if (this.activeTab() === 1) this.loadTreePayments();
           },
-          error: (err) => this.showError(err?.error?.error ?? 'Failed to update payment'),
+          error: (err) =>
+            notifyError(this.snackBar, err?.error?.error ?? 'Failed to update payment'),
         });
       }
     });
@@ -348,7 +351,7 @@ export class PaymentList implements OnInit {
         a.click();
         URL.revokeObjectURL(url);
       },
-      error: () => this.showError('Failed to download receipt'),
+      error: () => notifyError(this.snackBar, 'Failed to download receipt'),
     });
   }
 
@@ -370,14 +373,6 @@ export class PaymentList implements OnInit {
     if (rate >= 90) return '#4caf50';
     if (rate >= 70) return '#ff9800';
     return '#f44336';
-  }
-
-  private showSuccess(msg: string): void {
-    this.snackBar.open(msg, 'Close', { duration: 3000, panelClass: 'snack-success' });
-  }
-
-  private showError(msg: string): void {
-    this.snackBar.open(msg, 'Close', { duration: 5000, panelClass: 'snack-error' });
   }
 }
 
@@ -588,6 +583,11 @@ export interface PaymentCreatePrefill {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 12px;
+      }
+      @media (max-width: 480px) {
+        .row-2 {
+          grid-template-columns: 1fr;
+        }
       }
       .lease-option-main {
         display: block;
@@ -845,6 +845,11 @@ export class PaymentCreateDialog implements OnInit {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 12px;
+      }
+      @media (max-width: 480px) {
+        .row-2 {
+          grid-template-columns: 1fr;
+        }
       }
     `,
   ],

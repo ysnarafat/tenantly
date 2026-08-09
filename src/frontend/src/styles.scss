@@ -28,7 +28,10 @@ body {
   --color-primary-dark: #1565c0;
 
   // Backgrounds
-  --bg-primary: #ffffff;
+  // bg-primary is the page canvas (body, .main-content) — kept a soft gray rather
+  // than pure white so it reads as a backdrop, not another surface; bg-surface/
+  // card-bg stay white so cards pop against it instead of the whole app being flat.
+  --bg-primary: #eef1f5;
   --bg-secondary: #fafafa;
   --bg-surface: #ffffff;
   --bg-hover: #f9f9f9;
@@ -77,16 +80,17 @@ body {
   --color-success: #4caf50;
   --color-primary-dark: #1565c0;
 
-  // Sidenav
+  // Sidenav + toolbar — a soft tint close to bg-primary rather than a hard white or
+  // a dark frame, so the shell reads as part of the same canvas as the page.
+  --sidenav-bg: #e6eaf0;
   --nav-item-color: rgba(0, 0, 0, 0.7);
   --nav-icon-color: rgba(0, 0, 0, 0.45);
   --nav-hover-bg: rgba(0, 0, 0, 0.05);
-  --nav-active-bg: rgba(25, 118, 210, 0.1);
+  --nav-active-bg: rgba(25, 118, 210, 0.12);
   --nav-active-color: #1565c0;
   --nav-section-label-color: rgba(0, 0, 0, 0.35);
-  --nav-section-line-color: rgba(0, 0, 0, 0.07);
+  --nav-section-line-color: rgba(0, 0, 0, 0.08);
   --nav-border-color: rgba(0, 0, 0, 0.08);
-  --sidenav-bg: #ffffff;
 }
 
 [data-theme='dark'] {
@@ -145,7 +149,9 @@ body {
   --shadow-card: rgba(0, 0, 0, 0.4);
   --shadow-toolbar: rgba(0, 0, 0, 0.4);
 
-  // Sidenav
+  // Sidenav + toolbar — a touch lighter than bg-primary so the shell still reads
+  // as a distinct frame against the dark canvas, without a hard color jump.
+  --sidenav-bg: #1a1f2b;
   --nav-item-color: rgba(255, 255, 255, 0.7);
   --nav-icon-color: rgba(255, 255, 255, 0.45);
   --nav-hover-bg: rgba(255, 255, 255, 0.06);
@@ -154,7 +160,6 @@ body {
   --nav-section-label-color: rgba(255, 255, 255, 0.35);
   --nav-section-line-color: rgba(255, 255, 255, 0.1);
   --nav-border-color: rgba(255, 255, 255, 0.08);
-  --sidenav-bg: #1e1e1e;
 }
 
 // ── Angular Material Dark Mode Token Overrides ────────────────────────────────
@@ -301,6 +306,57 @@ body {
     background-color: var(--bg-surface);
     z-index: 1;
     box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.08);
+  }
+}
+
+// ── Toast notifications ───────────────────────────────────────────────────────
+// Baseline look for every snackBar.open(...) call (applied app-wide via
+// MAT_SNACK_BAR_DEFAULT_OPTIONS in app.config.ts — top-right, rounded,
+// shadowed, rather than Material's plain bottom-center bar). Call sites can
+// additionally pass 'toast-success'/'toast-error'/'toast-info' alongside
+// 'app-toast' for a color-coded surface; uncolored toasts keep the neutral
+// theme surface.
+.app-toast {
+  .mdc-snackbar__surface {
+    border-radius: 10px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18) !important;
+  }
+
+  .mdc-snackbar__label {
+    font-size: 0.9375rem;
+  }
+
+  &.toast-success .mdc-snackbar__surface {
+    background-color: var(--success-color) !important;
+  }
+
+  &.toast-error .mdc-snackbar__surface {
+    background-color: var(--warn-color) !important;
+  }
+
+  &.toast-info .mdc-snackbar__surface {
+    background-color: var(--color-primary) !important;
+  }
+
+  &.toast-success .mdc-snackbar__label,
+  &.toast-error .mdc-snackbar__label,
+  &.toast-info .mdc-snackbar__label {
+    color: #fff;
+  }
+
+  &.toast-success .mat-mdc-snack-bar-action,
+  &.toast-error .mat-mdc-snack-bar-action,
+  &.toast-info .mat-mdc-snack-bar-action {
+    --mat-snack-bar-button-color: #fff;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-toast {
+    // Full-width at the top on mobile instead of a narrow top-right pill —
+    // top keeps it clear of the bottom nav/keyboard, unlike the desktop
+    // corner position.
+    margin: 8px !important;
   }
 }
 

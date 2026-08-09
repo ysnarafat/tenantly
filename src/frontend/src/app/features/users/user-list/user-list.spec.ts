@@ -1,11 +1,19 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { of, throwError, Subject } from 'rxjs';
 import { UserList } from './user-list';
 import { UserService } from '../../../core/services/user.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { User } from '../../../core/services/auth.service';
+
+// The activate/deactivate/reset-password confirm dialogs are real
+// MatDialogRef instances in the component; stub just the afterClosed()
+// result the component reads.
+function dialogRefStub(result: unknown): MatDialogRef<unknown> {
+  return { afterClosed: () => of(result) } as unknown as MatDialogRef<unknown>;
+}
 
 // actWithUndo drives a real MatSnackBarRef's onAction()/afterDismissed() —
 // this stub lets tests simulate "undo clicked" vs. "toast timed out" without
@@ -30,6 +38,7 @@ describe('UserList Component', () => {
   let permissionService: jasmine.SpyObj<PermissionService>;
   let router: jasmine.SpyObj<Router>;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
+  let dialog: jasmine.SpyObj<MatDialog>;
 
   const mockUsers: User[] = [
     {
@@ -70,6 +79,7 @@ describe('UserList Component', () => {
     const permissionServiceSpy = jasmine.createSpyObj('PermissionService', ['canManageOrgAdmins']);
     const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
     const snackBarSpy = jasmine.createSpyObj('MatSnackBar', ['open']);
+    const dialogSpy = jasmine.createSpyObj('MatDialog', ['open']);
 
     await TestBed.configureTestingModule({
       imports: [UserList],
@@ -78,6 +88,7 @@ describe('UserList Component', () => {
         { provide: PermissionService, useValue: permissionServiceSpy },
         { provide: Router, useValue: routerSpy },
         { provide: MatSnackBar, useValue: snackBarSpy },
+        { provide: MatDialog, useValue: dialogSpy },
       ],
     }).compileComponents();
 
@@ -85,6 +96,7 @@ describe('UserList Component', () => {
     permissionService = TestBed.inject(PermissionService) as jasmine.SpyObj<PermissionService>;
     router = TestBed.inject(Router) as jasmine.SpyObj<Router>;
     snackBar = TestBed.inject(MatSnackBar) as jasmine.SpyObj<MatSnackBar>;
+    dialog = TestBed.inject(MatDialog) as jasmine.SpyObj<MatDialog>;
 
     userService.getUsers.and.returnValue(of({ users: mockUsers, total: 3 }));
 
@@ -109,9 +121,11 @@ describe('UserList Component', () => {
 
       component.loadUsers();
 
-      expect(snackBar.open).toHaveBeenCalledWith('Failed to load users', 'Close', {
-        duration: 3000,
-      });
+      expect(snackBar.open).toHaveBeenCalledWith(
+        'Failed to load users',
+        'Close',
+        jasmine.objectContaining({ duration: 5000 })
+      );
       expect(component.loading()).toBe(false);
     });
   });
@@ -256,72 +270,73 @@ describe('UserList Component', () => {
       component.loadUsers();
     });
 
-    it('should optimistically deactivate the user and show an undo toast', () => {
-      const stub = createSnackBarRefStub();
-      snackBar.open.and.returnValue(stub.ref as never);
+    it('should ask for confirmation and deactivate the user when confirmed', () => {
+      dialog.open.and.returnValue(dialogRefStub(true));
+      userService.updateUser.and.returnValue(of({ message: 'ok' }));
+      userService.getUsers.calls.reset();
+      userService.getUsers.and.returnValue(of({ users: mockUsers, total: 3 }));
       const user = mockUsers[0];
 
       component.deactivateUser(user);
 
-      expect(component.allUsers().find((u) => u.id === user.id)?.active).toBe(false);
+      expect(dialog.open).toHaveBeenCalled();
+      expect(userService.updateUser).toHaveBeenCalledWith(user.id, { active: false });
       expect(snackBar.open).toHaveBeenCalledWith(
         `${user.username} deactivated`,
-        'Undo',
+        'Close',
+        jasmine.objectContaining({ duration: 3000 })
+      );
+    });
+
+    it('should not deactivate the user when the confirm dialog is cancelled', () => {
+      dialog.open.and.returnValue(dialogRefStub(false));
+      const user = mockUsers[0];
+
+      component.deactivateUser(user);
+
+      expect(userService.updateUser).not.toHaveBeenCalled();
+    });
+
+    it('should show an error and not touch local state when deactivate fails', () => {
+      dialog.open.and.returnValue(dialogRefStub(true));
+      userService.updateUser.and.returnValue(
+        throwError(() => ({ error: { error: 'Failed to deactivate user' } }))
+      );
+      const user = mockUsers[0];
+
+      component.deactivateUser(user);
+
+      expect(snackBar.open).toHaveBeenCalledWith(
+        'Failed to deactivate user',
+        'Close',
         jasmine.objectContaining({ duration: 5000 })
       );
-      expect(userService.updateUser).not.toHaveBeenCalled();
     });
 
-    it('should call updateUser once the deactivate toast times out', () => {
-      const stub = createSnackBarRefStub();
-      snackBar.open.and.returnValue(stub.ref as never);
+    it('should ask for confirmation and activate the user when confirmed', () => {
+      dialog.open.and.returnValue(dialogRefStub(true));
       userService.updateUser.and.returnValue(of({ message: 'ok' }));
-      const user = mockUsers[0];
-
-      component.deactivateUser(user);
-      stub.timeOut();
-
-      expect(userService.updateUser).toHaveBeenCalledWith(user.id, { active: false });
-    });
-
-    it('should restore the user and skip updateUser when Undo is clicked on deactivate', () => {
-      const stub = createSnackBarRefStub();
-      snackBar.open.and.returnValue(stub.ref as never);
-      const user = mockUsers[0];
-
-      component.deactivateUser(user);
-      stub.clickUndo();
-
-      expect(component.allUsers().find((u) => u.id === user.id)?.active).toBe(true);
-      expect(userService.updateUser).not.toHaveBeenCalled();
-    });
-
-    it('should optimistically activate the user and show an undo toast', () => {
-      const stub = createSnackBarRefStub();
-      snackBar.open.and.returnValue(stub.ref as never);
       const user = mockUsers[2];
 
       component.activateUser(user);
 
+      expect(dialog.open).toHaveBeenCalled();
+      expect(userService.updateUser).toHaveBeenCalledWith(user.id, { active: true });
       expect(component.allUsers().find((u) => u.id === user.id)?.active).toBe(true);
       expect(snackBar.open).toHaveBeenCalledWith(
         `${user.username} activated`,
-        'Undo',
-        jasmine.objectContaining({ duration: 5000 })
+        'Close',
+        jasmine.objectContaining({ duration: 3000 })
       );
-      expect(userService.updateUser).not.toHaveBeenCalled();
     });
 
-    it('should call updateUser once the activate toast times out', () => {
-      const stub = createSnackBarRefStub();
-      snackBar.open.and.returnValue(stub.ref as never);
-      userService.updateUser.and.returnValue(of({ message: 'ok' }));
+    it('should not activate the user when the confirm dialog is cancelled', () => {
+      dialog.open.and.returnValue(dialogRefStub(false));
       const user = mockUsers[2];
 
       component.activateUser(user);
-      stub.timeOut();
 
-      expect(userService.updateUser).toHaveBeenCalledWith(user.id, { active: true });
+      expect(userService.updateUser).not.toHaveBeenCalled();
     });
 
     it('should optimistically remove the user and show an undo toast on delete', () => {
@@ -362,25 +377,6 @@ describe('UserList Component', () => {
 
       expect(component.allUsers().find((u) => u.id === user.id)).toEqual(user);
       expect(userService.deleteUser).not.toHaveBeenCalled();
-    });
-
-    it('should show an error and reload when the deferred deactivate fails', () => {
-      const stub = createSnackBarRefStub();
-      snackBar.open.and.returnValue(stub.ref as never);
-      userService.updateUser.and.returnValue(
-        throwError(() => ({ error: { error: 'Failed to deactivate user' } }))
-      );
-      userService.getUsers.calls.reset();
-      userService.getUsers.and.returnValue(of({ users: mockUsers, total: 3 }));
-      const user = mockUsers[0];
-
-      component.deactivateUser(user);
-      stub.timeOut();
-
-      expect(snackBar.open).toHaveBeenCalledWith('Failed to deactivate user', 'Close', {
-        duration: 5000,
-      });
-      expect(userService.getUsers).toHaveBeenCalled();
     });
 
     it('should navigate to the promote page', () => {
@@ -478,9 +474,11 @@ describe('UserList Component', () => {
 
       component.loadUsers();
 
-      expect(snackBar.open).toHaveBeenCalledWith('Failed to load users', 'Close', {
-        duration: 3000,
-      });
+      expect(snackBar.open).toHaveBeenCalledWith(
+        'Failed to load users',
+        'Close',
+        jasmine.objectContaining({ duration: 5000 })
+      );
     });
 
     it('should handle 403 forbidden error', () => {

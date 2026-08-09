@@ -91,7 +91,11 @@ describe('Login Component', () => {
     const error = { message: 'Invalid credentials' };
     errorSubject.next(error);
 
-    expect(snackBar.open).toHaveBeenCalledWith('Invalid credentials', 'Close', { duration: 5000 });
+    expect(snackBar.open).toHaveBeenCalledWith(
+      'Invalid credentials',
+      'Close',
+      jasmine.objectContaining({ duration: 5000 })
+    );
   });
 
   it('should show default error message when error has no specific message', () => {
@@ -106,7 +110,7 @@ describe('Login Component', () => {
     expect(snackBar.open).toHaveBeenCalledWith(
       'Login failed. Please check your credentials.',
       'Close',
-      { duration: 5000 }
+      jasmine.objectContaining({ duration: 5000 })
     );
   });
 

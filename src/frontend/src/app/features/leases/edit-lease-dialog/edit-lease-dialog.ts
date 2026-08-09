@@ -10,6 +10,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
 import { TranslateModule } from '@ngx-translate/core';
 import { LeaseService, LeaseWithDetails } from '../../../core/services/lease.service';
 
@@ -70,14 +71,12 @@ export class EditLeaseDialog {
       })
       .subscribe({
         next: () => {
-          this.snackBar.open('Lease updated successfully', 'Close', { duration: 3000 });
+          notifySuccess(this.snackBar, 'Lease updated successfully');
           this.dialogRef.close(true);
           this.submitLoading = false;
         },
         error: (error) => {
-          this.snackBar.open(error.error?.message || 'Failed to update lease', 'Close', {
-            duration: 5000,
-          });
+          notifyError(this.snackBar, error.error?.message || 'Failed to update lease');
           this.submitLoading = false;
         },
       });

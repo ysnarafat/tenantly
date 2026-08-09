@@ -16,6 +16,7 @@ import { OrganizationService } from '../../../core/services/organization.service
 import { DataTable } from '../../../shared/components/data-table/data-table';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
 import { actWithUndo } from '../../../shared/utils/undo-toast.utils';
+import { notifyError } from '../../../shared/utils/notify.utils';
 
 @Component({
   selector: 'app-organization-list',
@@ -74,7 +75,7 @@ export class OrganizationListComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error loading organizations:', safeErrorMessage(error));
-        this.snackBar.open('Failed to load organizations', 'Close', { duration: 3000 });
+        notifyError(this.snackBar, 'Failed to load organizations');
         this.loading.set(false);
       },
     });
@@ -108,7 +109,7 @@ export class OrganizationListComponent implements OnInit {
         this.organizationService.deleteOrganization(org.id).subscribe({
           error: (error) => {
             console.error('Error deleting organization:', safeErrorMessage(error));
-            this.snackBar.open('Failed to delete organization', 'Close', { duration: 3000 });
+            notifyError(this.snackBar, 'Failed to delete organization');
             this.loadOrganizations();
           },
         });

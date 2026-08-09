@@ -70,7 +70,8 @@
       "DAYS_OVERDUE": "Days Overdue"
     },
     "DAYS": "days",
-    "ERROR_LOADING": "Failed to load due list"
+    "ERROR_LOADING": "Failed to load due list",
+    "TABLE_EMPTY": "No overdue payments"
   },
   "LEASE_LIST": {
     "PAGE_TITLE": "Lease Management",
@@ -303,6 +304,7 @@
       "USERNAME": "Username",
       "PASSWORD": "Password"
     },
+    "REMEMBER_ME": "Remember me",
     "BUTTONS": {
       "LOGIN": "Login"
     },
@@ -388,7 +390,13 @@
     },
     "FILTERS": {
       "SEARCH_LABEL": "Search properties",
-      "SEARCH_PLACEHOLDER": "Property, building or unit…"
+      "SEARCH_PLACEHOLDER": "Property, building or unit…",
+      "TYPE_LABEL": "Property type",
+      "ALL_TYPES": "All types",
+      "STATUS_LABEL": "Status",
+      "ALL_STATUSES": "All statuses",
+      "CITY_LABEL": "City",
+      "ALL_CITIES": "All cities"
     },
     "LOADING": "Loading properties...",
     "EMPTY_STATE": {
@@ -535,6 +543,10 @@
   },
   "USER_LIST": {
     "PAGE_TITLE": "User Management",
+    "STATS": {
+      "TOTAL": "Total",
+      "ACTIVE": "Active"
+    },
     "BUTTONS": {
       "CREATE_USER": "Create User",
       "INVITE_USER": "Invite User"
@@ -554,6 +566,8 @@
       "CREATED": "Created",
       "ACTIONS": "Actions"
     },
+    "LOADING": "Loading users...",
+    "EMPTY_STATE": "No users found",
     "STATUS": {
       "ACTIVE": "Active",
       "INACTIVE": "Inactive"
@@ -562,6 +576,7 @@
       "PROMOTE": "Promote/Demote",
       "DEACTIVATE": "Deactivate",
       "ACTIVATE": "Activate",
+      "RESET_PASSWORD": "Reset password",
       "DELETE": "Delete"
     }
   },
@@ -582,6 +597,8 @@
       "ACTIVE": "Active",
       "ACTIONS": "Actions"
     },
+    "LOADING": "Loading organizations...",
+    "EMPTY_STATE": "No organizations found",
     "TOOLTIPS": {
       "VIEW": "View",
       "EDIT": "Edit",

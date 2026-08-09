@@ -70,7 +70,8 @@
       "DAYS_OVERDUE": "দিন বাকি"
     },
     "DAYS": "দিন",
-    "ERROR_LOADING": "ভাড়া তালিকা লোড করতে সমস্যা হয়েছে"
+    "ERROR_LOADING": "ভাড়া তালিকা লোড করতে সমস্যা হয়েছে",
+    "TABLE_EMPTY": "কোনো বাকি ভাড়া নেই"
   },
   "LEASE_LIST": {
     "PAGE_TITLE": "লীজ ব্যবস্থাপনা",
@@ -303,6 +304,7 @@
       "USERNAME": "ব্যবহারকারীর নাম",
       "PASSWORD": "পাসওয়ার্ড"
     },
+    "REMEMBER_ME": "আমাকে মনে রাখুন",
     "BUTTONS": {
       "LOGIN": "লগইন"
     },
@@ -388,7 +390,13 @@
     },
     "FILTERS": {
       "SEARCH_LABEL": "সম্পত্তি খুঁজুন",
-      "SEARCH_PLACEHOLDER": "সম্পত্তি, ভবন বা ইউনিট…"
+      "SEARCH_PLACEHOLDER": "সম্পত্তি, ভবন বা ইউনিট…",
+      "TYPE_LABEL": "সম্পত্তির ধরন",
+      "ALL_TYPES": "সব ধরন",
+      "STATUS_LABEL": "অবস্থা",
+      "ALL_STATUSES": "সব অবস্থা",
+      "CITY_LABEL": "শহর",
+      "ALL_CITIES": "সব শহর"
     },
     "LOADING": "সম্পত্তি লোড হচ্ছে...",
     "EMPTY_STATE": {
@@ -535,6 +543,10 @@
   },
   "USER_LIST": {
     "PAGE_TITLE": "ব্যবহারকারী ব্যবস্থাপনা",
+    "STATS": {
+      "TOTAL": "মোট",
+      "ACTIVE": "সক্রিয়"
+    },
     "BUTTONS": {
       "CREATE_USER": "ব্যবহারকারী তৈরি করুন",
       "INVITE_USER": "ব্যবহারকারী আমন্ত্রণ করুন"
@@ -554,6 +566,8 @@
       "CREATED": "তৈরির তারিখ",
       "ACTIONS": "কার্যক্রম"
     },
+    "LOADING": "ব্যবহারকারী লোড হচ্ছে...",
+    "EMPTY_STATE": "কোনো ব্যবহারকারী পাওয়া যায়নি",
     "STATUS": {
       "ACTIVE": "সক্রিয়",
       "INACTIVE": "নিষ্ক্রিয়"
@@ -562,6 +576,7 @@
       "PROMOTE": "পদোন্নতি/পদাবনতি",
       "DEACTIVATE": "নিষ্ক্রিয় করুন",
       "ACTIVATE": "সক্রিয় করুন",
+      "RESET_PASSWORD": "পাসওয়ার্ড রিসেট করুন",
       "DELETE": "মুছুন"
     }
   },
@@ -582,6 +597,8 @@
       "ACTIVE": "সক্রিয়",
       "ACTIONS": "কার্যক্রম"
     },
+    "LOADING": "সংগঠন লোড হচ্ছে...",
+    "EMPTY_STATE": "কোনো সংগঠন পাওয়া যায়নি",
     "TOOLTIPS": {
       "VIEW": "দেখুন",
       "EDIT": "সম্পাদনা করুন",

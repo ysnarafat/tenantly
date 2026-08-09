@@ -1,7 +1,7 @@
 import { ApplicationConfig, importProvidersFrom, isDevMode, APP_INITIALIZER } from '@angular/core';
 import { provideRouter, TitleStrategy } from '@angular/router';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
-import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule, MAT_SNACK_BAR_DEFAULT_OPTIONS } from '@angular/material/snack-bar';
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
 import { provideStore } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
@@ -23,6 +23,19 @@ export const appConfig: ApplicationConfig = {
     { provide: TitleStrategy, useClass: AppTitleStrategy },
     provideHttpClient(withInterceptors([authInterceptor, slowRequestInterceptor])),
     importProvidersFrom(MatSnackBarModule),
+    {
+      // Every snackBar.open(...) call in the app gets this baseline unless it
+      // overrides panelClass/position itself — a top-right toast rather than
+      // Material's default bottom-center bar, with app-toast supplying the
+      // rounded/shadowed look in styles.scss.
+      provide: MAT_SNACK_BAR_DEFAULT_OPTIONS,
+      useValue: {
+        duration: 3500,
+        horizontalPosition: 'end',
+        verticalPosition: 'top',
+        panelClass: ['app-toast'],
+      },
+    },
     {
       // Many list/filter fields pair a `mat-label` with a native `[placeholder]`.
       // With the default 'auto' float behavior, the label only floats on focus/value,

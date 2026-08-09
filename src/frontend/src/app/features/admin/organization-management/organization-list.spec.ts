@@ -142,9 +142,11 @@ describe('OrganizationListComponent', () => {
 
       component.loadOrganizations();
 
-      expect(snackBar.open).toHaveBeenCalledWith('Failed to load organizations', 'Close', {
-        duration: 3000,
-      });
+      expect(snackBar.open).toHaveBeenCalledWith(
+        'Failed to load organizations',
+        'Close',
+        jasmine.objectContaining({ duration: 3000 })
+      );
       expect(component.loading()).toBe(false);
     });
 
@@ -292,9 +294,11 @@ describe('OrganizationListComponent', () => {
       component.deleteOrganization(org);
       stub.timeOut();
 
-      expect(snackBar.open).toHaveBeenCalledWith('Failed to delete organization', 'Close', {
-        duration: 3000,
-      });
+      expect(snackBar.open).toHaveBeenCalledWith(
+        'Failed to delete organization',
+        'Close',
+        jasmine.objectContaining({ duration: 3000 })
+      );
       expect(organizationService.getOrganizations).toHaveBeenCalled();
     });
   });
@@ -403,9 +407,11 @@ describe('OrganizationListComponent', () => {
 
       component.loadOrganizations();
 
-      expect(snackBar.open).toHaveBeenCalledWith('Failed to load organizations', 'Close', {
-        duration: 3000,
-      });
+      expect(snackBar.open).toHaveBeenCalledWith(
+        'Failed to load organizations',
+        'Close',
+        jasmine.objectContaining({ duration: 3000 })
+      );
       expect(component.loading()).toBe(false);
     });
 
