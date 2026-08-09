@@ -392,11 +392,8 @@
       "SEARCH_LABEL": "সম্পত্তি খুঁজুন",
       "SEARCH_PLACEHOLDER": "সম্পত্তি, ভবন বা ইউনিট…",
       "TYPE_LABEL": "সম্পত্তির ধরন",
-      "ALL_TYPES": "সব ধরন",
       "STATUS_LABEL": "অবস্থা",
-      "ALL_STATUSES": "সব অবস্থা",
-      "CITY_LABEL": "শহর",
-      "ALL_CITIES": "সব শহর"
+      "CITY_LABEL": "শহর"
     },
     "LOADING": "সম্পত্তি লোড হচ্ছে...",
     "EMPTY_STATE": {

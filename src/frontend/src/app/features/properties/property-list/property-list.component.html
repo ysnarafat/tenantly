@@ -44,10 +44,10 @@
     <mat-form-field appearance="outline" class="filter-field">
       <mat-label>{{ 'PROPERTY_LIST.FILTERS.TYPE_LABEL' | translate }}</mat-label>
       <mat-select
-        [value]="propertyTypeFilter()"
-        (selectionChange)="onTypeFilterChange($event.value)"
+        [value]="propertyTypeFilter() ?? 'all'"
+        (selectionChange)="onTypeFilterChange($event.value === 'all' ? null : $event.value)"
       >
-        <mat-option [value]="null">{{ 'PROPERTY_LIST.FILTERS.ALL_TYPES' | translate }}</mat-option>
+        <mat-option value="all">{{ 'COMMON.ALL' | translate }}</mat-option>
         @for (type of propertyTypes; track type) {
           <mat-option [value]="type">{{ type }}</mat-option>
         }
@@ -56,10 +56,11 @@
 
     <mat-form-field appearance="outline" class="filter-field">
       <mat-label>{{ 'PROPERTY_LIST.FILTERS.STATUS_LABEL' | translate }}</mat-label>
-      <mat-select [value]="statusFilter()" (selectionChange)="onStatusFilterChange($event.value)">
-        <mat-option [value]="null">{{
-          'PROPERTY_LIST.FILTERS.ALL_STATUSES' | translate
-        }}</mat-option>
+      <mat-select
+        [value]="statusFilter() ?? 'all'"
+        (selectionChange)="onStatusFilterChange($event.value === 'all' ? null : $event.value)"
+      >
+        <mat-option value="all">{{ 'COMMON.ALL' | translate }}</mat-option>
         <mat-option value="active">{{ 'COMMON.STATUS.ACTIVE' | translate }}</mat-option>
         <mat-option value="inactive">{{ 'COMMON.STATUS.INACTIVE' | translate }}</mat-option>
       </mat-select>
@@ -68,10 +69,11 @@
     @if (availableCities().length > 0) {
       <mat-form-field appearance="outline" class="filter-field">
         <mat-label>{{ 'PROPERTY_LIST.FILTERS.CITY_LABEL' | translate }}</mat-label>
-        <mat-select [value]="cityFilter()" (selectionChange)="onCityFilterChange($event.value)">
-          <mat-option [value]="null">{{
-            'PROPERTY_LIST.FILTERS.ALL_CITIES' | translate
-          }}</mat-option>
+        <mat-select
+          [value]="cityFilter() ?? 'all'"
+          (selectionChange)="onCityFilterChange($event.value === 'all' ? null : $event.value)"
+        >
+          <mat-option value="all">{{ 'COMMON.ALL' | translate }}</mat-option>
           @for (city of availableCities(); track city) {
             <mat-option [value]="city">{{ city }}</mat-option>
           }
