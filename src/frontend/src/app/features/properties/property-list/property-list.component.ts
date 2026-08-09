@@ -9,8 +9,10 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslateModule } from '@ngx-translate/core';
 import { Store } from '@ngrx/store';
 import { PropertyActions } from '../store/property.actions';
@@ -25,6 +27,7 @@ import { BuildingService } from '../../../core/services/building.service';
 import { UnitService } from '../../../core/services/unit.service';
 import {
   Property,
+  PropertyType,
   Building,
   Unit,
   UnitWithDetails,
@@ -44,6 +47,7 @@ import {
   DetailRow,
 } from '../../../shared/components/entity-detail-dialog/entity-detail-dialog';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
 
 interface PropertyWithHierarchy extends Property {
   buildings?: BuildingWithUnits[];
@@ -68,6 +72,7 @@ interface BuildingWithUnits extends Building {
     MatExpansionModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
     MatTooltipModule,
     PropertyCardComponent,
     TranslateModule,
@@ -82,6 +87,7 @@ export class PropertyListComponent implements OnInit {
   private unitService = inject(UnitService);
   private dialog = inject(MatDialog);
   private paymentService = inject(PaymentService);
+  private snackBar = inject(MatSnackBar);
 
   // Store selectors
   properties = this.store.selectSignal(selectAllProperties);
@@ -92,8 +98,31 @@ export class PropertyListComponent implements OnInit {
   expandedProperties = signal<Set<number>>(new Set());
   loadedBuildings = signal<Map<number, BuildingWithUnits[]>>(new Map());
   searchQuery = signal('');
+  propertyTypeFilter = signal<PropertyType | null>(null);
+  statusFilter = signal<'active' | 'inactive' | null>(null);
+  cityFilter = signal<string | null>(null);
+
+  propertyTypes: PropertyType[] = ['Residential', 'Commercial', 'Mixed'];
 
   activeCount = computed(() => this.properties().filter((p) => p.active).length);
+
+  availableCities = computed(() => {
+    const cities = new Set<string>();
+    for (const p of this.properties()) {
+      if (p.city) cities.add(p.city);
+    }
+    return [...cities].sort();
+  });
+
+  hasActiveFilters = computed(
+    () =>
+      !!(
+        this.searchQuery() ||
+        this.propertyTypeFilter() ||
+        this.statusFilter() ||
+        this.cityFilter()
+      )
+  );
 
   // Combined state for template
   displayedProperties = computed(() => {
@@ -101,13 +130,25 @@ export class PropertyListComponent implements OnInit {
     const expandedProps = this.expandedProperties();
     const buildingsMap = this.loadedBuildings();
     const query = this.searchQuery().trim().toLowerCase();
+    const type = this.propertyTypeFilter();
+    const status = this.statusFilter();
+    const city = this.cityFilter();
 
-    const withHierarchy = props.map((p) => ({
+    let withHierarchy = props.map((p) => ({
       ...p,
       expanded: expandedProps.has(p.id),
       buildings: buildingsMap.get(p.id),
     })) as DisplayedProperty[];
 
+    if (type) {
+      withHierarchy = withHierarchy.filter((p) => p.property_type === type);
+    }
+    if (status) {
+      withHierarchy = withHierarchy.filter((p) => (status === 'active' ? p.active : !p.active));
+    }
+    if (city) {
+      withHierarchy = withHierarchy.filter((p) => p.city === city);
+    }
     if (!query) return withHierarchy;
 
     return withHierarchy.filter((property) => this.matchesSearch(property, query));
@@ -140,8 +181,27 @@ export class PropertyListComponent implements OnInit {
     this.searchQuery.set('');
   }
 
+  onTypeFilterChange(type: PropertyType | null) {
+    this.propertyTypeFilter.set(type);
+  }
+
+  onStatusFilterChange(status: 'active' | 'inactive' | null) {
+    this.statusFilter.set(status);
+  }
+
+  onCityFilterChange(city: string | null) {
+    this.cityFilter.set(city);
+  }
+
+  resetFilters() {
+    this.searchQuery.set('');
+    this.propertyTypeFilter.set(null);
+    this.statusFilter.set(null);
+    this.cityFilter.set(null);
+  }
+
   ngOnInit() {
-    this.store.dispatch(PropertyActions.loadProperties({ active: true }));
+    this.store.dispatch(PropertyActions.loadProperties({}));
   }
 
   toggleProperty(property: PropertyWithHierarchy) {
@@ -459,9 +519,13 @@ export class PropertyListComponent implements OnInit {
         ref.afterClosed().subscribe((req) => {
           if (req) {
             this.paymentService.createPayment(req).subscribe({
-              next: () => {},
-              error: (err: unknown) =>
-                console.error('Failed to create payment', safeErrorMessage(err)),
+              next: () => {
+                notifySuccess(this.snackBar, 'Payment recorded successfully');
+              },
+              error: (err: unknown) => {
+                console.error('Failed to create payment', safeErrorMessage(err));
+                notifyError(this.snackBar, 'Failed to record payment');
+              },
             });
           }
         });

@@ -40,6 +40,51 @@
         </button>
       }
     </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>{{ 'PROPERTY_LIST.FILTERS.TYPE_LABEL' | translate }}</mat-label>
+      <mat-select
+        [value]="propertyTypeFilter()"
+        (selectionChange)="onTypeFilterChange($event.value)"
+      >
+        <mat-option [value]="null">{{ 'PROPERTY_LIST.FILTERS.ALL_TYPES' | translate }}</mat-option>
+        @for (type of propertyTypes; track type) {
+          <mat-option [value]="type">{{ type }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>{{ 'PROPERTY_LIST.FILTERS.STATUS_LABEL' | translate }}</mat-label>
+      <mat-select [value]="statusFilter()" (selectionChange)="onStatusFilterChange($event.value)">
+        <mat-option [value]="null">{{
+          'PROPERTY_LIST.FILTERS.ALL_STATUSES' | translate
+        }}</mat-option>
+        <mat-option value="active">{{ 'COMMON.STATUS.ACTIVE' | translate }}</mat-option>
+        <mat-option value="inactive">{{ 'COMMON.STATUS.INACTIVE' | translate }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    @if (availableCities().length > 0) {
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>{{ 'PROPERTY_LIST.FILTERS.CITY_LABEL' | translate }}</mat-label>
+        <mat-select [value]="cityFilter()" (selectionChange)="onCityFilterChange($event.value)">
+          <mat-option [value]="null">{{
+            'PROPERTY_LIST.FILTERS.ALL_CITIES' | translate
+          }}</mat-option>
+          @for (city of availableCities(); track city) {
+            <mat-option [value]="city">{{ city }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    }
+
+    @if (hasActiveFilters()) {
+      <button mat-button (click)="resetFilters()" class="reset-filters-btn">
+        <mat-icon>filter_alt_off</mat-icon>
+        {{ 'COMMON.BUTTONS.RESET' | translate }}
+      </button>
+    }
   </div>
 
   @if (loading()) {
@@ -82,10 +127,14 @@
 
     @if (displayedProperties().length === 0) {
       <mat-card class="empty-state">
-        <mat-icon>{{ searchQuery() ? 'search_off' : 'domain' }}</mat-icon>
-        @if (searchQuery()) {
+        <mat-icon>{{ hasActiveFilters() ? 'search_off' : 'domain' }}</mat-icon>
+        @if (hasActiveFilters()) {
           <h2>{{ 'PROPERTY_LIST.EMPTY_STATE.NO_MATCHING' | translate }}</h2>
           <p>{{ 'COMMON.EMPTY_STATE.TRY_ADJUST' | translate }}</p>
+          <button mat-button (click)="resetFilters()">
+            <mat-icon>filter_alt_off</mat-icon>
+            {{ 'COMMON.BUTTONS.RESET' | translate }}
+          </button>
         } @else {
           <h2>{{ 'PROPERTY_LIST.EMPTY_STATE.TITLE' | translate }}</h2>
           <p>{{ 'PROPERTY_LIST.EMPTY_STATE.DESCRIPTION' | translate }}</p>

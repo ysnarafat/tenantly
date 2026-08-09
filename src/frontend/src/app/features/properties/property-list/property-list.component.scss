@@ -102,6 +102,25 @@
       margin-right: 4px;
     }
   }
+
+  .filter-field {
+    flex: 0 1 180px;
+    min-width: 150px;
+    margin: 0;
+  }
+
+  .reset-filters-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--text-muted);
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
 }
 
 .error-container {
@@ -404,9 +423,14 @@
     align-items: stretch;
     gap: 12px;
 
-    .search-field {
+    .search-field,
+    .filter-field {
       width: 100%;
       min-width: unset;
+    }
+
+    .reset-filters-btn {
+      align-self: flex-start;
     }
   }
 
