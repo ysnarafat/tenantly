@@ -35,6 +35,12 @@ import { avatarColorFor, avatarInitials } from './shared/utils/avatar.utils';
 
 const AUTH_ROUTE_PREFIXES = ['/home', '/login', '/select-organization', '/401', '/404'];
 
+const SIDENAV_COLLAPSED_KEY = 'tenantly-sidenav-collapsed';
+
+function getStoredSidenavCollapsed(): boolean {
+  return localStorage.getItem(SIDENAV_COLLAPSED_KEY) === 'true';
+}
+
 // Only surface the bar once a navigation has been pending this long — most
 // route changes resolve near-instantly (chunk already cached), and flashing
 // a loader for those reads as jank rather than feedback.
@@ -77,7 +83,7 @@ export class App implements OnInit {
   userRole = signal('');
   user = signal<User | null>(null);
   isMobile = signal(false);
-  sidenavCollapsed = signal(false);
+  sidenavCollapsed = signal(getStoredSidenavCollapsed());
   navigating = signal(false);
 
   // Computed permission signals
@@ -205,7 +211,11 @@ export class App implements OnInit {
     if (this.isMobile()) {
       this.sidenav?.toggle();
     } else {
-      this.sidenavCollapsed.update((v) => !v);
+      this.sidenavCollapsed.update((v) => {
+        const next = !v;
+        localStorage.setItem(SIDENAV_COLLAPSED_KEY, String(next));
+        return next;
+      });
       // MatSidenavContainer only recalculates the content margin on drawer
       // open/close or viewport resize — a pure CSS width change (our
       // .collapsed class) isn't one of its triggers, so the reserved space
