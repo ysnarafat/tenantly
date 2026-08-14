@@ -10,7 +10,15 @@
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'tenantly_reporting') THEN
-        CREATE ROLE tenantly_reporting NOLOGIN;
+        -- Roles are cluster-wide, so a second database migrating at the same
+        -- moment (or another API replica starting up) can win the race between
+        -- this check and the CREATE.
+        BEGIN
+            CREATE ROLE tenantly_reporting NOLOGIN;
+        EXCEPTION
+            WHEN duplicate_object THEN
+                RAISE NOTICE 'tenantly_reporting was created concurrently; continuing.';
+        END;
     END IF;
 
     -- Full read on the rest of the schema for reporting utility...
