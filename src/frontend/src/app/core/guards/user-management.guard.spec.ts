@@ -44,7 +44,7 @@ describe('userManagementGuard', () => {
 
       run().subscribe((result) => {
         expect(result).toBeFalse();
-        expect(router.navigate).toHaveBeenCalledWith(['/unauthorized']);
+        expect(router.navigate).toHaveBeenCalledWith(['/401']);
         done();
       });
     });

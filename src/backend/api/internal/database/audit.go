@@ -154,7 +154,7 @@ func (a *AuditService) GetAuditLogs(userID *int, tableName, action string, limit
 	if err != nil {
 		return nil, fmt.Errorf("failed to query audit logs: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var logs []models.AuditLog
 	for rows.Next() {
@@ -191,7 +191,7 @@ func (a *AuditService) GetAuditLogsByRecord(tableName string, recordID int) ([]m
 	if err != nil {
 		return nil, fmt.Errorf("failed to query audit logs by record: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var logs []models.AuditLog
 	for rows.Next() {

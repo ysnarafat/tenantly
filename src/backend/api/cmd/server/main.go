@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/ysnarafat/tenantly/internal/config"
 	"github.com/ysnarafat/tenantly/internal/database"
+	"github.com/ysnarafat/tenantly/internal/repositories"
 	"github.com/ysnarafat/tenantly/internal/server"
 
 	"github.com/joho/godotenv"
@@ -28,16 +29,33 @@ func main() {
 		log.Fatal("Failed to load configs:", err)
 	}
 
+	// Auto-create the database on first run in local development so
+	// contributors don't need a manual `createdb` step. Skipped in
+	// production: the app shouldn't hold CREATEDB there, and a missing
+	// database should fail loudly rather than silently spin up an empty one
+	// (e.g. from a typo'd DATABASE_URL).
+	if cfg.Environment != "production" {
+		if err := database.EnsureDatabaseExists(cfg.DatabaseURL); err != nil {
+			log.Fatal("Failed to ensure database exists: ", err)
+		}
+	}
+
 	// Initialize database
 	db, err := database.Connect(cfg.DatabaseURL)
 	if err != nil {
 		log.Fatal("Failed to connect to database: ", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	// Run migrations
 	if err := database.RunMigrations(cfg.DatabaseURL); err != nil {
 		log.Fatal("Failed to run migrations: ", err)
+	}
+
+	// Encrypt any legacy plaintext tenant NIDs left over from before at-rest
+	// protection was introduced (idempotent, safe to run on every startup).
+	if err := repositories.BackfillTenantNID(db, cfg.NIDProtector); err != nil {
+		log.Fatal("Failed to back-fill tenant NID: ", err)
 	}
 
 	// Set Gin mode based on environment

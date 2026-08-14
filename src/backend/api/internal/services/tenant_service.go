@@ -53,13 +53,13 @@ func (s *TenantService) CreateTenant(req *models.CreateTenantRequest, userID int
 		return nil, fmt.Errorf("failed to create tenant: %w", err)
 	}
 
-	// Log audit
-	s.auditService.LogUserAction(userID, "CREATE", "tenants", &tenant.ID, nil, map[string]interface{}{
-		"tenant_id":   tenant.ID,
-		"name":        tenant.Name,
-		"tenant_type": tenant.TenantType,
-		"email":       tenant.Email,
-		"nid_number":  tenant.NIDNumber,
+	// Log audit — record only the non-sensitive NID last-four, never the full value.
+	_ = s.auditService.LogUserAction(userID, "CREATE", "tenants", &tenant.ID, nil, map[string]interface{}{
+		"tenant_id":     tenant.ID,
+		"name":          tenant.Name,
+		"tenant_type":   tenant.TenantType,
+		"email":         tenant.Email,
+		"nid_last_four": tenant.NIDLastFour,
 	})
 
 	return tenant.ToResponse(), nil
@@ -159,8 +159,10 @@ func (s *TenantService) UpdateTenant(id int, req *models.UpdateTenantRequest, us
 		}
 	}
 
-	// Validate NID uniqueness if being updated
-	if req.NIDNumber != nil && *req.NIDNumber != existingTenant.NIDNumber {
+	// Validate NID uniqueness if being updated. The existing plaintext is no
+	// longer read back (NID is stored encrypted), so we always run the hashed
+	// uniqueness check excluding this tenant's own record.
+	if req.NIDNumber != nil {
 		exists, err := s.tenantRepo.CheckNIDExists(*req.NIDNumber, id)
 		if err != nil {
 			return nil, fmt.Errorf("failed to check NID uniqueness: %w", err)
@@ -247,4 +249,29 @@ func (s *TenantService) DeleteTenant(id int, userID, orgID int) error {
 	}
 
 	return nil
+}
+
+// RevealNID returns the full decrypted NID for a tenant after verifying the
+// caller's organization owns it, and records the reveal in the audit log (with
+// only the last four digits, never the full value).
+func (s *TenantService) RevealNID(id, orgID, userID int) (string, error) {
+	nid, tenantOrgID, err := s.tenantRepo.GetDecryptedNID(id)
+	if err != nil {
+		return "", fmt.Errorf("failed to get tenant NID: %w", err)
+	}
+
+	// Verify organization ownership
+	if tenantOrgID != orgID {
+		return "", fmt.Errorf("tenant not found")
+	}
+
+	// Audit the reveal — sensitive access to full PII must be traceable.
+	if s.auditService != nil {
+		_ = s.auditService.LogUserAction(userID, "REVEAL_NID", "tenants", &id, nil, map[string]interface{}{
+			"tenant_id":     id,
+			"nid_last_four": nid[max(0, len(nid)-4):],
+		})
+	}
+
+	return nid, nil
 }

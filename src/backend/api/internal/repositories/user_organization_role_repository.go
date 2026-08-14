@@ -32,7 +32,7 @@ func (r *UserOrganizationRoleRepository) GetByUserID(userID int) ([]models.UserO
 	if err != nil {
 		return nil, fmt.Errorf("failed to query user organizations: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var roles []models.UserOrganizationRole
 	for rows.Next() {

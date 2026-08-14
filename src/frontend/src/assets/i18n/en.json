@@ -674,20 +674,72 @@
       "DARK_MODE": "Switch to dark mode"
     }
   },
-  "ERROR_PAGES": {
-    "ACTIONS": {
-      "BACK_TO_DASHBOARD": "Back to dashboard",
-      "GO_BACK": "Go back"
+  "HOMEPAGE": {
+    "SEO": {
+      "TITLE": "Tenantly - Property & Rent Management for Bangladesh",
+      "DESCRIPTION": "Tenantly is property and rent management built for Bangladesh — track units, tenants, and every cash, bank transfer, bKash, or Nagad payment, in English or বাংলা."
     },
-    "UNAUTHORIZED": {
-      "STATUS": "Forbidden",
-      "TITLE": "You don't have a key to this area",
-      "MESSAGE": "Your role doesn't include access to this page. If you need it, ask an organization admin to update your permissions."
+    "NAV": {
+      "FAQ": "FAQ",
+      "LOGIN": "Log in"
     },
-    "NOT_FOUND": {
-      "STATUS": "Not found",
-      "TITLE": "We can't find that page",
-      "MESSAGE": "The address you entered doesn't lead anywhere. It may have been moved, or the link might be mistyped."
+    "HERO": {
+      "EYEBROW": "Now in Bangladesh",
+      "TITLE_LINE1": "Your rent-book,",
+      "TITLE_LINE2": "minus the torn pages.",
+      "SUBTITLE": "Tenantly is property and rent management built for Bangladesh — track every unit, tenant, and payment made in cash, bank transfer, bKash, or Nagad, in English or বাংলা, from any device.",
+      "CTA_LOGIN": "Log in",
+      "CTA_CONTACT": "Talk to our team",
+      "LEDGER_SCRIBBLE": "Flat 4B — ৳12,000 — bKash ✓",
+      "LEDGER_ROW_LABEL": "Flat 4B",
+      "LEDGER_ROW_METHOD": "bKash",
+      "LEDGER_ROW_STATUS": "Paid"
+    },
+    "FEATURES": {
+      "EYEBROW": "Why Tenantly",
+      "TITLE": "Built for how rent actually gets collected here",
+      "PAYMENTS_TITLE": "One ledger, every payment method",
+      "PAYMENTS_BODY": "Record rent paid in cash, by bank transfer, bKash, or Nagad, and see it all reconciled in one place — no more matching notebooks to bank statements.",
+      "BILINGUAL_TITLE": "Bilingual by design",
+      "BILINGUAL_BODY": "Switch the entire system between English and বাংলা any time — for you, and independently for everyone on your team.",
+      "REMINDERS_TITLE": "Reminders that send themselves",
+      "REMINDERS_BODY": "Once rent is overdue, Tenantly sends an automatic SMS and email nudge — so the first reminder doesn't have to come from an awkward phone call.",
+      "ROLES_TITLE": "Your whole team, one system",
+      "ROLES_BODY": "Give your property manager and accountant their own sign-in, each scoped to exactly what their job needs to see.",
+      "REPORTS_TITLE": "Reports that actually answer things",
+      "REPORTS_BODY": "Collection summaries, dues, and ledgers you can hand to your accountant directly — no spreadsheet detour required.",
+      "PORTFOLIO_TITLE": "Every building, every unit, in view",
+      "PORTFOLIO_BODY": "From a single house to a full apartment block, organize properties, buildings, and units the way you already think about them."
+    },
+    "FAQ": {
+      "EYEBROW": "Questions, answered plainly",
+      "TITLE": "Is this actually easy to use?",
+      "Q1_Q": "Do I need to be good with computers to use this?",
+      "Q1_A": "No. If you can use WhatsApp or send a bKash payment, you already have the skills you need — add a property, add a tenant, record a payment. There's nothing to install; it runs in your browser.",
+      "Q2_Q": "Do I have to give up my paper rent-book on day one?",
+      "Q2_A": "No. Bring your records over at your own pace — add existing tenants and leases whenever you're ready. Nothing forces you to migrate everything at once.",
+      "Q3_Q": "What if my property manager or accountant isn't tech-savvy either?",
+      "Q3_A": "Each person gets their own simple login, scoped to their job. Your accountant only sees payments and reports; your property manager only sees their buildings and tenants. Less on the screen means less to learn.",
+      "Q4_Q": "Does it really work in বাংলা?",
+      "Q4_A": "Yes — every menu, label, and message in the system switches between English and বাংলা with one tap, independently for each person on your team.",
+      "Q5_Q": "Is this a new payment method I have to learn?",
+      "Q5_A": "No new payment method to learn. Keep collecting rent exactly as you do now — cash, bank transfer, bKash, or Nagad — and record it in Tenantly so you and your accountant always know what's paid and what's due.",
+      "Q6_Q": "What happens when a tenant pays late?",
+      "Q6_A": "Tenantly sends an automatic SMS and email reminder once rent is overdue — the first nudge doesn't have to come from you.",
+      "Q7_Q": "Is my tenants' NID and personal information safe?",
+      "Q7_A": "Yes. National ID numbers are encrypted at rest, and sensitive actions require a second verification step, so a guessed password alone isn't enough to reach that data.",
+      "Q8_Q": "What does it cost?",
+      "Q8_A": "It depends on how many properties and team members you need. Talk to us and we'll work out a plan that fits your portfolio."
+    },
+    "CTA": {
+      "TITLE": "Ready to close the ledger for good?",
+      "SUBTITLE": "Log in if you're already set up, or talk to us if you're bringing Tenantly to your properties for the first time.",
+      "LOGIN": "Log in",
+      "CONTACT": "hello@tenantly.com"
+    },
+    "FOOTER": {
+      "TAGLINE": "Property and rent management for Bangladesh.",
+      "RIGHTS": "© 2026 Tenantly. All rights reserved."
     }
   }
 }

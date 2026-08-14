@@ -1,0 +1,48 @@
+.dialog-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  overflow-wrap: anywhere;
+
+  .title-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+  }
+}
+
+.detail-list {
+  margin: 0;
+  min-width: 320px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-color);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+dt {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+dd {
+  margin: 0;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: right;
+  overflow-wrap: anywhere;
+}

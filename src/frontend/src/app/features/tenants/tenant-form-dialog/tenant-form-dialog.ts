@@ -9,9 +9,13 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslateModule } from '@ngx-translate/core';
+import { switchMap } from 'rxjs/operators';
 import { Tenant, TenantType } from '../../../core/models/tenant.model';
 import { PermissionService } from '../../../core/services/permission.service';
-import { maskNid, maskPhone } from '../../../shared/utils/pii-mask.utils';
+import { TenantService } from '../../../core/services/tenant.service';
+import { MfaService } from '../../../core/services/mfa.service';
+import { maskFromLastFour, maskPhone } from '../../../shared/utils/pii-mask.utils';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
 
 export interface TenantFormDialogData {
   tenant?: Tenant;
@@ -40,6 +44,8 @@ export class TenantFormDialogComponent implements OnInit {
   private fb = inject(FormBuilder);
   private dialogRef = inject(MatDialogRef<TenantFormDialogComponent>);
   private permissionService = inject(PermissionService);
+  private tenantService = inject(TenantService);
+  private mfaService = inject(MfaService);
   public data = inject<TenantFormDialogData>(MAT_DIALOG_DATA);
 
   tenantForm!: FormGroup;
@@ -48,10 +54,11 @@ export class TenantFormDialogComponent implements OnInit {
   nidRevealed = false;
   phoneRevealed = false;
   private _realNid = '';
+  private _nidLastFour = '';
   private _realPhone = '';
 
   get hasNid(): boolean {
-    return !!this._realNid;
+    return !!this._nidLastFour || !!this._realNid;
   }
   get hasPhone(): boolean {
     return !!this._realPhone;
@@ -67,11 +74,38 @@ export class TenantFormDialogComponent implements OnInit {
   }
 
   toggleNidReveal(): void {
-    this.nidRevealed = !this.nidRevealed;
+    const willReveal = !this.nidRevealed;
+
+    // Fetch the full NID on demand the first time it is revealed, gated by an
+    // MFA step-up challenge.
+    if (willReveal && !this._realNid && this.data.tenant?.id) {
+      const id = this.data.tenant.id;
+      this.mfaService
+        .ensureStepUp()
+        .pipe(switchMap((token) => this.tenantService.getTenantNid(id, token)))
+        .subscribe({
+          next: (res) => {
+            this._realNid = res.nid_number;
+            this.nidRevealed = true;
+            if (this.isViewMode) {
+              this.tenantForm.get('nid_number')?.setValue(this._realNid, { emitEvent: false });
+            }
+          },
+          error: (err) => {
+            this.mfaService.clearStepUp();
+            console.error('Error revealing NID:', safeErrorMessage(err));
+          },
+        });
+      return;
+    }
+
+    this.nidRevealed = willReveal;
     if (this.isViewMode) {
       this.tenantForm
         .get('nid_number')
-        ?.setValue(this.nidRevealed ? this._realNid : maskNid(this._realNid), { emitEvent: false });
+        ?.setValue(this.nidRevealed ? this._realNid : maskFromLastFour(this._nidLastFour), {
+          emitEvent: false,
+        });
     }
   }
 
@@ -93,7 +127,7 @@ export class TenantFormDialogComponent implements OnInit {
   private initializeForm() {
     const tenant = this.data.tenant;
 
-    this._realNid = tenant?.nid_number || '';
+    this._nidLastFour = tenant?.nid_last_four || '';
     this._realPhone = tenant?.phone_number || '';
 
     this.tenantForm = this.fb.group({
@@ -106,8 +140,15 @@ export class TenantFormDialogComponent implements OnInit {
         this.isViewMode ? [] : [Validators.required],
       ],
       nid_number: [
-        this.isViewMode ? maskNid(this._realNid) : this._realNid,
-        this.isViewMode ? [] : [Validators.required, Validators.maxLength(20)],
+        this.isViewMode ? maskFromLastFour(this._nidLastFour) : '',
+        // NID is required only when creating. In edit mode it is left blank and
+        // an empty value is dropped on submit so the existing NID is preserved
+        // (changing it is optional and does not force an MFA reveal).
+        this.isViewMode
+          ? []
+          : this.isEditMode
+            ? [Validators.maxLength(20)]
+            : [Validators.required, Validators.maxLength(20)],
       ],
       phone_number: [
         this.isViewMode ? maskPhone(this._realPhone) : this._realPhone,
@@ -124,7 +165,13 @@ export class TenantFormDialogComponent implements OnInit {
 
   onSubmit() {
     if (this.tenantForm.valid) {
-      this.dialogRef.close(this.tenantForm.value);
+      const value = { ...this.tenantForm.value };
+      // In edit mode a blank NID means "keep the existing value" — omit it so
+      // the backend does not overwrite the stored NID with an empty string.
+      if (this.isEditMode && !value.nid_number?.trim()) {
+        delete value.nid_number;
+      }
+      this.dialogRef.close(value);
     } else {
       Object.keys(this.tenantForm.controls).forEach((key) => {
         this.tenantForm.get(key)?.markAsTouched();

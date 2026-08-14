@@ -122,7 +122,7 @@ func (r *OrganizationRepository) GetAll(activeOnly bool) ([]*models.Organization
 	if err != nil {
 		return nil, fmt.Errorf("failed to query organizations: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var organizations []*models.Organization
 	for rows.Next() {

@@ -1,0 +1,72 @@
+.mfa-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 320px;
+}
+
+.mfa-loading {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.mfa-instructions {
+  margin: 0;
+  color: var(--text-secondary, #555);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.mfa-secret {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--bg-secondary, #f5f5f5);
+}
+
+.mfa-secret-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary, #777);
+}
+
+.mfa-secret-value {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 1.05rem;
+  letter-spacing: 0.12em;
+  word-break: break-all;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.mfa-uri {
+  font-size: 0.8rem;
+}
+
+.mfa-uri-value {
+  display: block;
+  margin-top: 6px;
+  word-break: break-all;
+  font-family: 'Roboto Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-secondary, #777);
+}
+
+.mfa-code-field {
+  width: 100%;
+}
+
+.mfa-error {
+  margin: 0;
+  color: var(--color-error, #d32f2f);
+  font-size: 0.85rem;
+}
+
+[data-theme='dark'] {
+  .mfa-secret {
+    background: var(--bg-secondary, #1e1e1e);
+  }
+}

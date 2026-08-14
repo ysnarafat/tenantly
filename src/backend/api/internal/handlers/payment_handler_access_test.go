@@ -44,7 +44,7 @@ func TestPaymentHandler_GetPayment_AccessDenied(t *testing.T) {
 		}
 
 		var resp gin.H
-		json.NewDecoder(w.Body).Decode(&resp)
+		_ = json.NewDecoder(w.Body).Decode(&resp)
 		if resp["error"] == nil {
 			t.Errorf("expected error message in response")
 		}
@@ -407,7 +407,7 @@ func TestPaymentHandler_Pagination(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		var resp models.PaymentListResponse
-		json.NewDecoder(w.Body).Decode(&resp)
+		_ = json.NewDecoder(w.Body).Decode(&resp)
 
 		if resp.Page != 2 {
 			t.Errorf("page in response should be 2, got %d", resp.Page)
@@ -540,7 +540,7 @@ func TestPaymentHandler_SearchLeases(t *testing.T) {
 		}
 
 		var resp models.LeaseSearchResponse
-		json.NewDecoder(w.Body).Decode(&resp)
+		_ = json.NewDecoder(w.Body).Decode(&resp)
 		if resp.Total != 1 {
 			t.Errorf("expected 1 result, got %d", resp.Total)
 		}

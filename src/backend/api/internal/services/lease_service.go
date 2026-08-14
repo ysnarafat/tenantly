@@ -235,9 +235,7 @@ func (s *LeaseService) TerminateLease(id int, userID, orgID int, terminationDate
 		oldLease := *existingLease
 		newLease := *existingLease
 		newLease.Active = false
-		if terminationDate != nil {
-			newLease.EndDate = *terminationDate
-		}
+		newLease.EndDate = *terminationDate
 		_ = s.auditService.LogUserAction(userID, "terminate", "leases", &id, oldLease, newLease)
 	}
 

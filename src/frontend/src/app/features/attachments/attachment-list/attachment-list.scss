@@ -1,6 +1,6 @@
 .attachment-list-container {
   padding: 24px;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 
   .header {
@@ -138,5 +138,11 @@
         }
       }
     }
+  }
+}
+
+@media (max-width: 480px) {
+  .attachment-list-container {
+    padding: 12px;
   }
 }

@@ -14,7 +14,7 @@ export const superAdminGuard = () => {
       if (isSuperAdmin) {
         return true;
       }
-      router.navigate(['/unauthorized']);
+      router.navigate(['/401']);
       return false;
     })
   );

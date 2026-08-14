@@ -204,7 +204,7 @@ func (r *PropertyRepository) List(filters map[string]interface{}, limit, offset 
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to list properties: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var properties []*models.Property
 	for rows.Next() {
@@ -499,7 +499,7 @@ func (r *PropertyRepository) GetBuildingTypeDistribution(propertyID int) (interf
 	if err != nil {
 		return nil, fmt.Errorf("failed to get building type distribution: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	distribution := make(map[string]int)
 	for rows.Next() {
@@ -528,7 +528,7 @@ func (r *PropertyRepository) GetByOrganizationID(orgID int) ([]*models.Property,
 	if err != nil {
 		return nil, fmt.Errorf("failed to get properties by organization: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var properties []*models.Property
 	for rows.Next() {

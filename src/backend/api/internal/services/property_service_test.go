@@ -18,7 +18,7 @@ func setupPropertyTestDB(t *testing.T) (*sqlx.DB, func()) {
 	}
 
 	if err := db.Ping(); err != nil {
-		db.Close()
+		_ = db.Close()
 		t.Skipf("Skipping test: PostgreSQL not available: %v", err)
 	}
 
@@ -27,7 +27,7 @@ func setupPropertyTestDB(t *testing.T) (*sqlx.DB, func()) {
 
 	cleanup := func() {
 		dropTestTables(t, db)
-		db.Close()
+		_ = db.Close()
 	}
 
 	return db, cleanup

@@ -257,7 +257,7 @@ func TestGetOrganization(t *testing.T) {
 		MaxUsers:         50,
 		Active:           true,
 	}
-	mockOrgRepo.Create(org)
+	_ = mockOrgRepo.Create(org)
 
 	service := NewOrganizationService(mockOrgRepo, mockInvRepo, mockAudit)
 
@@ -289,8 +289,8 @@ func TestListOrganizations(t *testing.T) {
 		SubscriptionTier: models.TierProfessional,
 		Active:           false,
 	}
-	mockOrgRepo.Create(org1)
-	mockOrgRepo.Create(org2)
+	_ = mockOrgRepo.Create(org1)
+	_ = mockOrgRepo.Create(org2)
 
 	service := NewOrganizationService(mockOrgRepo, mockInvRepo, mockAudit)
 
@@ -325,7 +325,7 @@ func TestUpdateOrganization(t *testing.T) {
 		MaxUsers:         50,
 		Active:           true,
 	}
-	mockOrgRepo.Create(org)
+	_ = mockOrgRepo.Create(org)
 
 	service := NewOrganizationService(mockOrgRepo, mockInvRepo, mockAudit)
 
@@ -357,7 +357,7 @@ func TestInviteUserToOrganization(t *testing.T) {
 		MaxUsers:         50,
 		Active:           true,
 	}
-	mockOrgRepo.Create(org)
+	_ = mockOrgRepo.Create(org)
 
 	service := NewOrganizationService(mockOrgRepo, mockInvRepo, mockAudit)
 

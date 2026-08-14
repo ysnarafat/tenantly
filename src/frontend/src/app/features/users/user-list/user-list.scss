@@ -1,5 +1,7 @@
 .user-list-container {
   padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
 
   .header {
     display: flex;
@@ -81,5 +83,10 @@
         min-width: unset;
       }
     }
+  }
+}
+@media (max-width: 480px) {
+  .user-list-container {
+    padding: 12px;
   }
 }

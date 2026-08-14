@@ -84,7 +84,7 @@ func (s *BuildingService) CreateBuilding(req *models.CreateBuildingRequest) (*mo
 	}
 
 	// Log audit action
-	s.auditService.LogSystemAction("CREATE", "buildings", &building.ID, nil, building)
+	_ = s.auditService.LogSystemAction("CREATE", "buildings", &building.ID, nil, building)
 
 	return building, nil
 }
@@ -180,7 +180,7 @@ func (s *BuildingService) UpdateBuilding(id int, req *models.UpdateBuildingReque
 	}
 
 	// Log audit action
-	s.auditService.LogSystemAction("UPDATE", "buildings", &id, existingBuilding, updatedBuilding)
+	_ = s.auditService.LogSystemAction("UPDATE", "buildings", &id, existingBuilding, updatedBuilding)
 
 	return updatedBuilding, nil
 }
@@ -207,7 +207,7 @@ func (s *BuildingService) DeleteBuilding(id, orgID int) error {
 	}
 
 	// Log audit action
-	s.auditService.LogSystemAction("DELETE", "buildings", &id, existingBuilding, nil)
+	_ = s.auditService.LogSystemAction("DELETE", "buildings", &id, existingBuilding, nil)
 
 	return nil
 }
@@ -334,7 +334,7 @@ func (s *BuildingService) BulkCreateBuildings(req *models.BulkCreateBuildingsReq
 
 	// Log audit actions for each building
 	for _, building := range buildings {
-		s.auditService.LogSystemAction("CREATE", "buildings", &building.ID, nil, building)
+		_ = s.auditService.LogSystemAction("CREATE", "buildings", &building.ID, nil, building)
 	}
 
 	return buildings, nil
@@ -1035,7 +1035,7 @@ func (s *BuildingService) UpdateBuildingStatus(buildingID, orgID int, req *model
 	if !req.ActiveStatus {
 		action = "DEACTIVATE"
 	}
-	s.auditService.LogSystemAction(action, "buildings", &buildingID, existingBuilding, updatedBuilding)
+	_ = s.auditService.LogSystemAction(action, "buildings", &buildingID, existingBuilding, updatedBuilding)
 
 	return updatedBuilding, nil
 }

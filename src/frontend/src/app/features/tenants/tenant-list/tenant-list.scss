@@ -11,7 +11,7 @@
 
 .tenant-list-container {
   padding: 24px;
-  max-width: 1300px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -441,5 +441,11 @@ mat-paginator {
       width: 100%;
       min-width: unset;
     }
+  }
+}
+
+@media (max-width: 480px) {
+  .tenant-list-container {
+    padding: 12px;
   }
 }

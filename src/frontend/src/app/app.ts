@@ -5,7 +5,7 @@ import { filter } from 'rxjs/operators';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatSidenavModule, MatSidenav } from '@angular/material/sidenav';
+import { MatSidenavModule, MatSidenav, MatSidenavContainer } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
@@ -20,19 +20,9 @@ import { User } from './core/services/auth.service';
 import { LanguageService } from './core/services/language.service';
 import { ThemeService } from './core/services/theme.service';
 import { OrganizationSelector } from './shared/organization-selector/organization-selector';
+import { avatarColorFor, avatarInitials } from './shared/utils/avatar.utils';
 
-const AVATAR_COLORS = [
-  '#1565c0',
-  '#2e7d32',
-  '#c62828',
-  '#6a1b9a',
-  '#0277bd',
-  '#e65100',
-  '#37474f',
-  '#00695c',
-];
-
-const AUTH_ROUTE_PREFIXES = ['/login', '/select-organization'];
+const AUTH_ROUTE_PREFIXES = ['/home', '/login', '/select-organization', '/401', '/404'];
 
 @Component({
   selector: 'app-root',
@@ -56,6 +46,7 @@ const AUTH_ROUTE_PREFIXES = ['/login', '/select-organization'];
 })
 export class App implements OnInit {
   @ViewChild('sidenav') sidenav!: MatSidenav;
+  @ViewChild(MatSidenavContainer) sidenavContainer!: MatSidenavContainer;
 
   public authFacade = inject(AuthFacade);
   public permissions = inject(PermissionService);
@@ -93,22 +84,10 @@ export class App implements OnInit {
   sidenavOpened = computed(() => !this.isMobile());
   fixedTopGap = computed(() => (this.isMobile() ? 64 : 0));
 
-  sidenavWidth = computed(() => {
-    if (this.isMobile()) return '280px';
-    return this.sidenavCollapsed() ? '64px' : '260px';
-  });
-
   // User avatar
-  userInitials = computed(() => {
-    const name = this.user()?.username || '';
-    return name.slice(0, 2).toUpperCase() || '?';
-  });
+  userInitials = computed(() => avatarInitials(this.user()?.username || ''));
 
-  userAvatarColor = computed(() => {
-    const name = this.user()?.username || '';
-    const idx = (name.charCodeAt(0) || 0) % AVATAR_COLORS.length;
-    return AVATAR_COLORS[idx];
-  });
+  userAvatarColor = computed(() => avatarColorFor(this.user()?.username || ''));
 
   hasAdminNav = computed(
     () =>
@@ -186,6 +165,14 @@ export class App implements OnInit {
       this.sidenav?.toggle();
     } else {
       this.sidenavCollapsed.update((v) => !v);
+      // MatSidenavContainer only recalculates the content margin on drawer
+      // open/close or viewport resize — a pure CSS width change (our
+      // .collapsed class) isn't one of its triggers, so the reserved space
+      // for the sidenav never updates on its own. Nudge it manually, once
+      // now and once after the width transition ($nav-transition in
+      // app.scss) finishes so the final width is captured.
+      this.sidenavContainer?.updateContentMargins();
+      setTimeout(() => this.sidenavContainer?.updateContentMargins(), 250);
     }
   }
 }

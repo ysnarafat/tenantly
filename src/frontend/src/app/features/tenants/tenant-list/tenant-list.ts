@@ -16,13 +16,19 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
 import { MatOptionModule } from '@angular/material/core';
 import { TranslateModule } from '@ngx-translate/core';
+import { switchMap } from 'rxjs/operators';
 import { TenantService } from '../../../core/services/tenant.service';
+import { MfaService } from '../../../core/services/mfa.service';
 import { TenantFormDialogComponent } from '../tenant-form-dialog/tenant-form-dialog';
 import { Tenant } from '../../../core/models/tenant.model';
 import { cleanEmptyFields } from '../../../shared/utils/object.utils';
 import { DataTable } from '../../../shared/components/data-table/data-table';
 import { PermissionService } from '../../../core/services/permission.service';
-import { maskNid, maskPhone, RESTRICTED_LABEL } from '../../../shared/utils/pii-mask.utils';
+import {
+  maskFromLastFour,
+  maskPhone,
+  RESTRICTED_LABEL,
+} from '../../../shared/utils/pii-mask.utils';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
 import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm-delete-dialog/confirm-delete-dialog';
 
@@ -54,6 +60,7 @@ import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm
 export class TenantList implements OnInit {
   private dialog = inject(MatDialog);
   private tenantService = inject(TenantService);
+  private mfaService = inject(MfaService);
   private snackBar = inject(MatSnackBar);
   private permissionService = inject(PermissionService);
 
@@ -71,9 +78,32 @@ export class TenantList implements OnInit {
     return this.permissionService.isAccountant();
   }
 
+  // Cache of full NIDs fetched from the role-gated reveal endpoint, keyed by
+  // tenant id. Populated lazily on first reveal.
+  private revealedNid = new Map<number, string>();
+
   toggleNidReveal(id: number): void {
     const current = this.revealState.get(id) ?? { nid: false, phone: false };
-    this.revealState.set(id, { ...current, nid: !current.nid });
+    const willReveal = !current.nid;
+    this.revealState.set(id, { ...current, nid: willReveal });
+
+    // Fetch the full NID on demand the first time it is revealed, gated by an
+    // MFA step-up challenge.
+    if (willReveal && !this.revealedNid.has(id)) {
+      this.mfaService
+        .ensureStepUp()
+        .pipe(switchMap((token) => this.tenantService.getTenantNid(id, token)))
+        .subscribe({
+          next: (res) => this.revealedNid.set(id, res.nid_number),
+          error: (err) => {
+            this.mfaService.clearStepUp();
+            console.error('Error revealing NID:', safeErrorMessage(err));
+            this.snackBar.open('Failed to reveal NID', 'Close', { duration: 3000 });
+            const state = this.revealState.get(id) ?? { nid: false, phone: false };
+            this.revealState.set(id, { ...state, nid: false });
+          },
+        });
+    }
   }
 
   togglePhoneReveal(id: number): void {
@@ -90,9 +120,12 @@ export class TenantList implements OnInit {
   }
 
   getDisplayNid(tenant: Tenant): string {
-    if (!tenant.nid_number) return '—';
+    if (!tenant.nid_last_four) return '—';
     if (this.isAccountantRole) return RESTRICTED_LABEL;
-    return this.isNidRevealed(tenant.id) ? tenant.nid_number : maskNid(tenant.nid_number);
+    if (this.isNidRevealed(tenant.id)) {
+      return this.revealedNid.get(tenant.id) ?? maskFromLastFour(tenant.nid_last_four);
+    }
+    return maskFromLastFour(tenant.nid_last_four);
   }
 
   getDisplayPhone(tenant: Tenant): string {
@@ -145,7 +178,7 @@ export class TenantList implements OnInit {
           t.name.toLowerCase().includes(q) ||
           t.phone_number?.toLowerCase().includes(q) ||
           t.email?.toLowerCase().includes(q) ||
-          t.nid_number?.toLowerCase().includes(q)
+          t.nid_last_four?.toLowerCase().includes(q)
       );
     }
 

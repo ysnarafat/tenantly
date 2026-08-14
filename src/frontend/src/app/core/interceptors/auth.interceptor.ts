@@ -46,12 +46,18 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const store = inject(Store<AppState>);
   const router = inject(Router);
 
-  // Skip auth for login and refresh endpoints
+  // Skip auth for login/refresh endpoints and public static assets (e.g. i18n
+  // JSON, fetched on every page including fully anonymous ones). Routing a
+  // translation-file request through the expired-token refresh dance below
+  // would fire a silent /auth/refresh attempt — and on failure, force-navigate
+  // to /login — on pages that have nothing to do with authentication, such as
+  // the 401/404 error pages themselves.
   if (
     req.url.includes('/auth/login') ||
     req.url.includes('/auth/refresh') ||
     req.url.includes('/auth/reset-password') ||
-    req.url.includes('/auth/confirm-reset-password')
+    req.url.includes('/auth/confirm-reset-password') ||
+    req.url.includes('assets/i18n/')
   ) {
     return next(req);
   }

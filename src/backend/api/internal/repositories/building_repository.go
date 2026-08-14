@@ -108,7 +108,7 @@ func (r *BuildingRepository) GetByPropertyID(propertyID int) ([]*models.Building
 	if err != nil {
 		return nil, fmt.Errorf("failed to get buildings by property: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var buildings []*models.Building
 	for rows.Next() {
@@ -268,7 +268,7 @@ func (r *BuildingRepository) BulkCreate(buildings []*models.Building) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	query := fmt.Sprintf(`
 		INSERT INTO %s (%s, %s, %s, %s, %s,
@@ -381,7 +381,7 @@ func (r *BuildingRepository) Search(filters *models.BuildingSearchFilters) ([]*m
 	if err != nil {
 		return nil, fmt.Errorf("failed to search buildings: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var buildings []*models.Building
 	for rows.Next() {
@@ -447,7 +447,6 @@ func (r *BuildingRepository) CountByProperty(propertyID int, filters *models.Bui
 		if filters.MaxFloors != nil {
 			whereConditions = append(whereConditions, fmt.Sprintf("%s <= $%d", columns.BuildingTotalFloors, argIndex))
 			args = append(args, *filters.MaxFloors)
-			argIndex++
 		}
 	} else {
 		whereConditions = append(whereConditions, "active_status = true")
@@ -555,7 +554,7 @@ func (r *BuildingRepository) GetByPropertyWithSorting(propertyID int, filters *m
 	if err != nil {
 		return nil, fmt.Errorf("failed to get buildings with sorting: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var buildings []*models.Building
 	for rows.Next() {
@@ -724,7 +723,7 @@ func (r *BuildingRepository) AdvancedSearch(req *models.BuildingSearchRequest) (
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to search buildings: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var buildings []*models.Building
 	for rows.Next() {
@@ -786,7 +785,7 @@ func (r *BuildingRepository) GetBuildingUnits(buildingID int, offset, limit int)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get building units: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var units []*models.BuildingUnitSummary
 	for rows.Next() {
@@ -824,7 +823,7 @@ func (r *BuildingRepository) GetByOrganizationID(orgID int) ([]*models.Building,
 	if err != nil {
 		return nil, fmt.Errorf("failed to get buildings by organization: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var buildings []*models.Building
 	for rows.Next() {

@@ -1,0 +1,257 @@
+// ── Dusk skyline background (same family as the login screen) ──────────────
+.error-bg {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 32px 16px;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+
+  background: linear-gradient(
+    180deg,
+    #2d2d9f 0%,
+    #4a4ad4 25%,
+    #7060d0 50%,
+    #c9a06a 72%,
+    #e8c49a 100%
+  );
+
+  &::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40%;
+    background: linear-gradient(to top, rgba(15, 15, 55, 0.95), rgba(15, 15, 55, 0.4));
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+.brand-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  z-index: 1;
+  align-self: flex-start;
+  margin-left: clamp(8px, 4vw, 48px);
+
+  .brand-icon {
+    font-size: 26px;
+    width: 26px;
+    height: 26px;
+  }
+
+  .brand-name {
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: 2px;
+  }
+}
+
+// ── The barricade board ─────────────────────────────────────────────────
+.board-wrap {
+  position: relative;
+  z-index: 1;
+  padding-top: 36px;
+}
+
+.chain {
+  position: absolute;
+  top: 0;
+  width: 3px;
+  height: 40px;
+  background: repeating-linear-gradient(180deg, #8a8f94 0px, #8a8f94 5px, #55595c 5px, #55595c 8px);
+}
+.chain-left {
+  left: 20%;
+  transform: rotate(3deg);
+}
+.chain-right {
+  right: 20%;
+  transform: rotate(-3deg);
+}
+
+.board {
+  position: relative;
+  width: min(88vw, 480px);
+  margin: 0 auto;
+  background: linear-gradient(160deg, #3a3a3a 0%, #262626 60%, #1e1e1e 100%);
+  border: 3px solid #151515;
+  border-radius: 4px;
+  box-shadow:
+    0 22px 40px rgba(10, 8, 30, 0.5),
+    inset 0 0 0 6px rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+  transform: rotate(1.5deg);
+  animation: hang-settle 1.1s cubic-bezier(0.2, 0.9, 0.35, 1) both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes hang-settle {
+  0% {
+    transform: rotate(14deg) translateY(-36px);
+    opacity: 0;
+  }
+  45% {
+    transform: rotate(-6deg) translateY(0);
+    opacity: 1;
+  }
+  65% {
+    transform: rotate(4deg);
+  }
+  82% {
+    transform: rotate(-2deg);
+  }
+  100% {
+    transform: rotate(1.5deg);
+  }
+}
+
+.hazard-edge {
+  height: 14px;
+  background: repeating-linear-gradient(
+    45deg,
+    #f2b705 0px,
+    #f2b705 16px,
+    #1e1e1e 16px,
+    #1e1e1e 32px
+  );
+}
+
+.nail {
+  position: absolute;
+  top: 24px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #cfd3d6, #6b6f72);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  z-index: 1;
+}
+.nail-left {
+  left: 22px;
+}
+.nail-right {
+  right: 22px;
+}
+
+.board-inner {
+  text-align: center;
+  padding: 32px clamp(20px, 5vw, 44px) 30px;
+}
+
+.lock-icon {
+  font-size: 40px;
+  width: 40px;
+  height: 40px;
+  color: #f2b705;
+  margin-bottom: 8px;
+}
+
+.code {
+  font-family: 'Alfa Slab One', 'Roboto', serif;
+  font-size: clamp(64px, 16vw, 108px);
+  line-height: 1;
+  margin: 0 0 12px;
+  color: #f5f5f5;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
+}
+
+.headline {
+  font-family: 'Roboto', sans-serif;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  font-size: 15px;
+  color: #f5f5f5;
+  margin: 0 0 4px;
+}
+
+.bn-line {
+  font-family: 'Noto Sans Bengali', sans-serif;
+  font-size: 15px;
+  color: #f2b705;
+  margin: 0 0 16px;
+}
+
+.subtext {
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  color: #c7c7c7;
+  line-height: 1.5;
+  max-width: 34ch;
+  margin: 0 auto 26px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.primary-btn {
+  background-color: var(--primary-color, #1976d2);
+  color: #fff;
+  text-decoration: none;
+  padding: 0 20px;
+  border-radius: 4px;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 36px;
+  display: inline-block;
+
+  &:hover,
+  &:focus-visible {
+    filter: brightness(1.1);
+  }
+  &:focus-visible {
+    outline: 2px solid #f2b705;
+    outline-offset: 3px;
+  }
+}
+
+.text-btn {
+  background: none;
+  border: none;
+  color: #c7c7c7;
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 6px;
+
+  &:hover,
+  &:focus-visible {
+    color: #fff;
+    text-decoration: underline;
+  }
+  &:focus-visible {
+    outline: 2px solid #f2b705;
+    outline-offset: 3px;
+  }
+}
+
+.footer-note {
+  position: relative;
+  z-index: 1;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 480px) {
+  .code {
+    font-size: 72px;
+  }
+}

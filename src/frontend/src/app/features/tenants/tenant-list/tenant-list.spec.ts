@@ -8,6 +8,7 @@ import { TranslateModule } from '@ngx-translate/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TenantList } from './tenant-list';
 import { TenantService } from '../../../core/services/tenant.service';
+import { MfaService } from '../../../core/services/mfa.service';
 import { PermissionService } from '../../../core/services/permission.service';
 import { Tenant, TenantListResponse } from '../../../core/models/tenant.model';
 
@@ -21,7 +22,7 @@ describe('TenantList - Delete action consistency', () => {
     tenant_type: 'Individual',
     phone_number: '01700000000',
     email: 'jane@example.com',
-    nid_number: '1234567890',
+    nid_last_four: '7890',
     active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -30,7 +31,9 @@ describe('TenantList - Delete action consistency', () => {
   beforeEach(async () => {
     const tenantServiceSpy = jasmine.createSpyObj<TenantService>('TenantService', [
       'getAllTenants',
+      'getTenantNid',
     ]);
+    tenantServiceSpy.getTenantNid.and.returnValue(of({ nid_number: '1234567890' }));
     tenantServiceSpy.getAllTenants.and.returnValue(
       of({
         tenants: [mockTenant],
@@ -60,11 +63,18 @@ describe('TenantList - Delete action consistency', () => {
 
     const snackBarSpy = jasmine.createSpyObj<MatSnackBar>('MatSnackBar', ['open']);
 
+    const mfaServiceSpy = jasmine.createSpyObj<MfaService>('MfaService', [
+      'ensureStepUp',
+      'clearStepUp',
+    ]);
+    mfaServiceSpy.ensureStepUp.and.returnValue(of('step-up-token'));
+
     await TestBed.configureTestingModule({
       imports: [TenantList, TranslateModule.forRoot()],
       providers: [
         provideNoopAnimations(),
         { provide: TenantService, useValue: tenantServiceSpy },
+        { provide: MfaService, useValue: mfaServiceSpy },
         { provide: PermissionService, useValue: permissionServiceSpy },
         { provide: MatSnackBar, useValue: snackBarSpy },
       ],

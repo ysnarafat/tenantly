@@ -39,6 +39,10 @@ import { PaymentCreateDialog } from '../../payments/payment-list/payment-list';
 import { PaymentService } from '../../../core/services/payment.service';
 import { LoadingSpinner } from '../../../shared/components/loading-spinner/loading-spinner';
 import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm-delete-dialog/confirm-delete-dialog';
+import {
+  EntityDetailDialogComponent,
+  DetailRow,
+} from '../../../shared/components/entity-detail-dialog/entity-detail-dialog';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
 
 interface PropertyWithHierarchy extends Property {
@@ -371,6 +375,65 @@ export class PropertyListComponent implements OnInit {
         // Reload units for this building after deletion
         setTimeout(() => this.loadUnits(building), 500);
       }
+    });
+  }
+
+  viewBuildingDetails(building: BuildingWithUnits) {
+    const rows: DetailRow[] = [
+      { label: 'Building Name', value: building.building_name },
+      { label: 'Building Code', value: building.building_code },
+      { label: 'Building Type', value: building.building_type },
+      { label: 'Total Floors', value: building.total_floors?.toString() ?? '—' },
+      { label: 'Elevator', value: building.has_elevator ? 'Yes' : 'No' },
+      { label: 'Construction Year', value: building.construction_year?.toString() ?? '—' },
+      { label: 'Status', value: building.active_status ? 'Active' : 'Inactive' },
+      { label: 'Created', value: this.formatDate(building.created_at) },
+      { label: 'Last Updated', value: this.formatDate(building.updated_at) },
+    ];
+
+    this.dialog.open(EntityDetailDialogComponent, {
+      width: '420px',
+      data: {
+        title: building.building_name,
+        subtitle: building.building_code,
+        icon: 'apartment',
+        rows,
+      },
+    });
+  }
+
+  viewUnitDetails(unit: UnitWithDetails, building: BuildingWithUnits) {
+    const rows: DetailRow[] = [
+      { label: 'Unit Number', value: unit.unit_number },
+      { label: 'Unit Name', value: unit.unit_name ?? '—' },
+      { label: 'Unit Type', value: unit.unit_type },
+      { label: 'Floor', value: unit.floor?.toString() ?? '—' },
+      { label: 'Section', value: unit.section ?? '—' },
+      { label: 'Property', value: unit.property_name },
+      { label: 'Building', value: building.building_name },
+      { label: 'Tenant', value: unit.tenant_name ?? 'Vacant' },
+      { label: 'Lease Status', value: unit.lease_active ? 'Active lease' : 'No active lease' },
+      { label: 'Status', value: unit.active ? 'Active' : 'Inactive' },
+      { label: 'Created', value: this.formatDate(unit.created_at) },
+      { label: 'Last Updated', value: this.formatDate(unit.updated_at) },
+    ];
+
+    this.dialog.open(EntityDetailDialogComponent, {
+      width: '420px',
+      data: {
+        title: unit.unit_number,
+        subtitle: unit.unit_name || undefined,
+        icon: 'meeting_room',
+        rows,
+      },
+    });
+  }
+
+  private formatDate(iso: string): string {
+    return new Date(iso).toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
     });
   }
 

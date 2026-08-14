@@ -169,7 +169,7 @@ func (r *PaymentRepository) GetWithDetailsAndFilters(filters map[string]interfac
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to query payments: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	payments := make([]*models.PaymentWithDetails, 0, limit)
 	for rows.Next() {
@@ -233,7 +233,7 @@ func (r *PaymentRepository) GetActiveLeasesForPeriod(orgID, month, year int, bui
 	if err != nil {
 		return nil, fmt.Errorf("failed to query active leases for period: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var results []*models.LeaseSearchResult
 	for rows.Next() {
@@ -294,7 +294,7 @@ func (r *PaymentRepository) GetTenantPaymentSummary(orgID int) ([]*models.Tenant
 	if err != nil {
 		return nil, fmt.Errorf("failed to query tenant summary: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var entries []*models.TenantReportEntry
 	for rows.Next() {
@@ -346,7 +346,7 @@ func (r *PaymentRepository) GetPaymentAnalyticsByPeriod(orgID int, startDate, en
 	if err != nil {
 		return nil, fmt.Errorf("failed to query payment methods: %w", err)
 	}
-	defer methodRows.Close()
+	defer func() { _ = methodRows.Close() }()
 	for methodRows.Next() {
 		var method string
 		var cnt int64
@@ -371,7 +371,7 @@ func (r *PaymentRepository) GetPaymentAnalyticsByPeriod(orgID int, startDate, en
 	if err != nil {
 		return nil, fmt.Errorf("failed to query status distribution: %w", err)
 	}
-	defer statusRows.Close()
+	defer func() { _ = statusRows.Close() }()
 	for statusRows.Next() {
 		var status string
 		var cnt int64
@@ -396,7 +396,7 @@ func (r *PaymentRepository) GetPaymentAnalyticsByPeriod(orgID int, startDate, en
 	if err != nil {
 		return nil, fmt.Errorf("failed to query daily trend: %w", err)
 	}
-	defer dailyRows.Close()
+	defer func() { _ = dailyRows.Close() }()
 	for dailyRows.Next() {
 		var day string
 		var cnt int64
@@ -413,26 +413,29 @@ func (r *PaymentRepository) GetPaymentAnalyticsByPeriod(orgID int, startDate, en
 }
 
 // GetAgingBuckets returns outstanding balances bucketed by how many months overdue they are.
-func (r *PaymentRepository) GetAgingBuckets(orgID int) (map[string]int64, error) {
+func (r *PaymentRepository) GetAgingBuckets(orgID int) (map[string]float64, error) {
 	now := time.Now()
 	currentYear, currentMonth := now.Year(), int(now.Month())
-	// month index = year*12 + month; current bucket = this month or future
+	// month index = year*12 + month; current bucket = this month or future.
+	// amount_due/amount_paid are numeric(10,2); COALESCE(..., 0) avoids a
+	// bare SQL NULL when no rows match a bucket (lib/pq can't scan NULL into
+	// a plain, non-pointer Go numeric type).
 	query := `
 		SELECT
-			SUM(CASE WHEN (year * 12 + month) >= ($2 * 12 + $3)     THEN GREATEST(amount_due - amount_paid, 0) ELSE 0 END),
-			SUM(CASE WHEN (year * 12 + month) = ($2 * 12 + $3) - 1  THEN GREATEST(amount_due - amount_paid, 0) ELSE 0 END),
-			SUM(CASE WHEN (year * 12 + month) = ($2 * 12 + $3) - 2  THEN GREATEST(amount_due - amount_paid, 0) ELSE 0 END),
-			SUM(CASE WHEN (year * 12 + month) < ($2 * 12 + $3) - 2  THEN GREATEST(amount_due - amount_paid, 0) ELSE 0 END)
+			COALESCE(SUM(CASE WHEN (year * 12 + month) >= ($2 * 12 + $3)     THEN GREATEST(amount_due - amount_paid, 0) ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN (year * 12 + month) = ($2 * 12 + $3) - 1  THEN GREATEST(amount_due - amount_paid, 0) ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN (year * 12 + month) = ($2 * 12 + $3) - 2  THEN GREATEST(amount_due - amount_paid, 0) ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN (year * 12 + month) < ($2 * 12 + $3) - 2  THEN GREATEST(amount_due - amount_paid, 0) ELSE 0 END), 0)
 		FROM payments
 		WHERE organization_id = $1
 		  AND status IN ('Due', 'Partial', 'Overdue')`
 
-	var current, d30, d60, d90plus int64
+	var current, d30, d60, d90plus float64
 	err := r.db.QueryRow(query, orgID, currentYear, currentMonth).Scan(&current, &d30, &d60, &d90plus)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get aging buckets: %w", err)
 	}
-	return map[string]int64{
+	return map[string]float64{
 		"current": current,
 		"30d":     d30,
 		"60d":     d60,
@@ -459,18 +462,18 @@ func (r *PaymentRepository) GetMonthlyCollectionTrend(orgID int, months int) ([]
 	if err != nil {
 		return nil, fmt.Errorf("failed to get monthly trend: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	trend := make([]*models.MonthlyCollectionTrend, 0, months)
 	for rows.Next() {
 		var year, month int
-		var amountDue, amountCollected int64
+		var amountDue, amountCollected float64
 		if err := rows.Scan(&year, &month, &amountDue, &amountCollected); err != nil {
 			return nil, fmt.Errorf("failed to scan trend row: %w", err)
 		}
 		rate := 0.0
 		if amountDue > 0 {
-			rate = float64(amountCollected) / float64(amountDue) * 100
+			rate = amountCollected / amountDue * 100
 		}
 		trend = append(trend, &models.MonthlyCollectionTrend{
 			Month:           time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC),

@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"crypto/sha256"
 	"regexp"
 	"testing"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
+	appcrypto "github.com/ysnarafat/tenantly/internal/crypto"
 	"github.com/ysnarafat/tenantly/internal/models"
 )
 
@@ -15,14 +17,22 @@ func newSqlxMock(t *testing.T) (*sqlx.DB, sqlmock.Sqlmock) {
 	t.Helper()
 	sqlDB, mock, err := sqlmock.New()
 	assert.NoError(t, err)
-	t.Cleanup(func() { sqlDB.Close() })
+	t.Cleanup(func() { _ = sqlDB.Close() })
 	return sqlx.NewDb(sqlDB, "postgres"), mock
+}
+
+func newTestNIDProtector(t *testing.T) *appcrypto.NIDProtector {
+	t.Helper()
+	key := sha256.Sum256([]byte("tenant-repo-test-key"))
+	prot, err := appcrypto.NewNIDProtector(key[:], []byte("tenant-repo-test-pepper"))
+	assert.NoError(t, err)
+	return prot
 }
 
 func TestTenantRepository_Create(t *testing.T) {
 	db, mock := newSqlxMock(t)
 
-	repo := NewTenantRepository(db)
+	repo := NewTenantRepository(db, newTestNIDProtector(t))
 
 	t.Run("success", func(t *testing.T) {
 		req := &models.CreateTenantRequest{
@@ -36,7 +46,10 @@ func TestTenantRepository_Create(t *testing.T) {
 
 		mock.ExpectQuery(regexp.QuoteMeta("INSERT INTO tenants")).
 			WithArgs(
-				req.Name, req.TenantType, req.PhoneNumber, req.Email, req.NIDNumber, req.Address, 0,
+				// NID is stored as ciphertext, last-four, and hash; the ciphertext
+				// carries a random nonce, so match the NID-derived args loosely.
+				req.Name, req.TenantType, req.PhoneNumber, req.Email,
+				sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), req.Address, 0,
 			).
 			WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).
 				AddRow(1, time.Now(), time.Now()))
@@ -63,7 +76,7 @@ func TestTenantRepository_Create(t *testing.T) {
 func TestTenantRepository_CheckEmailExists(t *testing.T) {
 	db, mock := newSqlxMock(t)
 
-	repo := NewTenantRepository(db)
+	repo := NewTenantRepository(db, newTestNIDProtector(t))
 
 	t.Run("exists", func(t *testing.T) {
 		email := "john@example.com"
@@ -91,12 +104,13 @@ func TestTenantRepository_CheckEmailExists(t *testing.T) {
 func TestTenantRepository_CheckNIDExists(t *testing.T) {
 	db, mock := newSqlxMock(t)
 
-	repo := NewTenantRepository(db)
+	repo := NewTenantRepository(db, newTestNIDProtector(t))
 
 	t.Run("exists", func(t *testing.T) {
 		nid := "NID123"
+		// Lookup is by deterministic hash, not the plaintext NID.
 		mock.ExpectQuery(regexp.QuoteMeta("SELECT EXISTS")).
-			WithArgs(nid, 0).
+			WithArgs(sqlmock.AnyArg(), 0).
 			WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 
 		exists, err := repo.CheckNIDExists(nid, 0)
@@ -107,7 +121,7 @@ func TestTenantRepository_CheckNIDExists(t *testing.T) {
 	t.Run("does not exist", func(t *testing.T) {
 		nid := "NID999"
 		mock.ExpectQuery(regexp.QuoteMeta("SELECT EXISTS")).
-			WithArgs(nid, 0).
+			WithArgs(sqlmock.AnyArg(), 0).
 			WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(false))
 
 		exists, err := repo.CheckNIDExists(nid, 0)

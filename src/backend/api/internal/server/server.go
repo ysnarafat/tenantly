@@ -80,7 +80,8 @@ func (s *Server) setupRoutes() {
 	propertyRepo := repositories.NewPropertyRepository(s.db)
 	buildingRepo := repositories.NewBuildingRepository(s.db)
 	unitRepo := repositories.NewUnitRepository(s.db)
-	tenantRepo := repositories.NewTenantRepository(s.db)
+	tenantRepo := repositories.NewTenantRepository(s.db, s.config.NIDProtector)
+	mfaRepo := repositories.NewMFARepository(s.db)
 	paymentRepo := repositories.NewPaymentRepository(s.db)
 	leaseRepo := repositories.NewLeaseRepository(s.db)
 	organizationRepo := repositories.NewOrganizationRepository(s.db)
@@ -97,6 +98,7 @@ func (s *Server) setupRoutes() {
 	buildingService := services.NewBuildingService(buildingRepo, propertyRepo, auditService, metadataValidator)
 	unitService := services.NewUnitService(unitRepo, buildingRepo, propertyRepo, auditService)
 	tenantService := services.NewTenantService(tenantRepo, leaseRepo, auditService)
+	mfaService := services.NewMFAService(mfaRepo, s.config.NIDProtector, s.config.JWTSecret)
 	leaseService := services.NewLeaseService(leaseRepo, tenantRepo, unitRepo, auditService)
 	paymentService := services.NewPaymentService(paymentRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
 	reportService := services.NewReportService(paymentRepo, propertyRepo)
@@ -106,6 +108,7 @@ func (s *Server) setupRoutes() {
 	buildingHandler := handlers.NewBuildingHandler(buildingService)
 	unitHandler := handlers.NewUnitHandler(unitService)
 	tenantHandler := handlers.NewTenantHandler(tenantService)
+	mfaHandler := handlers.NewMFAHandler(mfaService)
 	leaseHandler := handlers.NewLeaseHandler(leaseService)
 	paymentHandler := handlers.NewPaymentHandler(paymentService)
 	organizationHandler := handlers.NewOrganizationHandler(organizationService)
@@ -152,6 +155,11 @@ func (s *Server) setupRoutes() {
 				authProtected.POST("/logout", userHandler.Logout)
 				authProtected.POST("/change-password", userHandler.ChangePassword)
 				authProtected.POST("/set-organization", userHandler.SetOrganization)
+
+				// MFA (TOTP) enrollment and step-up verification
+				authProtected.GET("/mfa/status", mfaHandler.GetStatus)
+				authProtected.POST("/mfa/enroll", mfaHandler.Enroll)
+				authProtected.POST("/mfa/verify", mfaHandler.Verify)
 			}
 
 			// Invitation acceptance routes (protected)
@@ -260,6 +268,7 @@ func (s *Server) setupRoutes() {
 				tenants.GET("", middleware.RequireAnyRole(), tenantHandler.GetAllTenants)
 				tenants.POST("", middleware.RequireAdminOrPropertyManager(), tenantHandler.CreateTenant)
 				tenants.GET("/:id", middleware.RequireAnyRole(), tenantHandler.GetTenantByID)
+				tenants.GET("/:id/nid", middleware.RequireAdminOrPropertyManager(), middleware.RequireStepUp(s.config.JWTSecret), tenantHandler.RevealNID)
 				tenants.PUT("/:id", middleware.RequireAdminOrPropertyManager(), tenantHandler.UpdateTenant)
 				tenants.DELETE("/:id", middleware.RequireAdmin(), tenantHandler.DeleteTenant)
 			}

@@ -236,7 +236,7 @@ type PaymentRepositoryInterface interface {
 	GetSystemPaymentStats(startDate, endDate time.Time) (any, error)
 	GetBuildingPaymentsInPeriod(buildingID int, startDate, endDate time.Time, limit, offset int) ([]*models.PaymentWithDetails, int, error)
 	GetDashboardSummary(orgID int) (*models.DashboardSummary, error)
-	GetAgingBuckets(orgID int) (map[string]int64, error)
+	GetAgingBuckets(orgID int) (map[string]float64, error)
 	GetMonthlyCollectionTrend(orgID int, months int) ([]*models.MonthlyCollectionTrend, error)
 	GetTenantPaymentSummary(orgID int) ([]*models.TenantReportEntry, error)
 	GetPaymentAnalyticsByPeriod(orgID int, startDate, endDate time.Time) (*models.PaymentAnalyticsResult, error)
@@ -275,6 +275,7 @@ type TenantRepositoryInterface interface {
 	CheckEmailExists(email string, excludeID int) (bool, error)
 	CheckNIDExists(nid string, excludeID int) (bool, error)
 	GetByID(id int) (*models.Tenant, error)
+	GetDecryptedNID(id int) (string, int, error)
 	GetByUnitID(unitID int) (*models.Tenant, error)
 	GetAll(page, pageSize, orgID int) ([]*models.Tenant, int, error)
 	Update(id int, updates map[string]any) error
@@ -287,6 +288,7 @@ type TenantServiceInterface interface {
 	GetTenantByID(id int, orgID int) (*models.TenantWithLeases, error)
 	UpdateTenant(id int, req *models.UpdateTenantRequest, userID, orgID int) (*models.TenantResponse, error)
 	DeleteTenant(id int, userID, orgID int) error
+	RevealNID(id, orgID, userID int) (string, error)
 }
 
 // PropertyRepositoryInterface defines the interface for property repository operations
