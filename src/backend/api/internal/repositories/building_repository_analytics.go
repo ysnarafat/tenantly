@@ -73,7 +73,14 @@ func (r *BuildingRepository) GetAnalytics(id int) (*models.BuildingAnalytics, er
 			COALESCE(COUNT(DISTINCT CASE WHEN l.active = false OR l.id IS NULL THEN u.id END), 0) as vacant_units,
 			COALESCE(SUM(CASE WHEN pay.status = 'Paid' AND pay.payment_date >= DATE_TRUNC('month', CURRENT_DATE) THEN pay.amount_paid ELSE 0 END), 0) as monthly_revenue,
 			COALESCE(AVG(CASE WHEN l.active = true THEN l.monthly_rent END), 0) as average_rent,
-			COALESCE(SUM(u.area), 0) as total_area
+			-- units has no area column: area lives in the metadata JSONB, under
+			-- area_sqft, for every unit type. Summed in a subquery so the
+			-- lease/payment joins below cannot multiply it.
+			COALESCE((
+				SELECT SUM((ua.metadata->>'area_sqft')::numeric)
+				FROM units ua
+				WHERE ua.building_id = b.id AND ua.active = true
+			), 0) as total_area
 		FROM buildings b
 		LEFT JOIN units u ON b.id = u.building_id AND u.active = true
 		LEFT JOIN leases l ON u.id = l.unit_id

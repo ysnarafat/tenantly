@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
 	"time"
 
@@ -24,6 +23,8 @@ import (
 	"github.com/ysnarafat/tenantly/internal/models"
 	"github.com/ysnarafat/tenantly/internal/repositories"
 	"github.com/ysnarafat/tenantly/internal/services"
+	"github.com/ysnarafat/tenantly/internal/testutil"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // LeaseIntegrationTestSuite provides comprehensive integration testing for lease management API
@@ -59,8 +60,14 @@ func (suite *LeaseIntegrationTestSuite) SetupSuite() {
 	nidProtector, err := appcrypto.NewNIDProtector(nidKey[:], []byte("lease-integration-test-pepper"))
 	require.NoError(suite.T(), err)
 
+	databaseURL, err := testutil.EnsureTestDatabase(handlersTestDB)
+	if err != nil {
+		suite.T().Skipf("Skipping integration test: PostgreSQL not available: %v", err)
+		return
+	}
+
 	suite.config = &config.Config{
-		DatabaseURL:   getLeaseTestDatabaseURL(),
+		DatabaseURL:   databaseURL,
 		JWTSecret:     "test-jwt-secret-key",
 		JWTExpiration: time.Hour * 24,
 		Environment:   "test",
@@ -74,8 +81,12 @@ func (suite *LeaseIntegrationTestSuite) SetupSuite() {
 		return
 	}
 
-	// Run migrations
-	err = database.RunMigrations(suite.config.DatabaseURL)
+	// Reset rather than just migrate: this suite seeds fixed slugs, usernames,
+	// and property codes, which collide with whatever the previous run left
+	// behind. testutil resolves the migrations directory relative to the
+	// package under test; database.RunMigrations resolves it against the
+	// process working directory and so only works from the module root.
+	err = testutil.ResetSchema(suite.config.DatabaseURL)
 	require.NoError(suite.T(), err, "Failed to run migrations")
 
 	// Initialize repositories
@@ -137,9 +148,11 @@ func (suite *LeaseIntegrationTestSuite) setupTestRoutes(userHandler *UserHandler
 			auth.POST("/login", userHandler.Login)
 		}
 
-		// Protected routes
+		// Protected routes. RequireOrgContext mirrors the real server: every
+		// org-scoped handler reads org_id, which only this middleware sets.
 		protected := v1.Group("/")
 		protected.Use(middleware.AuthRequired(suite.config.JWTSecret, auditService))
+		protected.Use(middleware.RequireOrgContext())
 		{
 			// Tenant routes
 			tenants := protected.Group("/tenants")
@@ -180,12 +193,20 @@ func (suite *LeaseIntegrationTestSuite) createTestData() {
 	require.NoError(suite.T(), err)
 
 	// Create test user
+	// The hash must be a real bcrypt digest of the password generateAuthToken
+	// logs in with — Login compares them with bcrypt, so a placeholder string
+	// leaves every authenticated request a 401.
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(testUserPassword), bcrypt.DefaultCost)
+	require.NoError(suite.T(), err)
+
 	suite.testUser = &models.User{
-		Username:     "testuser",
-		Email:        "test@example.com",
-		PasswordHash: "hashedpassword",
-		Role:         "Admin",
-		Active:       true,
+		Username:       "testuser",
+		Email:          "test@example.com",
+		PasswordHash:   string(passwordHash),
+		Role:           "Admin",
+		Active:         true,
+		Status:         "active",
+		OrganizationID: &suite.testOrg.ID,
 	}
 	err = suite.userRepo.Create(suite.testUser)
 	require.NoError(suite.T(), err)
@@ -200,23 +221,25 @@ func (suite *LeaseIntegrationTestSuite) createTestData() {
 
 	// Create test property
 	propertyReq := &models.CreatePropertyRequest{
-		PropertyName: "Test Property",
-		PropertyCode: "TEST001",
-		PropertyType: models.PropertyTypeCommercial,
-		Address:      "123 Test Street",
-		City:         "Test City",
+		PropertyName:   "Test Property",
+		PropertyCode:   "TEST001",
+		PropertyType:   models.PropertyTypeCommercial,
+		Address:        "123 Test Street",
+		City:           "Test City",
+		OrganizationID: suite.testOrg.ID,
 	}
 	suite.testProperty, err = suite.propertyRepo.Create(propertyReq)
 	require.NoError(suite.T(), err)
 
 	// Create test building
 	building := &models.Building{
-		PropertyID:   suite.testProperty.ID,
-		BuildingName: "Test Building",
-		BuildingCode: "TB001",
-		BuildingType: models.BuildingTypeResidential,
-		TotalFloors:  5,
-		ActiveStatus: true,
+		PropertyID:     suite.testProperty.ID,
+		OrganizationID: suite.testOrg.ID,
+		BuildingName:   "Test Building",
+		BuildingCode:   "TB001",
+		BuildingType:   models.BuildingTypeResidential,
+		TotalFloors:    5,
+		ActiveStatus:   true,
 	}
 	err = suite.buildingRepo.Create(building)
 	require.NoError(suite.T(), err)
@@ -280,7 +303,7 @@ func (suite *LeaseIntegrationTestSuite) cleanupLeaseTestData() {
 func (suite *LeaseIntegrationTestSuite) generateAuthToken() string {
 	loginReq := map[string]string{
 		"username": suite.testUser.Username,
-		"password": "password",
+		"password": testUserPassword,
 	}
 
 	reqBody, _ := json.Marshal(loginReq)
@@ -290,15 +313,17 @@ func (suite *LeaseIntegrationTestSuite) generateAuthToken() string {
 
 	suite.router.ServeHTTP(w, req)
 
-	if w.Code == http.StatusOK {
-		var response map[string]interface{}
-		_ = json.Unmarshal(w.Body.Bytes(), &response)
-		if token, ok := response["token"].(string); ok {
-			return "Bearer " + token
-		}
-	}
+	// Fail here rather than returning a placeholder token: a bad token turns
+	// every assertion in the suite into an indistinguishable 401.
+	require.Equal(suite.T(), http.StatusOK, w.Code, "login failed: %s", w.Body.String())
 
-	return "Bearer test-token"
+	var response map[string]interface{}
+	require.NoError(suite.T(), json.Unmarshal(w.Body.Bytes(), &response))
+
+	token, ok := response["token"].(string)
+	require.True(suite.T(), ok, "login response carried no token: %s", w.Body.String())
+
+	return "Bearer " + token
 }
 
 func (suite *LeaseIntegrationTestSuite) makeAuthenticatedRequest(method, path string, body interface{}) *httptest.ResponseRecorder {
@@ -357,8 +382,8 @@ func (suite *LeaseIntegrationTestSuite) TestGetLeaseByID_Success() {
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 
-	leaseData := response[""].(map[string]interface{})
-	assert.Equal(suite.T(), float64(lease.ID), leaseData["id"])
+	// GetLeaseByID returns the lease itself, not a wrapper object.
+	assert.Equal(suite.T(), float64(lease.ID), response["id"])
 }
 
 func (suite *LeaseIntegrationTestSuite) TestGetLeaseByID_NotFound() {
@@ -530,17 +555,6 @@ func (suite *LeaseIntegrationTestSuite) createTestLeaseWithDates(startDate, endD
 	lease, err := suite.leaseRepo.Create(leaseReq)
 	require.NoError(suite.T(), err)
 	return lease
-}
-
-// Utility functions
-func getLeaseTestDatabaseURL() string {
-	if url := os.Getenv("TEST_DATABASE_URL"); url != "" {
-		return url
-	}
-	if url := os.Getenv("DATABASE_URL"); url != "" {
-		return url
-	}
-	return "postgres://postgres:password@localhost:5432/tenantly?sslmode=disable"
 }
 
 // Run the test suite

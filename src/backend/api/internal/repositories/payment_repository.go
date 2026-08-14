@@ -490,7 +490,8 @@ func (r *PaymentRepository) NextReceiptNumber(orgID int, yearMonth string) (stri
 	if err != nil {
 		return "", fmt.Errorf("failed to begin receipt sequence transaction: %w", err)
 	}
-	defer tx.Rollback()
+	// Rollback is a no-op once the transaction commits below.
+	defer func() { _ = tx.Rollback() }()
 
 	var storedYearMonth string
 	var nextSeq int

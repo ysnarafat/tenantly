@@ -182,9 +182,14 @@ type BuildingExportRequest struct {
 	IncludeStats bool   `form:"include_stats"`
 }
 
-// BuildingStatusRequest represents request for building status management
+// BuildingStatusRequest represents request for building status management.
+//
+// ActiveStatus is a pointer because `binding:"required"` treats a false bool as
+// absent: with a plain bool, {"active_status": false} was rejected as a
+// validation error, leaving no way to deactivate a building through this
+// endpoint. The pointer keeps the field mandatory while allowing false.
 type BuildingStatusRequest struct {
-	ActiveStatus bool   `json:"active_status" binding:"required"`
+	ActiveStatus *bool  `json:"active_status" binding:"required"`
 	Reason       string `json:"reason" binding:"omitempty,max=255"`
 }
 

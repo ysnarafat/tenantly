@@ -792,6 +792,12 @@ func (s *BuildingService) GetBuildingUnits(buildingID, orgID int, page, pageSize
 		HasPrev:     hasPrev,
 	}
 
+	// A building with no units must serialize as [], not null: clients iterate
+	// this field directly.
+	if units == nil {
+		units = []*models.BuildingUnitSummary{}
+	}
+
 	response := &models.BuildingUnitsResponse{
 		BuildingID:   building.ID,
 		BuildingName: building.BuildingName,
@@ -1007,7 +1013,7 @@ func (s *BuildingService) UpdateBuildingStatus(buildingID, orgID int, req *model
 	}
 
 	// If deactivating, check for active units
-	if !req.ActiveStatus {
+	if !*req.ActiveStatus {
 		if err := s.ValidateBuildingDeletion(buildingID); err != nil {
 			return nil, fmt.Errorf("cannot deactivate building: %w", err)
 		}
@@ -1015,7 +1021,7 @@ func (s *BuildingService) UpdateBuildingStatus(buildingID, orgID int, req *model
 
 	// Prepare updates
 	updates := map[string]interface{}{
-		"active_status": req.ActiveStatus,
+		"active_status": *req.ActiveStatus,
 		"updated_at":    time.Now(),
 	}
 
@@ -1032,7 +1038,7 @@ func (s *BuildingService) UpdateBuildingStatus(buildingID, orgID int, req *model
 
 	// Log audit action
 	action := "ACTIVATE"
-	if !req.ActiveStatus {
+	if !*req.ActiveStatus {
 		action = "DEACTIVATE"
 	}
 	_ = s.auditService.LogSystemAction(action, "buildings", &buildingID, existingBuilding, updatedBuilding)

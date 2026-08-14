@@ -106,6 +106,12 @@ func (s *PropertyService) ListProperties(filters map[string]interface{}, page, p
 		return nil, 0, fmt.Errorf("failed to list properties: %w", err)
 	}
 
+	// An empty result must serialize as [], not null: clients (and the search
+	// endpoint, which routes through here) iterate this directly.
+	if properties == nil {
+		properties = []*models.Property{}
+	}
+
 	return properties, total, nil
 }
 

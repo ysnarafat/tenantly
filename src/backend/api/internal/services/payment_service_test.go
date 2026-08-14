@@ -31,7 +31,6 @@ type MockPaymentRepo struct {
 	dashboardResult         *models.DashboardSummary
 	buildingLevelResult     map[string]interface{}
 	analyticsResult         *models.BuildingPaymentAnalytics
-	auditLog                []string
 }
 
 func newMockPaymentRepo() *MockPaymentRepo {
