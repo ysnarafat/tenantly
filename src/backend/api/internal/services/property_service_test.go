@@ -210,7 +210,7 @@ func TestPropertyService_GetProperty(t *testing.T) {
 }
 
 func TestPropertyService_GetPropertyWithStats(t *testing.T) {
-	db, cleanup := setupPropertyTestDB(t)
+	db, orgID, cleanup := setupPropertyTestDB(t)
 	defer cleanup()
 
 	propertyRepo := repositories.NewPropertyRepository(db)
@@ -223,6 +223,7 @@ func TestPropertyService_GetPropertyWithStats(t *testing.T) {
 		Address:      "123 Test Street",
 		PropertyType: models.PropertyTypeCommercial,
 	}
+	createReq.OrganizationID = orgID
 	createdProperty, err := service.CreateProperty(createReq, 1)
 	if err != nil {
 		t.Fatalf("Failed to create test property: %v", err)
@@ -238,13 +239,13 @@ func TestPropertyService_GetPropertyWithStats(t *testing.T) {
 		{
 			name:        "Valid property ID",
 			propertyID:  createdProperty.ID,
-			orgID:       0,
+			orgID:       orgID,
 			expectError: false,
 		},
 		{
 			name:        "Invalid property ID",
 			propertyID:  99999,
-			orgID:       0,
+			orgID:       orgID,
 			expectError: true,
 			// Regression check: the repo's "property not found" must reach the
 			// handler unwrapped, or its 404 detection silently falls through to 500.
