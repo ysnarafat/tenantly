@@ -45,6 +45,11 @@ coverage/
 coverage/
 karma-*.log
 
+# Playwright e2e
+src/frontend/test-results/
+src/frontend/playwright-report/
+src/frontend/e2e/.auth/
+
 ### --- Go / Golang ---
 # Binaries
 *.exe
