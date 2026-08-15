@@ -79,6 +79,87 @@ func (s *UnitService) CreateUnit(req *models.CreateUnitRequest, userID, orgID in
 	return unit, nil
 }
 
+// BulkCreateUnits creates multiple units under a single building in one transaction.
+// All-or-nothing: any single validation or insert failure aborts the whole
+// batch — nothing is persisted. Mirrors BuildingService's bulk-create pattern.
+func (s *UnitService) BulkCreateUnits(req *models.BulkCreateUnitsRequest, userID, orgID int) ([]*models.Unit, error) {
+	// Look up the building and enforce org ownership (IDOR check) — property_id
+	// is derived from here, never trusted from the client.
+	building, err := s.buildingRepo.GetByID(req.BuildingID)
+	if err != nil {
+		return nil, fmt.Errorf("building not found: %w", err)
+	}
+	if building.OrganizationID != orgID {
+		return nil, fmt.Errorf("building not found")
+	}
+	if !building.ActiveStatus {
+		return nil, fmt.Errorf("cannot create units in inactive building")
+	}
+
+	property, err := s.propertyRepo.GetByID(building.PropertyID)
+	if err != nil {
+		return nil, fmt.Errorf("property not found: %w", err)
+	}
+	if !property.Active {
+		return nil, fmt.Errorf("cannot create units in inactive property")
+	}
+
+	req.PropertyID = building.PropertyID
+
+	// Validate every row before persisting anything.
+	unitNumbers := make(map[string]bool)
+	for i, item := range req.Units {
+		if unitNumbers[item.UnitNumber] {
+			return nil, fmt.Errorf("duplicate unit number '%s' in request", item.UnitNumber)
+		}
+		unitNumbers[item.UnitNumber] = true
+
+		exists, err := s.unitRepo.CheckUnitNumberExists(req.BuildingID, item.UnitNumber, 0)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check unit number uniqueness for unit %d: %w", i+1, err)
+		}
+		if exists {
+			return nil, fmt.Errorf("unit number '%s' already exists in this building", item.UnitNumber)
+		}
+
+		if !unitTypeAllowedForBuildingType(building.BuildingType, item.UnitType) {
+			return nil, fmt.Errorf("validation failed for unit %d: unit type %s is not allowed in %s building", i+1, item.UnitType, building.BuildingType)
+		}
+	}
+
+	units := make([]*models.Unit, 0, len(req.Units))
+	for _, item := range req.Units {
+		units = append(units, &models.Unit{
+			BuildingID:     req.BuildingID,
+			PropertyID:     req.PropertyID,
+			OrganizationID: building.OrganizationID,
+			UnitNumber:     item.UnitNumber,
+			UnitName:       item.UnitName,
+			Floor:          item.Floor,
+			Section:        item.Section,
+			UnitType:       item.UnitType,
+			Metadata:       item.Metadata,
+			Active:         true,
+		})
+	}
+
+	if err := s.unitRepo.BulkCreate(units); err != nil {
+		return nil, fmt.Errorf("failed to bulk create units: %w", err)
+	}
+
+	for _, unit := range units {
+		_ = s.auditService.LogUserAction(userID, "CREATE", "units", &unit.ID, nil, map[string]interface{}{
+			"unit_id":     unit.ID,
+			"building_id": unit.BuildingID,
+			"property_id": unit.PropertyID,
+			"unit_number": unit.UnitNumber,
+			"unit_type":   unit.UnitType,
+		})
+	}
+
+	return units, nil
+}
+
 // GetUnit retrieves a unit with building and property context
 func (s *UnitService) GetUnit(id, orgID int) (*models.UnitWithDetails, error) {
 	existing, err := s.unitRepo.GetByID(id)
@@ -193,7 +274,18 @@ func (s *UnitService) ValidateUnitTypeForBuilding(buildingID int, unitType model
 		return fmt.Errorf("building not found: %w", err)
 	}
 
-	// Define allowed unit types for each building type
+	if !unitTypeAllowedForBuildingType(building.BuildingType, unitType) {
+		return fmt.Errorf("unit type %s is not allowed in %s building", unitType, building.BuildingType)
+	}
+
+	return nil
+}
+
+// unitTypeAllowedForBuildingType reports whether unitType may be used in a
+// building of buildingType. Extracted from ValidateUnitTypeForBuilding so bulk
+// creation can check every row against an already-fetched building without a
+// GetByID round-trip per row.
+func unitTypeAllowedForBuildingType(buildingType models.BuildingType, unitType models.UnitType) bool {
 	allowedTypes := map[models.BuildingType][]models.UnitType{
 		models.BuildingTypeResidential: {
 			models.UnitTypeApartment,
@@ -216,14 +308,12 @@ func (s *UnitService) ValidateUnitTypeForBuilding(buildingID int, unitType model
 		},
 	}
 
-	allowed := allowedTypes[building.BuildingType]
-	for _, allowedType := range allowed {
+	for _, allowedType := range allowedTypes[buildingType] {
 		if unitType == allowedType {
-			return nil
+			return true
 		}
 	}
-
-	return fmt.Errorf("unit type %s is not allowed in %s building", unitType, building.BuildingType)
+	return false
 }
 
 // GetUnitsByBuilding retrieves units for a specific building with pagination

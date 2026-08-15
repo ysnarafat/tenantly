@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ysnarafat/tenantly/internal/interfaces"
@@ -36,6 +37,49 @@ func (h *UnitHandler) CreateUnit(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, unit)
+}
+
+// BulkCreateUnits handles creating multiple units under a single building in one request
+func (h *UnitHandler) BulkCreateUnits(c *gin.Context) {
+	buildingID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid building ID"})
+		return
+	}
+
+	var req models.BulkCreateUnitsRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, http.StatusBadRequest, "BULK_CREATE_UNITS_INVALID_BODY", "Invalid request body", err)
+		return
+	}
+	req.BuildingID = buildingID
+
+	userID := c.GetInt("user_id")
+	orgID := c.GetInt("org_id")
+
+	units, err := h.unitService.BulkCreateUnits(&req, userID, orgID)
+	if err != nil {
+		switch {
+		case strings.Contains(err.Error(), "duplicate unit number"), strings.Contains(err.Error(), "already exists in this building"):
+			respondError(c, http.StatusBadRequest, "BULK_CREATE_UNITS_DUPLICATE_UNIT_NUMBER", "Duplicate unit number", err)
+		case strings.Contains(err.Error(), "building not found"):
+			respondError(c, http.StatusNotFound, "BULK_CREATE_UNITS_BUILDING_NOT_FOUND", "Building not found", err)
+		case strings.Contains(err.Error(), "inactive"):
+			respondError(c, http.StatusForbidden, "BULK_CREATE_UNITS_INACTIVE", "Building or property is not active", err)
+		case strings.Contains(err.Error(), "validation failed for unit"):
+			respondError(c, http.StatusBadRequest, "BULK_CREATE_UNITS_VALIDATION_FAILED", "Unit validation failed", err)
+		default:
+			respondError(c, http.StatusInternalServerError, "BULK_CREATE_UNITS_FAILED", "Failed to bulk create units", err)
+		}
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"message":     "Units created successfully",
+		"building_id": buildingID,
+		"units":       units,
+		"summary":     gin.H{"units_created": len(units)},
+	})
 }
 
 // GetUnit handles retrieving a unit by ID

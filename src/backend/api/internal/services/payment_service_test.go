@@ -260,6 +260,7 @@ func (m *MockPaymentUnitRepo) GetByID(id int) (*models.Unit, error) {
 func (m *MockPaymentUnitRepo) Create(req *models.CreateUnitRequest, organizationID int) (*models.Unit, error) {
 	return nil, nil
 }
+func (m *MockPaymentUnitRepo) BulkCreate(units []*models.Unit) error { return nil }
 func (m *MockPaymentUnitRepo) GetByIDWithDetails(id int) (*models.UnitWithDetails, error) {
 	return nil, nil
 }

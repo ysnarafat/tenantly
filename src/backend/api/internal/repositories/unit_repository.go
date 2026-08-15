@@ -67,6 +67,56 @@ func (r *UnitRepository) Create(req *models.CreateUnitRequest, organizationID in
 	return unit, nil
 }
 
+// BulkCreate creates multiple units in a single building within one transaction.
+// All-or-nothing: the first insert error rolls back the entire batch.
+func (r *UnitRepository) BulkCreate(units []*models.Unit) error {
+	if len(units) == 0 {
+		return nil
+	}
+
+	tx, err := r.db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	query := fmt.Sprintf(`
+		INSERT INTO %s (
+			%s, %s, %s, %s,
+			%s, %s, %s, %s, %s, %s
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
+		RETURNING %s, %s, %s`,
+		columns.UnitTable,
+		columns.UnitBuildingID, columns.UnitPropertyID, columns.UnitNumber, columns.UnitName,
+		columns.UnitFloor, columns.UnitSection, columns.UnitType, columns.UnitMetadata, columns.UnitOrganizationID, columns.UnitActive,
+		columns.UnitID, columns.UnitCreatedAt, columns.UnitUpdatedAt)
+
+	for _, unit := range units {
+		err := tx.QueryRow(
+			query,
+			unit.BuildingID,
+			unit.PropertyID,
+			unit.UnitNumber,
+			unit.UnitName,
+			unit.Floor,
+			unit.Section,
+			unit.UnitType,
+			unit.Metadata,
+			unit.OrganizationID,
+		).Scan(&unit.ID, &unit.CreatedAt, &unit.UpdatedAt)
+
+		if err != nil {
+			return fmt.Errorf("failed to create unit %s: %w", unit.UnitNumber, err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
 // GetByID retrieves a unit by ID
 func (r *UnitRepository) GetByID(id int) (*models.Unit, error) {
 	query := fmt.Sprintf(`

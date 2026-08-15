@@ -237,6 +237,7 @@ func (s *Server) setupRoutes() {
 
 				// Building-unit relationship endpoints
 				buildings.GET("/:id/units/list", middleware.RequireAnyRole(), unitHandler.GetUnitsByBuilding)
+				buildings.POST("/:id/units/bulk", middleware.RequireAdminOrPropertyManager(), unitHandler.BulkCreateUnits)
 			}
 
 			// Unit management routes

@@ -198,6 +198,7 @@ type BuildingServiceInterface interface {
 // UnitRepositoryInterface defines the interface for unit repository operations
 type UnitRepositoryInterface interface {
 	Create(req *models.CreateUnitRequest, organizationID int) (*models.Unit, error)
+	BulkCreate(units []*models.Unit) error
 	GetByID(id int) (*models.Unit, error)
 	GetByIDWithDetails(id int) (*models.UnitWithDetails, error)
 	Update(id int, req *models.UpdateUnitRequest) (*models.Unit, error)
@@ -215,6 +216,7 @@ type UnitRepositoryInterface interface {
 // UnitServiceInterface defines the interface for unit service operations
 type UnitServiceInterface interface {
 	CreateUnit(req *models.CreateUnitRequest, userID, orgID int) (*models.Unit, error)
+	BulkCreateUnits(req *models.BulkCreateUnitsRequest, userID, orgID int) ([]*models.Unit, error)
 	GetUnit(id, orgID int) (*models.UnitWithDetails, error)
 	UpdateUnit(id int, req *models.UpdateUnitRequest, userID, orgID int) (*models.Unit, error)
 	DeleteUnit(id, userID, orgID int) error
