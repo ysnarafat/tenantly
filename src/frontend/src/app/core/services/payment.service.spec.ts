@@ -9,13 +9,17 @@ import {
   UpdatePaymentRequest,
   DashboardSummary,
 } from '../models/payment.model';
+import { environment } from '../../../environments/environment';
 
 describe('PaymentService', () => {
   let service: PaymentService;
   let httpMock: HttpTestingController;
 
-  const apiUrl = '/api/v1/payments';
-  const baseUrl = '/api/v1';
+  // Derived from environment.apiUrl rather than hardcoded, so these stay correct
+  // whichever apiUrl the environment file points at (relative behind a dev-server
+  // proxy, or absolute like the current http://localhost:8080/api/v1).
+  const baseUrl = environment.apiUrl;
+  const apiUrl = `${baseUrl}/payments`;
 
   // ── Shared fixtures ──────────────────────────────────────────────────────────
 
@@ -464,6 +468,101 @@ describe('PaymentService', () => {
 
       const req = httpMock.expectOne(`${baseUrl}/dashboard/summary`);
       req.flush('Forbidden', { status: 403, statusText: 'Forbidden' });
+    });
+  });
+
+  // ── getAllDuePayments ────────────────────────────────────────────────────────
+
+  describe('getAllDuePayments', () => {
+    function reqFor(status: string, page: number) {
+      return httpMock.expectOne(
+        (r) =>
+          r.url === apiUrl &&
+          r.params.get('status') === status &&
+          r.params.get('page') === String(page)
+      );
+    }
+
+    function pageResponse(
+      payments: PaymentWithDetails[],
+      total: number,
+      page = 1
+    ): PaymentListResponse {
+      return { payments, total, page, page_size: 100, total_pages: Math.ceil(total / 100) || 1 };
+    }
+
+    it('queries Due, Partial, and Overdue with the given month/year and a full page size', () => {
+      service.getAllDuePayments(6, 2026).subscribe();
+
+      (['Due', 'Partial', 'Overdue'] as const).forEach((status) => {
+        const req = reqFor(status, 1);
+        expect(req.request.params.get('month')).toBe('6');
+        expect(req.request.params.get('year')).toBe('2026');
+        expect(req.request.params.get('page_size')).toBe('100');
+        req.flush(pageResponse([], 0));
+      });
+    });
+
+    it('merges results from all three statuses into one flat array', () => {
+      const due = { ...mockPayment, id: 1, status: 'Due' as const };
+      const partial = { ...mockPayment, id: 2, status: 'Partial' as const };
+      const overdue = { ...mockPayment, id: 3, status: 'Overdue' as const };
+
+      let result: PaymentWithDetails[] | undefined;
+      service.getAllDuePayments(6, 2026).subscribe((res) => (result = res));
+
+      reqFor('Due', 1).flush(pageResponse([due], 1));
+      reqFor('Partial', 1).flush(pageResponse([partial], 1));
+      reqFor('Overdue', 1).flush(pageResponse([overdue], 1));
+
+      expect(result?.map((p) => p.id).sort()).toEqual([1, 2, 3]);
+    });
+
+    it('loops to a second page when a status has more outstanding payments than fit on one page', () => {
+      const firstPage = Array.from({ length: 100 }, (_, i) => ({
+        ...mockPayment,
+        id: i + 1,
+        status: 'Due' as const,
+      }));
+      const secondPage = [{ ...mockPayment, id: 101, status: 'Due' as const }];
+
+      let result: PaymentWithDetails[] | undefined;
+      service.getAllDuePayments(6, 2026).subscribe((res) => (result = res));
+
+      reqFor('Due', 1).flush(pageResponse(firstPage, 101, 1));
+      reqFor('Partial', 1).flush(pageResponse([], 0));
+      reqFor('Overdue', 1).flush(pageResponse([], 0));
+
+      const secondPageReq = reqFor('Due', 2);
+      secondPageReq.flush(pageResponse(secondPage, 101, 2));
+
+      expect(result?.length).toBe(101);
+      expect(result?.some((p) => p.id === 101)).toBeTrue();
+    });
+
+    it('stops paginating once a page comes back empty, even if the reported total implies more', () => {
+      // Defends against an infinite loop if `total` is ever inconsistent with
+      // the actual rows returned (e.g. a race with a payment being deleted).
+      let result: PaymentWithDetails[] | undefined;
+      service.getAllDuePayments(6, 2026).subscribe((res) => (result = res));
+
+      reqFor('Due', 1).flush(pageResponse([], 5));
+      reqFor('Partial', 1).flush(pageResponse([], 0));
+      reqFor('Overdue', 1).flush(pageResponse([], 0));
+
+      httpMock.verify();
+      expect(result).toEqual([]);
+    });
+
+    it('resolves to an empty array when nothing is outstanding', () => {
+      let result: PaymentWithDetails[] | undefined;
+      service.getAllDuePayments(6, 2026).subscribe((res) => (result = res));
+
+      reqFor('Due', 1).flush(pageResponse([], 0));
+      reqFor('Partial', 1).flush(pageResponse([], 0));
+      reqFor('Overdue', 1).flush(pageResponse([], 0));
+
+      expect(result).toEqual([]);
     });
   });
 

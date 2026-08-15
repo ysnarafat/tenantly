@@ -21,6 +21,17 @@
                 >{{ 'PAYMENT_LIST.BUTTONS.GENERATE_MONTHLY' | translate }}</span
               >
             </button>
+            <button
+              mat-flat-button
+              color="accent"
+              routerLink="/payments/collect"
+              class="collect-btn"
+            >
+              <mat-icon>fact_check</mat-icon>
+              <span class="btn-text"
+                >{{ 'PAYMENT_LIST.BUTTONS.COLLECT_PAYMENTS' | translate }}</span
+              >
+            </button>
             <button mat-flat-button color="primary" (click)="openCreateDialog()" class="create-btn">
               <mat-icon>add</mat-icon>
               <span class="btn-text">{{ 'PAYMENT_LIST.BUTTONS.NEW_PAYMENT' | translate }}</span>

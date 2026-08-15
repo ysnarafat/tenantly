@@ -476,7 +476,8 @@
       "CLEAR": "Clear",
       "UPDATE": "Update",
       "LOAD": "Load",
-      "GENERATE_MONTHLY": "Generate Monthly"
+      "GENERATE_MONTHLY": "Generate Monthly",
+      "COLLECT_PAYMENTS": "Collect Payments"
     },
     "FILTERS": {
       "STATUS": "Status",
@@ -521,6 +522,57 @@
     },
     "EMPTY_STATE": "No payments found",
     "LOADING": "Loading payments..."
+  },
+  "PAYMENT_COLLECT": {
+    "PAGE_TITLE": "Collect Payments",
+    "SUBTITLE": "Record payments for every outstanding tenant in one pass",
+    "MONTH_LABEL": "Month",
+    "YEAR_LABEL": "Year",
+    "GENERATE_BUTTON": "Generate Monthly Payments",
+    "SAVE_ALL_BUTTON": "Save all",
+    "LOADING": "Loading outstanding payments...",
+    "METHOD_NONE": "— None —",
+    "STATS": {
+      "PENDING": "pending",
+      "SAVED": "saved",
+      "FAILED": "failed",
+      "OUTSTANDING": "outstanding"
+    },
+    "EMPTY_STATE": {
+      "TITLE": "All caught up",
+      "DESCRIPTION": "No outstanding payments for this period — everyone has paid, or payments haven't been generated yet."
+    },
+    "TABLE": {
+      "TENANT": "Tenant",
+      "UNIT": "Unit",
+      "AMOUNT_DUE": "Amount due",
+      "AMOUNT_PAID": "Amount paid",
+      "METHOD": "Method",
+      "DATE": "Date",
+      "STATUS": "Status",
+      "SKIP": "Skip"
+    },
+    "STATUS": {
+      "SAVING": "Saving…",
+      "SAVED": "Saved"
+    },
+    "TOOLTIPS": {
+      "SKIP": "Skip this tenant for now"
+    },
+    "MONTHS": {
+      "JAN": "January",
+      "FEB": "February",
+      "MAR": "March",
+      "APR": "April",
+      "MAY": "May",
+      "JUN": "June",
+      "JUL": "July",
+      "AUG": "August",
+      "SEP": "September",
+      "OCT": "October",
+      "NOV": "November",
+      "DEC": "December"
+    }
   },
   "CREATE_PAYMENT_DIALOG": {
     "TITLE": "Create New Payment",

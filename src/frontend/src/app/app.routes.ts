@@ -106,6 +106,13 @@ export const routes: Routes = [
     canActivate: [AuthGuard, permissionGuard(Permission.VIEW_PAYMENTS)],
   },
   {
+    path: 'payments/collect',
+    title: 'Collect Payments',
+    loadComponent: () =>
+      import('./features/payments/payment-collect/payment-collect').then((m) => m.PaymentCollect),
+    canActivate: [AuthGuard, permissionGuard(Permission.RECORD_PAYMENTS)],
+  },
+  {
     path: 'reports',
     title: 'Reports & Analysis',
     loadComponent: () => import('./features/reports/report-analysis').then((m) => m.ReportAnalysis),
