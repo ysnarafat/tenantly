@@ -96,10 +96,16 @@
 
   <div class="section-header">
     <h2 class="section-title">{{ 'BUILDING_DETAIL.TABS.UNITS' | translate }}</h2>
-    <button mat-button color="primary" (click)="addUnit()">
-      <mat-icon>add</mat-icon>
-      {{ 'BUILDING_DETAIL.ADD_UNIT' | translate }}
-    </button>
+    <div class="section-actions">
+      <button mat-button color="primary" (click)="addUnit()">
+        <mat-icon>add</mat-icon>
+        {{ 'BUILDING_DETAIL.ADD_UNIT' | translate }}
+      </button>
+      <button mat-button color="primary" (click)="bulkAddUnits()">
+        <mat-icon>playlist_add</mat-icon>
+        {{ 'BUILDING_DETAIL.BULK_ADD_UNITS' | translate }}
+      </button>
+    </div>
   </div>
   @if (unitsLoading()) {
   <app-loading-spinner

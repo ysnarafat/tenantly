@@ -1,0 +1,136 @@
+<h2 mat-dialog-title>
+  <mat-icon>playlist_add</mat-icon>
+  {{ 'BULK_UNIT_FORM_DIALOG.TITLE' | translate }}
+</h2>
+
+<mat-dialog-content>
+  <div class="context-breadcrumb">
+    <mat-icon>business</mat-icon>
+    <span>{{ buildingContext }}</span>
+  </div>
+
+  <form [formGroup]="commonForm" class="common-form">
+    <p class="common-fields-label">{{ 'BULK_UNIT_FORM_DIALOG.COMMON_FIELDS_LABEL' | translate }}</p>
+
+    <div class="form-row">
+      <mat-form-field appearance="outline" class="unit-type-field">
+        <mat-label>{{ 'BULK_UNIT_FORM_DIALOG.FIELDS.UNIT_TYPE' | translate }}</mat-label>
+        <mat-select formControlName="unit_type" required>
+          @for (type of allowedUnitTypes; track type) {
+          <mat-option [value]="type">
+            <mat-icon>{{ getUnitTypeIcon(type) }}</mat-icon>
+            {{ type }}
+          </mat-option>
+          }
+        </mat-select>
+        <mat-icon matPrefix>category</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="floor-field">
+        <mat-label>{{ 'BULK_UNIT_FORM_DIALOG.FIELDS.FLOOR' | translate }}</mat-label>
+        <input matInput type="number" formControlName="floor" />
+        <mat-icon matPrefix>layers</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="section-field">
+        <mat-label>{{ 'BULK_UNIT_FORM_DIALOG.FIELDS.SECTION' | translate }}</mat-label>
+        <input matInput formControlName="section" />
+        <mat-icon matPrefix>view_module</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="row-count-field">
+        <mat-label>{{ 'BULK_UNIT_FORM_DIALOG.FIELDS.ROW_COUNT' | translate }}</mat-label>
+        <input
+          matInput
+          type="number"
+          min="1"
+          max="100"
+          [value]="rowCount()"
+          (change)="resizeRows($any($event.target).valueAsNumber)"
+        />
+        <mat-icon matPrefix>tag</mat-icon>
+      </mat-form-field>
+    </div>
+  </form>
+
+  <div class="rows-table-wrapper">
+    <table class="rows-table">
+      <thead>
+        <tr>
+          <th class="row-number-column">
+            {{ 'BULK_UNIT_FORM_DIALOG.TABLE.ROW_NUMBER' | translate }}
+          </th>
+          <th>{{ 'BULK_UNIT_FORM_DIALOG.TABLE.UNIT_NUMBER' | translate }}</th>
+          <th>{{ 'BULK_UNIT_FORM_DIALOG.TABLE.UNIT_NAME' | translate }}</th>
+          <th class="remove-column"></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track $index) {
+        <tr [class.has-error]="isDuplicate(row.unit_number) || !row.unit_number.trim()">
+          <td class="row-number-column">{{ $index + 1 }}</td>
+          <td>
+            <input
+              matInput
+              class="row-input"
+              [class.invalid]="isDuplicate(row.unit_number)"
+              [(ngModel)]="row.unit_number"
+              (ngModelChange)="touch()"
+              [placeholder]="'BULK_UNIT_FORM_DIALOG.TABLE.UNIT_NUMBER' | translate"
+            />
+            @if (isDuplicate(row.unit_number)) {
+            <div class="row-error">
+              {{ 'BULK_UNIT_FORM_DIALOG.ERRORS.DUPLICATE_UNIT_NUMBER' | translate }}
+            </div>
+            } @else if (!row.unit_number.trim()) {
+            <div class="row-error">
+              {{ 'BULK_UNIT_FORM_DIALOG.ERRORS.REQUIRED_UNIT_NUMBER' | translate }}
+            </div>
+            }
+          </td>
+          <td>
+            <input
+              matInput
+              class="row-input"
+              [(ngModel)]="row.unit_name"
+              (ngModelChange)="touch()"
+              [placeholder]="'BULK_UNIT_FORM_DIALOG.TABLE.UNIT_NAME' | translate"
+            />
+          </td>
+          <td class="remove-column">
+            <button
+              mat-icon-button
+              [matTooltip]="'BULK_UNIT_FORM_DIALOG.BUTTONS.REMOVE_ROW' | translate"
+              [disabled]="rows().length <= 1"
+              (click)="removeRow($index)"
+            >
+              <mat-icon>close</mat-icon>
+            </button>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-footer">
+    <button mat-button (click)="addRow()">
+      <mat-icon>add</mat-icon>
+      {{ 'BULK_UNIT_FORM_DIALOG.BUTTONS.ADD_ROW' | translate }}
+    </button>
+    <span class="summary" [class.has-error]="duplicateUnitNumbers().size > 0">
+      {{ 'BULK_UNIT_FORM_DIALOG.SUMMARY' | translate: { count: rows().length } }}
+    </span>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">
+    <mat-icon>close</mat-icon>
+    {{ 'BULK_UNIT_FORM_DIALOG.BUTTONS.CANCEL' | translate }}
+  </button>
+  <button mat-flat-button color="primary" (click)="onSubmit()" [disabled]="!canSubmit()">
+    <mat-icon>add</mat-icon>
+    {{ 'BULK_UNIT_FORM_DIALOG.BUTTONS.CREATE' | translate: { count: rows().length } }}
+  </button>
+</mat-dialog-actions>

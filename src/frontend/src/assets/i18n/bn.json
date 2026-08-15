@@ -379,6 +379,32 @@
       "UPDATE": "ইউনিট আপডেট করুন"
     }
   },
+  "BULK_UNIT_FORM_DIALOG": {
+    "TITLE": "একাধিক ইউনিট যোগ করুন",
+    "COMMON_FIELDS_LABEL": "সব ইউনিটের জন্য সাধারণ",
+    "FIELDS": {
+      "UNIT_TYPE": "ইউনিটের ধরন",
+      "FLOOR": "তল",
+      "SECTION": "বিভাগ",
+      "ROW_COUNT": "ইউনিটের সংখ্যা"
+    },
+    "TABLE": {
+      "ROW_NUMBER": "#",
+      "UNIT_NUMBER": "ইউনিট নম্বর",
+      "UNIT_NAME": "ইউনিটের নাম (ঐচ্ছিক)"
+    },
+    "BUTTONS": {
+      "ADD_ROW": "সারি যোগ করুন",
+      "REMOVE_ROW": "সরান",
+      "CREATE": "{{count}}টি ইউনিট তৈরি করুন",
+      "CANCEL": "বাতিল"
+    },
+    "ERRORS": {
+      "DUPLICATE_UNIT_NUMBER": "এই ব্যাচে ইউনিট নম্বরের পুনরাবৃত্তি",
+      "REQUIRED_UNIT_NUMBER": "ইউনিট নম্বর আবশ্যক"
+    },
+    "SUMMARY": "{{count}}টি ইউনিট তৈরি হবে"
+  },
   "PROPERTY_LIST": {
     "PAGE_TITLE": "সম্পত্তি",
     "STATS": {
@@ -438,6 +464,7 @@
     "NO_UNITS": "এখনও কোনো ইউনিট নেই",
     "VIEW_FULL_REPORT": "সম্পূর্ণ আর্থিক প্রতিবেদন দেখুন",
     "ADD_UNIT": "ইউনিট যোগ করুন",
+    "BULK_ADD_UNITS": "একাধিক ইউনিট যোগ করুন",
     "NOT_FOUND": {
       "TITLE": "ভবন পাওয়া যায়নি",
       "DESCRIPTION": "এই ভবনটি মুছে ফেলা হতে পারে, অথবা আপনার এতে প্রবেশাধিকার নেই।"

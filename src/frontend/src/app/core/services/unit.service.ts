@@ -10,6 +10,8 @@ import {
   UpdateUnitRequest,
   UnitListResponse,
   Pagination,
+  BulkCreateUnitsRequest,
+  BulkCreateUnitsResponse,
 } from '../models';
 import { environment } from '../../../environments/environment';
 
@@ -84,8 +86,13 @@ export class UnitService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  // Bulk operations
-  createBulkUnits(units: CreateUnitRequest[]): Observable<Unit[]> {
-    return this.http.post<Unit[]>(`${this.apiUrl}/bulk`, units);
+  bulkCreateUnits(
+    buildingId: number,
+    request: BulkCreateUnitsRequest
+  ): Observable<BulkCreateUnitsResponse> {
+    return this.http.post<BulkCreateUnitsResponse>(
+      `${environment.apiUrl}/buildings/${buildingId}/units/bulk`,
+      request
+    );
   }
 }

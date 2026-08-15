@@ -379,6 +379,32 @@
       "UPDATE": "Update Unit"
     }
   },
+  "BULK_UNIT_FORM_DIALOG": {
+    "TITLE": "Bulk Add Units",
+    "COMMON_FIELDS_LABEL": "Common to all units",
+    "FIELDS": {
+      "UNIT_TYPE": "Unit Type",
+      "FLOOR": "Floor",
+      "SECTION": "Section",
+      "ROW_COUNT": "Number of units"
+    },
+    "TABLE": {
+      "ROW_NUMBER": "#",
+      "UNIT_NUMBER": "Unit Number",
+      "UNIT_NAME": "Unit Name (Optional)"
+    },
+    "BUTTONS": {
+      "ADD_ROW": "Add Row",
+      "REMOVE_ROW": "Remove",
+      "CREATE": "Create {{count}} Units",
+      "CANCEL": "Cancel"
+    },
+    "ERRORS": {
+      "DUPLICATE_UNIT_NUMBER": "Duplicate unit number in this batch",
+      "REQUIRED_UNIT_NUMBER": "Unit number is required"
+    },
+    "SUMMARY": "{{count}} unit(s) will be created"
+  },
   "PROPERTY_LIST": {
     "PAGE_TITLE": "Properties",
     "STATS": {
@@ -438,6 +464,7 @@
     "NO_UNITS": "No units yet",
     "VIEW_FULL_REPORT": "View full financial report",
     "ADD_UNIT": "Add Unit",
+    "BULK_ADD_UNITS": "Bulk Add Units",
     "NOT_FOUND": {
       "TITLE": "Building not found",
       "DESCRIPTION": "This building may have been deleted, or you may not have access to it."

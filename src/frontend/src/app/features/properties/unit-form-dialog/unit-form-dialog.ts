@@ -15,7 +15,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslateModule } from '@ngx-translate/core';
-import { Unit, UnitType, Building, Property, BuildingType } from '../../../core/models';
+import { Unit, UnitType, Building, Property } from '../../../core/models';
+import { getUnitTypesForBuilding, getUnitTypeIcon } from '../unit-type.utils';
 
 export interface UnitFormDialogData {
   unit?: Unit;
@@ -49,23 +50,13 @@ export class UnitFormDialogComponent implements OnInit {
   unitForm!: FormGroup;
   allowedUnitTypes: UnitType[] = [];
 
-  private readonly unitTypesByBuildingType: Record<BuildingType, UnitType[]> = {
-    Residential: ['Apartment', 'Parking', 'Storage'],
-    Commercial: ['Shop', 'Office', 'Parking', 'Storage'],
-    Mixed: ['Shop', 'Apartment', 'Office', 'Parking', 'Storage', 'Other'],
-  };
-
   ngOnInit() {
     this.updateAllowedUnitTypes();
     this.initializeForm();
   }
 
   private updateAllowedUnitTypes() {
-    this.allowedUnitTypes = this.getUnitTypesForBuilding(this.data.building.building_type);
-  }
-
-  getUnitTypesForBuilding(buildingType: BuildingType): UnitType[] {
-    return this.unitTypesByBuildingType[buildingType] || [];
+    this.allowedUnitTypes = getUnitTypesForBuilding(this.data.building.building_type);
   }
 
   private initializeForm() {
@@ -178,19 +169,6 @@ export class UnitFormDialogComponent implements OnInit {
   }
 
   getUnitTypeIcon(type: UnitType): string {
-    switch (type) {
-      case 'Shop':
-        return 'store';
-      case 'Apartment':
-        return 'home';
-      case 'Office':
-        return 'business';
-      case 'Parking':
-        return 'local_parking';
-      case 'Storage':
-        return 'inventory_2';
-      default:
-        return 'meeting_room';
-    }
+    return getUnitTypeIcon(type);
   }
 }

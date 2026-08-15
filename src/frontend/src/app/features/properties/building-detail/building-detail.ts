@@ -17,10 +17,12 @@ import {
   Property,
   UpdateBuildingRequest,
   CreateUnitRequest,
+  BulkCreateUnitsRequest,
 } from '../../../core/models';
 import { LoadingSpinner } from '../../../shared/components/loading-spinner/loading-spinner';
 import { BuildingFormDialogComponent } from '../building-form-dialog/building-form-dialog';
 import { UnitFormDialogComponent } from '../unit-form-dialog/unit-form-dialog';
+import { BulkUnitFormDialogComponent } from '../bulk-unit-form-dialog/bulk-unit-form-dialog';
 import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm-delete-dialog/confirm-delete-dialog';
 import {
   EntityDetailDialogComponent,
@@ -182,6 +184,39 @@ export class BuildingDetail implements OnInit {
         error: (err) => {
           console.error('Error creating unit:', safeErrorMessage(err));
           notifyError(this.snackBar, 'Failed to create unit');
+        },
+      });
+    });
+  }
+
+  bulkAddUnits(): void {
+    const building = this.building();
+    if (!building) return;
+
+    const ref = this.dialog.open(BulkUnitFormDialogComponent, {
+      width: '960px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      data: {
+        building,
+        property: { id: building.property_id, property_name: building.property_name } as Property,
+      },
+    });
+
+    ref.afterClosed().subscribe((result: BulkCreateUnitsRequest | undefined) => {
+      if (!result) return;
+
+      this.unitService.bulkCreateUnits(building.id, result).subscribe({
+        next: (response) => {
+          notifySuccess(
+            this.snackBar,
+            `${response.summary.units_created} units created successfully`
+          );
+          this.loadUnits();
+        },
+        error: (err) => {
+          console.error('Error bulk creating units:', safeErrorMessage(err));
+          notifyError(this.snackBar, 'Failed to bulk create units');
         },
       });
     });
