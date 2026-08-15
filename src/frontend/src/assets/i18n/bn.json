@@ -407,6 +407,55 @@
       "DELETE_UNIT": "আপনি কি ইউনিট মুছতে চান"
     }
   },
+  "PROPERTY_DETAIL": {
+    "BACK_TO_LIST": "সম্পত্তির তালিকায় ফিরে যান",
+    "LOADING": "সম্পত্তি লোড হচ্ছে...",
+    "LOADING_BUILDINGS": "ভবন লোড হচ্ছে...",
+    "LOADING_UNITS": "ইউনিট লোড হচ্ছে...",
+    "NO_BUILDINGS": "এখনও কোনো ভবন নেই",
+    "NO_UNITS": "এখনও কোনো ইউনিট নেই",
+    "VIEW_FULL_REPORT": "সম্পূর্ণ আর্থিক প্রতিবেদন দেখুন",
+    "VIEW_FULL_DETAILS": "সম্পূর্ণ বিবরণ দেখুন",
+    "ADD_BUILDING": "ভবন যোগ করুন",
+    "NOT_FOUND": {
+      "TITLE": "সম্পত্তি পাওয়া যায়নি",
+      "DESCRIPTION": "এই সম্পত্তিটি মুছে ফেলা হতে পারে, অথবা আপনার এতে প্রবেশাধিকার নেই।"
+    },
+    "STATS": {
+      "BUILDINGS": "ভবন",
+      "UNITS": "ইউনিট",
+      "OCCUPANCY": "দখলের হার",
+      "REVENUE": "মোট আয়"
+    },
+    "TABS": {
+      "BUILDINGS": "ভবন"
+    }
+  },
+  "BUILDING_DETAIL": {
+    "BACK_TO_PROPERTY": "সম্পত্তিতে ফিরে যান",
+    "LOADING": "ভবন লোড হচ্ছে...",
+    "LOADING_UNITS": "ইউনিট লোড হচ্ছে...",
+    "NO_UNITS": "এখনও কোনো ইউনিট নেই",
+    "VIEW_FULL_REPORT": "সম্পূর্ণ আর্থিক প্রতিবেদন দেখুন",
+    "ADD_UNIT": "ইউনিট যোগ করুন",
+    "NOT_FOUND": {
+      "TITLE": "ভবন পাওয়া যায়নি",
+      "DESCRIPTION": "এই ভবনটি মুছে ফেলা হতে পারে, অথবা আপনার এতে প্রবেশাধিকার নেই।"
+    },
+    "STATS": {
+      "UNITS": "ইউনিট",
+      "OCCUPANCY": "দখলের হার",
+      "REVENUE": "মোট আয়",
+      "COLLECTION_RATE": "সংগ্রহের হার"
+    },
+    "TABS": {
+      "UNITS": "ইউনিট"
+    },
+    "UNIT_STATUS": {
+      "OCCUPIED": "ভাড়াটে আছে",
+      "VACANT": "খালি"
+    }
+  },
   "PAYMENT_LIST": {
     "PAGE_TITLE": "পেমেন্ট",
     "PAGE_SUBTITLE": "সকল পেমেন্ট লেনদেন পরিচালনা ও ট্র্যাক করুন",

@@ -407,6 +407,55 @@
       "DELETE_UNIT": "Are you sure you want to delete unit"
     }
   },
+  "PROPERTY_DETAIL": {
+    "BACK_TO_LIST": "Back to properties",
+    "LOADING": "Loading property...",
+    "LOADING_BUILDINGS": "Loading buildings...",
+    "LOADING_UNITS": "Loading units...",
+    "NO_BUILDINGS": "No buildings yet",
+    "NO_UNITS": "No units yet",
+    "VIEW_FULL_REPORT": "View full financial report",
+    "VIEW_FULL_DETAILS": "View full details",
+    "ADD_BUILDING": "Add Building",
+    "NOT_FOUND": {
+      "TITLE": "Property not found",
+      "DESCRIPTION": "This property may have been deleted, or you may not have access to it."
+    },
+    "STATS": {
+      "BUILDINGS": "Buildings",
+      "UNITS": "Units",
+      "OCCUPANCY": "Occupancy",
+      "REVENUE": "Total Revenue"
+    },
+    "TABS": {
+      "BUILDINGS": "Buildings"
+    }
+  },
+  "BUILDING_DETAIL": {
+    "BACK_TO_PROPERTY": "Back to property",
+    "LOADING": "Loading building...",
+    "LOADING_UNITS": "Loading units...",
+    "NO_UNITS": "No units yet",
+    "VIEW_FULL_REPORT": "View full financial report",
+    "ADD_UNIT": "Add Unit",
+    "NOT_FOUND": {
+      "TITLE": "Building not found",
+      "DESCRIPTION": "This building may have been deleted, or you may not have access to it."
+    },
+    "STATS": {
+      "UNITS": "Units",
+      "OCCUPANCY": "Occupancy",
+      "REVENUE": "Total Revenue",
+      "COLLECTION_RATE": "Collection Rate"
+    },
+    "TABS": {
+      "UNITS": "Units"
+    },
+    "UNIT_STATUS": {
+      "OCCUPIED": "Occupied",
+      "VACANT": "Vacant"
+    }
+  },
   "PAYMENT_LIST": {
     "PAGE_TITLE": "Payments",
     "PAGE_SUBTITLE": "Manage and track all payment transactions",

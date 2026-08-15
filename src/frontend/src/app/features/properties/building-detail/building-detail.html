@@ -1,0 +1,138 @@
+<div class="building-detail-container">
+  @if (building(); as b) {
+  <nav class="breadcrumb">
+    <a [routerLink]="['/properties', propertyId()]" class="breadcrumb-back">
+      <mat-icon>arrow_back</mat-icon>
+    </a>
+    <a [routerLink]="['/properties', propertyId()]" class="breadcrumb-link"
+      >{{ b.property_name }}</a
+    >
+    <mat-icon class="breadcrumb-separator">chevron_right</mat-icon>
+    <span class="breadcrumb-current">{{ b.building_name }}</span>
+  </nav>
+  } @else {
+  <a [routerLink]="['/properties', propertyId()]" class="back-link">
+    <mat-icon>arrow_back</mat-icon>
+    {{ 'BUILDING_DETAIL.BACK_TO_PROPERTY' | translate }}
+  </a>
+  } @if (loading()) {
+  <app-loading-spinner [message]="'BUILDING_DETAIL.LOADING' | translate"></app-loading-spinner>
+  } @if (notFound()) {
+  <mat-card class="empty-state">
+    <mat-card-content>
+      <mat-icon>domain_disabled</mat-icon>
+      <h2>{{ 'BUILDING_DETAIL.NOT_FOUND.TITLE' | translate }}</h2>
+      <p>{{ 'BUILDING_DETAIL.NOT_FOUND.DESCRIPTION' | translate }}</p>
+      <button mat-flat-button color="primary" [routerLink]="['/properties', propertyId()]">
+        {{ 'BUILDING_DETAIL.BACK_TO_PROPERTY' | translate }}
+      </button>
+    </mat-card-content>
+  </mat-card>
+  } @if (!loading() && !notFound() && building()) {
+  <div class="detail-header">
+    <div class="header-main">
+      <div class="title-row">
+        <h1>{{ building()!.building_name }}</h1>
+        <span
+          class="status-badge"
+          [class.is-active]="building()!.active_status"
+          [class.is-inactive]="!building()!.active_status"
+        >
+          <span class="status-dot"></span>
+          {{ (building()!.active_status ? 'COMMON.STATUS.ACTIVE' : 'COMMON.STATUS.INACTIVE') |
+          translate }}
+        </span>
+      </div>
+      <p class="building-meta">{{ building()!.building_code }} · {{ building()!.building_type }}</p>
+    </div>
+    <div class="header-actions">
+      <button mat-button (click)="editBuilding()">
+        <mat-icon>edit</mat-icon>
+        {{ 'COMMON.BUTTONS.EDIT' | translate }}
+      </button>
+      <button mat-button color="warn" (click)="deleteBuilding()">
+        <mat-icon>delete</mat-icon>
+        {{ 'COMMON.BUTTONS.DELETE' | translate }}
+      </button>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <mat-icon class="stat-icon">meeting_room</mat-icon>
+        <div class="stat-body">
+          <span class="stat-value">{{ building()!.unit_count }}</span>
+          <span class="stat-label">{{ 'BUILDING_DETAIL.STATS.UNITS' | translate }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <mat-icon class="stat-icon">pie_chart</mat-icon>
+        <div class="stat-body">
+          <span class="stat-value">{{ building()!.occupancy_rate | number: '1.0-0' }}%</span>
+          <span class="stat-label">{{ 'BUILDING_DETAIL.STATS.OCCUPANCY' | translate }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <mat-icon class="stat-icon">payments</mat-icon>
+        <div class="stat-body">
+          <span class="stat-value">{{ formatCurrency(building()!.total_revenue) }}</span>
+          <span class="stat-label">{{ 'BUILDING_DETAIL.STATS.REVENUE' | translate }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <div class="reports-link">
+    <a mat-button color="primary" routerLink="/reports">
+      <mat-icon>bar_chart</mat-icon>
+      {{ 'BUILDING_DETAIL.VIEW_FULL_REPORT' | translate }}
+    </a>
+  </div>
+
+  <div class="section-header">
+    <h2 class="section-title">{{ 'BUILDING_DETAIL.TABS.UNITS' | translate }}</h2>
+    <button mat-button color="primary" (click)="addUnit()">
+      <mat-icon>add</mat-icon>
+      {{ 'BUILDING_DETAIL.ADD_UNIT' | translate }}
+    </button>
+  </div>
+  @if (unitsLoading()) {
+  <app-loading-spinner
+    [message]="'BUILDING_DETAIL.LOADING_UNITS' | translate"
+  ></app-loading-spinner>
+  } @else if (units().length === 0) {
+  <div class="empty-tab">
+    <mat-icon>meeting_room</mat-icon>
+    <p>{{ 'BUILDING_DETAIL.NO_UNITS' | translate }}</p>
+  </div>
+  } @else {
+  <div class="units-grid">
+    @for (unit of units(); track unit.id) {
+    <mat-card class="unit-card" (click)="viewUnitDetails(unit)">
+      <mat-card-content>
+        <div class="unit-card-header">
+          <mat-icon>meeting_room</mat-icon>
+          <div>
+            <div class="unit-number">{{ unit.unit_number }}</div>
+            <div class="unit-type">{{ unit.unit_type }}</div>
+          </div>
+        </div>
+        <span
+          class="occupancy-badge"
+          [class.occupied]="unit.lease_active"
+          [class.vacant]="!unit.lease_active"
+        >
+          {{ (unit.lease_active ? 'BUILDING_DETAIL.UNIT_STATUS.OCCUPIED' :
+          'BUILDING_DETAIL.UNIT_STATUS.VACANT' ) | translate }}
+        </span>
+      </mat-card-content>
+    </mat-card>
+    }
+  </div>
+  } }
+</div>

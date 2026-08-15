@@ -9,6 +9,7 @@ import {
   CreateUnitRequest,
   UpdateUnitRequest,
   UnitListResponse,
+  Pagination,
 } from '../models';
 import { environment } from '../../../environments/environment';
 
@@ -41,10 +42,15 @@ export class UnitService {
     return this.http.get<UnitListResponse>(this.apiUrl, { params: httpParams });
   }
 
-  getUnitsByBuilding(buildingId: number): Observable<UnitListResponse> {
+  // The backend returns the richer UnitWithDetails shape here (tenant_name,
+  // lease_active, property/building names) — a distinct return type from
+  // getUnits()'s plain Unit[], which is why this doesn't share UnitListResponse.
+  getUnitsByBuilding(
+    buildingId: number
+  ): Observable<{ units: UnitWithDetails[]; pagination: Pagination }> {
     return this.http
       .get<{
-        data: Unit[];
+        data: UnitWithDetails[];
         meta: { total: number; page: number; page_size: number };
       }>(`${environment.apiUrl}/buildings/${buildingId}/units/list`)
       .pipe(
@@ -64,10 +70,6 @@ export class UnitService {
 
   getUnit(id: number): Observable<Unit> {
     return this.http.get<Unit>(`${this.apiUrl}/${id}`);
-  }
-
-  getUnitWithDetails(id: number): Observable<UnitWithDetails> {
-    return this.http.get<UnitWithDetails>(`${this.apiUrl}/${id}/details`);
   }
 
   createUnit(unit: CreateUnitRequest): Observable<Unit> {

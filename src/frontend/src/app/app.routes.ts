@@ -66,6 +66,20 @@ export const routes: Routes = [
     ],
   },
   {
+    path: 'properties/:id',
+    title: 'Property Details',
+    loadComponent: () =>
+      import('./features/properties/property-detail/property-detail').then((m) => m.PropertyDetail),
+    canActivate: [AuthGuard, permissionGuard(Permission.MANAGE_PROPERTIES)],
+  },
+  {
+    path: 'properties/:propertyId/buildings/:buildingId',
+    title: 'Building Details',
+    loadComponent: () =>
+      import('./features/properties/building-detail/building-detail').then((m) => m.BuildingDetail),
+    canActivate: [AuthGuard, permissionGuard(Permission.MANAGE_PROPERTIES)],
+  },
+  {
     path: 'tenants',
     title: 'Tenants',
     loadComponent: () =>

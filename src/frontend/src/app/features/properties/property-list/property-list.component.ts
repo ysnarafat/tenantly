@@ -32,7 +32,6 @@ import {
   Unit,
   UnitWithDetails,
   BuildingListResponse,
-  UnitListResponse,
 } from '../../../core/models';
 import { DisplayedProperty, PropertyCardComponent } from '../property-card/property-card';
 import { PropertyFormDialogComponent } from '../property-form-dialog/property-form-dialog';
@@ -254,8 +253,8 @@ export class PropertyListComponent implements OnInit {
 
   loadUnits(building: BuildingWithUnits) {
     this.unitService.getUnitsByBuilding(building.id).subscribe({
-      next: (response: UnitListResponse) => {
-        building.units = response.units as UnitWithDetails[];
+      next: (response) => {
+        building.units = response.units;
       },
       error: (err: unknown) => {
         console.error('Error loading units:', safeErrorMessage(err));
@@ -435,30 +434,6 @@ export class PropertyListComponent implements OnInit {
         // Reload units for this building after deletion
         setTimeout(() => this.loadUnits(building), 500);
       }
-    });
-  }
-
-  viewBuildingDetails(building: BuildingWithUnits) {
-    const rows: DetailRow[] = [
-      { label: 'Building Name', value: building.building_name },
-      { label: 'Building Code', value: building.building_code },
-      { label: 'Building Type', value: building.building_type },
-      { label: 'Total Floors', value: building.total_floors?.toString() ?? '—' },
-      { label: 'Elevator', value: building.has_elevator ? 'Yes' : 'No' },
-      { label: 'Construction Year', value: building.construction_year?.toString() ?? '—' },
-      { label: 'Status', value: building.active_status ? 'Active' : 'Inactive' },
-      { label: 'Created', value: this.formatDate(building.created_at) },
-      { label: 'Last Updated', value: this.formatDate(building.updated_at) },
-    ];
-
-    this.dialog.open(EntityDetailDialogComponent, {
-      width: '420px',
-      data: {
-        title: building.building_name,
-        subtitle: building.building_code,
-        icon: 'apartment',
-        rows,
-      },
     });
   }
 
