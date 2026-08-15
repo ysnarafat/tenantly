@@ -318,7 +318,9 @@ func (r *UnitRepository) GetByBuildingWithDetails(buildingID int, limit, offset,
 	}
 	defer func() { _ = rows.Close() }()
 
-	var units []*models.UnitWithDetails
+	// make(..., 0) rather than a nil-defaulted var — a nil slice serializes to
+	// JSON null (not []), which crashes frontend code that assumes an array.
+	units := make([]*models.UnitWithDetails, 0)
 	for rows.Next() {
 		unit := &models.UnitWithDetails{}
 		err := rows.Scan(
@@ -383,7 +385,9 @@ func (r *UnitRepository) GetByPropertyWithDetails(propertyID int, limit, offset,
 	}
 	defer func() { _ = rows.Close() }()
 
-	var units []*models.UnitWithDetails
+	// make(..., 0) rather than a nil-defaulted var — a nil slice serializes to
+	// JSON null (not []), which crashes frontend code that assumes an array.
+	units := make([]*models.UnitWithDetails, 0)
 	for rows.Next() {
 		unit := &models.UnitWithDetails{}
 		err := rows.Scan(

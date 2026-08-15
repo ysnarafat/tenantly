@@ -160,6 +160,7 @@ func TestPropertyService_GetProperty(t *testing.T) {
 		name        string
 		propertyID  int
 		expectError bool
+		errorMsg    string
 	}{
 		{
 			name:        "Valid property ID",
@@ -170,6 +171,9 @@ func TestPropertyService_GetProperty(t *testing.T) {
 			name:        "Invalid property ID",
 			propertyID:  99999,
 			expectError: true,
+			// Regression check: the repo's "property not found" must reach the
+			// handler unwrapped, or its 404 detection silently falls through to 500.
+			errorMsg: "property not found",
 		},
 	}
 
@@ -180,6 +184,92 @@ func TestPropertyService_GetProperty(t *testing.T) {
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("Expected error but got none")
+					return
+				}
+				if tt.errorMsg != "" && err.Error() != tt.errorMsg {
+					t.Errorf("Expected error message '%s', got '%s'", tt.errorMsg, err.Error())
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if property == nil {
+				t.Errorf("Expected property but got nil")
+				return
+			}
+
+			if property.ID != tt.propertyID {
+				t.Errorf("Expected property ID %d, got %d", tt.propertyID, property.ID)
+			}
+		})
+	}
+}
+
+func TestPropertyService_GetPropertyWithStats(t *testing.T) {
+	db, cleanup := setupPropertyTestDB(t)
+	defer cleanup()
+
+	propertyRepo := repositories.NewPropertyRepository(db)
+	auditService := database.NewAuditService(db)
+	service := NewPropertyService(propertyRepo, auditService)
+
+	createReq := &models.CreatePropertyRequest{
+		PropertyName: "Test Property",
+		PropertyCode: "TEST001",
+		Address:      "123 Test Street",
+		PropertyType: models.PropertyTypeCommercial,
+	}
+	createdProperty, err := service.CreateProperty(createReq, 1)
+	if err != nil {
+		t.Fatalf("Failed to create test property: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		propertyID  int
+		orgID       int
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:        "Valid property ID",
+			propertyID:  createdProperty.ID,
+			orgID:       0,
+			expectError: false,
+		},
+		{
+			name:        "Invalid property ID",
+			propertyID:  99999,
+			orgID:       0,
+			expectError: true,
+			// Regression check: the repo's "property not found" must reach the
+			// handler unwrapped, or its 404 detection silently falls through to 500.
+			errorMsg: "property not found",
+		},
+		{
+			name:        "Property belongs to a different organization",
+			propertyID:  createdProperty.ID,
+			orgID:       999,
+			expectError: true,
+			errorMsg:    "property not found",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			property, err := service.GetPropertyWithStats(tt.propertyID, tt.orgID)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+					return
+				}
+				if tt.errorMsg != "" && err.Error() != tt.errorMsg {
+					t.Errorf("Expected error message '%s', got '%s'", tt.errorMsg, err.Error())
 				}
 				return
 			}
@@ -398,6 +488,9 @@ func TestPropertyService_UpdateProperty(t *testing.T) {
 			},
 			userID:      1,
 			expectError: true,
+			// Regression check: the repo's "property not found" must reach the
+			// handler unwrapped, or its 404 detection silently falls through to 500.
+			errorMsg: "property not found",
 		},
 	}
 
@@ -463,6 +556,7 @@ func TestPropertyService_DeleteProperty(t *testing.T) {
 		propertyID  int
 		userID      int
 		expectError bool
+		errorMsg    string
 	}{
 		{
 			name:        "Valid deletion",
@@ -475,6 +569,9 @@ func TestPropertyService_DeleteProperty(t *testing.T) {
 			propertyID:  99999,
 			userID:      1,
 			expectError: true,
+			// Regression check: the repo's "property not found" must reach the
+			// handler unwrapped, or its 404 detection silently falls through to 500.
+			errorMsg: "property not found",
 		},
 	}
 
@@ -485,6 +582,10 @@ func TestPropertyService_DeleteProperty(t *testing.T) {
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("Expected error but got none")
+					return
+				}
+				if tt.errorMsg != "" && err.Error() != tt.errorMsg {
+					t.Errorf("Expected error message '%s', got '%s'", tt.errorMsg, err.Error())
 				}
 				return
 			}

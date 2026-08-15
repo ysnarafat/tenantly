@@ -110,7 +110,9 @@ func (r *BuildingRepository) GetByPropertyID(propertyID int) ([]*models.Building
 	}
 	defer func() { _ = rows.Close() }()
 
-	var buildings []*models.Building
+	// make(..., 0) rather than a nil-defaulted var — a nil slice serializes to
+	// JSON null (not []), which crashes frontend code that assumes an array.
+	buildings := make([]*models.Building, 0)
 	for rows.Next() {
 		var building models.Building
 		err := rows.Scan(
@@ -383,7 +385,9 @@ func (r *BuildingRepository) Search(filters *models.BuildingSearchFilters) ([]*m
 	}
 	defer func() { _ = rows.Close() }()
 
-	var buildings []*models.Building
+	// make(..., 0) rather than a nil-defaulted var — a nil slice serializes to
+	// JSON null (not []), which crashes frontend code that assumes an array.
+	buildings := make([]*models.Building, 0)
 	for rows.Next() {
 		var building models.Building
 		err := rows.Scan(
@@ -556,7 +560,9 @@ func (r *BuildingRepository) GetByPropertyWithSorting(propertyID int, filters *m
 	}
 	defer func() { _ = rows.Close() }()
 
-	var buildings []*models.Building
+	// make(..., 0) rather than a nil-defaulted var — a nil slice serializes to
+	// JSON null (not []), which crashes frontend code that assumes an array.
+	buildings := make([]*models.Building, 0)
 	for rows.Next() {
 		var building models.Building
 		err := rows.Scan(
@@ -725,7 +731,9 @@ func (r *BuildingRepository) AdvancedSearch(req *models.BuildingSearchRequest) (
 	}
 	defer func() { _ = rows.Close() }()
 
-	var buildings []*models.Building
+	// make(..., 0) rather than a nil-defaulted var — a nil slice serializes to
+	// JSON null (not []), which crashes frontend code that assumes an array.
+	buildings := make([]*models.Building, 0)
 	for rows.Next() {
 		var building models.Building
 		err := rows.Scan(
@@ -825,7 +833,9 @@ func (r *BuildingRepository) GetByOrganizationID(orgID int) ([]*models.Building,
 	}
 	defer func() { _ = rows.Close() }()
 
-	var buildings []*models.Building
+	// make(..., 0) rather than a nil-defaulted var — a nil slice serializes to
+	// JSON null (not []), which crashes frontend code that assumes an array.
+	buildings := make([]*models.Building, 0)
 	for rows.Next() {
 		var building models.Building
 		var metadata sql.NullString
