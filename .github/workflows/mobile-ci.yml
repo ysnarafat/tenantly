@@ -1,0 +1,39 @@
+name: Mobile CI
+
+on:
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - 'src/mobile/**'
+      - '.github/workflows/mobile-ci.yml'
+
+jobs:
+  analyze-format-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: src/mobile
+        run: flutter pub get
+
+      - name: Run dart format check
+        working-directory: src/mobile
+        run: dart format --set-exit-if-changed .
+
+      - name: Run flutter analyze
+        working-directory: src/mobile
+        run: flutter analyze
+
+      - name: Run tests
+        working-directory: src/mobile
+        run: flutter test

@@ -74,6 +74,25 @@ This document outlines the coding, structure, and process conventions for the Te
 
 ---
 
+## Flutter Mobile App (`src/mobile`)
+- **Project Structure:**
+  - Feature-based folders under `lib/features/`, mirroring the Angular frontend's layout for cross-codebase familiarity.
+  - Shared infrastructure (database, providers) in `lib/core/`.
+  - Local-first: the on-device Drift/SQLite database is the single source of truth. Do not add network calls, backend auth, or a sync layer without an explicit decision to do so — see the mobile setup plan for what's deferred and why.
+- **Code Style:**
+  - Follow [Effective Dart](https://dart.dev/effective-dart) and the project's `analysis_options.yaml` (`flutter_lints` plus a few stricter rules).
+  - Prefer plain Riverpod providers over `riverpod_generator`/code-gen annotations — keeps `build_runner`'s scope limited to Drift's own codegen.
+  - Use `dart format .` before committing.
+- **Testing:**
+  - Use `flutter_test` for widget tests, plain `package:test` (via `flutter_test`) with an in-memory Drift database (`NativeDatabase.memory()`) for database/repository tests.
+  - Widget tests that dispose a Drift-backed `StreamProvider` must tear down inside `tester.runAsync()` — the test binding's `FakeAsync` zone never fires the zero-duration timer Drift schedules on stream cancellation, which otherwise fails the "no pending timers" assertion.
+  - Run `flutter analyze` and `flutter test` before submitting code.
+- **Security:**
+  - Never commit secrets or API keys; there are none needed yet since this app has no network layer.
+  - NID/PII fields are currently stored in plaintext locally — there is no on-device encryption-at-rest yet. Do not treat this as solved; revisit before adding any sync/export capability.
+
+---
+
 
 ## Git & Collaboration
 - Use feature branches for all new work.

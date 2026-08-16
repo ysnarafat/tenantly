@@ -103,6 +103,31 @@ secrets.json
 # Claude Code agent runtime state
 .claude/agent-memory/
 
+### --- Flutter / Dart ---
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+*.iml
+*.ipr
+*.iws
+src/mobile/build/
+src/mobile/android/.gradle
+src/mobile/android/key.properties
+src/mobile/android/local.properties
+src/mobile/ios/Pods/
+src/mobile/ios/Flutter/Flutter.framework
+src/mobile/ios/Flutter/Flutter.podspec
+src/mobile/ios/Flutter/App.framework
+src/mobile/ios/Flutter/Generated.xcconfig
+src/mobile/ios/Flutter/flutter_export_environment.sh
+src/mobile/ios/.symlinks/
+src/mobile/linux/flutter/ephemeral/
+src/mobile/macos/Flutter/ephemeral/
+src/mobile/windows/flutter/ephemeral/
+
 # Others
 *.dbmdl
 *.bak
