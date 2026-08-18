@@ -123,8 +123,9 @@ func (r *PaymentRepository) Create(req *models.CreatePaymentRequest) (*models.Pa
 		amountPaid = *req.AmountPaid
 	}
 
-	// Status is always derived server-side from amount_paid vs amount_due —
-	// req.Status is ignored on create so a client can't misreport payment state.
+	// Status is always derived server-side from amount_paid vs amount_due (and
+	// due_date, for Overdue) — req.Status is ignored on create so a client
+	// can't misreport payment state.
 	status := string(models.PaymentStatusDue)
 	if amountPaid > 0 {
 		if amountPaid >= req.AmountDue {
@@ -132,6 +133,8 @@ func (r *PaymentRepository) Create(req *models.CreatePaymentRequest) (*models.Pa
 		} else {
 			status = string(models.PaymentStatusPartial)
 		}
+	} else if dueDate.Valid && dueDate.Time.Before(time.Now().UTC().Truncate(24*time.Hour)) {
+		status = string(models.PaymentStatusOverdue)
 	}
 
 	var paymentMethod sql.NullString

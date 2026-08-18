@@ -54,12 +54,19 @@ type CreatePaymentRequest struct {
 }
 
 type UpdatePaymentRequest struct {
-	AmountPaid    *float64       `json:"amount_paid" binding:"omitempty,gte=0"`
+	AmountPaid *float64 `json:"amount_paid" binding:"omitempty,gte=0"`
+	// Status is ignored — PaymentRepository.Update always (re)derives it from
+	// amount_paid vs amount_due (and due_date, for Overdue). Accepted here
+	// only so existing/external clients don't fail JSON binding.
 	Status        *PaymentStatus `json:"status" binding:"omitempty,oneof=Paid Due Partial Overdue"`
 	PaymentMethod *string        `json:"payment_method" binding:"omitempty"`
 	PaymentDate   *string        `json:"payment_date" binding:"omitempty"`
 	Notes         *string        `json:"notes" binding:"omitempty"`
-	ReceiptNumber *string        `json:"receipt_number" binding:"omitempty"`
+	// ReceiptNumber is ignored — see CreatePaymentRequest.ReceiptNumber.
+	// PaymentService.UpdatePayment lazily backfills one via
+	// PaymentRepository.NextReceiptNumber the first time a payment actually
+	// receives money, instead of trusting a client-supplied value.
+	ReceiptNumber *string `json:"receipt_number" binding:"omitempty"`
 }
 
 type PaymentWithDetails struct {

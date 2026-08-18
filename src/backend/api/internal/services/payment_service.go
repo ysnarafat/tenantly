@@ -134,6 +134,24 @@ func (s *PaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequest,
 		return nil, fmt.Errorf("payment not found")
 	}
 
+	// Status is never accepted from the client — PaymentRepository.Update
+	// always (re)derives it from amount_paid vs amount_due.
+	req.Status = nil
+
+	// Receipt numbers are always server-generated (see CreatePayment). A
+	// client-supplied value is discarded; instead, lazily backfill one here
+	// the first time a payment actually receives money — covers both
+	// bulk-generated Due records and any pre-existing rows without one.
+	req.ReceiptNumber = nil
+	if existingPayment.ReceiptNumber == "" && req.AmountPaid != nil && *req.AmountPaid > 0 {
+		yearMonth := fmt.Sprintf("%04d%02d", existingPayment.Year, existingPayment.Month)
+		receiptNumber, err := s.paymentRepo.NextReceiptNumber(existingPayment.OrganizationID, yearMonth)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate receipt number: %w", err)
+		}
+		req.ReceiptNumber = &receiptNumber
+	}
+
 	// Update payment
 	updatedPayment, err := s.paymentRepo.Update(id, req)
 	if err != nil {
@@ -506,6 +524,16 @@ func (s *PaymentService) GenerateMonthlyPayments(req *models.GenerateMonthlyPaym
 			continue
 		}
 
+		// Assign a receipt number up front, matching CreatePayment, so every
+		// payment record has one from the moment it exists rather than only
+		// when created through the single-entry flow.
+		receiptNumber, err := s.paymentRepo.NextReceiptNumber(orgID, fmt.Sprintf("%04d%02d", req.Year, req.Month))
+		if err != nil {
+			result.Failed++
+			result.Errors = append(result.Errors, fmt.Sprintf("unit %d: failed to generate receipt number: %v", lease.UnitID, err))
+			continue
+		}
+
 		createReq := &models.CreatePaymentRequest{
 			UnitID:         lease.UnitID,
 			TenantID:       lease.TenantID,
@@ -516,6 +544,7 @@ func (s *PaymentService) GenerateMonthlyPayments(req *models.GenerateMonthlyPaym
 			Year:           req.Year,
 			AmountDue:      lease.MonthlyRent,
 			DueDate:        dueDateStr,
+			ReceiptNumber:  &receiptNumber,
 		}
 
 		if _, err := s.paymentRepo.Create(createReq); err != nil {

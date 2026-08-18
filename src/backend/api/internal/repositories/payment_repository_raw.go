@@ -44,8 +44,12 @@ func scanPaymentWithDetails(row interface {
 	return p, nil
 }
 
-// Update applies a partial update to a payment and auto-calculates status when amount_paid changes
-// This is kept as raw SQL because it builds a dynamic SET clause and auto-derives status from amount_paid
+// Update applies a partial update to a payment. Status is never accepted from
+// the caller — it is always (re)derived from amount_paid vs amount_due (and
+// due_date, for Overdue) whenever amount_paid changes, so payment state can't
+// be misreported via a client-supplied value.
+// This is kept as raw SQL because it builds a dynamic SET clause and derives
+// status from amount_due/due_date, both only available inside the UPDATE.
 func (r *PaymentRepository) Update(id int, req *models.UpdatePaymentRequest) (*models.Payment, error) {
 	setClauses := []string{"updated_at = NOW() AT TIME ZONE 'UTC'"}
 	args := []interface{}{}
@@ -56,18 +60,14 @@ func (r *PaymentRepository) Update(id int, req *models.UpdatePaymentRequest) (*m
 		args = append(args, *req.AmountPaid)
 		argIdx++
 
-		// Auto-derive status from amount when caller does not override it
-		if req.Status == nil {
-			setClauses = append(setClauses, fmt.Sprintf(
-				"status = CASE WHEN $%d >= amount_due THEN 'Paid' WHEN $%d > 0 THEN 'Partial' ELSE status END",
-				argIdx, argIdx))
-			args = append(args, *req.AmountPaid)
-			argIdx++
-		}
-	}
-	if req.Status != nil {
-		setClauses = append(setClauses, fmt.Sprintf("status = $%d", argIdx))
-		args = append(args, string(*req.Status))
+		setClauses = append(setClauses, fmt.Sprintf(
+			`status = CASE
+				WHEN $%d >= amount_due THEN 'Paid'
+				WHEN $%d > 0 THEN 'Partial'
+				WHEN due_date IS NOT NULL AND due_date < CURRENT_DATE THEN 'Overdue'
+				ELSE 'Due'
+			END`, argIdx, argIdx))
+		args = append(args, *req.AmountPaid)
 		argIdx++
 	}
 	if req.PaymentMethod != nil {
