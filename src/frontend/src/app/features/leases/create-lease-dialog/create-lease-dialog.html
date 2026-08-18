@@ -1,4 +1,16 @@
-<h2 mat-dialog-title>{{ 'CREATE_LEASE_DIALOG.TITLE' | translate }}</h2>
+<h2 mat-dialog-title class="dialog-title">
+  <span>{{ 'CREATE_LEASE_DIALOG.TITLE' | translate }}</span>
+  <button
+    mat-icon-button
+    type="button"
+    class="close-button"
+    [disabled]="submitLoading"
+    [attr.aria-label]="'COMMON.BUTTONS.CANCEL' | translate"
+    (click)="onCancel()"
+  >
+    <mat-icon>close</mat-icon>
+  </button>
+</h2>
 <mat-dialog-content class="dialog-content">
   <div *ngIf="loading" class="loading-container">
     <mat-spinner diameter="40"></mat-spinner>
@@ -9,16 +21,29 @@
     <!-- Tenant Selection -->
     <mat-form-field appearance="outline">
       <mat-label>{{ 'CREATE_LEASE_DIALOG.FIELDS.TENANT' | translate }}</mat-label>
-      <mat-select
-        formControlName="tenant_id"
-        [compareWith]="compareById"
-        (openedChange)="onTenantSelectOpened()"
+      <input
+        matInput
+        [formControl]="tenantSearch"
+        [matAutocomplete]="tenantAuto"
+        [placeholder]="'CREATE_LEASE_DIALOG.FIELDS.TENANT_SEARCH_PLACEHOLDER' | translate"
+        (focus)="onTenantSearchFocus($event)"
+      />
+      <mat-autocomplete
+        #tenantAuto="matAutocomplete"
+        [displayWith]="displayTenantWith"
+        (optionSelected)="onTenantSelected($event)"
       >
-        <mat-option *ngFor="let tenant of filteredTenants" [value]="tenant.id">
+        <mat-option *ngFor="let tenant of filteredTenants" [value]="tenant">
           {{ tenant.name }} ({{ tenant.phone_number || ('CREATE_LEASE_DIALOG.ERRORS.NO_PHONE' |
           translate) }})
         </mat-option>
-      </mat-select>
+        <mat-option *ngIf="filteredTenants.length === 0" disabled>
+          {{ 'CREATE_LEASE_DIALOG.ERRORS.NO_TENANTS_FOUND' | translate }}
+        </mat-option>
+      </mat-autocomplete>
+      <mat-hint *ngIf="tenantsLoadFailed"
+        >{{ 'CREATE_LEASE_DIALOG.ERRORS.LOAD_TENANTS' | translate }}</mat-hint
+      >
       <mat-error *ngIf="leaseForm.get('tenant_id')?.touched && leaseForm.get('tenant_id')?.invalid">
         {{ getErrorMessage('tenant_id') }}
       </mat-error>
@@ -36,6 +61,12 @@
           {{ property.property_name }} - {{ property.address }}
         </mat-option>
       </mat-select>
+      <mat-hint *ngIf="propertiesLoadFailed"
+        >{{ 'CREATE_LEASE_DIALOG.ERRORS.LOAD_PROPERTIES' | translate }}</mat-hint
+      >
+      <mat-hint *ngIf="!propertiesLoadFailed && properties.length === 0">
+        {{ 'CREATE_LEASE_DIALOG.ERRORS.NO_PROPERTIES' | translate }}
+      </mat-hint>
       <mat-error
         *ngIf="leaseForm.get('property_id')?.touched && leaseForm.get('property_id')?.invalid"
       >
@@ -55,6 +86,15 @@
           {{ building.building_name }} ({{ building.building_code }})
         </mat-option>
       </mat-select>
+      <mat-spinner *ngIf="buildingsLoading" matSuffix diameter="18"></mat-spinner>
+      <mat-hint *ngIf="buildingsLoading"
+        >{{ 'CREATE_LEASE_DIALOG.INFO.LOADING_BUILDINGS' | translate }}</mat-hint
+      >
+      <mat-hint
+        *ngIf="!buildingsLoading && leaseForm.get('property_id')?.value && buildings.length === 0"
+      >
+        {{ 'CREATE_LEASE_DIALOG.ERRORS.NO_BUILDINGS' | translate }}
+      </mat-hint>
       <mat-error
         *ngIf="leaseForm.get('building_id')?.touched && leaseForm.get('building_id')?.invalid"
       >
@@ -70,6 +110,13 @@
           Unit {{ unit.unit_number }} - {{ unit.unit_type }}
         </mat-option>
       </mat-select>
+      <mat-spinner *ngIf="unitsLoading" matSuffix diameter="18"></mat-spinner>
+      <mat-hint *ngIf="unitsLoading"
+        >{{ 'CREATE_LEASE_DIALOG.INFO.LOADING_UNITS' | translate }}</mat-hint
+      >
+      <mat-hint *ngIf="!unitsLoading && leaseForm.get('building_id')?.value && units.length === 0">
+        {{ 'CREATE_LEASE_DIALOG.ERRORS.NO_UNITS' | translate }}
+      </mat-hint>
       <mat-error *ngIf="leaseForm.get('unit_id')?.touched && leaseForm.get('unit_id')?.invalid">
         {{ getErrorMessage('unit_id') }}
       </mat-error>
@@ -79,8 +126,12 @@
     <mat-form-field appearance="outline">
       <mat-label>{{ 'CREATE_LEASE_DIALOG.FIELDS.LEASE_TYPE' | translate }}</mat-label>
       <mat-select formControlName="lease_type">
-        <mat-option value="Residential">Residential</mat-option>
-        <mat-option value="Commercial">Commercial</mat-option>
+        <mat-option value="Residential"
+          >{{ 'CREATE_LEASE_DIALOG.LEASE_TYPES.RESIDENTIAL' | translate }}</mat-option
+        >
+        <mat-option value="Commercial"
+          >{{ 'CREATE_LEASE_DIALOG.LEASE_TYPES.COMMERCIAL' | translate }}</mat-option
+        >
       </mat-select>
       <mat-error
         *ngIf="leaseForm.get('lease_type')?.touched && leaseForm.get('lease_type')?.invalid"
@@ -105,7 +156,7 @@
     <!-- Duration -->
     <mat-form-field appearance="outline">
       <mat-label>{{ 'CREATE_LEASE_DIALOG.FIELDS.DURATION_MONTHS' | translate }}</mat-label>
-      <input matInput type="number" formControlName="duration_months" min="1" max="60" />
+      <input matInput type="number" step="1" formControlName="duration_months" min="1" max="60" />
       <mat-error
         *ngIf="leaseForm.get('duration_months')?.touched && leaseForm.get('duration_months')?.invalid"
       >

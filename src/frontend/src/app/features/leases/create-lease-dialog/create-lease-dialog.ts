@@ -1,17 +1,29 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, ElementRef, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import {
+  MatAutocompleteModule,
+  MatAutocompleteSelectedEvent,
+} from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  ReactiveFormsModule,
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { LeaseService, CreateLeaseRequest } from '../../../core/services/lease.service';
 import { PropertyService } from '../../../core/services/property.service';
 import { BuildingService } from '../../../core/services/building.service';
@@ -21,9 +33,14 @@ import { Property } from '../../../core/models/property.model';
 import { Building } from '../../../core/models/building.model';
 import { Unit } from '../../../core/models/unit.model';
 import { Tenant } from '../../../core/models/tenant.model';
-import { LeaseType } from '../../../core/models/lease.model';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
 import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
+
+function integerValidator(control: AbstractControl): ValidationErrors | null {
+  const value = control.value;
+  if (value === null || value === undefined || value === '') return null;
+  return Number.isInteger(Number(value)) ? null : { notInteger: true };
+}
 
 @Component({
   selector: 'app-create-lease-dialog',
@@ -34,6 +51,7 @@ import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    MatAutocompleteModule,
     MatButtonModule,
     MatIconModule,
     MatDatepickerModule,
@@ -54,18 +72,25 @@ export class CreateLeaseDialog implements OnInit {
   private unitService = inject(UnitService);
   private tenantService = inject(TenantService);
   private snackBar = inject(MatSnackBar);
+  private translate = inject(TranslateService);
+  private elRef: ElementRef<HTMLElement> = inject(ElementRef);
 
   leaseForm: FormGroup;
+  tenantSearch = new FormControl<Tenant | string | null>('');
+
   loading = false;
   submitLoading = false;
+  buildingsLoading = false;
+  unitsLoading = false;
 
   properties: Property[] = [];
   buildings: Building[] = [];
   units: Unit[] = [];
   tenants: Tenant[] = [];
-
   filteredTenants: Tenant[] = [];
-  selectedTenantInput = '';
+
+  propertiesLoadFailed = false;
+  tenantsLoadFailed = false;
 
   minDate: Date = new Date();
 
@@ -77,7 +102,10 @@ export class CreateLeaseDialog implements OnInit {
       unit_id: [{ value: null, disabled: true }, Validators.required],
       lease_type: ['Commercial', Validators.required],
       start_date: [new Date(), Validators.required],
-      duration_months: [12, [Validators.required, Validators.min(1), Validators.max(60)]],
+      duration_months: [
+        12,
+        [Validators.required, Validators.min(1), Validators.max(60), integerValidator],
+      ],
       monthly_rent: [null, [Validators.required, Validators.min(0)]],
       security_deposit: [null, [Validators.min(0)]],
     });
@@ -85,11 +113,15 @@ export class CreateLeaseDialog implements OnInit {
 
   ngOnInit() {
     this.loadData();
-  }
 
-  onTenantSelectOpened() {
-    // Reset filtered tenants when dropdown opens
-    this.filteredTenants = [...this.tenants];
+    this.tenantSearch.valueChanges.subscribe((value) => {
+      this.filterTenants(value);
+      // A manual edit after a selection invalidates the previous choice —
+      // otherwise a stale tenant_id could be submitted alongside new text.
+      if (typeof value === 'string') {
+        this.leaseForm.patchValue({ tenant_id: null });
+      }
+    });
   }
 
   compareById(option1: any, option2: any): boolean {
@@ -110,6 +142,7 @@ export class CreateLeaseDialog implements OnInit {
   }
 
   loadProperties() {
+    this.propertiesLoadFailed = false;
     return new Promise<void>((resolve) => {
       this.propertyService.getProperties({ active: true }).subscribe({
         next: (response) => {
@@ -118,7 +151,11 @@ export class CreateLeaseDialog implements OnInit {
         },
         error: (error: any) => {
           console.error('Error loading properties:', safeErrorMessage(error));
-          notifyError(this.snackBar, 'Error loading properties');
+          this.propertiesLoadFailed = true;
+          notifyError(
+            this.snackBar,
+            this.translate.instant('CREATE_LEASE_DIALOG.ERRORS.LOAD_PROPERTIES')
+          );
           resolve();
         },
       });
@@ -126,6 +163,7 @@ export class CreateLeaseDialog implements OnInit {
   }
 
   loadTenants() {
+    this.tenantsLoadFailed = false;
     return new Promise<void>((resolve) => {
       this.tenantService.getAllTenants(1, 100).subscribe({
         next: (response) => {
@@ -135,7 +173,11 @@ export class CreateLeaseDialog implements OnInit {
         },
         error: (error) => {
           console.error('Error loading tenants:', safeErrorMessage(error));
-          notifyError(this.snackBar, 'Error loading tenants');
+          this.tenantsLoadFailed = true;
+          notifyError(
+            this.snackBar,
+            this.translate.instant('CREATE_LEASE_DIALOG.ERRORS.LOAD_TENANTS')
+          );
           resolve();
         },
       });
@@ -146,26 +188,29 @@ export class CreateLeaseDialog implements OnInit {
     this.leaseForm.patchValue({ building_id: null, unit_id: null });
     this.buildings = [];
     this.units = [];
+    this.leaseForm.get('building_id')?.disable();
+    this.leaseForm.get('unit_id')?.disable();
 
     if (!propertyId) {
-      this.leaseForm.get('building_id')?.disable();
-      this.leaseForm.get('unit_id')?.disable();
       return;
     }
 
+    this.buildingsLoading = true;
     this.buildingService.getBuildingsByProperty(propertyId).subscribe({
       next: (response: any) => {
         this.buildings = response.buildings;
+        this.buildingsLoading = false;
         if (this.buildings.length > 0) {
           this.leaseForm.get('building_id')?.enable();
-        } else {
-          this.leaseForm.get('building_id')?.disable();
         }
       },
       error: (error: any) => {
         console.error('Error loading buildings:', safeErrorMessage(error));
-        notifyError(this.snackBar, 'Error loading buildings');
-        this.leaseForm.get('building_id')?.disable();
+        this.buildingsLoading = false;
+        notifyError(
+          this.snackBar,
+          this.translate.instant('CREATE_LEASE_DIALOG.ERRORS.LOAD_BUILDINGS')
+        );
       },
     });
   }
@@ -173,43 +218,36 @@ export class CreateLeaseDialog implements OnInit {
   onBuildingChange(buildingId: number) {
     this.leaseForm.patchValue({ unit_id: null });
     this.units = [];
+    this.leaseForm.get('unit_id')?.disable();
 
     if (!buildingId) {
-      this.leaseForm.get('unit_id')?.disable();
       return;
     }
 
+    this.unitsLoading = true;
     this.unitService.getUnitsByBuilding(buildingId).subscribe({
       next: (response: any) => {
         this.units = response.units;
+        this.unitsLoading = false;
         if (this.units.length > 0) {
           this.leaseForm.get('unit_id')?.enable();
-        } else {
-          this.leaseForm.get('unit_id')?.disable();
         }
       },
       error: (error: any) => {
         console.error('Error loading units:', safeErrorMessage(error));
-        notifyError(this.snackBar, 'Error loading units');
-        this.leaseForm.get('unit_id')?.disable();
+        this.unitsLoading = false;
+        notifyError(this.snackBar, this.translate.instant('CREATE_LEASE_DIALOG.ERRORS.LOAD_UNITS'));
       },
     });
   }
 
-  filterTenants(value: any) {
-    if (!value) {
+  filterTenants(value: Tenant | string | null) {
+    if (!value || typeof value !== 'string') {
       this.filteredTenants = [...this.tenants];
       return;
     }
 
-    // Handle case where value is a Tenant object (when selected from dropdown)
-    if (typeof value === 'object' && value.id) {
-      this.filteredTenants = [...this.tenants];
-      return;
-    }
-
-    // Handle case where value is a string (when typing)
-    const searchTerm = value.toString().toLowerCase();
+    const searchTerm = value.toLowerCase();
     this.filteredTenants = this.tenants.filter(
       (tenant) =>
         tenant.name.toLowerCase().includes(searchTerm) ||
@@ -218,12 +256,21 @@ export class CreateLeaseDialog implements OnInit {
     );
   }
 
-  displayTenantWith(tenantId: number | string | null): string {
-    if (!tenantId) return '';
-    const id = typeof tenantId === 'string' ? Number(tenantId) : tenantId;
-    const tenant = this.tenants.find((t) => t.id === id);
-    return tenant ? `${tenant.name} (${tenant.phone_number || 'No phone'})` : '';
+  onTenantSelected(event: MatAutocompleteSelectedEvent) {
+    const tenant = event.option.value as Tenant;
+    this.leaseForm.patchValue({ tenant_id: tenant.id });
+    this.leaseForm.get('tenant_id')?.markAsTouched();
   }
+
+  onTenantSearchFocus(event: FocusEvent) {
+    (event.target as HTMLInputElement).select();
+  }
+
+  displayTenantWith = (tenant: Tenant | string | null): string => {
+    if (!tenant || typeof tenant === 'string') return typeof tenant === 'string' ? tenant : '';
+    const noPhone = this.translate.instant('CREATE_LEASE_DIALOG.ERRORS.NO_PHONE');
+    return `${tenant.name} (${tenant.phone_number || noPhone})`;
+  };
 
   displayBuildingWith(buildingId: number | string | null): string {
     if (!buildingId) return '';
@@ -254,11 +301,16 @@ export class CreateLeaseDialog implements OnInit {
   onSubmit() {
     if (this.leaseForm.invalid) {
       this.leaseForm.markAllAsTouched();
-      notifyError(this.snackBar, 'Please fill all required fields');
+      notifyError(this.snackBar, this.translate.instant('CREATE_LEASE_DIALOG.ERRORS.FORM_INVALID'));
+      this.focusFirstInvalidField();
       return;
     }
 
     this.submitLoading = true;
+    // Block accidental backdrop/Escape dismissal while the request is in
+    // flight — closing now would abandon the request without the caller
+    // ever knowing whether the lease was actually created.
+    this.dialogRef.disableClose = true;
 
     const formValue = this.leaseForm.value;
     const request: CreateLeaseRequest = {
@@ -273,20 +325,23 @@ export class CreateLeaseDialog implements OnInit {
 
     this.leaseService.createLease(request).subscribe({
       next: () => {
-        notifySuccess(this.snackBar, 'Lease created successfully');
+        notifySuccess(this.snackBar, this.translate.instant('CREATE_LEASE_DIALOG.SUCCESS.CREATED'));
         this.dialogRef.close(true);
         this.submitLoading = false;
       },
       error: (error) => {
         console.error('Error creating lease:', safeErrorMessage(error));
-        const errorMessage = error.error?.message || 'Failed to create lease';
+        const fallback = this.translate.instant('CREATE_LEASE_DIALOG.ERRORS.CREATE_FAILED');
+        const errorMessage = error.error?.error || error.message || fallback;
         notifyError(this.snackBar, errorMessage);
         this.submitLoading = false;
+        this.dialogRef.disableClose = false;
       },
     });
   }
 
   onCancel() {
+    if (this.submitLoading) return;
     this.dialogRef.close(false);
   }
 
@@ -297,10 +352,25 @@ export class CreateLeaseDialog implements OnInit {
   getErrorMessage(controlName: string): string {
     const control = this.leaseForm.get(controlName);
     if (control?.errors) {
-      if (control.errors['required']) return 'This field is required';
-      if (control.errors['min']) return 'Value must be positive';
-      if (control.errors['max']) return 'Value is too large';
+      if (control.errors['required'])
+        return this.translate.instant('CREATE_LEASE_DIALOG.ERRORS.REQUIRED');
+      if (control.errors['min'])
+        return this.translate.instant('CREATE_LEASE_DIALOG.ERRORS.MIN_VALUE');
+      if (control.errors['max'])
+        return this.translate.instant('CREATE_LEASE_DIALOG.ERRORS.MAX_VALUE');
+      if (control.errors['notInteger'])
+        return this.translate.instant('CREATE_LEASE_DIALOG.ERRORS.NOT_INTEGER');
     }
     return '';
+  }
+
+  private focusFirstInvalidField() {
+    setTimeout(() => {
+      const invalidEl = this.elRef.nativeElement.querySelector<HTMLElement>(
+        '.lease-form .ng-invalid input, .lease-form .ng-invalid mat-select'
+      );
+      invalidEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      invalidEl?.focus();
+    });
   }
 }

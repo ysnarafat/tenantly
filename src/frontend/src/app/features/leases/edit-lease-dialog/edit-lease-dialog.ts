@@ -157,7 +157,7 @@ export class EditLeaseDialog {
         this.submitLoading = false;
       },
       error: (error) => {
-        notifyError(this.snackBar, error.error?.message || 'Failed to update lease');
+        notifyError(this.snackBar, error.error?.error || error.message || 'Failed to update lease');
         this.submitLoading = false;
       },
     });

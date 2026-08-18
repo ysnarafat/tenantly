@@ -213,17 +213,41 @@
       "START_DATE": "Start Date",
       "DURATION_MONTHS": "Duration (Months)",
       "MONTHLY_RENT": "Monthly Rent (BDT)",
-      "SECURITY_DEPOSIT": "Security Deposit (BDT) - Optional"
+      "SECURITY_DEPOSIT": "Security Deposit (BDT) - Optional",
+      "TENANT_SEARCH_PLACEHOLDER": "Search by name, phone, or email"
     },
     "ERRORS": {
-      "NO_PHONE": "No phone"
+      "NO_PHONE": "No phone",
+      "REQUIRED": "This field is required",
+      "MIN_VALUE": "Value must be positive",
+      "MAX_VALUE": "Value is too large",
+      "NOT_INTEGER": "Must be a whole number",
+      "FORM_INVALID": "Please fill all required fields",
+      "LOAD_PROPERTIES": "Error loading properties",
+      "LOAD_TENANTS": "Error loading tenants",
+      "LOAD_BUILDINGS": "Error loading buildings",
+      "LOAD_UNITS": "Error loading units",
+      "CREATE_FAILED": "Failed to create lease",
+      "NO_TENANTS_FOUND": "No matching tenants found",
+      "NO_PROPERTIES": "No active properties found",
+      "NO_BUILDINGS": "No buildings found for this property",
+      "NO_UNITS": "No available units in this building"
     },
     "INFO": {
-      "END_DATE": "End Date:"
+      "END_DATE": "End Date:",
+      "LOADING_BUILDINGS": "Loading buildings...",
+      "LOADING_UNITS": "Loading units..."
     },
     "BUTTONS": {
       "CREATE": "Create Lease",
       "CREATING": "Creating..."
+    },
+    "LEASE_TYPES": {
+      "RESIDENTIAL": "Residential",
+      "COMMERCIAL": "Commercial"
+    },
+    "SUCCESS": {
+      "CREATED": "Lease created successfully"
     }
   },
   "EDIT_LEASE_DIALOG": {

@@ -213,17 +213,41 @@
       "START_DATE": "শুরু তারিখ",
       "DURATION_MONTHS": "মেয়াদ (মাস)",
       "MONTHLY_RENT": "মাসিক ভাড়া (টাকা)",
-      "SECURITY_DEPOSIT": "নিরাপত্তা জমা (টাকা) - ঐচ্ছিক"
+      "SECURITY_DEPOSIT": "নিরাপত্তা জমা (টাকা) - ঐচ্ছিক",
+      "TENANT_SEARCH_PLACEHOLDER": "নাম, ফোন বা ইমেইল দিয়ে খুঁজুন"
     },
     "ERRORS": {
-      "NO_PHONE": "ফোন নেই"
+      "NO_PHONE": "ফোন নেই",
+      "REQUIRED": "এই ফিল্ডটি আবশ্যক",
+      "MIN_VALUE": "মান অবশ্যই ধনাত্মক হতে হবে",
+      "MAX_VALUE": "মান অনেক বেশি",
+      "NOT_INTEGER": "একটি পূর্ণ সংখ্যা হতে হবে",
+      "FORM_INVALID": "অনুগ্রহ করে সব আবশ্যক ফিল্ড পূরণ করুন",
+      "LOAD_PROPERTIES": "সম্পত্তি লোড করতে সমস্যা হয়েছে",
+      "LOAD_TENANTS": "ভাড়াটে লোড করতে সমস্যা হয়েছে",
+      "LOAD_BUILDINGS": "ভবন লোড করতে সমস্যা হয়েছে",
+      "LOAD_UNITS": "ইউনিট লোড করতে সমস্যা হয়েছে",
+      "CREATE_FAILED": "লীজ তৈরি করা যায়নি",
+      "NO_TENANTS_FOUND": "কোনো মিলিত ভাড়াটে পাওয়া যায়নি",
+      "NO_PROPERTIES": "কোনো সক্রিয় সম্পত্তি পাওয়া যায়নি",
+      "NO_BUILDINGS": "এই সম্পত্তিতে কোনো ভবন পাওয়া যায়নি",
+      "NO_UNITS": "এই ভবনে কোনো খালি ইউনিট পাওয়া যায়নি"
     },
     "INFO": {
-      "END_DATE": "শেষ তারিখ:"
+      "END_DATE": "শেষ তারিখ:",
+      "LOADING_BUILDINGS": "ভবন লোড হচ্ছে...",
+      "LOADING_UNITS": "ইউনিট লোড হচ্ছে..."
     },
     "BUTTONS": {
       "CREATE": "লীজ তৈরি করুন",
       "CREATING": "তৈরি হচ্ছে..."
+    },
+    "LEASE_TYPES": {
+      "RESIDENTIAL": "আবাসিক",
+      "COMMERCIAL": "বাণিজ্যিক"
+    },
+    "SUCCESS": {
+      "CREATED": "লীজ সফলভাবে তৈরি হয়েছে"
     }
   },
   "EDIT_LEASE_DIALOG": {
