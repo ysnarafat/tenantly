@@ -4,40 +4,27 @@ using TenantlyNotificationService.Models.Interfaces;
 
 namespace TenantlyNotificationService.Models.Entities;
 
-[Table("shops")]
-public class Shop : IAuditableEntity
+[Table("units")]
+public class Unit : IAuditableEntity
 {
     [Key]
     [Column("id")]
     public int Id { get; set; }
 
     [Required]
-    [MaxLength(100)]
-    [Column("name")]
-    public string Name { get; set; } = string.Empty;
-
-    [Required]
-    [MaxLength(20)]
-    [Column("shop_number")]
-    public string ShopNumber { get; set; } = string.Empty;
-
-    [MaxLength(10)]
-    [Column("floor")]
-    public string? Floor { get; set; }
-
     [MaxLength(50)]
-    [Column("section")]
-    public string? Section { get; set; }
+    [Column("unit_number")]
+    public string UnitNumber { get; set; } = string.Empty;
 
-    [Required]
-    [Column("monthly_rent", TypeName = "decimal(10,2)")]
-    public decimal MonthlyRent { get; set; }
+    [MaxLength(100)]
+    [Column("unit_name")]
+    public string? UnitName { get; set; }
+
+    [Column("property_id")]
+    public int PropertyId { get; set; }
 
     [Column("active")]
     public bool Active { get; set; } = true;
-
-    [Column("property_id")]
-    public int PropertyId { get; set; } = 1;
 
     [Column("created_at")]
     public DateTime CreatedAt { get; set; }
@@ -48,9 +35,8 @@ public class Shop : IAuditableEntity
     // Navigation properties
     [ForeignKey("PropertyId")]
     public virtual Property Property { get; set; } = null!;
-    
+
     public virtual ICollection<Lease> Leases { get; set; } = new List<Lease>();
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
     public virtual ICollection<NotificationQueue> Notifications { get; set; } = new List<NotificationQueue>();
-    public virtual ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
 }

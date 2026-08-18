@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using TenantlyNotificationService.Configuration;
 using TenantlyNotificationService.Data;
 using TenantlyNotificationService.Models;
 using TenantlyNotificationService.Models.Enums;
@@ -8,11 +10,13 @@ namespace TenantlyNotificationService.Services;
 public class DatabaseService : IDatabaseService
 {
     private readonly TenantlyDbContext _context;
+    private readonly NotificationSettings _settings;
     private readonly ILogger<DatabaseService> _logger;
 
-    public DatabaseService(TenantlyDbContext context, ILogger<DatabaseService> logger)
+    public DatabaseService(TenantlyDbContext context, IOptions<NotificationSettings> settings, ILogger<DatabaseService> logger)
     {
         _context = context;
+        _settings = settings.Value;
         _logger = logger;
     }
 
@@ -21,7 +25,7 @@ public class DatabaseService : IDatabaseService
         try
         {
             return await _context.NotificationQueue
-                .Where(n => n.Status == NotificationStatus.Pending.ToString() && n.RetryCount < 3)
+                .Where(n => n.Status == NotificationStatus.Pending.ToString() && n.RetryCount < _settings.MaxRetryAttempts)
                 .OrderBy(n => n.CreatedAt)
                 .ToListAsync();
         }
@@ -45,6 +49,13 @@ public class DatabaseService : IDatabaseService
                 notification.UpdatedAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
+
+                if (status == NotificationStatus.Failed && notification.RetryCount >= _settings.MaxRetryAttempts)
+                {
+                    _logger.LogWarning(
+                        "Notification {NotificationId} exhausted retry attempts ({RetryCount}) and will not be retried again. Last error: {ErrorMessage}",
+                        notificationId, notification.RetryCount, errorMessage);
+                }
             }
         }
         catch (Exception ex)
@@ -61,25 +72,25 @@ public class DatabaseService : IDatabaseService
             var oneDayAgo = DateTime.UtcNow.AddDays(-1);
 
             var overduePayments = await _context.Payments
-                .Include(p => p.Shop)
+                .Include(p => p.Unit)
                 .Include(p => p.Tenant)
-                .Where(p => p.Status == PaymentStatus.Due && 
-                           p.DueDate.HasValue && 
+                .Where(p => p.Status == PaymentStatus.Due &&
+                           p.DueDate.HasValue &&
                            p.DueDate < cutoffDate)
                 .Where(p => !_context.NotificationQueue
-                    .Any(nq => nq.TenantId == p.TenantId && 
-                              nq.ShopId == p.ShopId && 
-                              nq.NotificationType == "Reminder" && 
+                    .Any(nq => nq.TenantId == p.TenantId &&
+                              nq.UnitId == p.UnitId &&
+                              nq.NotificationType == "Reminder" &&
                               nq.CreatedAt > oneDayAgo))
                 .Select(p => new OverduePayment
                 {
                     Id = p.Id,
-                    ShopId = p.ShopId,
+                    UnitId = p.UnitId,
                     TenantId = p.TenantId,
                     Month = p.Month,
                     Year = p.Year,
                     AmountDue = p.AmountDue,
-                    ShopName = p.Shop.Name,
+                    UnitName = p.Unit.UnitName ?? p.Unit.UnitNumber,
                     TenantName = p.Tenant.Name,
                     PhoneNumber = p.Tenant.PhoneNumber
                 })
@@ -94,7 +105,7 @@ public class DatabaseService : IDatabaseService
         }
     }
 
-    public async Task CreateReminderNotificationAsync(int tenantId, int shopId, string message, NotificationType type)
+    public async Task CreateReminderNotificationAsync(int tenantId, int unitId, string message, NotificationType type)
     {
         try
         {
@@ -113,7 +124,7 @@ public class DatabaseService : IDatabaseService
             var notification = new NotificationQueue
             {
                 TenantId = tenantId,
-                ShopId = shopId,
+                UnitId = unitId,
                 Message = message,
                 NotificationType = type.ToString(),
                 Recipient = recipient,

@@ -1,6 +1,7 @@
-using Microsoft.Extensions.Options;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using Microsoft.Extensions.Options;
 using TenantlyNotificationService.Configuration;
 
 namespace TenantlyNotificationService.Services;
@@ -10,6 +11,7 @@ public class SmsService : ISmsService
     private readonly NotificationSettings _settings;
     private readonly HttpClient _httpClient;
     private readonly ILogger<SmsService> _logger;
+    private bool _missingCredentialsWarningLogged;
 
     public SmsService(IOptions<NotificationSettings> settings, HttpClient httpClient, ILogger<SmsService> logger)
     {
@@ -20,18 +22,47 @@ public class SmsService : ISmsService
 
     public async Task<bool> SendSmsAsync(string phoneNumber, string message)
     {
+        var sms = _settings.Sms;
+
+        if (string.IsNullOrEmpty(sms.ApiKey))
+        {
+            if (!_missingCredentialsWarningLogged)
+            {
+                _logger.LogWarning("SMS ApiKey is not configured; SMS sending is disabled until Notifications:Sms:ApiKey is set");
+                _missingCredentialsWarningLogged = true;
+            }
+            return false;
+        }
+
         try
         {
-            // Placeholder implementation for SMS sending
-            // This will be implemented with actual SMS provider integration in later tasks
-            
-            _logger.LogInformation("Sending SMS to {PhoneNumber}: {Message}", phoneNumber, message);
-            
-            // Simulate SMS sending delay
-            await Task.Delay(1000);
-            
-            // For now, return true to simulate successful sending
-            // In actual implementation, this will integrate with Bangladesh SMS providers like SSL Wireless
+            var payload = new SslWirelessSendSmsRequest
+            {
+                ApiToken = sms.ApiKey,
+                Sid = sms.SenderId,
+                Msisdn = phoneNumber,
+                Sms = message,
+                CsmsId = Guid.NewGuid().ToString("N"),
+            };
+
+            using var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+            using var response = await _httpClient.PostAsync(sms.ApiUrl, content);
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("SMS provider returned HTTP {StatusCode} for {PhoneNumber}: {Body}", (int)response.StatusCode, phoneNumber, responseBody);
+                return false;
+            }
+
+            var result = JsonSerializer.Deserialize<SslWirelessSendSmsResponse>(responseBody, JsonOptions);
+            if (result == null || !string.Equals(result.Status, "SUCCESS", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogError("SMS delivery failed for {PhoneNumber}: {Body}", phoneNumber, responseBody);
+                return false;
+            }
+
+            _logger.LogInformation("SMS sent to {PhoneNumber}", phoneNumber);
             return true;
         }
         catch (Exception ex)
@@ -39,5 +70,40 @@ public class SmsService : ISmsService
             _logger.LogError(ex, "Error sending SMS to {PhoneNumber}", phoneNumber);
             return false;
         }
+    }
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
+
+    private class SslWirelessSendSmsRequest
+    {
+        [JsonPropertyName("api_token")]
+        public string ApiToken { get; set; } = string.Empty;
+
+        [JsonPropertyName("sid")]
+        public string Sid { get; set; } = string.Empty;
+
+        [JsonPropertyName("msisdn")]
+        public string Msisdn { get; set; } = string.Empty;
+
+        [JsonPropertyName("sms")]
+        public string Sms { get; set; } = string.Empty;
+
+        [JsonPropertyName("csms_id")]
+        public string CsmsId { get; set; } = string.Empty;
+    }
+
+    private class SslWirelessSendSmsResponse
+    {
+        [JsonPropertyName("status")]
+        public string? Status { get; set; }
+
+        [JsonPropertyName("status_code")]
+        public int? StatusCode { get; set; }
+
+        [JsonPropertyName("error_message")]
+        public string? ErrorMessage { get; set; }
     }
 }

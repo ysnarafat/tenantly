@@ -31,7 +31,7 @@ public class AuditInterceptor : SaveChangesInterceptor
 
         var utcNow = DateTime.UtcNow;
         var changedEntries = 0;
-        
+
         var entries = context.ChangeTracker.Entries<IAuditableEntity>()
             .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified)
             .ToList();
@@ -39,7 +39,7 @@ public class AuditInterceptor : SaveChangesInterceptor
         foreach (var entry in entries)
         {
             var entityName = entry.Entity.GetType().Name;
-            
+
             // Handle CreatedAt for new entities
             if (entry.State == EntityState.Added)
             {
@@ -56,7 +56,7 @@ public class AuditInterceptor : SaveChangesInterceptor
                 _logger?.LogDebug("Updating timestamp for modified {EntityName}", entityName);
             }
         }
-        
+
         if (changedEntries > 0)
         {
             _logger?.LogDebug("Updated timestamps for {Count} entities", changedEntries);
