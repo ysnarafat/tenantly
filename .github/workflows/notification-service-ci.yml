@@ -52,6 +52,15 @@ jobs:
         working-directory: src/backend/notification-service
         run: dotnet build TenantlyNotificationService.sln --no-restore
 
+      - name: Check for vulnerable NuGet packages
+        working-directory: src/backend/notification-service
+        run: |
+          dotnet list TenantlyNotificationService.sln package --vulnerable --include-transitive 2>&1 | tee vuln-output.txt
+          if grep -q "has the following vulnerable packages" vuln-output.txt; then
+            echo "Vulnerable NuGet packages found."
+            exit 1
+          fi
+
       - name: Run tests
         working-directory: src/backend/notification-service
         run: dotnet test TenantlyNotificationService.sln --no-build --verbosity normal
