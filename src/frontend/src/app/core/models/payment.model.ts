@@ -46,13 +46,15 @@ export interface CreatePaymentRequest {
   due_date?: string;
 }
 
+// status and receipt_number are intentionally absent — the backend always
+// derives status from amount_paid vs amount_due and server-generates the
+// receipt number (see PaymentService.UpdatePayment), so the UI never sets
+// either directly.
 export interface UpdatePaymentRequest {
   amount_paid?: number;
-  status?: PaymentStatus;
   payment_method?: string;
   payment_date?: string;
   notes?: string;
-  receipt_number?: string;
 }
 
 export interface PaymentListResponse {

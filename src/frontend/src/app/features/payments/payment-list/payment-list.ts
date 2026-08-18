@@ -922,20 +922,21 @@ export class GeneratePaymentsDialog {
         <span
           >Paid: <strong>৳{{ data.amount_paid | number: '1.2-2' }}</strong></span
         >
+        &nbsp;&nbsp;
+        <span
+          >Status:
+          <span class="inline-badge" [class]="'status-' + computedStatus().toLowerCase()">{{
+            computedStatus()
+          }}</span></span
+        >
       </div>
+      <p class="status-note">
+        Status is calculated automatically from the amount paid — it can't be set directly.
+      </p>
       <form [formGroup]="form" class="dialog-form">
         <mat-form-field appearance="outline">
           <mat-label>Amount Paid (BDT)</mat-label>
           <input matInput type="number" formControlName="amount_paid" step="0.01" />
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Status</mat-label>
-          <mat-select formControlName="status">
-            <mat-option value="Due">Due</mat-option>
-            <mat-option value="Partial">Partial</mat-option>
-            <mat-option value="Paid">Paid</mat-option>
-            <mat-option value="Overdue">Overdue</mat-option>
-          </mat-select>
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Payment Method</mat-label>
@@ -952,13 +953,16 @@ export class GeneratePaymentsDialog {
           <input matInput type="date" formControlName="payment_date" />
         </mat-form-field>
         <mat-form-field appearance="outline">
-          <mat-label>Receipt Number</mat-label>
-          <input matInput formControlName="receipt_number" />
-        </mat-form-field>
-        <mat-form-field appearance="outline">
           <mat-label>Notes</mat-label>
           <textarea matInput formControlName="notes" rows="3"></textarea>
         </mat-form-field>
+        <p class="receipt-note">
+          @if (data.receipt_number) {
+            Receipt No: <strong>{{ data.receipt_number }}</strong>
+          } @else {
+            A receipt number will be generated automatically once this payment is paid.
+          }
+        </p>
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
@@ -985,9 +989,48 @@ export class GeneratePaymentsDialog {
       .amount-info {
         font-size: 14px;
         margin-bottom: 12px;
+        display: flex;
+        align-items: center;
       }
       .info-label {
         font-weight: 500;
+      }
+      .status-note {
+        font-size: 12px;
+        color: var(--text-secondary, #666);
+        margin: 0 0 12px;
+      }
+      .receipt-note {
+        font-size: 12px;
+        color: var(--text-secondary, #666);
+        margin: 4px 0 0;
+      }
+      .inline-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+        margin-left: 4px;
+
+        &.status-paid {
+          background: rgba(76, 175, 80, 0.12);
+          color: var(--color-paid, #4caf50);
+        }
+        &.status-due {
+          background: rgba(144, 164, 174, 0.12);
+          color: var(--color-due, #90a4ae);
+        }
+        &.status-partial {
+          background: rgba(255, 152, 0, 0.12);
+          color: var(--color-pending, #ff9800);
+        }
+        &.status-overdue {
+          background: rgba(244, 67, 54, 0.12);
+          color: var(--color-overdue, #f44336);
+        }
       }
     `,
   ],
@@ -999,21 +1042,35 @@ export class PaymentUpdateDialog {
 
   form: FormGroup = this.fb.group({
     amount_paid: [this.data.amount_paid, [Validators.min(0)]],
-    status: [this.data.status],
     payment_method: [this.data.payment_method ?? ''],
     payment_date: [this.data.payment_date ? this.data.payment_date.slice(0, 10) : ''],
-    receipt_number: [this.data.receipt_number ?? ''],
     notes: [this.data.notes ?? ''],
   });
+
+  // Mirrors the backend's derivation (PaymentRepository.Update/Create) so the
+  // dialog previews the status the server will actually compute, instead of
+  // letting the user pick one that might not match.
+  computedStatus(): PaymentStatus {
+    const amountPaid = Number(this.form.get('amount_paid')?.value) || 0;
+    const amountDue = this.data.amount_due;
+    if (amountDue > 0 && amountPaid >= amountDue) return 'Paid';
+    if (amountPaid > 0) return 'Partial';
+    if (this.data.due_date && new Date(this.data.due_date) < this.todayMidnight()) return 'Overdue';
+    return 'Due';
+  }
+
+  private todayMidnight(): Date {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
 
   submit(): void {
     const raw = this.form.value;
     const req: UpdatePaymentRequest = {};
     if (raw.amount_paid !== null && raw.amount_paid !== '') req.amount_paid = +raw.amount_paid;
-    if (raw.status) req.status = raw.status;
     if (raw.payment_method) req.payment_method = raw.payment_method;
     if (raw.payment_date) req.payment_date = raw.payment_date;
-    if (raw.receipt_number) req.receipt_number = raw.receipt_number;
     if (raw.notes) req.notes = raw.notes;
     this.dialogRef.close(req);
   }

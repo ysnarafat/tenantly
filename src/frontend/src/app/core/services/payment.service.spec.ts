@@ -70,10 +70,8 @@ describe('PaymentService', () => {
 
   const mockUpdateRequest: UpdatePaymentRequest = {
     amount_paid: 15000,
-    status: 'Paid',
     payment_method: 'Cash',
     payment_date: '2026-05-10',
-    receipt_number: 'RCP-002',
     notes: 'Paid in full',
   };
 
@@ -291,14 +289,14 @@ describe('PaymentService', () => {
       req.flush(updatedPayment);
     });
 
-    it('should support partial updates (only status)', () => {
-      const partialUpdate: UpdatePaymentRequest = { status: 'Overdue' };
+    it('should support partial updates (only notes)', () => {
+      const partialUpdate: UpdatePaymentRequest = { notes: 'Tenant requested a delay' };
 
       service.updatePayment(5, partialUpdate).subscribe();
 
       const req = httpMock.expectOne(`${apiUrl}/5`);
-      expect(req.request.body).toEqual({ status: 'Overdue' });
-      req.flush({ ...mockPayment, status: 'Overdue' });
+      expect(req.request.body).toEqual({ notes: 'Tenant requested a delay' });
+      req.flush({ ...mockPayment, notes: 'Tenant requested a delay' });
     });
 
     it('should emit a 404 error when the payment does not exist', () => {
