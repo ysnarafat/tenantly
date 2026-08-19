@@ -15,7 +15,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { TranslateModule } from '@ngx-translate/core';
-import { Unit, UnitType, Building, Property } from '../../../core/models';
+import { Unit, UnitType, Building, Property, LeaseType } from '../../../core/models';
 import { getUnitTypesForBuilding, getUnitTypeIcon } from '../unit-type.utils';
 
 export interface UnitFormDialogData {
@@ -50,6 +50,8 @@ export class UnitFormDialogComponent implements OnInit {
   unitForm!: FormGroup;
   allowedUnitTypes: UnitType[] = [];
 
+  readonly leaseTypes: LeaseType[] = ['Residential', 'Commercial'];
+
   ngOnInit() {
     this.updateAllowedUnitTypes();
     this.initializeForm();
@@ -74,11 +76,40 @@ export class UnitFormDialogComponent implements OnInit {
       ],
       floor: [unit?.floor || null, [Validators.min(0), Validators.max(200)]],
       section: [unit?.section || '', [Validators.maxLength(50)]],
+
+      // Lease defaults — optional. They only pre-fill the lease form later, so
+      // an empty value here is a normal state, never a validation failure.
+      default_lease_type: [unit?.default_lease_type ?? this.suggestedLeaseType()],
+      default_monthly_rent: [unit?.default_monthly_rent ?? null, [Validators.min(0)]],
+      default_security_deposit: [unit?.default_security_deposit ?? null, [Validators.min(0)]],
+      // Capped at 60 months to match what the lease form accepts, so a stored
+      // default is always usable there. The DB and API allow a wider range as an
+      // outer sanity bound.
+      default_duration_months: [
+        unit?.default_duration_months ?? null,
+        [Validators.min(1), Validators.max(60)],
+      ],
     });
 
     // Disable unit_number in edit mode (it's the identifier)
     if (this.data.mode === 'edit') {
       this.unitForm.get('unit_number')?.disable();
+    }
+  }
+
+  /**
+   * Residential buildings hold residential tenancies and commercial ones hold
+   * commercial tenancies, so seed the default from the building rather than
+   * making the user pick the obvious answer. Mixed buildings get no guess.
+   */
+  private suggestedLeaseType(): LeaseType | null {
+    switch (this.data.building.building_type) {
+      case 'Residential':
+        return 'Residential';
+      case 'Commercial':
+        return 'Commercial';
+      default:
+        return null;
     }
   }
 
@@ -92,7 +123,7 @@ export class UnitFormDialogComponent implements OnInit {
 
   onSubmit() {
     if (this.unitForm.valid) {
-      const formValue = this.unitForm.getRawValue();
+      const formValue = this.stripEmptyLeaseDefaults(this.unitForm.getRawValue());
 
       // Remove unit_number from updates (it's immutable)
       if (this.data.mode === 'edit') {
@@ -113,6 +144,27 @@ export class UnitFormDialogComponent implements OnInit {
         this.unitForm.get(key)?.markAsTouched();
       });
     }
+  }
+
+  /**
+   * Drops blank lease defaults from the payload. The API binds them as optional
+   * pointers, so an omitted key means "no default"; sending an empty string or
+   * null instead trips the oneof/gte validators.
+   */
+  private stripEmptyLeaseDefaults(formValue: Record<string, unknown>): Record<string, unknown> {
+    const leaseDefaultKeys = [
+      'default_lease_type',
+      'default_monthly_rent',
+      'default_security_deposit',
+      'default_duration_months',
+    ];
+    const cleaned = { ...formValue };
+    for (const key of leaseDefaultKeys) {
+      if (cleaned[key] === null || cleaned[key] === '' || cleaned[key] === undefined) {
+        delete cleaned[key];
+      }
+    }
+    return cleaned;
   }
 
   onCancel() {
@@ -152,6 +204,9 @@ export class UnitFormDialogComponent implements OnInit {
       unit_type: 'Unit Type',
       floor: 'Floor',
       section: 'Section',
+      default_monthly_rent: 'Default Monthly Rent',
+      default_security_deposit: 'Default Security Deposit',
+      default_duration_months: 'Default Lease Duration',
     };
     return labels[fieldName] || fieldName;
   }

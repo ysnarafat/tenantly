@@ -111,6 +111,32 @@ type RenewLeaseRequest struct {
 	CarryForwardCharges *bool `json:"carry_forward_charges"`
 }
 
+// ReplaceTenantRequest describes a tenant turnover on an existing lease. The
+// outgoing lease is closed at HandoverDate and a successor lease for
+// NewTenantID opens on the same unit the same day, both in one transaction.
+//
+// Turnover is deliberately modelled as terminate-then-create rather than
+// reassigning tenant_id in place: payments reference tenant_id directly, so
+// mutating it would retroactively reattribute the outgoing tenant's payment
+// history to the incoming one.
+//
+// Term fields are optional — omit one to carry it over from the outgoing lease.
+type ReplaceTenantRequest struct {
+	NewTenantID     int        `json:"new_tenant_id" binding:"required"`
+	HandoverDate    string     `json:"handover_date" binding:"required"`
+	LeaseType       *LeaseType `json:"lease_type" binding:"omitempty,oneof=Residential Commercial"`
+	DurationMonths  *int       `json:"duration_months" binding:"omitempty,min=1,max=600"`
+	MonthlyRent     *float64   `json:"monthly_rent" binding:"omitempty,gt=0"`
+	SecurityDeposit *float64   `json:"security_deposit" binding:"omitempty,gte=0"`
+}
+
+// ReplaceTenantResponse returns both sides of a completed turnover so the
+// caller can show what was closed and what was opened.
+type ReplaceTenantResponse struct {
+	PreviousLease *LeaseWithDetails `json:"previous_lease"`
+	NewLease      *LeaseWithDetails `json:"new_lease"`
+}
+
 type LeaseWithDetails struct {
 	Lease
 	BuildingID    int            `json:"building_id" db:"building_id"`

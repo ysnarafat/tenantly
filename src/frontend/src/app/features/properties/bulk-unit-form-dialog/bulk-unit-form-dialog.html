@@ -105,6 +105,47 @@
         <input matInput formControlName="section" maxlength="50" />
         <mat-icon matPrefix>view_module</mat-icon>
       </mat-form-field>
+
+      <div class="shared-subhead">
+        <mat-icon>request_quote</mat-icon>
+        <div>
+          <h4>{{ 'BULK_UNIT_FORM_DIALOG.LEASE_DEFAULTS.TITLE' | translate }}</h4>
+          <p>{{ 'BULK_UNIT_FORM_DIALOG.LEASE_DEFAULTS.HINT' | translate }}</p>
+        </div>
+      </div>
+
+      <mat-form-field appearance="outline" class="rent-field">
+        <mat-label>{{ 'BULK_UNIT_FORM_DIALOG.LEASE_DEFAULTS.MONTHLY_RENT' | translate }}</mat-label>
+        <input matInput type="number" min="0" formControlName="default_monthly_rent" />
+        <mat-icon matPrefix>payments</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="deposit-field">
+        <mat-label
+          >{{ 'BULK_UNIT_FORM_DIALOG.LEASE_DEFAULTS.SECURITY_DEPOSIT' | translate }}</mat-label
+        >
+        <input matInput type="number" min="0" formControlName="default_security_deposit" />
+        <mat-icon matPrefix>savings</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="lease-type-field">
+        <mat-label>{{ 'BULK_UNIT_FORM_DIALOG.LEASE_DEFAULTS.LEASE_TYPE' | translate }}</mat-label>
+        <mat-select formControlName="default_lease_type">
+          <mat-option [value]="null">{{ 'COMMON.LABELS.NONE' | translate }}</mat-option>
+          @for (type of leaseTypes; track type) {
+          <mat-option [value]="type">{{ type }}</mat-option>
+          }
+        </mat-select>
+        <mat-icon matPrefix>description</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="duration-field">
+        <mat-label
+          >{{ 'BULK_UNIT_FORM_DIALOG.LEASE_DEFAULTS.DURATION_MONTHS' | translate }}</mat-label
+        >
+        <input matInput type="number" min="1" max="60" formControlName="default_duration_months" />
+        <mat-icon matPrefix>event_repeat</mat-icon>
+      </mat-form-field>
     </form>
   </section>
 

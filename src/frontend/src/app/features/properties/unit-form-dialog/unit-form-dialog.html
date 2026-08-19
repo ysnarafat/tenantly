@@ -79,6 +79,63 @@
         <mat-error>{{ getErrorMessage('section') }}</mat-error>
       </mat-form-field>
     </div>
+
+    <!-- Lease defaults: the terms a future lease on this unit starts from.
+         Entirely optional — they pre-fill the lease form, they do not create
+         a tenancy. -->
+    <section class="lease-defaults">
+      <header class="section-header">
+        <mat-icon>request_quote</mat-icon>
+        <div>
+          <h3>{{ 'UNIT_FORM_DIALOG.LEASE_DEFAULTS.TITLE' | translate }}</h3>
+          <p>{{ 'UNIT_FORM_DIALOG.LEASE_DEFAULTS.HINT' | translate }}</p>
+        </div>
+      </header>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>{{ 'UNIT_FORM_DIALOG.LEASE_DEFAULTS.MONTHLY_RENT' | translate }}</mat-label>
+          <input matInput type="number" min="0" formControlName="default_monthly_rent" />
+          <mat-icon matPrefix>payments</mat-icon>
+          <mat-error>{{ getErrorMessage('default_monthly_rent') }}</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label
+            >{{ 'UNIT_FORM_DIALOG.LEASE_DEFAULTS.SECURITY_DEPOSIT' | translate }}</mat-label
+          >
+          <input matInput type="number" min="0" formControlName="default_security_deposit" />
+          <mat-icon matPrefix>savings</mat-icon>
+          <mat-error>{{ getErrorMessage('default_security_deposit') }}</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>{{ 'UNIT_FORM_DIALOG.LEASE_DEFAULTS.LEASE_TYPE' | translate }}</mat-label>
+          <mat-select formControlName="default_lease_type">
+            <mat-option [value]="null">{{ 'COMMON.LABELS.NONE' | translate }}</mat-option>
+            @for (type of leaseTypes; track type) {
+            <mat-option [value]="type">{{ type }}</mat-option>
+            }
+          </mat-select>
+          <mat-icon matPrefix>description</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>{{ 'UNIT_FORM_DIALOG.LEASE_DEFAULTS.DURATION_MONTHS' | translate }}</mat-label>
+          <input
+            matInput
+            type="number"
+            min="1"
+            max="60"
+            formControlName="default_duration_months"
+          />
+          <mat-icon matPrefix>event_repeat</mat-icon>
+          <mat-error>{{ getErrorMessage('default_duration_months') }}</mat-error>
+        </mat-form-field>
+      </div>
+    </section>
   </form>
 </mat-dialog-content>
 

@@ -27,6 +27,7 @@ import {
   Building,
   Property,
   UnitType,
+  LeaseType,
   BulkCreateUnitItem,
   BulkCreateUnitsRequest,
 } from '../../../core/models';
@@ -91,6 +92,8 @@ export class BulkUnitFormDialogComponent implements OnInit {
   commonForm!: FormGroup;
   allowedUnitTypes: UnitType[] = [];
 
+  readonly leaseTypes: LeaseType[] = ['Residential', 'Commercial'];
+
   // Generator inputs are plain fields rather than a FormGroup — they drive
   // nothing but a preview and one button, and the template re-reads them on
   // every change-detection pass anyway.
@@ -148,7 +151,34 @@ export class BulkUnitFormDialogComponent implements OnInit {
       unit_type: [this.allowedUnitTypes[0] ?? '', [Validators.required]],
       floor: [null, [Validators.min(0), Validators.max(200)]],
       section: ['', [Validators.maxLength(50)]],
+
+      // Lease defaults apply to every unit in the batch — entering rent once
+      // here is the whole point, versus retyping it per lease later. Optional:
+      // blank means the units carry no defaults.
+      default_lease_type: [this.suggestedLeaseType()],
+      default_monthly_rent: [null, [Validators.min(0)]],
+      default_security_deposit: [null, [Validators.min(0)]],
+      // Capped at 60 months to match what the lease form accepts, so a stored
+      // default is always usable there. The DB and API allow a wider range as an
+      // outer sanity bound.
+      default_duration_months: [null, [Validators.min(1), Validators.max(60)]],
     });
+  }
+
+  /**
+   * Residential buildings hold residential tenancies and commercial ones hold
+   * commercial tenancies, so seed the default from the building rather than
+   * making the user pick the obvious answer. Mixed buildings get no guess.
+   */
+  private suggestedLeaseType(): LeaseType | null {
+    switch (this.data.building.building_type) {
+      case 'Residential':
+        return 'Residential';
+      case 'Commercial':
+        return 'Commercial';
+      default:
+        return null;
+    }
   }
 
   // A plain method (not computed()) — commonForm.valid isn't a signal, so a
@@ -326,6 +356,12 @@ export class BulkUnitFormDialogComponent implements OnInit {
         unit_type: common.unit_type,
         floor: common.floor ?? undefined,
         section: common.section || undefined,
+        // undefined (not null) so blank defaults are omitted from the JSON —
+        // the API binds them as optional and rejects explicit nulls.
+        default_lease_type: common.default_lease_type || undefined,
+        default_monthly_rent: common.default_monthly_rent ?? undefined,
+        default_security_deposit: common.default_security_deposit ?? undefined,
+        default_duration_months: common.default_duration_months ?? undefined,
       }));
 
     const request: BulkCreateUnitsRequest = { units };

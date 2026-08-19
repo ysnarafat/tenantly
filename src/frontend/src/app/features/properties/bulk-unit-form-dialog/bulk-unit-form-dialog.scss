@@ -231,6 +231,46 @@ mat-option {
     flex: 1;
     min-width: 120px;
   }
+
+  .rent-field,
+  .deposit-field,
+  .lease-type-field,
+  .duration-field {
+    flex: 1;
+    min-width: 150px;
+  }
+
+  // Forces a line break inside the wrapping flex row so the lease-default
+  // fields always start on their own line under this heading.
+  .shared-subhead {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    margin: 4px 0 -4px;
+
+    mat-icon {
+      color: var(--color-primary);
+      flex-shrink: 0;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    h4 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    p {
+      margin: 2px 0 0;
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--text-hint);
+    }
+  }
 }
 
 // ── Unit rows ─────────────────────────────────────────────────────────────────

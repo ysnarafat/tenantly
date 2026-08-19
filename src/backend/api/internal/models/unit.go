@@ -52,8 +52,18 @@ type Unit struct {
 	UnitType       UnitType     `json:"unit_type" db:"unit_type"`
 	Metadata       UnitMetadata `json:"metadata" db:"metadata"`
 	Active         bool         `json:"active" db:"active"`
-	CreatedAt      time.Time    `json:"created_at" db:"created_at"`
-	UpdatedAt      time.Time    `json:"updated_at" db:"updated_at"`
+
+	// Lease defaults — the proposed commercial terms for this unit, used to
+	// pre-fill the lease-creation form. They are NOT a tenancy: nothing is owed
+	// and no tenant is implied until a real row exists in `leases`. All
+	// optional; nil means "nothing to pre-fill".
+	DefaultLeaseType       *LeaseType `json:"default_lease_type" db:"default_lease_type"`
+	DefaultMonthlyRent     *float64   `json:"default_monthly_rent" db:"default_monthly_rent"`
+	DefaultSecurityDeposit *float64   `json:"default_security_deposit" db:"default_security_deposit"`
+	DefaultDurationMonths  *int       `json:"default_duration_months" db:"default_duration_months"`
+
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" db:"updated_at"`
 }
 
 // CreateUnitRequest represents the request to create a unit
@@ -66,6 +76,11 @@ type CreateUnitRequest struct {
 	Section    string       `json:"section" binding:"omitempty,max=50"`
 	UnitType   UnitType     `json:"unit_type" binding:"required,oneof=Shop Apartment Office Parking Storage Other"`
 	Metadata   UnitMetadata `json:"metadata" binding:"omitempty"`
+
+	DefaultLeaseType       *LeaseType `json:"default_lease_type" binding:"omitempty,oneof=Residential Commercial"`
+	DefaultMonthlyRent     *float64   `json:"default_monthly_rent" binding:"omitempty,gte=0"`
+	DefaultSecurityDeposit *float64   `json:"default_security_deposit" binding:"omitempty,gte=0"`
+	DefaultDurationMonths  *int       `json:"default_duration_months" binding:"omitempty,min=1,max=600"`
 }
 
 // BulkCreateUnitItem represents a single unit within a bulk-create request.
@@ -79,6 +94,11 @@ type BulkCreateUnitItem struct {
 	Section    string       `json:"section" binding:"omitempty,max=50"`
 	UnitType   UnitType     `json:"unit_type" binding:"required,oneof=Shop Apartment Office Parking Storage Other"`
 	Metadata   UnitMetadata `json:"metadata" binding:"omitempty"`
+
+	DefaultLeaseType       *LeaseType `json:"default_lease_type" binding:"omitempty,oneof=Residential Commercial"`
+	DefaultMonthlyRent     *float64   `json:"default_monthly_rent" binding:"omitempty,gte=0"`
+	DefaultSecurityDeposit *float64   `json:"default_security_deposit" binding:"omitempty,gte=0"`
+	DefaultDurationMonths  *int       `json:"default_duration_months" binding:"omitempty,min=1,max=600"`
 }
 
 // BulkCreateUnitsRequest represents the request to create multiple units under a single building
@@ -97,6 +117,11 @@ type UpdateUnitRequest struct {
 	UnitType *UnitType     `json:"unit_type" binding:"omitempty,oneof=Shop Apartment Office Parking Storage Other"`
 	Metadata *UnitMetadata `json:"metadata" binding:"omitempty"`
 	Active   *bool         `json:"active"`
+
+	DefaultLeaseType       *LeaseType `json:"default_lease_type" binding:"omitempty,oneof=Residential Commercial"`
+	DefaultMonthlyRent     *float64   `json:"default_monthly_rent" binding:"omitempty,gte=0"`
+	DefaultSecurityDeposit *float64   `json:"default_security_deposit" binding:"omitempty,gte=0"`
+	DefaultDurationMonths  *int       `json:"default_duration_months" binding:"omitempty,min=1,max=600"`
 }
 
 // UnitWithDetails includes unit with property and building information

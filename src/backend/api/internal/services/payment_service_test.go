@@ -493,6 +493,9 @@ func (m *MockLeaseRepo) SoftDelete(id int, endDate time.Time, reason models.Leas
 func (m *MockLeaseRepo) RenewLease(oldLeaseID int, req *models.RenewLeaseRequest) (*models.Lease, error) {
 	return nil, nil
 }
+func (m *MockLeaseRepo) ReplaceTenant(oldLeaseID int, handoverDate time.Time, successor *models.CreateLeaseRequest) (*models.Lease, error) {
+	return nil, nil
+}
 func (m *MockLeaseRepo) HasActiveLeaseOnUnit(unitID int, excludeLeaseID *int) (bool, error) {
 	return false, nil
 }

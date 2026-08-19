@@ -280,6 +280,33 @@ func (h *LeaseHandler) DeleteLeaseCharge(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Lease charge removed successfully"})
 }
 
+// ReplaceTenant handles tenant turnover on a unit: closes the current lease at
+// the handover date and opens a successor lease for the incoming tenant.
+func (h *LeaseHandler) ReplaceTenant(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid lease ID"})
+		return
+	}
+
+	var req models.ReplaceTenantRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request payload", err)
+		return
+	}
+
+	userID := c.GetInt("user_id")
+	orgID := c.GetInt("org_id")
+
+	result, err := h.leaseService.ReplaceTenant(id, &req, userID, orgID)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "REPLACE_TENANT_FAILED", "Failed to replace tenant", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+}
+
 // GetLeasesByUnit handles fetching leases by unit ID
 func (h *LeaseHandler) GetLeasesByUnit(c *gin.Context) {
 	unitID, err := strconv.Atoi(c.Param("unit_id"))

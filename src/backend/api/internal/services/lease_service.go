@@ -408,6 +408,118 @@ func (s *LeaseService) RenewLease(id int, req *models.RenewLeaseRequest, userID,
 	return leaseDetails, nil
 }
 
+// ReplaceTenant hands a unit over from its current tenant to a new one: the
+// outgoing lease is closed at the handover date and a successor lease opens the
+// same day, atomically.
+//
+// Terms omitted from req are carried over from the outgoing lease, so the common
+// case — same unit, same rent, new tenant — needs only a tenant and a date.
+func (s *LeaseService) ReplaceTenant(leaseID int, req *models.ReplaceTenantRequest, userID, orgID int) (*models.ReplaceTenantResponse, error) {
+	outgoing, err := s.leaseRepo.GetByID(leaseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get lease: %w", err)
+	}
+	if outgoing.OrganizationID != orgID {
+		return nil, fmt.Errorf("lease not found")
+	}
+	if !outgoing.Active {
+		return nil, fmt.Errorf("lease is not active")
+	}
+
+	handoverDate, err := time.Parse("2006-01-02", req.HandoverDate)
+	if err != nil {
+		return nil, fmt.Errorf("invalid handover date format: %w", err)
+	}
+	if handoverDate.Before(outgoing.StartDate) {
+		return nil, fmt.Errorf("handover date cannot be before the current lease start date")
+	}
+
+	if req.NewTenantID == outgoing.TenantID {
+		return nil, fmt.Errorf("incoming tenant is already the tenant on this lease")
+	}
+
+	// Org check on the incoming tenant — without it a caller could attach
+	// another organization's tenant to their own unit (IDOR).
+	tenant, err := s.tenantRepo.GetByID(req.NewTenantID)
+	if err != nil {
+		return nil, fmt.Errorf("tenant not found: %w", err)
+	}
+	if tenant.OrganizationID != orgID {
+		return nil, fmt.Errorf("tenant not found")
+	}
+	if !tenant.Active {
+		return nil, fmt.Errorf("cannot assign an inactive tenant")
+	}
+
+	hasActiveLease, err := s.leaseRepo.HasActiveLeaseForTenant(req.NewTenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check incoming tenant availability: %w", err)
+	}
+	if hasActiveLease {
+		return nil, fmt.Errorf("incoming tenant already has an active lease")
+	}
+
+	// Capture the outgoing lease's details before it is closed, so the response
+	// and the audit entry can describe what the turnover replaced.
+	previous, err := s.leaseRepo.GetByIDWithDetails(leaseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get outgoing lease details: %w", err)
+	}
+
+	successor := &models.CreateLeaseRequest{
+		UnitID:          outgoing.UnitID,
+		TenantID:        req.NewTenantID,
+		LeaseType:       outgoing.LeaseType,
+		StartDate:       req.HandoverDate,
+		DurationMonths:  outgoing.DurationMonths,
+		MonthlyRent:     outgoing.MonthlyRent,
+		SecurityDeposit: outgoing.SecurityDeposit,
+		OrganizationID:  orgID,
+	}
+	if req.LeaseType != nil {
+		successor.LeaseType = *req.LeaseType
+	}
+	if req.DurationMonths != nil {
+		successor.DurationMonths = *req.DurationMonths
+	}
+	if req.MonthlyRent != nil {
+		successor.MonthlyRent = *req.MonthlyRent
+	}
+	if req.SecurityDeposit != nil {
+		successor.SecurityDeposit = *req.SecurityDeposit
+	}
+
+	newLease, err := s.leaseRepo.ReplaceTenant(leaseID, handoverDate, successor)
+	if err != nil {
+		return nil, fmt.Errorf("failed to replace tenant: %w", err)
+	}
+
+	newLeaseDetails, err := s.leaseRepo.GetByIDWithDetails(newLease.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get successor lease details: %w", err)
+	}
+
+	// previous was read before the turnover committed, so reflect the closure in
+	// the copy the caller and the audit trail see.
+	closed := *previous
+	closed.Active = false
+	closed.EndDate = handoverDate
+	closedReason := models.LeaseEndReasonTerminated
+	closed.EndReason = &closedReason
+
+	// Log the turnover against the outgoing lease so its history shows why it
+	// ended, and against the successor so its history shows where it came from.
+	if s.auditService != nil {
+		_ = s.auditService.LogUserAction(userID, "replace_tenant", "leases", &leaseID, previous, closed)
+		_ = s.auditService.LogUserAction(userID, "create", "leases", &newLease.ID, nil, newLeaseDetails)
+	}
+
+	return &models.ReplaceTenantResponse{
+		PreviousLease: &closed,
+		NewLease:      newLeaseDetails,
+	}, nil
+}
+
 // GetLeasesByUnit retrieves leases for a specific unit
 func (s *LeaseService) GetLeasesByUnit(unitID int, page, pageSize, orgID int) (*models.LeaseListResponse, error) {
 	leases, total, err := s.leaseRepo.GetByUnitID(unitID, page, pageSize, orgID)
