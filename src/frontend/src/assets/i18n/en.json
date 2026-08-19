@@ -409,12 +409,28 @@
   },
   "BULK_UNIT_FORM_DIALOG": {
     "TITLE": "Bulk Add Units",
-    "COMMON_FIELDS_LABEL": "Common to all units",
+    "GENERATOR": {
+      "TITLE": "Generate unit numbers",
+      "HINT": "Put {n} where the number goes — e.g. A-{n} or Flat {n}. Leading zeros in the start value are kept.",
+      "PATTERN": "Pattern",
+      "START": "Start at",
+      "COUNT": "How many",
+      "GENERATE": "Generate",
+      "PREVIEW": "Preview",
+      "CAPPED": "Capped at {{max}} units per batch"
+    },
+    "SHARED": {
+      "TITLE": "Shared details",
+      "HINT": "Applied to every unit in this batch"
+    },
     "FIELDS": {
       "UNIT_TYPE": "Unit Type",
       "FLOOR": "Floor",
-      "SECTION": "Section",
-      "ROW_COUNT": "Number of units"
+      "SECTION": "Section"
+    },
+    "UNITS": {
+      "TITLE": "Units",
+      "PASTE_HINT": "Edit any row, or paste a column from a spreadsheet to fill several at once"
     },
     "TABLE": {
       "ROW_NUMBER": "#",
@@ -422,16 +438,23 @@
       "UNIT_NAME": "Unit Name (Optional)"
     },
     "BUTTONS": {
-      "ADD_ROW": "Add Row",
+      "ADD_ROW": "Add unit",
       "REMOVE_ROW": "Remove",
+      "CLEAR_ALL": "Clear all",
       "CREATE": "Create {{count}} Units",
       "CANCEL": "Cancel"
     },
     "ERRORS": {
       "DUPLICATE_UNIT_NUMBER": "Duplicate unit number in this batch",
-      "REQUIRED_UNIT_NUMBER": "Unit number is required"
+      "ALREADY_EXISTS": "This unit number already exists in the building"
     },
-    "SUMMARY": "{{count}} unit(s) will be created"
+    "STATUS": {
+      "READY": "{{count}} unit(s) ready to create",
+      "NONE": "Add at least one unit number",
+      "DUPLICATES": "{{count}} duplicate unit number(s) in this batch",
+      "CONFLICTS": "{{count}} unit number(s) already exist in this building",
+      "SKIPPED": "· {{count}} empty row(s) skipped"
+    }
   },
   "PROPERTY_LIST": {
     "PAGE_TITLE": "Properties",
