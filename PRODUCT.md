@@ -87,7 +87,9 @@ Built for how rent actually gets collected in Bangladesh, not a generic Western 
 
 ## Accessibility & Inclusion
 
-No formal conformance target has been set — that decision is open. Product-specific needs already established:
+**Conformance target: WCAG 2.1 AA.** This is binding on new and reworked surfaces — contrast, keyboard operability, visible focus, labels and names, and text resize hold in both English and বাংলা. Existing screens are not yet audited against it; treat gaps found in older code as debt to record, not as license to add more.
+
+Product-specific needs on top of the standard:
 
 - **Low digital literacy is the norm, not an edge case.** Users self-describe as "not good with computers"; affordances must be obvious without instruction, and destructive actions must be recoverable.
 - **The language toggle must be operable by someone who cannot read English**, since it is the first control a Bangla-only user needs.
