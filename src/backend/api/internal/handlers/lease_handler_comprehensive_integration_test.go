@@ -589,6 +589,224 @@ func (suite *LeaseIntegrationTestSuite) TestTerminateLease_AlreadyTerminatedFail
 	assert.Equal(suite.T(), "lease is not active", response["error"])
 }
 
+func (suite *LeaseIntegrationTestSuite) TestAddLeaseCharge_Success() {
+	lease := suite.createTestLease()
+
+	w := suite.makeAuthenticatedRequest("POST", fmt.Sprintf("/api/v1/leases/%d/charges", lease.ID), map[string]interface{}{
+		"charge_type": "Utility",
+		"label":       "Electricity",
+		"amount":      500,
+	})
+	assert.Equal(suite.T(), http.StatusCreated, w.Code)
+
+	var charge models.LeaseCharge
+	err := json.Unmarshal(w.Body.Bytes(), &charge)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), lease.ID, charge.LeaseID)
+	assert.Equal(suite.T(), models.ChargeTypeUtility, charge.ChargeType)
+	assert.Equal(suite.T(), "Electricity", charge.Label)
+	assert.Equal(suite.T(), 500.0, charge.Amount)
+	assert.True(suite.T(), charge.Active)
+}
+
+func (suite *LeaseIntegrationTestSuite) TestAddLeaseCharge_InvalidChargeTypeRejected() {
+	lease := suite.createTestLease()
+
+	w := suite.makeAuthenticatedRequest("POST", fmt.Sprintf("/api/v1/leases/%d/charges", lease.ID), map[string]interface{}{
+		"charge_type": "NotARealType",
+		"label":       "Bogus",
+		"amount":      100,
+	})
+	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
+}
+
+func (suite *LeaseIntegrationTestSuite) TestUpdateLeaseCharge_Success() {
+	lease := suite.createTestLease()
+
+	w := suite.makeAuthenticatedRequest("POST", fmt.Sprintf("/api/v1/leases/%d/charges", lease.ID), map[string]interface{}{
+		"charge_type": "Utility",
+		"label":       "Electricity",
+		"amount":      500,
+	})
+	require.Equal(suite.T(), http.StatusCreated, w.Code)
+	var created models.LeaseCharge
+	require.NoError(suite.T(), json.Unmarshal(w.Body.Bytes(), &created))
+
+	w = suite.makeAuthenticatedRequest(
+		"PUT", fmt.Sprintf("/api/v1/leases/%d/charges/%d", lease.ID, created.ID),
+		map[string]interface{}{"amount": 650},
+	)
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var updated models.LeaseCharge
+	assert.NoError(suite.T(), json.Unmarshal(w.Body.Bytes(), &updated))
+	assert.Equal(suite.T(), 650.0, updated.Amount)
+	// Fields not included in the update request must be left untouched.
+	assert.Equal(suite.T(), "Electricity", updated.Label)
+	assert.Equal(suite.T(), models.ChargeTypeUtility, updated.ChargeType)
+}
+
+func (suite *LeaseIntegrationTestSuite) TestDeleteLeaseCharge_Success() {
+	lease := suite.createTestLease()
+
+	w := suite.makeAuthenticatedRequest("POST", fmt.Sprintf("/api/v1/leases/%d/charges", lease.ID), map[string]interface{}{
+		"charge_type": "Maintenance",
+		"label":       "Lift maintenance",
+		"amount":      200,
+	})
+	require.Equal(suite.T(), http.StatusCreated, w.Code)
+	var created models.LeaseCharge
+	require.NoError(suite.T(), json.Unmarshal(w.Body.Bytes(), &created))
+
+	w = suite.makeAuthenticatedRequest("DELETE", fmt.Sprintf("/api/v1/leases/%d/charges/%d", lease.ID, created.ID), nil)
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	charges, err := suite.leaseChargeRepo.GetByLeaseID(lease.ID)
+	assert.NoError(suite.T(), err)
+	for _, c := range charges {
+		assert.NotEqual(suite.T(), created.ID, c.ID, "deleted charge must not still exist")
+	}
+}
+
+func (suite *LeaseIntegrationTestSuite) TestAddLeaseCharge_CrossOrgLeaseNotFound() {
+	// A lease belonging to a *different* organization must not be reachable
+	// through this org's authenticated session — otherwise one org could
+	// tamper with another org's billing by adding charges to its leases.
+	// Built directly via the suite's own repos (rather than the
+	// testutil.CreateTest* helpers, which hardcode property/building codes
+	// that collide with this suite's own shared fixtures) with unique codes.
+	otherOrg := &models.Organization{Name: "Other Org", Slug: "other-org-lease-charges", SubscriptionTier: models.TierBasic}
+	require.NoError(suite.T(), suite.orgRepo.Create(otherOrg))
+
+	otherProperty, err := suite.propertyRepo.Create(&models.CreatePropertyRequest{
+		PropertyName:   "Other Org Property",
+		PropertyCode:   "OTHERORG001",
+		PropertyType:   models.PropertyTypeCommercial,
+		Address:        "1 Other Street",
+		City:           "Other City",
+		OrganizationID: otherOrg.ID,
+	})
+	require.NoError(suite.T(), err)
+
+	otherBuilding := &models.Building{
+		PropertyID:     otherProperty.ID,
+		OrganizationID: otherOrg.ID,
+		BuildingName:   "Other Org Building",
+		BuildingCode:   "OOB001",
+		BuildingType:   models.BuildingTypeResidential,
+		TotalFloors:    3,
+		ActiveStatus:   true,
+	}
+	require.NoError(suite.T(), suite.buildingRepo.Create(otherBuilding))
+
+	otherUnit, err := suite.unitRepo.Create(&models.CreateUnitRequest{
+		BuildingID: otherBuilding.ID,
+		PropertyID: otherProperty.ID,
+		UnitNumber: "101",
+		UnitType:   models.UnitTypeApartment,
+		Floor:      1,
+	}, otherOrg.ID)
+	require.NoError(suite.T(), err)
+
+	otherTenant, err := suite.tenantRepo.Create(&models.CreateTenantRequest{
+		Name:           "Other Org Tenant",
+		TenantType:     models.TenantTypeIndividual,
+		PhoneNumber:    "9999999999",
+		Email:          "other-org-tenant@example.com",
+		NIDNumber:      "NID-OTHERORG",
+		Address:        "1 Other Street",
+		OrganizationID: otherOrg.ID,
+	})
+	require.NoError(suite.T(), err)
+
+	otherLease, err := suite.leaseRepo.Create(&models.CreateLeaseRequest{
+		UnitID:         otherUnit.ID,
+		TenantID:       otherTenant.ID,
+		LeaseType:      models.LeaseTypeResidential,
+		StartDate:      time.Now().Format("2006-01-02"),
+		DurationMonths: 12,
+		MonthlyRent:    5000,
+		OrganizationID: otherOrg.ID,
+	})
+	require.NoError(suite.T(), err)
+
+	w := suite.makeAuthenticatedRequest("POST", fmt.Sprintf("/api/v1/leases/%d/charges", otherLease.ID), map[string]interface{}{
+		"charge_type": "Utility",
+		"label":       "Electricity",
+		"amount":      500,
+	})
+	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
+
+	charges, err := suite.leaseChargeRepo.GetByLeaseID(otherLease.ID)
+	assert.NoError(suite.T(), err)
+	assert.Empty(suite.T(), charges, "charge must not have been added to another org's lease")
+}
+
+func (suite *LeaseIntegrationTestSuite) TestRenewLease_CarriesForwardActiveCharges() {
+	lease := suite.createTestLease()
+
+	w := suite.makeAuthenticatedRequest("POST", fmt.Sprintf("/api/v1/leases/%d/charges", lease.ID), map[string]interface{}{
+		"charge_type": "Utility",
+		"label":       "Electricity",
+		"amount":      500,
+	})
+	require.Equal(suite.T(), http.StatusCreated, w.Code)
+
+	// A discontinued charge must NOT carry forward into the renewed lease.
+	w = suite.makeAuthenticatedRequest("POST", fmt.Sprintf("/api/v1/leases/%d/charges", lease.ID), map[string]interface{}{
+		"charge_type": "Parking",
+		"label":       "Parking (discontinued)",
+		"amount":      300,
+	})
+	require.Equal(suite.T(), http.StatusCreated, w.Code)
+	var discontinued models.LeaseCharge
+	require.NoError(suite.T(), json.Unmarshal(w.Body.Bytes(), &discontinued))
+	w = suite.makeAuthenticatedRequest(
+		"PUT", fmt.Sprintf("/api/v1/leases/%d/charges/%d", lease.ID, discontinued.ID),
+		map[string]interface{}{"active": false},
+	)
+	require.Equal(suite.T(), http.StatusOK, w.Code)
+
+	w = suite.makeAuthenticatedRequest("POST", fmt.Sprintf("/api/v1/leases/%d/renew", lease.ID), map[string]interface{}{
+		"duration_months": 6,
+	})
+	require.Equal(suite.T(), http.StatusCreated, w.Code)
+	var renewed models.LeaseWithDetails
+	require.NoError(suite.T(), json.Unmarshal(w.Body.Bytes(), &renewed))
+
+	newCharges, err := suite.leaseChargeRepo.GetByLeaseID(renewed.ID)
+	assert.NoError(suite.T(), err)
+	assert.Len(suite.T(), newCharges, 1, "only the one active charge should carry forward")
+	if len(newCharges) == 1 {
+		assert.Equal(suite.T(), "Electricity", newCharges[0].Label)
+		assert.Equal(suite.T(), 500.0, newCharges[0].Amount)
+		assert.True(suite.T(), newCharges[0].Active)
+	}
+}
+
+func (suite *LeaseIntegrationTestSuite) TestRenewLease_CanOptOutOfCarryingForwardCharges() {
+	lease := suite.createTestLease()
+
+	w := suite.makeAuthenticatedRequest("POST", fmt.Sprintf("/api/v1/leases/%d/charges", lease.ID), map[string]interface{}{
+		"charge_type": "Utility",
+		"label":       "Electricity",
+		"amount":      500,
+	})
+	require.Equal(suite.T(), http.StatusCreated, w.Code)
+
+	w = suite.makeAuthenticatedRequest("POST", fmt.Sprintf("/api/v1/leases/%d/renew", lease.ID), map[string]interface{}{
+		"duration_months":       6,
+		"carry_forward_charges": false,
+	})
+	require.Equal(suite.T(), http.StatusCreated, w.Code)
+	var renewed models.LeaseWithDetails
+	require.NoError(suite.T(), json.Unmarshal(w.Body.Bytes(), &renewed))
+
+	newCharges, err := suite.leaseChargeRepo.GetByLeaseID(renewed.ID)
+	assert.NoError(suite.T(), err)
+	assert.Empty(suite.T(), newCharges, "charges must not carry forward when explicitly opted out")
+}
+
 func (suite *LeaseIntegrationTestSuite) TestGetLeasesByUnit_Success() {
 	// Create a lease first
 	_ = suite.createTestLease()
