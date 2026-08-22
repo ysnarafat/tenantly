@@ -693,7 +693,7 @@ export class PaymentCreateDialog implements OnInit {
     due_date: [''],
     payment_method: [''],
     amount_paid: [null, [Validators.min(0)]],
-    payment_date: [''],
+    payment_date: [new Date().toISOString().slice(0, 10)],
     notes: [''],
   });
 
@@ -775,7 +775,10 @@ export class PaymentCreateDialog implements OnInit {
         due_date: val.due_date || undefined,
         payment_method: val.payment_method || undefined,
         amount_paid: val.amount_paid != null ? val.amount_paid : undefined,
-        payment_date: val.payment_date || undefined,
+        // Only meaningful once money has actually been recorded — sending
+        // today's date alongside a $0/unset amount_paid would misleadingly
+        // mark a still-unpaid Due record as "paid today".
+        payment_date: val.amount_paid > 0 ? val.payment_date || undefined : undefined,
         notes: val.notes || undefined,
       };
       this.dialogRef.close(req);
@@ -1051,7 +1054,11 @@ export class PaymentUpdateDialog {
   form: FormGroup = this.fb.group({
     amount_paid: [this.data.amount_paid, [Validators.min(0)]],
     payment_method: [this.data.payment_method ?? ''],
-    payment_date: [this.data.payment_date ? this.data.payment_date.slice(0, 10) : ''],
+    payment_date: [
+      this.data.payment_date
+        ? this.data.payment_date.slice(0, 10)
+        : new Date().toISOString().slice(0, 10),
+    ],
     notes: [this.data.notes ?? ''],
   });
 
@@ -1078,7 +1085,11 @@ export class PaymentUpdateDialog {
     const req: UpdatePaymentRequest = {};
     if (raw.amount_paid !== null && raw.amount_paid !== '') req.amount_paid = +raw.amount_paid;
     if (raw.payment_method) req.payment_method = raw.payment_method;
-    if (raw.payment_date) req.payment_date = raw.payment_date;
+    // Only meaningful once money has actually been recorded — sending a date
+    // alongside a $0 amount_paid would misleadingly mark a still-unpaid
+    // record as "paid". The backend defaults this to today itself when
+    // omitted, so there's no need to duplicate that default here.
+    if (raw.payment_date && raw.amount_paid > 0) req.payment_date = raw.payment_date;
     if (raw.notes) req.notes = raw.notes;
     this.dialogRef.close(req);
   }

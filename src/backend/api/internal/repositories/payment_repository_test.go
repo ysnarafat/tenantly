@@ -115,6 +115,63 @@ func TestPaymentRepository_Create_StatusIsServerDerived(t *testing.T) {
 	}
 }
 
+func TestPaymentRepository_Create_PaymentDateDefaultsToToday(t *testing.T) {
+	db, cleanup := testutil.SetupTestDB(t)
+	defer cleanup()
+
+	orgID := testutil.CreateTestOrganization(t, db)
+	propID := testutil.CreateTestProperty(t, db)
+	bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
+	unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+	tenantID := testutil.CreateTestTenant(t, db, orgID)
+
+	repo := NewPaymentRepository(db)
+	today := time.Now().UTC().Format("2006-01-02")
+
+	t.Run("amount_paid > 0 and no payment_date given defaults to today", func(t *testing.T) {
+		amountPaid := 5000.0
+		payment, err := repo.Create(&models.CreatePaymentRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			BuildingID:     bldgID,
+			PropertyID:     propID,
+			OrganizationID: orgID,
+			Month:          9,
+			Year:           2026,
+			AmountDue:      5000.0,
+			AmountPaid:     &amountPaid,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if payment.PaymentDate == nil {
+			t.Fatal("expected payment_date to default to today, got nil")
+		}
+		if got := payment.PaymentDate.Format("2006-01-02"); got != today {
+			t.Errorf("payment_date: got %q, want %q", got, today)
+		}
+	})
+
+	t.Run("amount_paid unset leaves payment_date nil", func(t *testing.T) {
+		payment, err := repo.Create(&models.CreatePaymentRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			BuildingID:     bldgID,
+			PropertyID:     propID,
+			OrganizationID: orgID,
+			Month:          10,
+			Year:           2026,
+			AmountDue:      5000.0,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if payment.PaymentDate != nil {
+			t.Errorf("expected nil payment_date for an unpaid Due record, got %v", payment.PaymentDate)
+		}
+	})
+}
+
 // ---------------------------------------------------------------------------
 // TestPaymentRepository_GetByID
 // ---------------------------------------------------------------------------
@@ -380,6 +437,84 @@ func TestPaymentRepository_Update(t *testing.T) {
 		}
 		if updated.Status != models.PaymentStatusOverdue {
 			t.Errorf("expected status to stay %q, got %q", models.PaymentStatusOverdue, updated.Status)
+		}
+	})
+
+	t.Run("amount_paid > 0 and no payment_date given defaults to today", func(t *testing.T) {
+		db, cleanup := testutil.SetupTestDB(t)
+		defer cleanup()
+
+		orgID := testutil.CreateTestOrganization(t, db)
+		propID := testutil.CreateTestProperty(t, db)
+		bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
+		unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+		tenantID := testutil.CreateTestTenant(t, db, orgID)
+
+		repo := NewPaymentRepository(db)
+		created, err := repo.Create(&models.CreatePaymentRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			BuildingID:     bldgID,
+			PropertyID:     propID,
+			OrganizationID: orgID,
+			Month:          11,
+			Year:           2026,
+			AmountDue:      5000.0,
+		})
+		if err != nil {
+			t.Fatalf("failed to create payment: %v", err)
+		}
+
+		amountPaid := 5000.0
+		updated, err := repo.Update(created.ID, &models.UpdatePaymentRequest{AmountPaid: &amountPaid})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if updated.PaymentDate == nil {
+			t.Fatal("expected payment_date to default to today, got nil")
+		}
+		today := time.Now().UTC().Format("2006-01-02")
+		if got := updated.PaymentDate.Format("2006-01-02"); got != today {
+			t.Errorf("payment_date: got %q, want %q", got, today)
+		}
+	})
+
+	t.Run("explicit payment_date is honored over the today default", func(t *testing.T) {
+		db, cleanup := testutil.SetupTestDB(t)
+		defer cleanup()
+
+		orgID := testutil.CreateTestOrganization(t, db)
+		propID := testutil.CreateTestProperty(t, db)
+		bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
+		unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+		tenantID := testutil.CreateTestTenant(t, db, orgID)
+
+		repo := NewPaymentRepository(db)
+		created, err := repo.Create(&models.CreatePaymentRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			BuildingID:     bldgID,
+			PropertyID:     propID,
+			OrganizationID: orgID,
+			Month:          12,
+			Year:           2026,
+			AmountDue:      5000.0,
+		})
+		if err != nil {
+			t.Fatalf("failed to create payment: %v", err)
+		}
+
+		amountPaid := 5000.0
+		backdated := "2026-01-15"
+		updated, err := repo.Update(created.ID, &models.UpdatePaymentRequest{
+			AmountPaid:  &amountPaid,
+			PaymentDate: &backdated,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if updated.PaymentDate == nil || updated.PaymentDate.Format("2006-01-02") != backdated {
+			t.Errorf("payment_date: got %v, want %q (explicit date must win over today default)", updated.PaymentDate, backdated)
 		}
 	})
 }

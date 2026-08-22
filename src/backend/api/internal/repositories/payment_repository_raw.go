@@ -79,6 +79,10 @@ func (r *PaymentRepository) Update(id int, req *models.UpdatePaymentRequest) (*m
 		setClauses = append(setClauses, fmt.Sprintf("payment_date = $%d", argIdx))
 		args = append(args, *req.PaymentDate)
 		argIdx++
+	} else if req.AmountPaid != nil && *req.AmountPaid > 0 {
+		// A payment is being recorded but no explicit date was given —
+		// default to today rather than leaving payment_date null/stale.
+		setClauses = append(setClauses, "payment_date = CURRENT_DATE")
 	}
 	if req.Notes != nil {
 		setClauses = append(setClauses, fmt.Sprintf("notes = $%d", argIdx))

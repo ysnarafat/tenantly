@@ -109,6 +109,11 @@ func (r *PaymentRepository) Create(req *models.CreatePaymentRequest) (*models.Pa
 		dueDate = sql.NullTime{Time: t, Valid: true}
 	}
 
+	amountPaid := 0.0
+	if req.AmountPaid != nil {
+		amountPaid = *req.AmountPaid
+	}
+
 	var paymentDate sql.NullTime
 	if req.PaymentDate != nil && *req.PaymentDate != "" {
 		t, err := time.Parse("2006-01-02", *req.PaymentDate)
@@ -116,11 +121,10 @@ func (r *PaymentRepository) Create(req *models.CreatePaymentRequest) (*models.Pa
 			return nil, fmt.Errorf("invalid payment_date format (expected YYYY-MM-DD): %w", err)
 		}
 		paymentDate = sql.NullTime{Time: t, Valid: true}
-	}
-
-	amountPaid := 0.0
-	if req.AmountPaid != nil {
-		amountPaid = *req.AmountPaid
+	} else if amountPaid > 0 {
+		// A payment is being recorded but no explicit date was given —
+		// default to today rather than leaving payment_date null.
+		paymentDate = sql.NullTime{Time: time.Now().UTC().Truncate(24 * time.Hour), Valid: true}
 	}
 
 	// Status is always derived server-side from amount_paid vs amount_due (and
