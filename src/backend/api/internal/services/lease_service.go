@@ -225,8 +225,9 @@ func (s *LeaseService) TerminateLease(id int, userID, orgID int, terminationDate
 		return fmt.Errorf("termination date cannot be before lease start date")
 	}
 
-	// Soft delete lease
-	if err := s.leaseRepo.SoftDelete(id); err != nil {
+	// Soft delete lease — actually persists the move-out date and reason so
+	// the lease record accurately reflects when the tenancy really ended.
+	if err := s.leaseRepo.SoftDelete(id, *terminationDate, models.LeaseEndReasonTerminated); err != nil {
 		return fmt.Errorf("failed to terminate lease: %w", err)
 	}
 
@@ -236,10 +237,42 @@ func (s *LeaseService) TerminateLease(id int, userID, orgID int, terminationDate
 		newLease := *existingLease
 		newLease.Active = false
 		newLease.EndDate = *terminationDate
+		reason := models.LeaseEndReasonTerminated
+		newLease.EndReason = &reason
 		_ = s.auditService.LogUserAction(userID, "terminate", "leases", &id, oldLease, newLease)
 	}
 
 	return nil
+}
+
+// RenewLease starts a new lease term for the same unit/tenant, closing out
+// the current one instead of mutating it — so historical rent/duration/dates
+// stay accurate for audit purposes even after a renewal.
+func (s *LeaseService) RenewLease(id int, req *models.RenewLeaseRequest, userID, orgID int) (*models.LeaseWithDetails, error) {
+	existingLease, err := s.leaseRepo.GetByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get lease: %w", err)
+	}
+	if existingLease.OrganizationID != orgID {
+		return nil, fmt.Errorf("lease not found")
+	}
+
+	newLease, err := s.leaseRepo.RenewLease(id, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to renew lease: %w", err)
+	}
+
+	leaseDetails, err := s.leaseRepo.GetByIDWithDetails(newLease.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get renewed lease details: %w", err)
+	}
+
+	// Log audit
+	if s.auditService != nil {
+		_ = s.auditService.LogUserAction(userID, "renew", "leases", &newLease.ID, existingLease, leaseDetails)
+	}
+
+	return leaseDetails, nil
 }
 
 // GetLeasesByUnit retrieves leases for a specific unit

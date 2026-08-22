@@ -10,20 +10,32 @@ const (
 	LeaseTypeCommercial  LeaseType = "Commercial"
 )
 
+// LeaseEndReason records why a lease stopped being active, so the historical
+// record stays legible without inferring intent from dates alone.
+type LeaseEndReason string
+
+const (
+	LeaseEndReasonExpired    LeaseEndReason = "Expired"
+	LeaseEndReasonTerminated LeaseEndReason = "Terminated"
+	LeaseEndReasonRenewed    LeaseEndReason = "Renewed"
+)
+
 type Lease struct {
-	ID              int       `json:"id" db:"id"`
-	UnitID          int       `json:"unit_id" db:"unit_id"`
-	TenantID        int       `json:"tenant_id" db:"tenant_id"`
-	LeaseType       LeaseType `json:"lease_type" db:"lease_type"`
-	StartDate       time.Time `json:"start_date" db:"start_date"`
-	EndDate         time.Time `json:"end_date" db:"end_date"`
-	DurationMonths  int       `json:"duration_months" db:"duration_months"`
-	MonthlyRent     float64   `json:"monthly_rent" db:"monthly_rent"`
-	SecurityDeposit float64   `json:"security_deposit" db:"security_deposit"`
-	Active          bool      `json:"active" db:"active"`
-	OrganizationID  int       `json:"organization_id" db:"organization_id"`
-	CreatedAt       time.Time `json:"created_at" db:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at" db:"updated_at"`
+	ID                 int             `json:"id" db:"id"`
+	UnitID             int             `json:"unit_id" db:"unit_id"`
+	TenantID           int             `json:"tenant_id" db:"tenant_id"`
+	LeaseType          LeaseType       `json:"lease_type" db:"lease_type"`
+	StartDate          time.Time       `json:"start_date" db:"start_date"`
+	EndDate            time.Time       `json:"end_date" db:"end_date"`
+	DurationMonths     int             `json:"duration_months" db:"duration_months"`
+	MonthlyRent        float64         `json:"monthly_rent" db:"monthly_rent"`
+	SecurityDeposit    float64         `json:"security_deposit" db:"security_deposit"`
+	Active             bool            `json:"active" db:"active"`
+	OrganizationID     int             `json:"organization_id" db:"organization_id"`
+	EndReason          *LeaseEndReason `json:"end_reason,omitempty" db:"end_reason"`
+	RenewedFromLeaseID *int            `json:"renewed_from_lease_id,omitempty" db:"renewed_from_lease_id"`
+	CreatedAt          time.Time       `json:"created_at" db:"created_at"`
+	UpdatedAt          time.Time       `json:"updated_at" db:"updated_at"`
 }
 
 type CreateLeaseRequest struct {
@@ -45,6 +57,20 @@ type UpdateLeaseRequest struct {
 	MonthlyRent     *float64   `json:"monthly_rent" binding:"omitempty,gt=0"`
 	SecurityDeposit *float64   `json:"security_deposit" binding:"omitempty,gte=0"`
 	Active          *bool      `json:"active"`
+}
+
+// RenewLeaseRequest starts a new lease term for the same unit/tenant, closing
+// out the lease being renewed rather than mutating it in place — so the
+// original term's rent/duration/dates remain an accurate historical record.
+// Fields left nil carry the corresponding value forward from the old lease.
+type RenewLeaseRequest struct {
+	// StartDate defaults to the renewed lease's end_date (back-to-back
+	// coverage). Set explicitly for an early or late renewal.
+	StartDate       *string    `json:"start_date" binding:"omitempty"`
+	DurationMonths  int        `json:"duration_months" binding:"required,min=1"`
+	MonthlyRent     *float64   `json:"monthly_rent" binding:"omitempty,gt=0"`
+	SecurityDeposit *float64   `json:"security_deposit" binding:"omitempty,gte=0"`
+	LeaseType       *LeaseType `json:"lease_type" binding:"omitempty,oneof=Residential Commercial"`
 }
 
 type LeaseWithDetails struct {

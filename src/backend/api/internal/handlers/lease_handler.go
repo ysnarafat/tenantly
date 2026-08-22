@@ -155,6 +155,33 @@ func (h *LeaseHandler) TerminateLease(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Lease terminated successfully"})
 }
 
+// RenewLease handles starting a new lease term for a unit/tenant, closing out
+// the lease being renewed rather than mutating it in place.
+func (h *LeaseHandler) RenewLease(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid lease ID"})
+		return
+	}
+
+	var req models.RenewLeaseRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, http.StatusBadRequest, "RENEW_LEASE_INVALID_BODY", "Invalid request body", err)
+		return
+	}
+
+	userID := c.GetInt("user_id")
+	orgID := c.GetInt("org_id")
+
+	lease, err := h.leaseService.RenewLease(id, &req, userID, orgID)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "RENEW_LEASE_FAILED", "Failed to renew lease", err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, lease)
+}
+
 // GetLeasesByUnit handles fetching leases by unit ID
 func (h *LeaseHandler) GetLeasesByUnit(c *gin.Context) {
 	unitID, err := strconv.Atoi(c.Param("unit_id"))

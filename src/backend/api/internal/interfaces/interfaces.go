@@ -319,7 +319,8 @@ type LeaseRepositoryInterface interface {
 	GetByTenantID(tenantID int, page, pageSize, orgID int) ([]*models.LeaseWithDetails, int, error)
 	Update(id int, req *models.UpdateLeaseRequest) (*models.Lease, error)
 	Delete(id int) error
-	SoftDelete(id int) error
+	SoftDelete(id int, endDate time.Time, reason models.LeaseEndReason) error
+	RenewLease(oldLeaseID int, req *models.RenewLeaseRequest) (*models.Lease, error)
 	HasActiveLeaseOnUnit(unitID int, excludeLeaseID *int) (bool, error)
 	HasActiveLeaseForTenant(tenantID int) (bool, error)
 	GetLeasesDueForMonth(orgID int) ([]models.LeaseDue, error)
@@ -334,6 +335,7 @@ type LeaseServiceInterface interface {
 	UpdateLease(id int, req *models.UpdateLeaseRequest, userID, orgID int) (*models.LeaseWithDetails, error)
 	DeleteLease(id int, userID, orgID int) error
 	TerminateLease(id int, userID, orgID int, terminationDate string) error
+	RenewLease(id int, req *models.RenewLeaseRequest, userID, orgID int) (*models.LeaseWithDetails, error)
 	GetLeasesByUnit(unitID int, page, pageSize, orgID int) (*models.LeaseListResponse, error)
 	GetLeasesByTenant(tenantID int, page, pageSize, orgID int) (*models.LeaseListResponse, error)
 	GetLeasesDue(orgID int) ([]models.LeaseDue, error)

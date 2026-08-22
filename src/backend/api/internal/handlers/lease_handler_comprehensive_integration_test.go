@@ -173,6 +173,7 @@ func (suite *LeaseIntegrationTestSuite) setupTestRoutes(userHandler *UserHandler
 				leases.PUT("/:id", suite.leaseHandler.UpdateLease)
 				leases.DELETE("/:id", suite.leaseHandler.DeleteLease)
 				leases.POST("/:id/terminate", suite.leaseHandler.TerminateLease)
+				leases.POST("/:id/renew", suite.leaseHandler.RenewLease)
 				leases.GET("/units/:unit_id", suite.leaseHandler.GetLeasesByUnit)
 				leases.GET("/tenants/:tenant_id", suite.leaseHandler.GetLeasesByTenant)
 			}
@@ -487,6 +488,50 @@ func (suite *LeaseIntegrationTestSuite) TestTerminateLease_Success() {
 	terminatedLease, err := suite.leaseRepo.GetByID(lease.ID)
 	assert.NoError(suite.T(), err)
 	assert.False(suite.T(), terminatedLease.Active)
+	// The actual move-out date and reason must be persisted, not just the
+	// active flag — otherwise the lease record keeps its original,
+	// now-inaccurate end_date.
+	assert.Equal(suite.T(), terminationDate, terminatedLease.EndDate.Format("2006-01-02"))
+	if assert.NotNil(suite.T(), terminatedLease.EndReason) {
+		assert.Equal(suite.T(), models.LeaseEndReasonTerminated, *terminatedLease.EndReason)
+	}
+}
+
+func (suite *LeaseIntegrationTestSuite) TestRenewLease_Success() {
+	// Create a lease first
+	lease := suite.createTestLease()
+
+	renewReq := map[string]interface{}{
+		"duration_months": 6,
+		"monthly_rent":    17000,
+	}
+
+	w := suite.makeAuthenticatedRequest("POST", fmt.Sprintf("/api/v1/leases/%d/renew", lease.ID), renewReq)
+
+	assert.Equal(suite.T(), http.StatusCreated, w.Code)
+
+	var renewed models.LeaseWithDetails
+	err := json.Unmarshal(w.Body.Bytes(), &renewed)
+	assert.NoError(suite.T(), err)
+	assert.NotEqual(suite.T(), lease.ID, renewed.ID)
+	assert.True(suite.T(), renewed.Active)
+	assert.Equal(suite.T(), 17000.0, renewed.MonthlyRent)
+	assert.Equal(suite.T(), 6, renewed.DurationMonths)
+	if assert.NotNil(suite.T(), renewed.RenewedFromLeaseID) {
+		assert.Equal(suite.T(), lease.ID, *renewed.RenewedFromLeaseID)
+	}
+
+	// The original lease must be closed out, not left dangling as still active
+	// — otherwise the unit would appear to have two active leases at once.
+	oldLease, err := suite.leaseRepo.GetByID(lease.ID)
+	assert.NoError(suite.T(), err)
+	assert.False(suite.T(), oldLease.Active)
+	if assert.NotNil(suite.T(), oldLease.EndReason) {
+		assert.Equal(suite.T(), models.LeaseEndReasonRenewed, *oldLease.EndReason)
+	}
+	// Coverage must be back-to-back: the old lease's new end_date should
+	// match the renewed lease's start_date, with no gap or overlap.
+	assert.Equal(suite.T(), oldLease.EndDate.Format("2006-01-02"), renewed.StartDate.Format("2006-01-02"))
 }
 
 func (suite *LeaseIntegrationTestSuite) TestGetLeasesByUnit_Success() {
