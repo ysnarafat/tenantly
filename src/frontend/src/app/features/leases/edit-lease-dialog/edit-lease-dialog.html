@@ -1,4 +1,6 @@
-<h2 mat-dialog-title>{{ 'EDIT_LEASE_DIALOG.TITLE' | translate }}</h2>
+<h2 mat-dialog-title>
+  {{ endingTenancy ? 'End Tenancy' : ('EDIT_LEASE_DIALOG.TITLE' | translate) }}
+</h2>
 
 <mat-dialog-content class="dialog-content">
   <!-- Context info (read-only) -->
@@ -33,6 +35,32 @@
     </div>
   </div>
 
+  @if (endingTenancy) {
+  <!-- ── End Tenancy confirm view ────────────────────────────────────────── -->
+  <div class="end-tenancy-view">
+    <div class="end-tenancy-warning">
+      <mat-icon>info</mat-icon>
+      <span
+        >Ending this tenancy closes out the lease as of the move-out date — it stays in lease
+        history with its original terms intact.</span
+      >
+    </div>
+    <mat-form-field appearance="outline">
+      <mat-label>Move-out date</mat-label>
+      <input
+        matInput
+        [matDatepicker]="moveOutPicker"
+        [formControl]="moveOutDate"
+        [min]="minMoveOutDate"
+      />
+      <mat-datepicker-toggle matSuffix [for]="moveOutPicker"></mat-datepicker-toggle>
+      <mat-datepicker #moveOutPicker></mat-datepicker>
+      <mat-error *ngIf="moveOutDate.touched && moveOutDate.invalid"
+        >Move-out date is required</mat-error
+      >
+    </mat-form-field>
+  </div>
+  } @else {
   <!-- Editable fields -->
   <form [formGroup]="editForm" class="edit-form">
     <mat-form-field appearance="outline">
@@ -61,42 +89,41 @@
       </mat-form-field>
     </div>
 
-    <div class="toggle-row">
-      <mat-slide-toggle formControlName="active" color="primary">
-        {{ 'EDIT_LEASE_DIALOG.TOGGLE.ACTIVE' | translate }}
-      </mat-slide-toggle>
-      <span class="toggle-hint" *ngIf="!editForm.get('active')?.value">
-        Deactivating will mark this lease as inactive
-      </span>
+    @if (isRenewing) {
+    <div class="renew-hint">
+      <mat-icon>info</mat-icon>
+      These values apply to the new, renewed lease term below — the current lease keeps its original
+      terms in history.
     </div>
+    }
 
-    <!-- ── Extend Lease Section ───────────────────────────────────────────── -->
+    <!-- ── Renew Lease Section ─────────────────────────────────────────────── -->
     <div class="section-divider"></div>
 
     <div class="toggle-row">
-      <mat-slide-toggle formControlName="extend_lease" color="accent">
+      <mat-slide-toggle formControlName="renew_lease" color="accent">
         <mat-icon class="toggle-icon">event_repeat</mat-icon>
-        Extend lease duration
+        Renew lease
       </mat-slide-toggle>
     </div>
 
-    @if (isExtending) {
-    <div class="extend-section" formGroupName="extension">
-      <div class="extend-fields">
+    @if (isRenewing) {
+    <div class="renew-section" formGroupName="renewal">
+      <div class="renew-fields">
         <mat-form-field appearance="outline">
           <mat-label>Years</mat-label>
           <mat-icon matPrefix>calendar_today</mat-icon>
           <input
             matInput
             type="number"
-            formControlName="extend_years"
+            formControlName="renew_years"
             min="0"
             max="50"
             placeholder="0"
           />
           <mat-hint>0 – 50</mat-hint>
           <mat-error
-            *ngIf="editForm.get('extension.extend_years')?.hasError('min') || editForm.get('extension.extend_years')?.hasError('max')"
+            *ngIf="editForm.get('renewal.renew_years')?.hasError('min') || editForm.get('renewal.renew_years')?.hasError('max')"
           >
             0 – 50
           </mat-error>
@@ -108,45 +135,66 @@
           <input
             matInput
             type="number"
-            formControlName="extend_months"
+            formControlName="renew_months"
             min="0"
             max="11"
             placeholder="0"
           />
           <mat-hint>0 – 11</mat-hint>
           <mat-error
-            *ngIf="editForm.get('extension.extend_months')?.hasError('min') || editForm.get('extension.extend_months')?.hasError('max')"
+            *ngIf="editForm.get('renewal.renew_months')?.hasError('min') || editForm.get('renewal.renew_months')?.hasError('max')"
           >
             0 – 11
           </mat-error>
         </mat-form-field>
       </div>
 
-      <div class="extend-error" *ngIf="extensionInvalid">
-        Enter at least 1 month or 1 year to extend
+      <div class="renew-error" *ngIf="renewalInvalid">
+        Enter at least 1 month or 1 year to renew for
       </div>
 
-      @if (newEndDate) {
-      <div class="extend-preview">
+      @if (renewedEndDate) {
+      <div class="renew-preview">
         <mat-icon>arrow_forward</mat-icon>
         <div class="preview-body">
-          <span class="preview-label">New end date</span>
-          <span class="preview-date">{{ formatDate(newEndDate) }}</span>
-          <span class="preview-total">Total: {{ newDurationMonths }} months</span>
+          <span class="preview-label">New lease runs until</span>
+          <span class="preview-date">{{ formatDate(renewedEndDate) }}</span>
+          <span class="preview-total">New term: {{ renewDurationMonths }} months</span>
         </div>
       </div>
       }
-
-      <div class="extend-note" *ngIf="lease.is_expired">
-        <mat-icon>info</mat-icon>
-        This lease is expired — extending will automatically reactivate it.
-      </div>
     </div>
+    } @if (lease.active && !isRenewing) {
+    <div class="section-divider"></div>
+    <button type="button" class="end-tenancy-link" (click)="startEndingTenancy()">
+      <mat-icon>logout</mat-icon>
+      Tenant is moving out
+    </button>
     }
   </form>
+  }
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
+  @if (endingTenancy) {
+  <button mat-button type="button" (click)="cancelEndingTenancy()" [disabled]="submitLoading">
+    Back
+  </button>
+  <button
+    mat-flat-button
+    color="warn"
+    type="button"
+    (click)="confirmEndTenancy()"
+    [disabled]="submitLoading"
+  >
+    <mat-spinner
+      *ngIf="submitLoading"
+      diameter="18"
+      style="display: inline-block; margin-right: 8px"
+    ></mat-spinner>
+    {{ submitLoading ? 'Ending…' : 'End Tenancy' }}
+  </button>
+  } @else {
   <button mat-button type="button" (click)="onCancel()" [disabled]="submitLoading">
     {{ 'COMMON.BUTTONS.CANCEL' | translate }}
   </button>
@@ -162,7 +210,8 @@
       diameter="18"
       style="display: inline-block; margin-right: 8px"
     ></mat-spinner>
-    {{ submitLoading ? ('EDIT_LEASE_DIALOG.BUTTONS.SAVING' | translate) : (isExtending ? 'Save &
-    Extend' : ('EDIT_LEASE_DIALOG.BUTTONS.SAVE' | translate)) }}
+    {{ submitLoading ? ('EDIT_LEASE_DIALOG.BUTTONS.SAVING' | translate) : (isRenewing ? 'Renew
+    Lease' : ('EDIT_LEASE_DIALOG.BUTTONS.SAVE' | translate)) }}
   </button>
+  }
 </mat-dialog-actions>

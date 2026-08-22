@@ -6,10 +6,13 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import {
   FormBuilder,
+  FormControl,
   FormGroup,
   ReactiveFormsModule,
   Validators,
@@ -23,11 +26,12 @@ import {
   LeaseService,
   LeaseWithDetails,
   UpdateLeaseRequest,
+  RenewLeaseRequest,
 } from '../../../core/services/lease.service';
 
 function atLeastOnePositive(group: AbstractControl): ValidationErrors | null {
-  const years = Number(group.get('extend_years')?.value) || 0;
-  const months = Number(group.get('extend_months')?.value) || 0;
+  const years = Number(group.get('renew_years')?.value) || 0;
+  const months = Number(group.get('renew_months')?.value) || 0;
   return years + months > 0 ? null : { extensionZero: true };
 }
 
@@ -42,6 +46,8 @@ function atLeastOnePositive(group: AbstractControl): ValidationErrors | null {
     MatSelectModule,
     MatButtonModule,
     MatIconModule,
+    MatDatepickerModule,
+    MatNativeDateModule,
     MatProgressSpinnerModule,
     MatSlideToggleModule,
     ReactiveFormsModule,
@@ -60,61 +66,67 @@ export class EditLeaseDialog {
   submitLoading = false;
   editForm: FormGroup;
 
+  // Ending a tenancy replaces the normal edit view with a focused confirm
+  // step, rather than being a silent toggle among the other fields — the
+  // move-out date has to be explicit since it's what closes out the lease's
+  // historical record (see LeaseService.terminateLease).
+  endingTenancy = false;
+  moveOutDate = new FormControl<Date>(new Date(), Validators.required);
+  minMoveOutDate: Date;
+
   constructor(@Inject(MAT_DIALOG_DATA) data: { lease: LeaseWithDetails }) {
     this.lease = data.lease;
+    this.minMoveOutDate = new Date(this.lease.start_date);
     this.editForm = this.fb.group({
       lease_type: [this.lease.lease_type, Validators.required],
       monthly_rent: [this.lease.monthly_rent, [Validators.required, Validators.min(1)]],
       security_deposit: [this.lease.security_deposit ?? 0, [Validators.min(0)]],
-      active: [this.lease.active],
-      extend_lease: [false],
-      extension: this.fb.group(
+      renew_lease: [false],
+      renewal: this.fb.group(
         {
-          extend_years: [0, [Validators.min(0), Validators.max(50)]],
-          extend_months: [0, [Validators.min(0), Validators.max(11)]],
+          renew_years: [0, [Validators.min(0), Validators.max(50)]],
+          renew_months: [0, [Validators.min(0), Validators.max(11)]],
         },
         { validators: atLeastOnePositive }
       ),
     });
 
-    // Enable/disable extension sub-group based on toggle
-    this.editForm.get('extend_lease')!.valueChanges.subscribe((on: boolean) => {
-      const ext = this.editForm.get('extension')!;
+    // Enable/disable the renewal sub-group based on the toggle
+    this.editForm.get('renew_lease')!.valueChanges.subscribe((on: boolean) => {
+      const renewal = this.editForm.get('renewal')!;
       if (on) {
-        ext.enable();
+        renewal.enable();
       } else {
-        ext.disable();
+        renewal.disable();
       }
     });
 
-    // Start with extension disabled
-    this.editForm.get('extension')!.disable();
+    // Start with renewal fields disabled
+    this.editForm.get('renewal')!.disable();
   }
 
-  get isExtending(): boolean {
-    return !!this.editForm.get('extend_lease')?.value;
+  get isRenewing(): boolean {
+    return !!this.editForm.get('renew_lease')?.value;
   }
 
-  get newEndDate(): Date | null {
-    if (!this.isExtending) return null;
-    const years = Number(this.editForm.get('extension.extend_years')?.value) || 0;
-    const months = Number(this.editForm.get('extension.extend_months')?.value) || 0;
-    if (years + months === 0) return null;
+  // Length of the NEW lease term being created — not cumulative with the
+  // current lease's own duration, since renewing creates a separate lease.
+  get renewDurationMonths(): number {
+    const years = Number(this.editForm.get('renewal.renew_years')?.value) || 0;
+    const months = Number(this.editForm.get('renewal.renew_months')?.value) || 0;
+    return years * 12 + months;
+  }
+
+  get renewedEndDate(): Date | null {
+    if (!this.isRenewing || this.renewDurationMonths === 0) return null;
     const d = new Date(this.lease.end_date);
-    d.setFullYear(d.getFullYear() + years);
-    d.setMonth(d.getMonth() + months);
+    d.setMonth(d.getMonth() + this.renewDurationMonths);
     return d;
   }
 
-  get newDurationMonths(): number {
-    const years = Number(this.editForm.get('extension.extend_years')?.value) || 0;
-    const months = Number(this.editForm.get('extension.extend_months')?.value) || 0;
-    return this.lease.duration_months + years * 12 + months;
-  }
-
-  get extensionInvalid(): boolean {
-    const ext = this.editForm.get('extension');
-    return !!ext?.enabled && !!ext?.errors?.['extensionZero'] && ext?.touched;
+  get renewalInvalid(): boolean {
+    const renewal = this.editForm.get('renewal');
+    return !!renewal?.enabled && !!renewal?.errors?.['extensionZero'] && renewal?.touched;
   }
 
   formatDate(d: Date): string {
@@ -122,37 +134,53 @@ export class EditLeaseDialog {
   }
 
   onSubmit() {
-    if (this.isExtending) {
-      this.editForm.get('extension')!.markAllAsTouched();
+    if (this.isRenewing) {
+      this.editForm.get('renewal')!.markAllAsTouched();
     }
     if (this.editForm.invalid) {
       this.editForm.markAllAsTouched();
       return;
     }
-    if (this.isExtending && this.editForm.get('extension')?.errors?.['extensionZero']) {
+    if (this.isRenewing && this.editForm.get('renewal')?.errors?.['extensionZero']) {
       return;
     }
 
     this.submitLoading = true;
     const v = this.editForm.value;
 
+    if (this.isRenewing) {
+      const req: RenewLeaseRequest = {
+        duration_months: this.renewDurationMonths,
+        monthly_rent: v.monthly_rent,
+        security_deposit: v.security_deposit,
+        lease_type: v.lease_type,
+      };
+      this.leaseService.renewLease(this.lease.id, req).subscribe({
+        next: () => {
+          notifySuccess(this.snackBar, 'Lease renewed');
+          this.dialogRef.close(true);
+          this.submitLoading = false;
+        },
+        error: (error) => {
+          notifyError(
+            this.snackBar,
+            error.error?.error || error.message || 'Failed to renew lease'
+          );
+          this.submitLoading = false;
+        },
+      });
+      return;
+    }
+
     const payload: UpdateLeaseRequest = {
       lease_type: v.lease_type,
       monthly_rent: v.monthly_rent,
       security_deposit: v.security_deposit,
-      active: v.active,
     };
-
-    if (this.isExtending) {
-      payload.duration_months = this.newDurationMonths;
-      // Re-activate expired leases when their end date is being pushed forward
-      payload.active = true;
-    }
 
     this.leaseService.updateLease(this.lease.id, payload).subscribe({
       next: () => {
-        const msg = this.isExtending ? 'Lease extended and updated' : 'Lease updated successfully';
-        notifySuccess(this.snackBar, msg);
+        notifySuccess(this.snackBar, 'Lease updated successfully');
         this.dialogRef.close(true);
         this.submitLoading = false;
       },
@@ -161,6 +189,40 @@ export class EditLeaseDialog {
         this.submitLoading = false;
       },
     });
+  }
+
+  startEndingTenancy() {
+    this.endingTenancy = true;
+  }
+
+  cancelEndingTenancy() {
+    this.endingTenancy = false;
+  }
+
+  confirmEndTenancy() {
+    this.moveOutDate.markAsTouched();
+    if (this.moveOutDate.invalid || !this.moveOutDate.value) {
+      return;
+    }
+
+    this.submitLoading = true;
+    const terminationDate = this.moveOutDate.value.toISOString().split('T')[0];
+    this.leaseService
+      .terminateLease(this.lease.id, { termination_date: terminationDate })
+      .subscribe({
+        next: () => {
+          notifySuccess(this.snackBar, 'Tenancy ended');
+          this.dialogRef.close(true);
+          this.submitLoading = false;
+        },
+        error: (error) => {
+          notifyError(
+            this.snackBar,
+            error.error?.error || error.message || 'Failed to end tenancy'
+          );
+          this.submitLoading = false;
+        },
+      });
   }
 
   onCancel() {

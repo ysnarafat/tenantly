@@ -27,6 +27,8 @@ export interface DueSummary {
   total_tenants_due: number;
 }
 
+export type LeaseEndReason = 'Expired' | 'Terminated' | 'Renewed';
+
 export interface Lease {
   id: number;
   unit_id: number;
@@ -39,6 +41,10 @@ export interface Lease {
   security_deposit: number;
   active: boolean;
   organization_id: number;
+  // Present once a lease has stopped being active — see LeaseEndReason.
+  end_reason?: LeaseEndReason;
+  // Present when this lease was created by renewing an earlier one.
+  renewed_from_lease_id?: number;
   created_at: string;
   updated_at: string;
 }
@@ -113,6 +119,17 @@ export interface TerminateLeaseRequest {
   termination_date?: string;
 }
 
+// Starts a new lease term for the same unit/tenant instead of mutating the
+// current lease — fields left unset carry the corresponding value forward
+// from the lease being renewed. See LeaseService.renewLease.
+export interface RenewLeaseRequest {
+  start_date?: string;
+  duration_months: number;
+  monthly_rent?: number;
+  security_deposit?: number;
+  lease_type?: LeaseType;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -146,6 +163,10 @@ export class LeaseService {
 
   terminateLease(id: number, request: TerminateLeaseRequest = {}): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.apiUrl}/${id}/terminate`, request);
+  }
+
+  renewLease(id: number, request: RenewLeaseRequest): Observable<LeaseWithDetails> {
+    return this.http.post<LeaseWithDetails>(`${this.apiUrl}/${id}/renew`, request);
   }
 
   getLeasesByUnit(

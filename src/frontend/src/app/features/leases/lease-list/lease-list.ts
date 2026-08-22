@@ -211,7 +211,14 @@ export class LeaseList implements OnInit {
   }
 
   getStatusText(lease: LeaseWithDetails): string {
-    if (!lease.active) return 'Inactive';
+    if (!lease.active) {
+      // end_reason distinguishes an early move-out or a renewal from a lease
+      // that simply reached the end of its term — same badge color/sort
+      // order (still "inactive"), more specific label.
+      if (lease.end_reason === 'Terminated') return 'Terminated';
+      if (lease.end_reason === 'Renewed') return 'Renewed';
+      return 'Inactive';
+    }
     if (lease.is_expired) return 'Expired';
     if (lease.days_remaining <= 30) return `${lease.days_remaining}d left`;
     return 'Active';
