@@ -6,7 +6,7 @@ import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
 import { provideStore } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
 import { provideStoreDevtools } from '@ngrx/store-devtools';
-import { TranslateModule } from '@ngx-translate/core';
+import { provideTranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 
 import { routes } from './app.routes';
@@ -47,10 +47,12 @@ export const appConfig: ApplicationConfig = {
       provide: MAT_FORM_FIELD_DEFAULT_OPTIONS,
       useValue: { floatLabel: 'always' },
     },
-    importProvidersFrom(TranslateModule.forRoot({ defaultLanguage: 'en' })),
-    provideTranslateHttpLoader({
-      prefix: 'assets/i18n/',
-      suffix: `.json?v=${Date.now()}`,
+    provideTranslateService({
+      fallbackLang: 'en',
+      loader: provideTranslateHttpLoader({
+        prefix: 'assets/i18n/',
+        suffix: `.json?v=${Date.now()}`,
+      }),
     }),
     {
       provide: APP_INITIALIZER,

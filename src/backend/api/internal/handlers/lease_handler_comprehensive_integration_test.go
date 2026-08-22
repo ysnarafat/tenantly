@@ -30,25 +30,26 @@ import (
 // LeaseIntegrationTestSuite provides comprehensive integration testing for lease management API
 type LeaseIntegrationTestSuite struct {
 	suite.Suite
-	db            *sqlx.DB
-	router        *gin.Engine
-	config        *config.Config
-	leaseHandler  *LeaseHandler
-	tenantHandler *TenantHandler
-	propertyRepo  *repositories.PropertyRepository
-	buildingRepo  *repositories.BuildingRepository
-	unitRepo      *repositories.UnitRepository
-	tenantRepo    *repositories.TenantRepository
-	leaseRepo     *repositories.LeaseRepository
-	userRepo      *repositories.UserRepository
-	orgRepo       *repositories.OrganizationRepository
-	testProperty  *models.Property
-	testBuilding  *models.Building
-	testUnit      *models.Unit
-	testTenant    *models.Tenant
-	testUser      *models.User
-	testOrg       *models.Organization
-	authToken     string
+	db              *sqlx.DB
+	router          *gin.Engine
+	config          *config.Config
+	leaseHandler    *LeaseHandler
+	tenantHandler   *TenantHandler
+	propertyRepo    *repositories.PropertyRepository
+	buildingRepo    *repositories.BuildingRepository
+	unitRepo        *repositories.UnitRepository
+	tenantRepo      *repositories.TenantRepository
+	leaseRepo       *repositories.LeaseRepository
+	leaseChargeRepo *repositories.LeaseChargeRepository
+	userRepo        *repositories.UserRepository
+	orgRepo         *repositories.OrganizationRepository
+	testProperty    *models.Property
+	testBuilding    *models.Building
+	testUnit        *models.Unit
+	testTenant      *models.Tenant
+	testUser        *models.User
+	testOrg         *models.Organization
+	authToken       string
 }
 
 func (suite *LeaseIntegrationTestSuite) SetupSuite() {
@@ -97,12 +98,13 @@ func (suite *LeaseIntegrationTestSuite) SetupSuite() {
 	suite.unitRepo = repositories.NewUnitRepository(suite.db)
 	suite.tenantRepo = repositories.NewTenantRepository(suite.db, suite.config.NIDProtector)
 	suite.leaseRepo = repositories.NewLeaseRepository(suite.db)
+	suite.leaseChargeRepo = repositories.NewLeaseChargeRepository(suite.db)
 
 	// Initialize services
 	auditService := database.NewAuditService(suite.db)
 	userService := services.NewUserService(suite.userRepo, auditService, suite.config.JWTSecret, suite.config.JWTExpiration)
 	tenantService := services.NewTenantService(suite.tenantRepo, suite.leaseRepo, auditService)
-	leaseService := services.NewLeaseService(suite.leaseRepo, suite.tenantRepo, suite.unitRepo, auditService)
+	leaseService := services.NewLeaseService(suite.leaseRepo, suite.tenantRepo, suite.unitRepo, suite.leaseChargeRepo, auditService)
 
 	// Initialize handlers
 	userHandler := NewUserHandler(userService, "", false)
@@ -174,6 +176,9 @@ func (suite *LeaseIntegrationTestSuite) setupTestRoutes(userHandler *UserHandler
 				leases.DELETE("/:id", suite.leaseHandler.DeleteLease)
 				leases.POST("/:id/terminate", suite.leaseHandler.TerminateLease)
 				leases.POST("/:id/renew", suite.leaseHandler.RenewLease)
+				leases.POST("/:id/charges", suite.leaseHandler.AddLeaseCharge)
+				leases.PUT("/:id/charges/:chargeId", suite.leaseHandler.UpdateLeaseCharge)
+				leases.DELETE("/:id/charges/:chargeId", suite.leaseHandler.DeleteLeaseCharge)
 				leases.GET("/units/:unit_id", suite.leaseHandler.GetLeasesByUnit)
 				leases.GET("/tenants/:tenant_id", suite.leaseHandler.GetLeasesByTenant)
 			}
@@ -532,6 +537,56 @@ func (suite *LeaseIntegrationTestSuite) TestRenewLease_Success() {
 	// Coverage must be back-to-back: the old lease's new end_date should
 	// match the renewed lease's start_date, with no gap or overlap.
 	assert.Equal(suite.T(), oldLease.EndDate.Format("2006-01-02"), renewed.StartDate.Format("2006-01-02"))
+}
+
+func (suite *LeaseIntegrationTestSuite) TestRenewLease_InactiveLeaseFails() {
+	lease := suite.createTestLease()
+
+	// End the tenancy first, so the lease is no longer active.
+	w := suite.makeAuthenticatedRequest(
+		"POST", fmt.Sprintf("/api/v1/leases/%d/terminate", lease.ID),
+		map[string]string{"termination_date": time.Now().Format("2006-01-02")},
+	)
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	// Renewing it must fail with a specific, actionable reason — not a
+	// generic "Failed to renew lease" that hides why.
+	w = suite.makeAuthenticatedRequest(
+		"POST", fmt.Sprintf("/api/v1/leases/%d/renew", lease.ID),
+		map[string]interface{}{"duration_months": 6},
+	)
+	assert.Equal(suite.T(), http.StatusConflict, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "RENEW_LEASE_INACTIVE", response["code"])
+	assert.Equal(suite.T(), "only an active lease can be renewed", response["error"])
+}
+
+func (suite *LeaseIntegrationTestSuite) TestTerminateLease_AlreadyTerminatedFails() {
+	lease := suite.createTestLease()
+
+	terminationDate := time.Now().Format("2006-01-02")
+	w := suite.makeAuthenticatedRequest(
+		"POST", fmt.Sprintf("/api/v1/leases/%d/terminate", lease.ID),
+		map[string]string{"termination_date": terminationDate},
+	)
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	// Terminating an already-terminated lease must fail with a specific
+	// reason rather than a generic, unhelpful message.
+	w = suite.makeAuthenticatedRequest(
+		"POST", fmt.Sprintf("/api/v1/leases/%d/terminate", lease.ID),
+		map[string]string{"termination_date": terminationDate},
+	)
+	assert.Equal(suite.T(), http.StatusConflict, w.Code)
+
+	var response map[string]interface{}
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), "TERMINATE_LEASE_INACTIVE", response["code"])
+	assert.Equal(suite.T(), "lease is not active", response["error"])
 }
 
 func (suite *LeaseIntegrationTestSuite) TestGetLeasesByUnit_Success() {

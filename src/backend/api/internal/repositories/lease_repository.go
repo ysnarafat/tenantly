@@ -642,6 +642,21 @@ func (r *LeaseRepository) RenewLease(oldLeaseID int, req *models.RenewLeaseReque
 		return nil, fmt.Errorf("failed to create renewed lease: %w", err)
 	}
 
+	// Carry the old lease's active recurring charges forward by default —
+	// a landlord renewing a lease almost always keeps the same utility/
+	// service charges unless they explicitly change them.
+	carryForwardCharges := req.CarryForwardCharges == nil || *req.CarryForwardCharges
+	if carryForwardCharges {
+		if _, err := tx.Exec(
+			`INSERT INTO lease_charges (lease_id, charge_type, label, amount, active, created_at, updated_at)
+			 SELECT $1, charge_type, label, amount, active, $2, $2
+			 FROM lease_charges WHERE lease_id = $3 AND active = true`,
+			newLease.ID, time.Now(), oldLeaseID,
+		); err != nil {
+			return nil, fmt.Errorf("failed to carry forward lease charges: %w", err)
+		}
+	}
+
 	if err := tx.Commit(); err != nil {
 		return nil, fmt.Errorf("failed to commit lease renewal: %w", err)
 	}

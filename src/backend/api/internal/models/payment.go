@@ -137,6 +137,10 @@ type LeaseSearchResult struct {
 	// of this unit's Due/Partial/Overdue payment records — i.e. total arrears,
 	// not just the current month's rent.
 	OutstandingBalance float64 `json:"outstanding_balance" db:"outstanding_balance"`
+	// ChargesTotal is the sum of this lease's active lease_charges (utility,
+	// service charge, etc.) — added to MonthlyRent when generating payments.
+	// Only populated by GetActiveLeasesForPeriod; zero elsewhere.
+	ChargesTotal float64 `json:"charges_total" db:"charges_total"`
 }
 
 // LeaseSearchResponse represents paginated search results

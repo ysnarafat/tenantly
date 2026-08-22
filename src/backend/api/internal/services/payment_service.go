@@ -542,9 +542,11 @@ func (s *PaymentService) GenerateMonthlyPayments(req *models.GenerateMonthlyPaym
 			OrganizationID: orgID,
 			Month:          req.Month,
 			Year:           req.Year,
-			AmountDue:      lease.MonthlyRent,
-			DueDate:        dueDateStr,
-			ReceiptNumber:  &receiptNumber,
+			// AmountDue includes the lease's recurring charges (utility, service
+			// charge, etc.) on top of the base rent — see GetActiveLeasesForPeriod.
+			AmountDue:     lease.MonthlyRent + lease.ChargesTotal,
+			DueDate:       dueDateStr,
+			ReceiptNumber: &receiptNumber,
 		}
 
 		if _, err := s.paymentRepo.Create(createReq); err != nil {

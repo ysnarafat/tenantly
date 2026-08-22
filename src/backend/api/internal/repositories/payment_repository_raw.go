@@ -220,7 +220,8 @@ func (r *PaymentRepository) GetActiveLeasesForPeriod(orgID, month, year int, bui
 			l.start_date AS lease_start_date,
 			l.end_date AS lease_end_date,
 			l.monthly_rent,
-			l.active
+			l.active,
+			COALESCE((SELECT SUM(amount) FROM lease_charges WHERE lease_id = l.id AND active = true), 0) AS charges_total
 		FROM leases l
 		LEFT JOIN tenants t ON l.tenant_id = t.id
 		LEFT JOIN units u ON l.unit_id = u.id
@@ -245,7 +246,7 @@ func (r *PaymentRepository) GetActiveLeasesForPeriod(orgID, month, year int, bui
 			&lr.BuildingID, &lr.BuildingName, &lr.BuildingCode,
 			&lr.UnitID, &lr.UnitNumber, &lr.UnitType,
 			&lr.LeaseStartDate, &endDate,
-			&lr.MonthlyRent, &lr.Active,
+			&lr.MonthlyRent, &lr.Active, &lr.ChargesTotal,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan lease row: %w", err)

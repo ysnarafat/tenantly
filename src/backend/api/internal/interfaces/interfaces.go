@@ -327,6 +327,16 @@ type LeaseRepositoryInterface interface {
 	GetDueSummary(orgID int) (*models.DueSummary, error)
 }
 
+// LeaseChargeRepositoryInterface defines the interface for lease charge repository operations
+type LeaseChargeRepositoryInterface interface {
+	Create(leaseID int, req *models.CreateLeaseChargeRequest) (*models.LeaseCharge, error)
+	GetByID(id int) (*models.LeaseCharge, error)
+	GetByLeaseID(leaseID int) ([]*models.LeaseCharge, error)
+	Update(id int, req *models.UpdateLeaseChargeRequest) (*models.LeaseCharge, error)
+	Delete(id int) error
+	SumActiveChargesByLeaseID(leaseID int) (float64, error)
+}
+
 // LeaseServiceInterface defines the interface for lease service operations
 type LeaseServiceInterface interface {
 	CreateLease(req *models.CreateLeaseRequest, userID int) (*models.LeaseWithDetails, error)
@@ -336,6 +346,9 @@ type LeaseServiceInterface interface {
 	DeleteLease(id int, userID, orgID int) error
 	TerminateLease(id int, userID, orgID int, terminationDate string) error
 	RenewLease(id int, req *models.RenewLeaseRequest, userID, orgID int) (*models.LeaseWithDetails, error)
+	AddLeaseCharge(leaseID int, req *models.CreateLeaseChargeRequest, userID, orgID int) (*models.LeaseCharge, error)
+	UpdateLeaseCharge(leaseID, chargeID int, req *models.UpdateLeaseChargeRequest, userID, orgID int) (*models.LeaseCharge, error)
+	RemoveLeaseCharge(leaseID, chargeID int, userID, orgID int) error
 	GetLeasesByUnit(unitID int, page, pageSize, orgID int) (*models.LeaseListResponse, error)
 	GetLeasesByTenant(tenantID int, page, pageSize, orgID int) (*models.LeaseListResponse, error)
 	GetLeasesDue(orgID int) ([]models.LeaseDue, error)
