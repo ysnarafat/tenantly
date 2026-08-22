@@ -30,6 +30,11 @@ export const routes: Routes = [
     canActivate: [GuestGuard],
   },
   {
+    path: 'contact',
+    title: 'Contact',
+    loadComponent: () => import('./features/marketing/contact/contact').then((m) => m.Contact),
+  },
+  {
     path: 'login',
     title: 'Sign in',
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),

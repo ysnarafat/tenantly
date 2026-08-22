@@ -300,6 +300,10 @@
   },
   "LOGIN": {
     "TITLE": "Tenantly Login",
+    "EYEBROW": "Your account",
+    "WELCOME": "Welcome back",
+    "SUBTITLE": "Sign in to continue to Tenantly",
+    "FORGOT_PASSWORD": "Forgot password?",
     "FIELDS": {
       "USERNAME": "Username",
       "PASSWORD": "Password"
@@ -816,6 +820,32 @@
       "DARK_MODE": "Switch to dark mode"
     }
   },
+  "CONTACT_PAGE": {
+    "SEO": {
+      "TITLE": "Contact — Tenantly",
+      "DESCRIPTION": "Get in touch with the Tenantly team for setup help, account questions, or pricing."
+    },
+    "NAV": {
+      "HOME": "Home",
+      "LOGIN": "Log in"
+    },
+    "HERO": {
+      "EYEBROW": "Get in touch",
+      "TITLE": "We'd love to hear from you",
+      "SUBTITLE": "Setting up for the first time, have a question about your account, or want to talk pricing? Drop us a line — we reply within one business day."
+    },
+    "EMAIL": {
+      "LABEL": "Email us",
+      "COPY": "Copy email",
+      "COPIED": "Copied!",
+      "OPEN": "Open email client",
+      "RESPONSE": "We typically reply within one business day."
+    },
+    "FOOTER": {
+      "TAGLINE": "Property and rent management for Bangladesh.",
+      "RIGHTS": "© {{ year }} Tenantly. All rights reserved."
+    }
+  },
   "HOMEPAGE": {
     "SEO": {
       "TITLE": "Tenantly - Property & Rent Management for Bangladesh",
@@ -823,6 +853,7 @@
     },
     "NAV": {
       "FAQ": "FAQ",
+      "CONTACT": "Contact",
       "LOGIN": "Log in"
     },
     "HERO": {
@@ -881,7 +912,7 @@
     },
     "FOOTER": {
       "TAGLINE": "Property and rent management for Bangladesh.",
-      "RIGHTS": "© 2026 Tenantly. All rights reserved."
+      "RIGHTS": "© {{ year }} Tenantly. All rights reserved."
     }
   }
 }

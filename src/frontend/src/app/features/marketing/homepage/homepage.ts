@@ -38,6 +38,7 @@ export class Homepage implements OnDestroy {
   private translate = inject(TranslateService);
 
   readonly contactEmail = 'hello@tenantly.com';
+  readonly currentYear = new Date().getFullYear();
   readonly features = FEATURES;
   readonly faqKeys = FAQ_KEYS;
 
@@ -75,6 +76,11 @@ export class Homepage implements OnDestroy {
 
   ngOnDestroy(): void {
     this.canonicalLink?.remove();
+  }
+
+  scrollTo(id: string, event: Event): void {
+    event.preventDefault();
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   }
 
   toggleFaq(key: string): void {
