@@ -510,6 +510,40 @@ mat-dialog-content {
   height: 100%;
 }
 
+/* Filter-bar "Reset" button — shared so every filters bar (tenant/property/
+   lease/payment lists, etc.) looks and behaves the same. Pair with
+   `mat-stroked-button`, the `filter_alt_off` icon, and `COMMON.BUTTONS.RESET`,
+   and gate visibility on a `hasActiveFilters` getter/signal. */
+.reset-filters-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  height: 36px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+}
+
+@media (max-width: 480px) {
+  .reset-filters-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 /* Status indicators */
 .status-paid {
   color: var(--success-color);

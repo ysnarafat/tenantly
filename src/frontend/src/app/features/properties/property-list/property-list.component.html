@@ -82,7 +82,7 @@
     }
 
     @if (hasActiveFilters()) {
-      <button mat-button (click)="resetFilters()" class="reset-filters-btn">
+      <button mat-stroked-button (click)="resetFilters()" class="reset-filters-btn">
         <mat-icon>filter_alt_off</mat-icon>
         {{ 'COMMON.BUTTONS.RESET' | translate }}
       </button>

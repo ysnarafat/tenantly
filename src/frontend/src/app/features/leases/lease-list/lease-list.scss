@@ -443,6 +443,10 @@ mat-paginator {
       width: 100%;
       min-width: unset;
     }
+
+    .results-count {
+      margin-left: 0;
+    }
   }
 
   .detail-grid {

@@ -77,12 +77,11 @@
     <button
       *ngIf="hasActiveFilters"
       mat-stroked-button
-      class="clear-filters-btn"
+      class="reset-filters-btn"
       (click)="resetFilters()"
-      [matTooltip]="'COMMON.ACTIONS.RESET_FILTERS' | translate"
     >
       <mat-icon>filter_alt_off</mat-icon>
-      Clear
+      {{ 'COMMON.BUTTONS.RESET' | translate }}
     </button>
   </div>
 

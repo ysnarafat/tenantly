@@ -146,15 +146,17 @@
                   }
                 </mat-select>
               </mat-form-field>
-              <div class="filter-actions" style="margin-left: auto">
+              <div class="filter-actions">
                 <button mat-flat-button color="primary" (click)="applyFilters()">
                   <mat-icon>search</mat-icon>
                   {{ 'PAYMENT_LIST.BUTTONS.APPLY' | translate }}
                 </button>
-                <button mat-flat-button (click)="clearFilters()">
-                  <mat-icon>clear</mat-icon>
-                  {{ 'PAYMENT_LIST.BUTTONS.CLEAR' | translate }}
+                @if (hasActiveFilters) {
+                <button mat-stroked-button class="reset-filters-btn" (click)="clearFilters()">
+                  <mat-icon>filter_alt_off</mat-icon>
+                  {{ 'COMMON.BUTTONS.RESET' | translate }}
                 </button>
+                }
               </div>
             </div>
           </mat-card-content>

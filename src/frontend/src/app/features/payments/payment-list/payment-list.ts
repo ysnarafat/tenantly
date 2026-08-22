@@ -121,6 +121,14 @@ export class PaymentList implements OnInit {
   filterMonth = '';
   filterYear = new Date().getFullYear();
 
+  get hasActiveFilters(): boolean {
+    return !!(
+      this.filterStatus ||
+      this.filterMonth ||
+      this.filterYear !== new Date().getFullYear()
+    );
+  }
+
   treePayments = signal<PaymentWithDetails[]>([]);
   treeLoading = signal(false);
   treeFilterMonth: number | '' = '';

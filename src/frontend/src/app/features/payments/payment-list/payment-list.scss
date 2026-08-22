@@ -230,6 +230,7 @@
 .filter-actions {
   display: flex;
   gap: 8px;
+  margin-left: auto;
   // Compensate for Material outlined form field's subscript wrapper (~20px)
   // so buttons visually align with the bottom of the inputs
   padding-bottom: 20px;

@@ -77,6 +77,16 @@
       {{ filteredLeases.length }} {{ filteredLeases.length === 1 ? ('COMMON.PAGINATION.RESULT' |
       translate) : ('COMMON.PAGINATION.RESULTS' | translate) }}
     </span>
+
+    <button
+      *ngIf="hasActiveFilters"
+      mat-stroked-button
+      class="reset-filters-btn"
+      (click)="resetFilters()"
+    >
+      <mat-icon>filter_alt_off</mat-icon>
+      {{ 'COMMON.BUTTONS.RESET' | translate }}
+    </button>
   </div>
 
   <!-- Content Card -->

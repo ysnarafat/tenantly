@@ -191,6 +191,13 @@ export class LeaseList implements OnInit {
     this.applyFilters();
   }
 
+  resetFilters() {
+    this.searchQuery = '';
+    this.statusFilter = 'all';
+    this.typeFilter = 'all';
+    this.applyFilters();
+  }
+
   toggleExpand(lease: LeaseWithDetails, event: Event) {
     event.stopPropagation();
     this.expandedLease = this.expandedLease === lease ? null : lease;
