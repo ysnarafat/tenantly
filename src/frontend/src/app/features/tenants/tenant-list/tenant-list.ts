@@ -13,7 +13,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatMenuModule } from '@angular/material/menu';
 import { MatSelectModule } from '@angular/material/select';
 import { MatOptionModule } from '@angular/material/core';
 import { TranslateModule } from '@ngx-translate/core';
@@ -51,7 +50,6 @@ import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm
     MatFormFieldModule,
     MatTooltipModule,
     MatProgressSpinnerModule,
-    MatMenuModule,
     MatSelectModule,
     MatOptionModule,
     TranslateModule,
@@ -149,7 +147,7 @@ export class TenantList implements OnInit {
   pageSize = 10;
   pageIndex = 0;
 
-  displayedColumns: string[] = ['name', 'type', 'contact', 'nid', 'status', 'created', 'actions'];
+  displayedColumns: string[] = ['name', 'contact', 'nid', 'status', 'created', 'actions'];
 
   sortState: Sort = { active: '', direction: '' };
 
@@ -255,8 +253,27 @@ export class TenantList implements OnInit {
     this.applyFilters();
   }
 
+  resetFilters() {
+    this.searchQuery = '';
+    this.activeFilter = 'all';
+    this.typeFilter = 'all';
+    this.applyFilters();
+  }
+
   get hasActiveFilters(): boolean {
     return !!(this.searchQuery || this.activeFilter !== 'all' || this.typeFilter !== 'all');
+  }
+
+  getInitials(name: string): string {
+    const words = (name ?? '').trim().split(/\s+/).filter(Boolean);
+    if (words.length === 0) return '?';
+    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+    return (words[0][0] + words[words.length - 1][0]).toUpperCase();
+  }
+
+  getAvatarColorIndex(name: string): number {
+    const code = (name ?? '').charCodeAt(0) || 0;
+    return code % 6;
   }
 
   get activeCount() {

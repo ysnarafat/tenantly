@@ -42,9 +42,11 @@ air  # Auto-rebuilds on file changes (configured in .air.toml)
 go run cmd/server/main.go
 
 # Database migrations (auto-run on server startup; manual control via dedicated CLI)
-go run cmd/migrate/main.go up      # Apply pending migrations
-go run cmd/migrate/main.go down    # Rollback last migration
-go run cmd/migrate/main.go version # Show current version
+go run cmd/migrate/main.go up           # Apply pending migrations
+go run cmd/migrate/main.go down         # Rollback last migration
+go run cmd/migrate/main.go version      # Show current version
+go run cmd/migrate/main.go seed         # Seed dev data from seeds/dev/ (idempotent)
+go run cmd/migrate/main.go seed staging # Seed from seeds/staging/
 
 # Testing
 go test -v ./internal/...                                        # All tests

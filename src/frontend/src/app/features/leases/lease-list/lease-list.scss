@@ -1,3 +1,12 @@
+:root,
+[data-theme='light'] {
+  --bg-table-stripe: rgba(0, 0, 0, 0.022);
+}
+
+[data-theme='dark'] {
+  --bg-table-stripe: rgba(255, 255, 255, 0.03);
+}
+
 .lease-list-container {
   padding: 24px;
   max-width: 1400px;
@@ -137,27 +146,35 @@
 .lease-table {
   width: 100%;
 
+  th.mat-mdc-header-cell,
   th.mat-header-cell {
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--text-hint);
     border-bottom: 2px solid var(--border-light);
-    padding: 10px 16px;
+    padding: 8px 16px;
     white-space: nowrap;
+    background-color: var(--bg-secondary);
   }
 
+  td.mat-mdc-cell,
   td.mat-cell {
-    padding: 12px 16px;
+    padding: 8px 16px;
     border-bottom: 1px solid var(--border-table);
     vertical-align: middle;
+    font-size: 13px;
   }
 }
 
 .lease-row {
   cursor: pointer;
   transition: background 0.1s;
+
+  &:nth-child(even) {
+    background: var(--bg-table-stripe);
+  }
 
   &:hover {
     background: var(--bg-hover) !important;

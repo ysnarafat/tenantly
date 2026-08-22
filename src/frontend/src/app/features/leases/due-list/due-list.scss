@@ -1,3 +1,12 @@
+:root,
+[data-theme='light'] {
+  --bg-table-stripe: rgba(0, 0, 0, 0.022);
+}
+
+[data-theme='dark'] {
+  --bg-table-stripe: rgba(255, 255, 255, 0.03);
+}
+
 .due-list-container {
   padding: 24px;
   max-width: 1400px;
@@ -174,16 +183,16 @@
             width: 100%;
 
             mat-header-row {
-              background-color: var(--table-header-bg);
-              height: 56px;
+              background-color: var(--bg-secondary);
+              min-height: unset;
 
               mat-header-cell {
-                color: var(--text-secondary);
+                color: var(--text-hint);
                 font-weight: 600;
-                font-size: 14px;
+                font-size: 11px;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
-                padding: 0 16px;
+                padding: 8px 16px;
                 border-bottom: 2px solid var(--border-color);
 
                 &.amount-column {
@@ -193,18 +202,22 @@
             }
 
             mat-row {
-              height: 64px;
+              min-height: unset;
               border-bottom: 1px solid var(--border-color);
-              transition: all 0.2s ease;
+              transition: background 0.1s ease;
+
+              &:nth-child(even) {
+                background: var(--bg-table-stripe);
+              }
 
               &:hover {
-                background-color: var(--table-row-hover);
+                background-color: var(--bg-hover);
               }
 
               mat-cell {
-                padding: 0 16px;
+                padding: 8px 16px;
                 color: var(--text-primary);
-                font-size: 15px;
+                font-size: 13px;
 
                 &.amount-cell {
                   text-align: right;
@@ -376,13 +389,11 @@
               }
 
               mat-row {
-                height: auto;
-                min-height: 64px;
-                padding: 12px 0;
+                min-height: unset;
 
                 mat-cell {
-                  padding: 0 12px;
-                  font-size: 14px;
+                  padding: 8px 12px;
+                  font-size: 13px;
                   line-height: 1.4;
                 }
               }

@@ -424,14 +424,24 @@ func (r *LeaseRepository) Update(id int, req *models.UpdateLeaseRequest) (*model
 		argPos++
 	}
 
+	startDateArgPos := -1
 	if req.StartDate != nil {
 		updates = append(updates, fmt.Sprintf("start_date = $%d", argPos))
 		args = append(args, *req.StartDate)
+		startDateArgPos = argPos
 		argPos++
 	}
 
 	if req.DurationMonths != nil {
 		updates = append(updates, fmt.Sprintf("duration_months = $%d", argPos))
+		args = append(args, *req.DurationMonths)
+		argPos++
+		// Recalculate end_date from start_date + duration
+		if startDateArgPos >= 0 {
+			updates = append(updates, fmt.Sprintf("end_date = $%d::date + ($%d * INTERVAL '1 month')", startDateArgPos, argPos))
+		} else {
+			updates = append(updates, fmt.Sprintf("end_date = start_date + ($%d * INTERVAL '1 month')", argPos))
+		}
 		args = append(args, *req.DurationMonths)
 		argPos++
 	}

@@ -69,6 +69,80 @@
         Deactivating will mark this lease as inactive
       </span>
     </div>
+
+    <!-- ── Extend Lease Section ───────────────────────────────────────────── -->
+    <div class="section-divider"></div>
+
+    <div class="toggle-row">
+      <mat-slide-toggle formControlName="extend_lease" color="accent">
+        <mat-icon class="toggle-icon">event_repeat</mat-icon>
+        Extend lease duration
+      </mat-slide-toggle>
+    </div>
+
+    @if (isExtending) {
+    <div class="extend-section" formGroupName="extension">
+      <div class="extend-fields">
+        <mat-form-field appearance="outline">
+          <mat-label>Years</mat-label>
+          <mat-icon matPrefix>calendar_today</mat-icon>
+          <input
+            matInput
+            type="number"
+            formControlName="extend_years"
+            min="0"
+            max="50"
+            placeholder="0"
+          />
+          <mat-hint>0 – 50</mat-hint>
+          <mat-error
+            *ngIf="editForm.get('extension.extend_years')?.hasError('min') || editForm.get('extension.extend_years')?.hasError('max')"
+          >
+            0 – 50
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Months</mat-label>
+          <mat-icon matPrefix>calendar_month</mat-icon>
+          <input
+            matInput
+            type="number"
+            formControlName="extend_months"
+            min="0"
+            max="11"
+            placeholder="0"
+          />
+          <mat-hint>0 – 11</mat-hint>
+          <mat-error
+            *ngIf="editForm.get('extension.extend_months')?.hasError('min') || editForm.get('extension.extend_months')?.hasError('max')"
+          >
+            0 – 11
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="extend-error" *ngIf="extensionInvalid">
+        Enter at least 1 month or 1 year to extend
+      </div>
+
+      @if (newEndDate) {
+      <div class="extend-preview">
+        <mat-icon>arrow_forward</mat-icon>
+        <div class="preview-body">
+          <span class="preview-label">New end date</span>
+          <span class="preview-date">{{ formatDate(newEndDate) }}</span>
+          <span class="preview-total">Total: {{ newDurationMonths }} months</span>
+        </div>
+      </div>
+      }
+
+      <div class="extend-note" *ngIf="lease.is_expired">
+        <mat-icon>info</mat-icon>
+        This lease is expired — extending will automatically reactivate it.
+      </div>
+    </div>
+    }
   </form>
 </mat-dialog-content>
 
@@ -88,7 +162,7 @@
       diameter="18"
       style="display: inline-block; margin-right: 8px"
     ></mat-spinner>
-    {{ submitLoading ? ('EDIT_LEASE_DIALOG.BUTTONS.SAVING' | translate) :
-    ('EDIT_LEASE_DIALOG.BUTTONS.SAVE' | translate) }}
+    {{ submitLoading ? ('EDIT_LEASE_DIALOG.BUTTONS.SAVING' | translate) : (isExtending ? 'Save &
+    Extend' : ('EDIT_LEASE_DIALOG.BUTTONS.SAVE' | translate)) }}
   </button>
 </mat-dialog-actions>
