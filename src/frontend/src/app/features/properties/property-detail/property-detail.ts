@@ -17,7 +17,6 @@ import {
   Building,
   UnitWithDetails,
   UpdatePropertyRequest,
-  CreateBuildingRequest,
 } from '../../../core/models';
 import { LoadingSpinner } from '../../../shared/components/loading-spinner/loading-spinner';
 import { PropertyFormDialogComponent } from '../property-form-dialog/property-form-dialog';
@@ -172,19 +171,10 @@ export class PropertyDetail implements OnInit {
       data: { mode: 'create', property },
     });
 
-    ref.afterClosed().subscribe((result: CreateBuildingRequest | undefined) => {
+    ref.afterClosed().subscribe((result: Building | undefined) => {
       if (!result) return;
-
-      this.buildingService.createBuilding(result).subscribe({
-        next: () => {
-          notifySuccess(this.snackBar, 'Building created successfully');
-          this.load();
-        },
-        error: (err) => {
-          console.error('Error creating building:', safeErrorMessage(err));
-          notifyError(this.snackBar, 'Failed to create building');
-        },
-      });
+      notifySuccess(this.snackBar, 'Building created successfully');
+      this.load();
     });
   }
 

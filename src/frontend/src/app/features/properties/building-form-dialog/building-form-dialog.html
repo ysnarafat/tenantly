@@ -82,13 +82,21 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button mat-button (click)="onCancel()">
+  <button mat-button (click)="onCancel()" [disabled]="loading()">
     <mat-icon>close</mat-icon>
     {{ 'COMMON.BUTTONS.CANCEL' | translate }}
   </button>
-  <button mat-flat-button color="primary" (click)="onSubmit()" [disabled]="buildingForm.invalid">
+  <button
+    mat-flat-button
+    color="primary"
+    (click)="onSubmit()"
+    [disabled]="buildingForm.invalid || loading()"
+  >
+    @if (loading()) {
+    <mat-spinner diameter="18"></mat-spinner>
+    } @else {
     <mat-icon>{{ isEditMode ? 'save' : 'add' }}</mat-icon>
-    {{ (isEditMode ? 'BUILDING_FORM_DIALOG.BUTTONS.UPDATE' : 'BUILDING_FORM_DIALOG.BUTTONS.CREATE')
-    | translate }}
+    } {{ (isEditMode ? 'BUILDING_FORM_DIALOG.BUTTONS.UPDATE' :
+    'BUILDING_FORM_DIALOG.BUTTONS.CREATE') | translate }}
   </button>
 </mat-dialog-actions>
