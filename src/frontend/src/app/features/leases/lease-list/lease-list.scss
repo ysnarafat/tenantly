@@ -1,12 +1,3 @@
-:root,
-[data-theme='light'] {
-  --bg-table-stripe: rgba(0, 0, 0, 0.022);
-}
-
-[data-theme='dark'] {
-  --bg-table-stripe: rgba(255, 255, 255, 0.03);
-}
-
 .lease-list-container {
   padding: 24px;
   max-width: 1400px;
@@ -181,6 +172,11 @@
   }
   &.row-expanded {
     background: var(--bg-selected) !important;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
   }
 }
 
@@ -372,7 +368,7 @@
   color: var(--text-secondary);
 
   &.mono {
-    font-family: 'Courier New', monospace;
+    font-family: 'IBM Plex Mono', 'Courier New', monospace;
   }
   &.warn-text {
     color: var(--text-chip-orange);

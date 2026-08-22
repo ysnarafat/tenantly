@@ -2,7 +2,6 @@
 [data-theme='light'] {
   --color-restricted-bg: #fff3cd;
   --color-restricted-text: #7f5600;
-  --bg-table-stripe: rgba(0, 0, 0, 0.022);
 
   // Avatar palette (6 colors)
   --av0-bg: rgba(25, 118, 210, 0.12);
@@ -22,7 +21,6 @@
 [data-theme='dark'] {
   --color-restricted-bg: #3a2f0d;
   --color-restricted-text: #ffd873;
-  --bg-table-stripe: rgba(255, 255, 255, 0.03);
 
   --av0-bg: rgba(100, 181, 246, 0.15);
   --av0-fg: #90caf9;
@@ -326,7 +324,7 @@ h1 {
 }
 
 .mono-val {
-  font-family: 'Courier New', monospace;
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
   font-size: 12px;
   color: var(--text-secondary);
   background: var(--bg-code);

@@ -10,7 +10,6 @@
   --color-pending: #ff9800;
   --color-overdue: #f44336;
   --border-subtle: #e0e0e0;
-  --bg-table-stripe: rgba(0, 0, 0, 0.022);
 }
 
 [data-theme='dark'] {
@@ -19,7 +18,6 @@
   --color-pending: #ffb74d;
   --color-overdue: #ef9a9a;
   --border-subtle: #333;
-  --bg-table-stripe: rgba(255, 255, 255, 0.03);
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -277,54 +275,8 @@
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Desktop Table
+// Desktop Table (cell styles projected into <app-data-table>'s columns)
 // ──────────────────────────────────────────────────────────────────────────────
-
-.table-wrapper {
-  overflow-x: auto;
-  border-radius: 8px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-
-  @media (max-width: 768px) {
-    display: none;
-  }
-}
-
-.payment-table {
-  width: 100%;
-  border-collapse: collapse;
-
-  th {
-    background: var(--bg-secondary);
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 9px 16px;
-    text-align: left;
-    color: var(--text-muted);
-    border-bottom: 1px solid var(--border-subtle);
-  }
-
-  td {
-    padding: 9px 16px;
-    border-bottom: 1px solid var(--border-subtle);
-    font-size: 13px;
-
-    &:last-child {
-      text-align: right;
-    }
-  }
-
-  tr:nth-child(even) {
-    background: var(--bg-table-stripe);
-  }
-
-  tr:hover {
-    background: var(--bg-hover);
-  }
-}
 
 .cell-stack {
   display: flex;
@@ -344,7 +296,7 @@
 
 .amount-cell {
   text-align: right;
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'IBM Plex Mono', 'Roboto Mono', monospace;
   font-weight: 500;
 }
 
@@ -495,7 +447,7 @@ app-data-table {
 .amount-value {
   font-size: 15px;
   font-weight: 700;
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'IBM Plex Mono', 'Roboto Mono', monospace;
 }
 
 .edit-btn {
@@ -806,7 +758,7 @@ app-data-table {
 .prop-fin-value {
   font-size: 18px;
   font-weight: 700;
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'IBM Plex Mono', 'Roboto Mono', monospace;
   letter-spacing: -0.5px;
 
   &.collected {
@@ -866,7 +818,7 @@ app-data-table {
 .prop-rate-pct {
   font-size: 20px;
   font-weight: 800;
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'IBM Plex Mono', 'Roboto Mono', monospace;
   line-height: 1;
 }
 
@@ -949,18 +901,18 @@ app-data-table {
 .bldg-paid {
   color: var(--color-paid, #4caf50);
   font-weight: 600;
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'IBM Plex Mono', 'Roboto Mono', monospace;
 }
 .bldg-sep {
   color: var(--border-color);
 }
 .bldg-due {
   color: var(--text-muted);
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'IBM Plex Mono', 'Roboto Mono', monospace;
 }
 .bldg-rate {
   font-weight: 700;
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'IBM Plex Mono', 'Roboto Mono', monospace;
   font-size: 13px;
 }
 
@@ -982,11 +934,11 @@ app-data-table {
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
-    padding: 8px 14px;
+    letter-spacing: 0.04em;
+    color: var(--text-hint);
+    padding: 8px 16px;
     text-align: left;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 2px solid var(--border-light);
     white-space: nowrap;
 
     &.num {
@@ -995,15 +947,16 @@ app-data-table {
   }
 
   td {
-    padding: 7px 14px;
-    border-bottom: 1px solid var(--border-subtle);
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border-table);
+    font-size: 13px;
     vertical-align: middle;
 
     &.num {
       text-align: right;
     }
     &.mono {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'IBM Plex Mono', 'Roboto Mono', monospace;
       font-weight: 500;
     }
   }

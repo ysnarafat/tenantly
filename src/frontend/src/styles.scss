@@ -72,11 +72,13 @@ body {
   --shadow-card: rgba(0, 0, 0, 0.08);
   --shadow-toolbar: rgba(0, 0, 0, 0.15);
 
+  // Table zebra stripe — shared by every list/table across the app (data-table,
+  // due-list, lease-list, payment tables) so striping reads identically everywhere.
+  --bg-table-stripe: rgba(0, 0, 0, 0.022);
+
   // Due-list specific
   --card-bg: #ffffff;
   --card-bg-secondary: #f9f9f9;
-  --table-header-bg: #fafafa;
-  --table-row-hover: #f9f9f9;
   --color-success: #4caf50;
   --color-primary-dark: #1565c0;
 
@@ -134,10 +136,11 @@ body {
   // Due-list specific
   --card-bg: #1e1e1e;
   --card-bg-secondary: #252525;
-  --table-header-bg: #2a2a2a;
-  --table-row-hover: #2a2a2a;
   --color-success: #66bb6a;
   --color-primary-dark: #42a5f5;
+
+  // Table zebra stripe (see light theme for context)
+  --bg-table-stripe: rgba(255, 255, 255, 0.03);
 
   // Borders
   --border-color: #333333;

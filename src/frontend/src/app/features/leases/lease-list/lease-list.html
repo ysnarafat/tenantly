@@ -333,7 +333,11 @@
               *matRowDef="let row; columns: displayedColumns; when: isMainRow"
               class="lease-row"
               [class.row-expanded]="expandedLease === row"
+              tabindex="0"
+              role="button"
+              [attr.aria-expanded]="expandedLease === row"
               (click)="toggleExpand(row, $event)"
+              (keydown.enter)="toggleExpand(row, $event)"
             ></tr>
             <tr
               mat-row
