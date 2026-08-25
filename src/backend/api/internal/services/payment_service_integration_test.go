@@ -29,6 +29,7 @@ func TestGenerateMonthlyPayments_IncludesLeaseCharges(t *testing.T) {
 	chargeRepo := repositories.NewLeaseChargeRepository(db)
 	paymentRepo := repositories.NewPaymentRepository(db)
 	paymentTransactionRepo := repositories.NewPaymentTransactionRepository(db)
+	paymentTransactionAttachmentRepo := repositories.NewPaymentTransactionAttachmentRepository(db)
 	unitRepo := repositories.NewUnitRepository(db)
 	buildingRepo := repositories.NewBuildingRepository(db)
 	propertyRepo := repositories.NewPropertyRepository(db)
@@ -64,7 +65,7 @@ func TestGenerateMonthlyPayments_IncludesLeaseCharges(t *testing.T) {
 		t.Fatalf("failed to add second lease charge: %v", err)
 	}
 
-	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
+	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
 
 	result, err := paymentService.GenerateMonthlyPayments(&models.GenerateMonthlyPaymentsRequest{
 		Month: 6,
@@ -124,6 +125,7 @@ func TestGenerateMonthlyPayments_SkipsDeactivatedCharges(t *testing.T) {
 	chargeRepo := repositories.NewLeaseChargeRepository(db)
 	paymentRepo := repositories.NewPaymentRepository(db)
 	paymentTransactionRepo := repositories.NewPaymentTransactionRepository(db)
+	paymentTransactionAttachmentRepo := repositories.NewPaymentTransactionAttachmentRepository(db)
 	unitRepo := repositories.NewUnitRepository(db)
 	buildingRepo := repositories.NewBuildingRepository(db)
 	propertyRepo := repositories.NewPropertyRepository(db)
@@ -156,7 +158,7 @@ func TestGenerateMonthlyPayments_SkipsDeactivatedCharges(t *testing.T) {
 		t.Fatalf("failed to deactivate lease charge: %v", err)
 	}
 
-	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
+	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
 	if _, err := paymentService.GenerateMonthlyPayments(&models.GenerateMonthlyPaymentsRequest{
 		Month: 6,
 		Year:  2026,
@@ -199,6 +201,7 @@ func TestRecordPaymentTransaction_RealDB_InstallmentsAccumulate(t *testing.T) {
 
 	paymentRepo := repositories.NewPaymentRepository(db)
 	paymentTransactionRepo := repositories.NewPaymentTransactionRepository(db)
+	paymentTransactionAttachmentRepo := repositories.NewPaymentTransactionAttachmentRepository(db)
 	unitRepo := repositories.NewUnitRepository(db)
 	buildingRepo := repositories.NewBuildingRepository(db)
 	propertyRepo := repositories.NewPropertyRepository(db)
@@ -219,7 +222,7 @@ func TestRecordPaymentTransaction_RealDB_InstallmentsAccumulate(t *testing.T) {
 		t.Fatalf("failed to create payment: %v", err)
 	}
 
-	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
+	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
 
 	afterFirst, err := paymentService.RecordPaymentTransaction(payment.ID, &models.CreatePaymentTransactionRequest{
 		Amount:        10000,
@@ -267,6 +270,104 @@ func TestRecordPaymentTransaction_RealDB_InstallmentsAccumulate(t *testing.T) {
 	}
 	if txns[0].Amount+txns[1].Amount != 12000 {
 		t.Errorf("transaction amounts sum to %.2f, want 12000.00", txns[0].Amount+txns[1].Amount)
+	}
+}
+
+// TestPaymentTransactionAttachment_RealDB_UploadListDownloadDelete exercises
+// the actual bytea storage/round-trip through Postgres — the mock-based
+// tests in payment_service_test.go verify the validation and access-control
+// logic, but not that a real file survives a genuine INSERT/SELECT.
+func TestPaymentTransactionAttachment_RealDB_UploadListDownloadDelete(t *testing.T) {
+	db, cleanup := testutil.SetupTestDBNamed(t, servicesTestDB)
+	defer cleanup()
+
+	orgID := testutil.CreateTestOrganization(t, db)
+	propID := testutil.CreateTestProperty(t, db)
+	bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
+	unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+	tenantID := testutil.CreateTestTenant(t, db, orgID)
+
+	paymentRepo := repositories.NewPaymentRepository(db)
+	paymentTransactionRepo := repositories.NewPaymentTransactionRepository(db)
+	paymentTransactionAttachmentRepo := repositories.NewPaymentTransactionAttachmentRepository(db)
+	unitRepo := repositories.NewUnitRepository(db)
+	buildingRepo := repositories.NewBuildingRepository(db)
+	propertyRepo := repositories.NewPropertyRepository(db)
+	userRepo := repositories.NewUserRepository(db)
+	auditService := database.NewAuditService(db)
+
+	payment, err := paymentRepo.Create(&models.CreatePaymentRequest{
+		UnitID:         unitID,
+		TenantID:       tenantID,
+		BuildingID:     bldgID,
+		PropertyID:     propID,
+		OrganizationID: orgID,
+		Month:          6,
+		Year:           2026,
+		AmountDue:      12000,
+	})
+	if err != nil {
+		t.Fatalf("failed to create payment: %v", err)
+	}
+
+	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
+
+	afterFirst, err := paymentService.RecordPaymentTransaction(payment.ID, &models.CreatePaymentTransactionRequest{
+		Amount: 10000,
+	}, 1, orgID)
+	if err != nil {
+		t.Fatalf("unexpected error recording installment: %v", err)
+	}
+	txns, err := paymentService.GetPaymentTransactions(payment.ID, orgID)
+	if err != nil || len(txns) != 1 {
+		t.Fatalf("expected 1 transaction, got %d (err=%v)", len(txns), err)
+	}
+	transactionID := txns[0].ID
+	_ = afterFirst
+
+	jpegBytes := []byte{0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 'J', 'F', 'I', 'F', 0x00, 0x01, 0x02, 0x03}
+	uploaded, err := paymentService.UploadPaymentTransactionAttachment(payment.ID, transactionID, "bkash-screenshot.jpg", jpegBytes, 1, orgID)
+	if err != nil {
+		t.Fatalf("unexpected error uploading attachment: %v", err)
+	}
+	if uploaded.ContentType != "image/jpeg" {
+		t.Errorf("content type got %q, want image/jpeg", uploaded.ContentType)
+	}
+	if uploaded.FileSize != len(jpegBytes) {
+		t.Errorf("file size got %d, want %d", uploaded.FileSize, len(jpegBytes))
+	}
+
+	atts, err := paymentService.GetPaymentTransactionAttachments(payment.ID, transactionID, orgID)
+	if err != nil {
+		t.Fatalf("unexpected error listing attachments: %v", err)
+	}
+	if len(atts) != 1 {
+		t.Fatalf("expected 1 attachment, got %d", len(atts))
+	}
+
+	data, fileName, contentType, err := paymentService.GetPaymentTransactionAttachmentFile(payment.ID, transactionID, uploaded.ID, orgID)
+	if err != nil {
+		t.Fatalf("unexpected error downloading attachment: %v", err)
+	}
+	if string(data) != string(jpegBytes) {
+		t.Error("downloaded bytes do not match uploaded bytes after a real DB round-trip")
+	}
+	if fileName != "bkash-screenshot.jpg" {
+		t.Errorf("file name got %q, want bkash-screenshot.jpg", fileName)
+	}
+	if contentType != "image/jpeg" {
+		t.Errorf("content type got %q, want image/jpeg", contentType)
+	}
+
+	if err := paymentService.DeletePaymentTransactionAttachment(payment.ID, transactionID, uploaded.ID, 1, orgID); err != nil {
+		t.Fatalf("unexpected error deleting attachment: %v", err)
+	}
+	attsAfterDelete, err := paymentService.GetPaymentTransactionAttachments(payment.ID, transactionID, orgID)
+	if err != nil {
+		t.Fatalf("unexpected error listing attachments after delete: %v", err)
+	}
+	if len(attsAfterDelete) != 0 {
+		t.Errorf("expected 0 attachments after delete, got %d", len(attsAfterDelete))
 	}
 }
 

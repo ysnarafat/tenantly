@@ -73,6 +73,22 @@ func (m *mockPaymentService) DeletePaymentTransaction(paymentID, transactionID, 
 	return nil, errors.New("delete payment transaction not mocked")
 }
 
+func (m *mockPaymentService) UploadPaymentTransactionAttachment(paymentID, transactionID int, fileName string, data []byte, userID, orgID int) (*models.PaymentTransactionAttachment, error) {
+	return nil, errors.New("upload payment transaction attachment not mocked")
+}
+
+func (m *mockPaymentService) GetPaymentTransactionAttachments(paymentID, transactionID, orgID int) ([]*models.PaymentTransactionAttachment, error) {
+	return nil, errors.New("get payment transaction attachments not mocked")
+}
+
+func (m *mockPaymentService) GetPaymentTransactionAttachmentFile(paymentID, transactionID, attachmentID, orgID int) ([]byte, string, string, error) {
+	return nil, "", "", errors.New("get payment transaction attachment file not mocked")
+}
+
+func (m *mockPaymentService) DeletePaymentTransactionAttachment(paymentID, transactionID, attachmentID, userID, orgID int) error {
+	return errors.New("delete payment transaction attachment not mocked")
+}
+
 func (m *mockPaymentService) GetPayments(page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error) {
 	if m.getPaymentsFn == nil {
 		return make([]*models.PaymentWithDetails, 0), 0, nil

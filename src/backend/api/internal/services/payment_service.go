@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/ysnarafat/tenantly/internal/interfaces"
@@ -9,18 +10,20 @@ import (
 )
 
 type PaymentService struct {
-	paymentRepo            interfaces.PaymentRepositoryInterface
-	paymentTransactionRepo interfaces.PaymentTransactionRepositoryInterface
-	unitRepo               interfaces.UnitRepositoryInterface
-	buildingRepo           interfaces.BuildingRepositoryInterface
-	propertyRepo           interfaces.PropertyRepositoryInterface
-	auditService           interfaces.AuditServiceInterface
-	userRepo               interfaces.UserRepositoryInterface
+	paymentRepo                      interfaces.PaymentRepositoryInterface
+	paymentTransactionRepo           interfaces.PaymentTransactionRepositoryInterface
+	paymentTransactionAttachmentRepo interfaces.PaymentTransactionAttachmentRepositoryInterface
+	unitRepo                         interfaces.UnitRepositoryInterface
+	buildingRepo                     interfaces.BuildingRepositoryInterface
+	propertyRepo                     interfaces.PropertyRepositoryInterface
+	auditService                     interfaces.AuditServiceInterface
+	userRepo                         interfaces.UserRepositoryInterface
 }
 
 func NewPaymentService(
 	paymentRepo interfaces.PaymentRepositoryInterface,
 	paymentTransactionRepo interfaces.PaymentTransactionRepositoryInterface,
+	paymentTransactionAttachmentRepo interfaces.PaymentTransactionAttachmentRepositoryInterface,
 	unitRepo interfaces.UnitRepositoryInterface,
 	buildingRepo interfaces.BuildingRepositoryInterface,
 	propertyRepo interfaces.PropertyRepositoryInterface,
@@ -28,13 +31,14 @@ func NewPaymentService(
 	userRepo interfaces.UserRepositoryInterface,
 ) *PaymentService {
 	return &PaymentService{
-		paymentRepo:            paymentRepo,
-		paymentTransactionRepo: paymentTransactionRepo,
-		unitRepo:               unitRepo,
-		buildingRepo:           buildingRepo,
-		propertyRepo:           propertyRepo,
-		auditService:           auditService,
-		userRepo:               userRepo,
+		paymentRepo:                      paymentRepo,
+		paymentTransactionRepo:           paymentTransactionRepo,
+		paymentTransactionAttachmentRepo: paymentTransactionAttachmentRepo,
+		unitRepo:                         unitRepo,
+		buildingRepo:                     buildingRepo,
+		propertyRepo:                     propertyRepo,
+		auditService:                     auditService,
+		userRepo:                         userRepo,
 	}
 }
 
@@ -292,6 +296,125 @@ func (s *PaymentService) DeletePaymentTransaction(paymentID, transactionID, user
 	})
 
 	return updatedPayment, nil
+}
+
+// getOwnedTransaction loads a transaction and verifies it belongs both to
+// the given payment and, transitively, to the caller's organization —
+// mirroring the same parent-chain ownership check used throughout
+// DeletePaymentTransaction/GetPaymentTransactions.
+func (s *PaymentService) getOwnedTransaction(paymentID, transactionID, orgID int) (*models.PaymentTransaction, error) {
+	payment, err := s.paymentRepo.GetByIDWithDetails(paymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get payment: %w", err)
+	}
+	if payment.OrganizationID != orgID {
+		return nil, fmt.Errorf("payment not found")
+	}
+
+	txn, err := s.paymentTransactionRepo.GetByID(transactionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get payment transaction: %w", err)
+	}
+	if txn.PaymentID != paymentID {
+		return nil, fmt.Errorf("payment transaction not found")
+	}
+	return txn, nil
+}
+
+// UploadPaymentTransactionAttachment stores a file (receipt photo, mobile
+// banking screenshot, etc.) as evidence of one installment. The content type
+// is derived from the actual file bytes (never trusted from the client) and
+// restricted to images and PDF; size is capped at MaxAttachmentFileSize.
+func (s *PaymentService) UploadPaymentTransactionAttachment(paymentID, transactionID int, fileName string, data []byte, userID, orgID int) (*models.PaymentTransactionAttachment, error) {
+	if _, err := s.getOwnedTransaction(paymentID, transactionID, orgID); err != nil {
+		return nil, err
+	}
+
+	if len(data) == 0 {
+		return nil, fmt.Errorf("uploaded file is empty")
+	}
+	if len(data) > models.MaxAttachmentFileSize {
+		return nil, fmt.Errorf("file exceeds the maximum allowed size of %dMB", models.MaxAttachmentFileSize/(1024*1024))
+	}
+
+	detectedType := http.DetectContentType(data)
+	if !models.AllowedAttachmentContentTypes[detectedType] {
+		return nil, fmt.Errorf("unsupported file type %q — only images and PDF files are allowed", detectedType)
+	}
+
+	if fileName == "" {
+		fileName = "attachment"
+	}
+
+	attachment, err := s.paymentTransactionAttachmentRepo.Create(transactionID, fileName, detectedType, len(data), data, &userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to store attachment: %w", err)
+	}
+
+	_ = s.auditService.LogUserAction(userID, "UPLOAD_PAYMENT_ATTACHMENT", "payment_transaction_attachments", &attachment.ID, nil, map[string]interface{}{
+		"payment_id":     paymentID,
+		"transaction_id": transactionID,
+		"file_name":      fileName,
+		"file_size":      len(data),
+	})
+
+	return attachment, nil
+}
+
+// GetPaymentTransactionAttachments lists the attachments recorded against one transaction.
+func (s *PaymentService) GetPaymentTransactionAttachments(paymentID, transactionID, orgID int) ([]*models.PaymentTransactionAttachment, error) {
+	if _, err := s.getOwnedTransaction(paymentID, transactionID, orgID); err != nil {
+		return nil, err
+	}
+	atts, err := s.paymentTransactionAttachmentRepo.GetByTransactionID(transactionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get payment transaction attachments: %w", err)
+	}
+	return atts, nil
+}
+
+// GetPaymentTransactionAttachmentFile returns an attachment's raw bytes for download.
+func (s *PaymentService) GetPaymentTransactionAttachmentFile(paymentID, transactionID, attachmentID, orgID int) ([]byte, string, string, error) {
+	if _, err := s.getOwnedTransaction(paymentID, transactionID, orgID); err != nil {
+		return nil, "", "", err
+	}
+
+	attachment, err := s.paymentTransactionAttachmentRepo.GetByID(attachmentID)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to get attachment: %w", err)
+	}
+	if attachment.PaymentTransactionID != transactionID {
+		return nil, "", "", fmt.Errorf("attachment not found")
+	}
+
+	data, fileName, contentType, err := s.paymentTransactionAttachmentRepo.GetFileData(attachmentID)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to get attachment file: %w", err)
+	}
+	return data, fileName, contentType, nil
+}
+
+// DeletePaymentTransactionAttachment removes a mistakenly-uploaded attachment.
+func (s *PaymentService) DeletePaymentTransactionAttachment(paymentID, transactionID, attachmentID, userID, orgID int) error {
+	if _, err := s.getOwnedTransaction(paymentID, transactionID, orgID); err != nil {
+		return err
+	}
+
+	attachment, err := s.paymentTransactionAttachmentRepo.GetByID(attachmentID)
+	if err != nil {
+		return fmt.Errorf("failed to get attachment: %w", err)
+	}
+	if attachment.PaymentTransactionID != transactionID {
+		return fmt.Errorf("attachment not found")
+	}
+
+	if err := s.paymentTransactionAttachmentRepo.Delete(attachmentID); err != nil {
+		return fmt.Errorf("failed to delete attachment: %w", err)
+	}
+
+	_ = s.auditService.LogUserAction(userID, "DELETE_PAYMENT_ATTACHMENT", "payment_transaction_attachments", &attachmentID, attachment, nil)
+
+	return nil
 }
 
 // refreshPaymentFromTransactions recomputes a payment's cached amount_paid/

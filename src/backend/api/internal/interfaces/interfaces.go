@@ -262,6 +262,15 @@ type PaymentTransactionRepositoryInterface interface {
 	SumByPaymentID(paymentID int) (float64, error)
 }
 
+// PaymentTransactionAttachmentRepositoryInterface defines the interface for payment transaction attachment repository operations
+type PaymentTransactionAttachmentRepositoryInterface interface {
+	Create(transactionID int, fileName, contentType string, fileSize int, data []byte, uploadedBy *int) (*models.PaymentTransactionAttachment, error)
+	GetByID(id int) (*models.PaymentTransactionAttachment, error)
+	GetByTransactionID(transactionID int) ([]*models.PaymentTransactionAttachment, error)
+	GetFileData(id int) ([]byte, string, string, error)
+	Delete(id int) error
+}
+
 // PaymentServiceInterface defines the interface for payment service operations
 type PaymentServiceInterface interface {
 	CreatePayment(req *models.CreatePaymentRequest, userID int) (*models.Payment, error)
@@ -270,6 +279,10 @@ type PaymentServiceInterface interface {
 	RecordPaymentTransaction(paymentID int, req *models.CreatePaymentTransactionRequest, userID, orgID int) (*models.Payment, error)
 	GetPaymentTransactions(paymentID, orgID int) ([]*models.PaymentTransaction, error)
 	DeletePaymentTransaction(paymentID, transactionID, userID, orgID int) (*models.Payment, error)
+	UploadPaymentTransactionAttachment(paymentID, transactionID int, fileName string, data []byte, userID, orgID int) (*models.PaymentTransactionAttachment, error)
+	GetPaymentTransactionAttachments(paymentID, transactionID, orgID int) ([]*models.PaymentTransactionAttachment, error)
+	GetPaymentTransactionAttachmentFile(paymentID, transactionID, attachmentID, orgID int) ([]byte, string, string, error)
+	DeletePaymentTransactionAttachment(paymentID, transactionID, attachmentID, userID, orgID int) error
 	GetPayments(page, pageSize int, filters map[string]any) ([]*models.PaymentWithDetails, int, error)
 	GetPaymentsByBuilding(buildingID int, page, pageSize int, filters map[string]any) ([]*models.PaymentWithDetails, int, error)
 	GetPaymentsByProperty(propertyID int, page, pageSize int, filters map[string]any) ([]*models.PaymentWithDetails, int, error)

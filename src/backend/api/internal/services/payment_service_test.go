@@ -325,6 +325,80 @@ func (m *MockPaymentTransactionRepo) SumByPaymentID(paymentID int) (float64, err
 }
 
 // ---------------------------------------------------------------------------
+// MockPaymentTransactionAttachmentRepo - implements interfaces.PaymentTransactionAttachmentRepositoryInterface
+// ---------------------------------------------------------------------------
+
+type MockPaymentTransactionAttachmentRepo struct {
+	attachments      map[int]*models.PaymentTransactionAttachment
+	fileData         map[int][]byte
+	nextID           int
+	shouldFailCreate bool
+	shouldFailDelete bool
+}
+
+func newMockPaymentTransactionAttachmentRepo() *MockPaymentTransactionAttachmentRepo {
+	return &MockPaymentTransactionAttachmentRepo{
+		attachments: make(map[int]*models.PaymentTransactionAttachment),
+		fileData:    make(map[int][]byte),
+		nextID:      1,
+	}
+}
+
+func (m *MockPaymentTransactionAttachmentRepo) Create(transactionID int, fileName, contentType string, fileSize int, data []byte, uploadedBy *int) (*models.PaymentTransactionAttachment, error) {
+	if m.shouldFailCreate {
+		return nil, errors.New("create payment transaction attachment failed")
+	}
+	att := &models.PaymentTransactionAttachment{
+		ID:                   m.nextID,
+		PaymentTransactionID: transactionID,
+		FileName:             fileName,
+		ContentType:          contentType,
+		FileSize:             fileSize,
+		UploadedBy:           uploadedBy,
+		CreatedAt:            time.Now(),
+	}
+	m.attachments[m.nextID] = att
+	m.fileData[m.nextID] = data
+	m.nextID++
+	return att, nil
+}
+
+func (m *MockPaymentTransactionAttachmentRepo) GetByID(id int) (*models.PaymentTransactionAttachment, error) {
+	att, ok := m.attachments[id]
+	if !ok {
+		return nil, errors.New("payment transaction attachment not found")
+	}
+	return att, nil
+}
+
+func (m *MockPaymentTransactionAttachmentRepo) GetByTransactionID(transactionID int) ([]*models.PaymentTransactionAttachment, error) {
+	var result []*models.PaymentTransactionAttachment
+	for id := 1; id < m.nextID; id++ {
+		if att, ok := m.attachments[id]; ok && att.PaymentTransactionID == transactionID {
+			result = append(result, att)
+		}
+	}
+	return result, nil
+}
+
+func (m *MockPaymentTransactionAttachmentRepo) GetFileData(id int) ([]byte, string, string, error) {
+	att, ok := m.attachments[id]
+	if !ok {
+		return nil, "", "", errors.New("payment transaction attachment not found")
+	}
+	return m.fileData[id], att.FileName, att.ContentType, nil
+}
+
+func (m *MockPaymentTransactionAttachmentRepo) Delete(id int) error {
+	if m.shouldFailDelete {
+		return errors.New("delete payment transaction attachment failed")
+	}
+	delete(m.attachments, id)
+	delete(m.fileData, id)
+	return nil
+}
+
+// ---------------------------------------------------------------------------
 // MockPaymentUnitRepo â€“ implements interfaces.UnitRepositoryInterface
 // ---------------------------------------------------------------------------
 
@@ -665,17 +739,19 @@ func newPaymentServiceWithMocks() (
 	*MockPaymentPropertyRepo,
 	*MockPaymentAuditService,
 ) {
-	svc, payRepo, _, unitRepo, bldgRepo, propRepo, audit, _ := newPaymentServiceWithMocksAndTxns()
+	svc, payRepo, _, _, unitRepo, bldgRepo, propRepo, audit, _ := newPaymentServiceWithMocksAndTxns()
 	return svc, payRepo, unitRepo, bldgRepo, propRepo, audit
 }
 
 // newPaymentServiceWithMocksAndTxns is like newPaymentServiceWithMocks but
-// also exposes the mock transaction repo, for tests exercising
-// RecordPaymentTransaction/GetPaymentTransactions/DeletePaymentTransaction.
+// also exposes the mock transaction and attachment repos, for tests
+// exercising RecordPaymentTransaction/GetPaymentTransactions/
+// DeletePaymentTransaction/*PaymentTransactionAttachment*.
 func newPaymentServiceWithMocksAndTxns() (
 	*PaymentService,
 	*MockPaymentRepo,
 	*MockPaymentTransactionRepo,
+	*MockPaymentTransactionAttachmentRepo,
 	*MockPaymentUnitRepo,
 	*MockPaymentBuildingRepo,
 	*MockPaymentPropertyRepo,
@@ -684,13 +760,14 @@ func newPaymentServiceWithMocksAndTxns() (
 ) {
 	payRepo := newMockPaymentRepo()
 	txnRepo := newMockPaymentTransactionRepo()
+	attachRepo := newMockPaymentTransactionAttachmentRepo()
 	unitRepo := newMockPaymentUnitRepo()
 	bldgRepo := newMockPaymentBuildingRepo()
 	propRepo := newMockPaymentPropertyRepo()
 	audit := newMockPaymentAuditService()
 	userRepo := newMockPaymentUserRepo()
-	svc := NewPaymentService(payRepo, txnRepo, unitRepo, bldgRepo, propRepo, audit, userRepo)
-	return svc, payRepo, txnRepo, unitRepo, bldgRepo, propRepo, audit, userRepo
+	svc := NewPaymentService(payRepo, txnRepo, attachRepo, unitRepo, bldgRepo, propRepo, audit, userRepo)
+	return svc, payRepo, txnRepo, attachRepo, unitRepo, bldgRepo, propRepo, audit, userRepo
 }
 
 func sampleUnit(id, buildingID, propertyID int) *models.Unit {
@@ -1071,7 +1148,7 @@ func TestUpdatePayment_AmountPaidIsIgnoredFromClient(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRecordPaymentTransaction_AccumulatesAcrossInstallments(t *testing.T) {
-	svc, _, txnRepo, unitRepo, bldgRepo, propRepo, audit, _ := newPaymentServiceWithMocksAndTxns()
+	svc, _, txnRepo, _, unitRepo, bldgRepo, propRepo, audit, _ := newPaymentServiceWithMocksAndTxns()
 
 	unitRepo.addUnit(sampleUnit(1, 2, 3))
 	bldgRepo.addBuilding(sampleBuilding(2, 3))
@@ -1138,7 +1215,7 @@ func TestRecordPaymentTransaction_AccumulatesAcrossInstallments(t *testing.T) {
 }
 
 func TestRecordPaymentTransaction_CrossOrgPaymentNotFound(t *testing.T) {
-	svc, _, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
+	svc, _, _, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
 
 	unitRepo.addUnit(sampleUnit(1, 2, 3))
 	bldgRepo.addBuilding(sampleBuilding(2, 3))
@@ -1160,7 +1237,7 @@ func TestRecordPaymentTransaction_CrossOrgPaymentNotFound(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestDeletePaymentTransaction_RecomputesRemainingBalance(t *testing.T) {
-	svc, _, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
+	svc, _, _, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
 
 	unitRepo.addUnit(sampleUnit(1, 2, 3))
 	bldgRepo.addBuilding(sampleBuilding(2, 3))
@@ -1217,7 +1294,7 @@ func TestDeletePaymentTransaction_RecomputesRemainingBalance(t *testing.T) {
 }
 
 func TestDeletePaymentTransaction_WrongPaymentRejected(t *testing.T) {
-	svc, _, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
+	svc, _, _, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
 
 	unitRepo.addUnit(sampleUnit(1, 2, 3))
 	bldgRepo.addBuilding(sampleBuilding(2, 3))
@@ -1250,6 +1327,233 @@ func TestDeletePaymentTransaction_WrongPaymentRejected(t *testing.T) {
 	// tampered with via another payment's ID.
 	if _, err := svc.DeletePaymentTransaction(paymentB.ID, txnsOnA[0].ID, 99, 1); err == nil {
 		t.Error("expected an error deleting a transaction through the wrong payment, got nil")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// TestPaymentTransactionAttachment
+// ---------------------------------------------------------------------------
+
+// jpegBytes is a minimal-but-valid JPEG file signature — enough for
+// http.DetectContentType to recognize it as image/jpeg without needing a
+// full real image.
+var jpegBytes = []byte{0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 'J', 'F', 'I', 'F', 0x00}
+
+// pdfBytes is a minimal-but-valid PDF file signature.
+var pdfBytes = []byte("%PDF-1.4\n%âãÏÓ\n")
+
+func setupPaymentWithTransaction(t *testing.T, amount float64) (*PaymentService, *MockPaymentTransactionAttachmentRepo, int, int) {
+	t.Helper()
+	svc, _, _, attachRepo, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
+
+	unitRepo.addUnit(sampleUnit(1, 2, 3))
+	bldgRepo.addBuilding(sampleBuilding(2, 3))
+	propRepo.addProperty(sampleProperty(3))
+	req := sampleCreateRequest(1, 2, 3)
+	req.AmountDue = 12000
+	created, err := svc.CreatePayment(req, 99)
+	if err != nil {
+		t.Fatalf("failed to create payment: %v", err)
+	}
+
+	txn, err := svc.RecordPaymentTransaction(created.ID, &models.CreatePaymentTransactionRequest{Amount: amount}, 99, 1)
+	if err != nil {
+		t.Fatalf("failed to record transaction: %v", err)
+	}
+	txns, err := svc.GetPaymentTransactions(created.ID, 1)
+	if err != nil || len(txns) != 1 {
+		t.Fatalf("expected 1 transaction, got %d (err=%v)", len(txns), err)
+	}
+	_ = txn
+
+	return svc, attachRepo, created.ID, txns[0].ID
+}
+
+// addAnotherPaymentTransaction creates a second payment (different month, so
+// it doesn't collide with the one from setupPaymentWithTransaction) and
+// records a transaction against it using the SAME service/repo instances —
+// needed so "wrong transaction" tests actually exercise the ownership check
+// rather than comparing IDs across unrelated mock stores.
+func addAnotherPaymentTransaction(t *testing.T, svc *PaymentService, amount float64) (int, int) {
+	t.Helper()
+	req := sampleCreateRequest(1, 2, 3)
+	req.Month = 8
+	payment, err := svc.CreatePayment(req, 99)
+	if err != nil {
+		t.Fatalf("failed to create second payment: %v", err)
+	}
+	if _, err := svc.RecordPaymentTransaction(payment.ID, &models.CreatePaymentTransactionRequest{Amount: amount}, 99, 1); err != nil {
+		t.Fatalf("failed to record second transaction: %v", err)
+	}
+	txns, err := svc.GetPaymentTransactions(payment.ID, 1)
+	if err != nil || len(txns) != 1 {
+		t.Fatalf("expected 1 transaction on second payment, got %d (err=%v)", len(txns), err)
+	}
+	return payment.ID, txns[0].ID
+}
+
+func TestUploadPaymentTransactionAttachment_AcceptsImageAndPDF(t *testing.T) {
+	svc, _, paymentID, transactionID := setupPaymentWithTransaction(t, 1000)
+
+	imgAtt, err := svc.UploadPaymentTransactionAttachment(paymentID, transactionID, "receipt.jpg", jpegBytes, 99, 1)
+	if err != nil {
+		t.Fatalf("unexpected error uploading jpeg: %v", err)
+	}
+	if imgAtt.ContentType != "image/jpeg" {
+		t.Errorf("content type got %q, want image/jpeg", imgAtt.ContentType)
+	}
+
+	pdfAtt, err := svc.UploadPaymentTransactionAttachment(paymentID, transactionID, "receipt.pdf", pdfBytes, 99, 1)
+	if err != nil {
+		t.Fatalf("unexpected error uploading pdf: %v", err)
+	}
+	if pdfAtt.ContentType != "application/pdf" {
+		t.Errorf("content type got %q, want application/pdf", pdfAtt.ContentType)
+	}
+}
+
+func TestUploadPaymentTransactionAttachment_RejectsDisallowedType(t *testing.T) {
+	svc, _, paymentID, transactionID := setupPaymentWithTransaction(t, 1000)
+
+	// A plain-text payload — not an allowed type — even if the client lies
+	// about it via filename/extension.
+	textBytes := []byte("this is not an image or a pdf, just plain text pretending to be one")
+
+	_, err := svc.UploadPaymentTransactionAttachment(paymentID, transactionID, "totally-a-receipt.jpg", textBytes, 99, 1)
+	if err == nil {
+		t.Fatal("expected an error uploading a disallowed file type, got nil")
+	}
+}
+
+func TestUploadPaymentTransactionAttachment_RejectsOversizedFile(t *testing.T) {
+	svc, _, paymentID, transactionID := setupPaymentWithTransaction(t, 1000)
+
+	oversized := make([]byte, models.MaxAttachmentFileSize+1)
+	copy(oversized, jpegBytes)
+
+	_, err := svc.UploadPaymentTransactionAttachment(paymentID, transactionID, "huge.jpg", oversized, 99, 1)
+	if err == nil {
+		t.Fatal("expected an error uploading an oversized file, got nil")
+	}
+}
+
+func TestUploadPaymentTransactionAttachment_RejectsEmptyFile(t *testing.T) {
+	svc, _, paymentID, transactionID := setupPaymentWithTransaction(t, 1000)
+
+	_, err := svc.UploadPaymentTransactionAttachment(paymentID, transactionID, "empty.jpg", []byte{}, 99, 1)
+	if err == nil {
+		t.Fatal("expected an error uploading an empty file, got nil")
+	}
+}
+
+func TestUploadPaymentTransactionAttachment_CrossOrgTransactionNotFound(t *testing.T) {
+	svc, _, paymentID, transactionID := setupPaymentWithTransaction(t, 1000)
+
+	// orgID 999 does not own this payment (it was created under org 1).
+	_, err := svc.UploadPaymentTransactionAttachment(paymentID, transactionID, "receipt.jpg", jpegBytes, 99, 999)
+	if err == nil {
+		t.Fatal("expected an error uploading against another org's transaction, got nil")
+	}
+}
+
+func TestGetPaymentTransactionAttachments_ListsInUploadOrder(t *testing.T) {
+	svc, _, paymentID, transactionID := setupPaymentWithTransaction(t, 1000)
+
+	if _, err := svc.UploadPaymentTransactionAttachment(paymentID, transactionID, "first.jpg", jpegBytes, 99, 1); err != nil {
+		t.Fatalf("unexpected error uploading first attachment: %v", err)
+	}
+	if _, err := svc.UploadPaymentTransactionAttachment(paymentID, transactionID, "second.pdf", pdfBytes, 99, 1); err != nil {
+		t.Fatalf("unexpected error uploading second attachment: %v", err)
+	}
+
+	atts, err := svc.GetPaymentTransactionAttachments(paymentID, transactionID, 1)
+	if err != nil {
+		t.Fatalf("unexpected error listing attachments: %v", err)
+	}
+	if len(atts) != 2 {
+		t.Fatalf("expected 2 attachments, got %d", len(atts))
+	}
+	if atts[0].FileName != "first.jpg" || atts[1].FileName != "second.pdf" {
+		t.Errorf("expected attachments in upload order, got %q then %q", atts[0].FileName, atts[1].FileName)
+	}
+}
+
+func TestGetPaymentTransactionAttachmentFile_ReturnsBytesAndMetadata(t *testing.T) {
+	svc, _, paymentID, transactionID := setupPaymentWithTransaction(t, 1000)
+
+	uploaded, err := svc.UploadPaymentTransactionAttachment(paymentID, transactionID, "receipt.jpg", jpegBytes, 99, 1)
+	if err != nil {
+		t.Fatalf("unexpected error uploading attachment: %v", err)
+	}
+
+	data, fileName, contentType, err := svc.GetPaymentTransactionAttachmentFile(paymentID, transactionID, uploaded.ID, 1)
+	if err != nil {
+		t.Fatalf("unexpected error downloading attachment: %v", err)
+	}
+	if string(data) != string(jpegBytes) {
+		t.Error("downloaded bytes do not match uploaded bytes")
+	}
+	if fileName != "receipt.jpg" {
+		t.Errorf("file name got %q, want receipt.jpg", fileName)
+	}
+	if contentType != "image/jpeg" {
+		t.Errorf("content type got %q, want image/jpeg", contentType)
+	}
+}
+
+func TestGetPaymentTransactionAttachmentFile_WrongTransactionRejected(t *testing.T) {
+	svc, _, paymentID, transactionID := setupPaymentWithTransaction(t, 1000)
+
+	uploaded, err := svc.UploadPaymentTransactionAttachment(paymentID, transactionID, "receipt.jpg", jpegBytes, 99, 1)
+	if err != nil {
+		t.Fatalf("unexpected error uploading attachment: %v", err)
+	}
+
+	// A second, unrelated payment/transaction under the same org must not be
+	// able to reach an attachment that belongs to a different transaction.
+	otherPaymentID, otherTransactionID := addAnotherPaymentTransaction(t, svc, 500)
+
+	if _, _, _, err := svc.GetPaymentTransactionAttachmentFile(otherPaymentID, otherTransactionID, uploaded.ID, 1); err == nil {
+		t.Error("expected an error fetching an attachment through the wrong transaction, got nil")
+	}
+}
+
+func TestDeletePaymentTransactionAttachment_RemovesFile(t *testing.T) {
+	svc, attachRepo, paymentID, transactionID := setupPaymentWithTransaction(t, 1000)
+
+	uploaded, err := svc.UploadPaymentTransactionAttachment(paymentID, transactionID, "receipt.jpg", jpegBytes, 99, 1)
+	if err != nil {
+		t.Fatalf("unexpected error uploading attachment: %v", err)
+	}
+
+	if err := svc.DeletePaymentTransactionAttachment(paymentID, transactionID, uploaded.ID, 99, 1); err != nil {
+		t.Fatalf("unexpected error deleting attachment: %v", err)
+	}
+
+	if _, ok := attachRepo.attachments[uploaded.ID]; ok {
+		t.Error("expected attachment to be removed from the store")
+	}
+	atts, err := svc.GetPaymentTransactionAttachments(paymentID, transactionID, 1)
+	if err != nil {
+		t.Fatalf("unexpected error listing attachments after delete: %v", err)
+	}
+	if len(atts) != 0 {
+		t.Errorf("expected 0 attachments after delete, got %d", len(atts))
+	}
+}
+
+func TestDeletePaymentTransactionAttachment_WrongTransactionRejected(t *testing.T) {
+	svc, _, paymentID, transactionID := setupPaymentWithTransaction(t, 1000)
+
+	uploaded, err := svc.UploadPaymentTransactionAttachment(paymentID, transactionID, "receipt.jpg", jpegBytes, 99, 1)
+	if err != nil {
+		t.Fatalf("unexpected error uploading attachment: %v", err)
+	}
+
+	otherPaymentID, otherTransactionID := addAnotherPaymentTransaction(t, svc, 500)
+
+	if err := svc.DeletePaymentTransactionAttachment(otherPaymentID, otherTransactionID, uploaded.ID, 99, 1); err == nil {
+		t.Error("expected an error deleting an attachment through the wrong transaction, got nil")
 	}
 }
 

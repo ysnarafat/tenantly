@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -10,6 +11,12 @@ import (
 	"github.com/ysnarafat/tenantly/internal/interfaces"
 	"github.com/ysnarafat/tenantly/internal/models"
 )
+
+// maxAttachmentUploadBody bounds the raw request body accepted for an
+// attachment upload — the attachment cap itself plus headroom for multipart
+// framing overhead — so an oversized upload is rejected while streaming
+// rather than after being fully buffered into memory.
+const maxAttachmentUploadBody = models.MaxAttachmentFileSize + 1<<20
 
 // PaymentHandler handles HTTP requests for payment operations
 type PaymentHandler struct {
@@ -289,6 +296,208 @@ func (h *PaymentHandler) DeletePaymentTransaction(c *gin.Context) {
 
 	h.paymentService.LogPaymentAccess(userID, "DELETE_PAYMENT_TRANSACTION", id, true)
 	c.JSON(http.StatusOK, payment)
+}
+
+// UploadPaymentTransactionAttachment handles POST
+// /payments/:id/transactions/:transactionId/attachments — attaches a
+// receipt photo or similar evidence file to one installment. Limited to
+// 10MB; only images and PDF are accepted, checked against the actual file
+// bytes rather than the client-supplied filename or Content-Type header.
+func (h *PaymentHandler) UploadPaymentTransactionAttachment(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payment ID"})
+		return
+	}
+	transactionID, err := strconv.Atoi(c.Param("transactionId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payment transaction ID"})
+		return
+	}
+
+	userID := c.GetInt("user_id")
+	userRole := c.GetString("role")
+	orgID := c.GetInt("org_id")
+
+	existingPayment, err := h.paymentService.GetPayment(id, orgID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "payment not found"})
+		return
+	}
+	if !h.paymentService.CanUserAccessPayment(userID, userRole, existingPayment, orgID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions to update this payment"})
+		h.paymentService.LogPaymentAccess(userID, "UPLOAD_PAYMENT_ATTACHMENT", id, false)
+		return
+	}
+	if userRole == "Accountant" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "accountants have read-only access to payments"})
+		h.paymentService.LogPaymentAccess(userID, "UPLOAD_PAYMENT_ATTACHMENT", id, false)
+		return
+	}
+
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, maxAttachmentUploadBody)
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "UPLOAD_ATTACHMENT_INVALID_BODY", "No file provided, or the file exceeds the 10MB limit", err)
+		return
+	}
+	if fileHeader.Size > models.MaxAttachmentFileSize {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "file exceeds the maximum allowed size of 10MB"})
+		return
+	}
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "UPLOAD_ATTACHMENT_OPEN_FAILED", "Failed to read uploaded file", err)
+		return
+	}
+	defer func() { _ = file.Close() }()
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "UPLOAD_ATTACHMENT_READ_FAILED", "Failed to read uploaded file, or it exceeds the 10MB limit", err)
+		return
+	}
+
+	attachment, err := h.paymentService.UploadPaymentTransactionAttachment(id, transactionID, fileHeader.Filename, data, userID, orgID)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "UPLOAD_ATTACHMENT_FAILED", "Failed to upload attachment", err)
+		return
+	}
+
+	h.paymentService.LogPaymentAccess(userID, "UPLOAD_PAYMENT_ATTACHMENT", id, true)
+	c.JSON(http.StatusCreated, attachment)
+}
+
+// GetPaymentTransactionAttachments handles GET
+// /payments/:id/transactions/:transactionId/attachments
+func (h *PaymentHandler) GetPaymentTransactionAttachments(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payment ID"})
+		return
+	}
+	transactionID, err := strconv.Atoi(c.Param("transactionId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payment transaction ID"})
+		return
+	}
+
+	userID := c.GetInt("user_id")
+	userRole := c.GetString("role")
+	orgID := c.GetInt("org_id")
+
+	existingPayment, err := h.paymentService.GetPayment(id, orgID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "payment not found"})
+		return
+	}
+	if !h.paymentService.CanUserAccessPayment(userID, userRole, existingPayment, orgID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions to view this payment"})
+		return
+	}
+
+	attachments, err := h.paymentService.GetPaymentTransactionAttachments(id, transactionID, orgID)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "GET_PAYMENT_ATTACHMENTS_FAILED", "Failed to get payment attachments", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"attachments": attachments})
+}
+
+// DownloadPaymentTransactionAttachment handles GET
+// /payments/:id/transactions/:transactionId/attachments/:attachmentId —
+// streams the stored file bytes.
+func (h *PaymentHandler) DownloadPaymentTransactionAttachment(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payment ID"})
+		return
+	}
+	transactionID, err := strconv.Atoi(c.Param("transactionId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payment transaction ID"})
+		return
+	}
+	attachmentID, err := strconv.Atoi(c.Param("attachmentId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attachment ID"})
+		return
+	}
+
+	userID := c.GetInt("user_id")
+	userRole := c.GetString("role")
+	orgID := c.GetInt("org_id")
+
+	existingPayment, err := h.paymentService.GetPayment(id, orgID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "payment not found"})
+		return
+	}
+	if !h.paymentService.CanUserAccessPayment(userID, userRole, existingPayment, orgID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions to view this payment"})
+		h.paymentService.LogPaymentAccess(userID, "DOWNLOAD_PAYMENT_ATTACHMENT", id, false)
+		return
+	}
+
+	data, fileName, contentType, err := h.paymentService.GetPaymentTransactionAttachmentFile(id, transactionID, attachmentID, orgID)
+	if err != nil {
+		respondError(c, http.StatusNotFound, "GET_PAYMENT_ATTACHMENT_FAILED", "Attachment not found", err)
+		return
+	}
+
+	h.paymentService.LogPaymentAccess(userID, "DOWNLOAD_PAYMENT_ATTACHMENT", id, true)
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", fileName))
+	c.Data(http.StatusOK, contentType, data)
+}
+
+// DeletePaymentTransactionAttachment handles DELETE
+// /payments/:id/transactions/:transactionId/attachments/:attachmentId
+func (h *PaymentHandler) DeletePaymentTransactionAttachment(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payment ID"})
+		return
+	}
+	transactionID, err := strconv.Atoi(c.Param("transactionId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payment transaction ID"})
+		return
+	}
+	attachmentID, err := strconv.Atoi(c.Param("attachmentId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attachment ID"})
+		return
+	}
+
+	userID := c.GetInt("user_id")
+	userRole := c.GetString("role")
+	orgID := c.GetInt("org_id")
+
+	existingPayment, err := h.paymentService.GetPayment(id, orgID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "payment not found"})
+		return
+	}
+	if !h.paymentService.CanUserAccessPayment(userID, userRole, existingPayment, orgID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions to update this payment"})
+		h.paymentService.LogPaymentAccess(userID, "DELETE_PAYMENT_ATTACHMENT", id, false)
+		return
+	}
+	if userRole == "Accountant" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "accountants have read-only access to payments"})
+		h.paymentService.LogPaymentAccess(userID, "DELETE_PAYMENT_ATTACHMENT", id, false)
+		return
+	}
+
+	if err := h.paymentService.DeletePaymentTransactionAttachment(id, transactionID, attachmentID, userID, orgID); err != nil {
+		respondError(c, http.StatusBadRequest, "DELETE_PAYMENT_ATTACHMENT_FAILED", "Failed to delete attachment", err)
+		return
+	}
+
+	h.paymentService.LogPaymentAccess(userID, "DELETE_PAYMENT_ATTACHMENT", id, true)
+	c.JSON(http.StatusOK, gin.H{"message": "Attachment deleted successfully"})
 }
 
 // GetPayments handles GET /payments with query filters
