@@ -414,6 +414,8 @@
     .filter-field {
       width: 100%;
       min-width: unset;
+      // Stop the row-direction flex-basis from becoming a height once the bar stacks
+      flex: none;
     }
 
     .reset-filters-btn {
