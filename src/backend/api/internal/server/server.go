@@ -83,6 +83,7 @@ func (s *Server) setupRoutes() {
 	tenantRepo := repositories.NewTenantRepository(s.db, s.config.NIDProtector)
 	mfaRepo := repositories.NewMFARepository(s.db)
 	paymentRepo := repositories.NewPaymentRepository(s.db)
+	paymentTransactionRepo := repositories.NewPaymentTransactionRepository(s.db)
 	leaseRepo := repositories.NewLeaseRepository(s.db)
 	leaseChargeRepo := repositories.NewLeaseChargeRepository(s.db)
 	organizationRepo := repositories.NewOrganizationRepository(s.db)
@@ -101,7 +102,7 @@ func (s *Server) setupRoutes() {
 	tenantService := services.NewTenantService(tenantRepo, leaseRepo, auditService)
 	mfaService := services.NewMFAService(mfaRepo, s.config.NIDProtector, s.config.JWTSecret)
 	leaseService := services.NewLeaseService(leaseRepo, tenantRepo, unitRepo, leaseChargeRepo, auditService)
-	paymentService := services.NewPaymentService(paymentRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
+	paymentService := services.NewPaymentService(paymentRepo, paymentTransactionRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
 	reportService := services.NewReportService(paymentRepo, propertyRepo)
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService, s.config.CookieDomain, s.config.CookieSecure)
@@ -310,6 +311,9 @@ func (s *Server) setupRoutes() {
 				payments.GET("/:id", middleware.RequireAnyRole(), paymentHandler.GetPayment)
 				payments.GET("/:id/receipt", middleware.RequireAnyRole(), paymentHandler.DownloadReceipt)
 				payments.PUT("/:id", middleware.RequireAdminOrPropertyManager(), paymentHandler.UpdatePayment)
+				payments.POST("/:id/transactions", middleware.RequireAdminOrPropertyManager(), paymentHandler.RecordPaymentTransaction)
+				payments.GET("/:id/transactions", middleware.RequireAnyRole(), paymentHandler.GetPaymentTransactions)
+				payments.DELETE("/:id/transactions/:transactionId", middleware.RequireAdminOrPropertyManager(), paymentHandler.DeletePaymentTransaction)
 				payments.GET("/building/:building_id/report", middleware.RequireAnyRole(), paymentHandler.GetBuildingPaymentReport)
 				payments.GET("/property/:property_id/report", middleware.RequireAnyRole(), paymentHandler.GetPropertyPaymentReport)
 			}

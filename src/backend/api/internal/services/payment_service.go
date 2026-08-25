@@ -9,16 +9,18 @@ import (
 )
 
 type PaymentService struct {
-	paymentRepo  interfaces.PaymentRepositoryInterface
-	unitRepo     interfaces.UnitRepositoryInterface
-	buildingRepo interfaces.BuildingRepositoryInterface
-	propertyRepo interfaces.PropertyRepositoryInterface
-	auditService interfaces.AuditServiceInterface
-	userRepo     interfaces.UserRepositoryInterface
+	paymentRepo            interfaces.PaymentRepositoryInterface
+	paymentTransactionRepo interfaces.PaymentTransactionRepositoryInterface
+	unitRepo               interfaces.UnitRepositoryInterface
+	buildingRepo           interfaces.BuildingRepositoryInterface
+	propertyRepo           interfaces.PropertyRepositoryInterface
+	auditService           interfaces.AuditServiceInterface
+	userRepo               interfaces.UserRepositoryInterface
 }
 
 func NewPaymentService(
 	paymentRepo interfaces.PaymentRepositoryInterface,
+	paymentTransactionRepo interfaces.PaymentTransactionRepositoryInterface,
 	unitRepo interfaces.UnitRepositoryInterface,
 	buildingRepo interfaces.BuildingRepositoryInterface,
 	propertyRepo interfaces.PropertyRepositoryInterface,
@@ -26,12 +28,13 @@ func NewPaymentService(
 	userRepo interfaces.UserRepositoryInterface,
 ) *PaymentService {
 	return &PaymentService{
-		paymentRepo:  paymentRepo,
-		unitRepo:     unitRepo,
-		buildingRepo: buildingRepo,
-		propertyRepo: propertyRepo,
-		auditService: auditService,
-		userRepo:     userRepo,
+		paymentRepo:            paymentRepo,
+		paymentTransactionRepo: paymentTransactionRepo,
+		unitRepo:               unitRepo,
+		buildingRepo:           buildingRepo,
+		propertyRepo:           propertyRepo,
+		auditService:           auditService,
+		userRepo:               userRepo,
 	}
 }
 
@@ -138,19 +141,13 @@ func (s *PaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequest,
 	// always (re)derives it from amount_paid vs amount_due.
 	req.Status = nil
 
-	// Receipt numbers are always server-generated (see CreatePayment). A
-	// client-supplied value is discarded; instead, lazily backfill one here
-	// the first time a payment actually receives money — covers both
-	// bulk-generated Due records and any pre-existing rows without one.
+	// AmountPaid and ReceiptNumber are never accepted from the client either
+	// — recording money received must go through RecordPaymentTransaction
+	// so partial/installment payments accumulate correctly instead of
+	// overwriting each other, and every payment received gets its own
+	// server-generated receipt.
+	req.AmountPaid = nil
 	req.ReceiptNumber = nil
-	if existingPayment.ReceiptNumber == "" && req.AmountPaid != nil && *req.AmountPaid > 0 {
-		yearMonth := fmt.Sprintf("%04d%02d", existingPayment.Year, existingPayment.Month)
-		receiptNumber, err := s.paymentRepo.NextReceiptNumber(existingPayment.OrganizationID, yearMonth)
-		if err != nil {
-			return nil, fmt.Errorf("failed to generate receipt number: %w", err)
-		}
-		req.ReceiptNumber = &receiptNumber
-	}
 
 	// Update payment
 	updatedPayment, err := s.paymentRepo.Update(id, req)
@@ -176,6 +173,162 @@ func (s *PaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequest,
 	})
 
 	return updatedPayment, nil
+}
+
+// RecordPaymentTransaction records a new amount received against a payment.
+// This is the only way amount_paid ever changes — it adds to the existing
+// total rather than replacing it, so a second (or third) installment against
+// the same month's due amount accumulates correctly instead of overwriting
+// the first, and each amount received gets its own receipt number.
+func (s *PaymentService) RecordPaymentTransaction(paymentID int, req *models.CreatePaymentTransactionRequest, userID, orgID int) (*models.Payment, error) {
+	existingPayment, err := s.paymentRepo.GetByIDWithDetails(paymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get existing payment: %w", err)
+	}
+	if existingPayment.OrganizationID != orgID {
+		return nil, fmt.Errorf("payment not found")
+	}
+
+	paymentDateStr := time.Now().UTC().Format("2006-01-02")
+	if req.PaymentDate != nil && *req.PaymentDate != "" {
+		paymentDateStr = *req.PaymentDate
+	}
+	paymentDate, err := time.Parse("2006-01-02", paymentDateStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid payment_date format (expected YYYY-MM-DD): %w", err)
+	}
+
+	// Receipt numbers are always server-generated — every amount received
+	// gets its own, matching how a landlord would actually hand out receipts
+	// for separate installments.
+	yearMonth := fmt.Sprintf("%04d%02d", existingPayment.Year, existingPayment.Month)
+	receiptNumber, err := s.paymentRepo.NextReceiptNumber(existingPayment.OrganizationID, yearMonth)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate receipt number: %w", err)
+	}
+
+	method := ""
+	if req.PaymentMethod != nil {
+		method = *req.PaymentMethod
+	}
+	notes := ""
+	if req.Notes != nil {
+		notes = *req.Notes
+	}
+
+	if _, err := s.paymentTransactionRepo.Create(paymentID, req.Amount, method, receiptNumber, notes, paymentDate); err != nil {
+		return nil, fmt.Errorf("failed to record payment transaction: %w", err)
+	}
+
+	updatedPayment, err := s.refreshPaymentFromTransactions(paymentID)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = s.auditService.LogUserAction(userID, "RECORD_PAYMENT", "payments", &paymentID, map[string]interface{}{
+		"payment_id":      existingPayment.ID,
+		"old_amount_paid": existingPayment.AmountPaid,
+	}, map[string]interface{}{
+		"payment_id":          paymentID,
+		"transaction_amount":  req.Amount,
+		"new_amount_paid":     updatedPayment.AmountPaid,
+		"new_status":          updatedPayment.Status,
+		"transaction_receipt": receiptNumber,
+	})
+
+	return updatedPayment, nil
+}
+
+// GetPaymentTransactions returns the ledger of amounts received against a
+// payment, earliest first.
+func (s *PaymentService) GetPaymentTransactions(paymentID, orgID int) ([]*models.PaymentTransaction, error) {
+	payment, err := s.paymentRepo.GetByIDWithDetails(paymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get payment: %w", err)
+	}
+	if payment.OrganizationID != orgID {
+		return nil, fmt.Errorf("payment not found")
+	}
+
+	txns, err := s.paymentTransactionRepo.GetByPaymentID(paymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get payment transactions: %w", err)
+	}
+	return txns, nil
+}
+
+// DeletePaymentTransaction removes a mistakenly-recorded transaction and
+// recomputes the payment's cached amount_paid/status/etc. from what remains.
+func (s *PaymentService) DeletePaymentTransaction(paymentID, transactionID, userID, orgID int) (*models.Payment, error) {
+	payment, err := s.paymentRepo.GetByIDWithDetails(paymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get payment: %w", err)
+	}
+	if payment.OrganizationID != orgID {
+		return nil, fmt.Errorf("payment not found")
+	}
+
+	txn, err := s.paymentTransactionRepo.GetByID(transactionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get payment transaction: %w", err)
+	}
+	if txn.PaymentID != paymentID {
+		return nil, fmt.Errorf("payment transaction not found")
+	}
+
+	if err := s.paymentTransactionRepo.Delete(transactionID); err != nil {
+		return nil, fmt.Errorf("failed to delete payment transaction: %w", err)
+	}
+
+	updatedPayment, err := s.refreshPaymentFromTransactions(paymentID)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = s.auditService.LogUserAction(userID, "DELETE_PAYMENT_TRANSACTION", "payments", &paymentID, txn, map[string]interface{}{
+		"payment_id":      paymentID,
+		"new_amount_paid": updatedPayment.AmountPaid,
+		"new_status":      updatedPayment.Status,
+	})
+
+	return updatedPayment, nil
+}
+
+// refreshPaymentFromTransactions recomputes a payment's cached amount_paid/
+// status/payment_method/payment_date/receipt_number from its transaction
+// ledger. After RecordPaymentTransaction/DeletePaymentTransaction, this is
+// the only place those fields are ever written, so payments.* always mirrors
+// "the sum of what's actually been paid, plus the most recent payment
+// event's details" — or a cleared/Due state once no transactions remain.
+func (s *PaymentService) refreshPaymentFromTransactions(paymentID int) (*models.Payment, error) {
+	total, err := s.paymentTransactionRepo.SumByPaymentID(paymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to total payment transactions: %w", err)
+	}
+
+	txns, err := s.paymentTransactionRepo.GetByPaymentID(paymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load payment transactions: %w", err)
+	}
+
+	method, receipt, dateStr := "", "", ""
+	if len(txns) > 0 {
+		latest := txns[len(txns)-1] // GetByPaymentID orders by payment_date, id ascending
+		method = latest.PaymentMethod
+		receipt = latest.ReceiptNumber
+		dateStr = latest.PaymentDate.Format("2006-01-02")
+	}
+
+	updated, err := s.paymentRepo.Update(paymentID, &models.UpdatePaymentRequest{
+		AmountPaid:    &total,
+		PaymentMethod: &method,
+		ReceiptNumber: &receipt,
+		PaymentDate:   &dateStr,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update payment: %w", err)
+	}
+	return updated, nil
 }
 
 // GetPayments retrieves payments scoped only by the provided filters (no entity validation)

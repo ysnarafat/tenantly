@@ -167,6 +167,130 @@ func (h *PaymentHandler) UpdatePayment(c *gin.Context) {
 	c.JSON(http.StatusOK, payment)
 }
 
+// RecordPaymentTransaction handles POST /payments/:id/transactions — the
+// only way amount_paid ever changes. Adds to the existing total rather than
+// replacing it, so a second installment against the same month's due amount
+// doesn't overwrite the first.
+func (h *PaymentHandler) RecordPaymentTransaction(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payment ID"})
+		return
+	}
+
+	var req models.CreatePaymentTransactionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, http.StatusBadRequest, "RECORD_PAYMENT_TRANSACTION_INVALID_BODY", "Invalid request body", err)
+		return
+	}
+
+	userID := c.GetInt("user_id")
+	userRole := c.GetString("role")
+	orgID := c.GetInt("org_id")
+
+	existingPayment, err := h.paymentService.GetPayment(id, orgID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "payment not found"})
+		return
+	}
+	if !h.paymentService.CanUserAccessPayment(userID, userRole, existingPayment, orgID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions to update this payment"})
+		h.paymentService.LogPaymentAccess(userID, "RECORD_PAYMENT", id, false)
+		return
+	}
+	if userRole == "Accountant" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "accountants have read-only access to payments"})
+		h.paymentService.LogPaymentAccess(userID, "RECORD_PAYMENT", id, false)
+		return
+	}
+
+	payment, err := h.paymentService.RecordPaymentTransaction(id, &req, userID, orgID)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "RECORD_PAYMENT_TRANSACTION_FAILED", "Failed to record payment", err)
+		return
+	}
+
+	h.paymentService.LogPaymentAccess(userID, "RECORD_PAYMENT", id, true)
+	c.JSON(http.StatusCreated, payment)
+}
+
+// GetPaymentTransactions handles GET /payments/:id/transactions — the ledger
+// of amounts received against a payment.
+func (h *PaymentHandler) GetPaymentTransactions(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payment ID"})
+		return
+	}
+
+	userID := c.GetInt("user_id")
+	userRole := c.GetString("role")
+	orgID := c.GetInt("org_id")
+
+	existingPayment, err := h.paymentService.GetPayment(id, orgID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "payment not found"})
+		return
+	}
+	if !h.paymentService.CanUserAccessPayment(userID, userRole, existingPayment, orgID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions to view this payment"})
+		return
+	}
+
+	txns, err := h.paymentService.GetPaymentTransactions(id, orgID)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "GET_PAYMENT_TRANSACTIONS_FAILED", "Failed to get payment transactions", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"transactions": txns})
+}
+
+// DeletePaymentTransaction handles DELETE /payments/:id/transactions/:transactionId
+// — removes a mistakenly-recorded transaction and recomputes the payment's
+// cached amount_paid/status from what remains.
+func (h *PaymentHandler) DeletePaymentTransaction(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payment ID"})
+		return
+	}
+	transactionID, err := strconv.Atoi(c.Param("transactionId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid payment transaction ID"})
+		return
+	}
+
+	userID := c.GetInt("user_id")
+	userRole := c.GetString("role")
+	orgID := c.GetInt("org_id")
+
+	existingPayment, err := h.paymentService.GetPayment(id, orgID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "payment not found"})
+		return
+	}
+	if !h.paymentService.CanUserAccessPayment(userID, userRole, existingPayment, orgID) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "insufficient permissions to update this payment"})
+		h.paymentService.LogPaymentAccess(userID, "DELETE_PAYMENT_TRANSACTION", id, false)
+		return
+	}
+	if userRole == "Accountant" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "accountants have read-only access to payments"})
+		h.paymentService.LogPaymentAccess(userID, "DELETE_PAYMENT_TRANSACTION", id, false)
+		return
+	}
+
+	payment, err := h.paymentService.DeletePaymentTransaction(id, transactionID, userID, orgID)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "DELETE_PAYMENT_TRANSACTION_FAILED", "Failed to delete payment transaction", err)
+		return
+	}
+
+	h.paymentService.LogPaymentAccess(userID, "DELETE_PAYMENT_TRANSACTION", id, true)
+	c.JSON(http.StatusOK, payment)
+}
+
 // GetPayments handles GET /payments with query filters
 // Query params: building_id, property_id, status, month, year, page, page_size
 func (h *PaymentHandler) GetPayments(c *gin.Context) {

@@ -61,6 +61,18 @@ func (m *mockPaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequ
 	return m.updatePaymentFn(id, req, userID, orgID)
 }
 
+func (m *mockPaymentService) RecordPaymentTransaction(paymentID int, req *models.CreatePaymentTransactionRequest, userID, orgID int) (*models.Payment, error) {
+	return nil, errors.New("record payment transaction not mocked")
+}
+
+func (m *mockPaymentService) GetPaymentTransactions(paymentID, orgID int) ([]*models.PaymentTransaction, error) {
+	return nil, errors.New("get payment transactions not mocked")
+}
+
+func (m *mockPaymentService) DeletePaymentTransaction(paymentID, transactionID, userID, orgID int) (*models.Payment, error) {
+	return nil, errors.New("delete payment transaction not mocked")
+}
+
 func (m *mockPaymentService) GetPayments(page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error) {
 	if m.getPaymentsFn == nil {
 		return make([]*models.PaymentWithDetails, 0), 0, nil

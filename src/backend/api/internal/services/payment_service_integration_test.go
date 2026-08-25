@@ -28,6 +28,7 @@ func TestGenerateMonthlyPayments_IncludesLeaseCharges(t *testing.T) {
 	leaseRepo := repositories.NewLeaseRepository(db)
 	chargeRepo := repositories.NewLeaseChargeRepository(db)
 	paymentRepo := repositories.NewPaymentRepository(db)
+	paymentTransactionRepo := repositories.NewPaymentTransactionRepository(db)
 	unitRepo := repositories.NewUnitRepository(db)
 	buildingRepo := repositories.NewBuildingRepository(db)
 	propertyRepo := repositories.NewPropertyRepository(db)
@@ -63,7 +64,7 @@ func TestGenerateMonthlyPayments_IncludesLeaseCharges(t *testing.T) {
 		t.Fatalf("failed to add second lease charge: %v", err)
 	}
 
-	paymentService := NewPaymentService(paymentRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
+	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
 
 	result, err := paymentService.GenerateMonthlyPayments(&models.GenerateMonthlyPaymentsRequest{
 		Month: 6,
@@ -122,6 +123,7 @@ func TestGenerateMonthlyPayments_SkipsDeactivatedCharges(t *testing.T) {
 	leaseRepo := repositories.NewLeaseRepository(db)
 	chargeRepo := repositories.NewLeaseChargeRepository(db)
 	paymentRepo := repositories.NewPaymentRepository(db)
+	paymentTransactionRepo := repositories.NewPaymentTransactionRepository(db)
 	unitRepo := repositories.NewUnitRepository(db)
 	buildingRepo := repositories.NewBuildingRepository(db)
 	propertyRepo := repositories.NewPropertyRepository(db)
@@ -154,7 +156,7 @@ func TestGenerateMonthlyPayments_SkipsDeactivatedCharges(t *testing.T) {
 		t.Fatalf("failed to deactivate lease charge: %v", err)
 	}
 
-	paymentService := NewPaymentService(paymentRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
+	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
 	if _, err := paymentService.GenerateMonthlyPayments(&models.GenerateMonthlyPaymentsRequest{
 		Month: 6,
 		Year:  2026,
@@ -176,4 +178,98 @@ func TestGenerateMonthlyPayments_SkipsDeactivatedCharges(t *testing.T) {
 	if payments[0].AmountDue != 5000.0 {
 		t.Errorf("AmountDue: got %.2f, want 5000.00 (deactivated charge must not be billed)", payments[0].AmountDue)
 	}
+}
+
+// TestRecordPaymentTransaction_RealDB_InstallmentsAccumulate is the
+// real-DB counterpart to payment_service_test.go's mock-based
+// TestRecordPaymentTransaction_AccumulatesAcrossInstallments — it exists to
+// exercise the actual SQL status-derivation CASE and receipt-number
+// sequence (NextReceiptNumber), neither of which the mock replicates, for
+// exactly the scenario this feature was built for: a tenant paying a
+// 12,000 due amount as 10,000 today and the remaining 2,000 later.
+func TestRecordPaymentTransaction_RealDB_InstallmentsAccumulate(t *testing.T) {
+	db, cleanup := testutil.SetupTestDBNamed(t, servicesTestDB)
+	defer cleanup()
+
+	orgID := testutil.CreateTestOrganization(t, db)
+	propID := testutil.CreateTestProperty(t, db)
+	bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
+	unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+	tenantID := testutil.CreateTestTenant(t, db, orgID)
+
+	paymentRepo := repositories.NewPaymentRepository(db)
+	paymentTransactionRepo := repositories.NewPaymentTransactionRepository(db)
+	unitRepo := repositories.NewUnitRepository(db)
+	buildingRepo := repositories.NewBuildingRepository(db)
+	propertyRepo := repositories.NewPropertyRepository(db)
+	userRepo := repositories.NewUserRepository(db)
+	auditService := database.NewAuditService(db)
+
+	payment, err := paymentRepo.Create(&models.CreatePaymentRequest{
+		UnitID:         unitID,
+		TenantID:       tenantID,
+		BuildingID:     bldgID,
+		PropertyID:     propID,
+		OrganizationID: orgID,
+		Month:          6,
+		Year:           2026,
+		AmountDue:      12000,
+	})
+	if err != nil {
+		t.Fatalf("failed to create payment: %v", err)
+	}
+
+	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
+
+	afterFirst, err := paymentService.RecordPaymentTransaction(payment.ID, &models.CreatePaymentTransactionRequest{
+		Amount:        10000,
+		PaymentMethod: strPtr("Cash"),
+		PaymentDate:   strPtr("2026-06-05"),
+	}, 1, orgID)
+	if err != nil {
+		t.Fatalf("unexpected error recording first installment: %v", err)
+	}
+	if afterFirst.AmountPaid != 10000 {
+		t.Errorf("after first installment: amount_paid got %.2f, want 10000.00", afterFirst.AmountPaid)
+	}
+	if afterFirst.Status != models.PaymentStatusPartial {
+		t.Errorf("after first installment: status got %q, want %q", afterFirst.Status, models.PaymentStatusPartial)
+	}
+
+	afterSecond, err := paymentService.RecordPaymentTransaction(payment.ID, &models.CreatePaymentTransactionRequest{
+		Amount:        2000,
+		PaymentMethod: strPtr("bKash"),
+		PaymentDate:   strPtr("2026-06-20"),
+	}, 1, orgID)
+	if err != nil {
+		t.Fatalf("unexpected error recording second installment: %v", err)
+	}
+	if afterSecond.AmountPaid != 12000 {
+		t.Errorf("after second installment: amount_paid got %.2f, want 12000.00", afterSecond.AmountPaid)
+	}
+	if afterSecond.Status != models.PaymentStatusPaid {
+		t.Errorf("after second installment: status got %q, want %q", afterSecond.Status, models.PaymentStatusPaid)
+	}
+	// The cached snapshot on the payments row reflects the *latest* event.
+	if afterSecond.PaymentMethod != "bKash" {
+		t.Errorf("expected payment_method to mirror the latest installment (bKash), got %q", afterSecond.PaymentMethod)
+	}
+
+	txns, err := paymentService.GetPaymentTransactions(payment.ID, orgID)
+	if err != nil {
+		t.Fatalf("unexpected error listing transactions: %v", err)
+	}
+	if len(txns) != 2 {
+		t.Fatalf("expected 2 transactions, got %d", len(txns))
+	}
+	if txns[0].ReceiptNumber == txns[1].ReceiptNumber {
+		t.Error("expected each installment to get its own receipt number")
+	}
+	if txns[0].Amount+txns[1].Amount != 12000 {
+		t.Errorf("transaction amounts sum to %.2f, want 12000.00", txns[0].Amount+txns[1].Amount)
+	}
+}
+
+func strPtr(s string) *string {
+	return &s
 }

@@ -54,6 +54,14 @@ type CreatePaymentRequest struct {
 }
 
 type UpdatePaymentRequest struct {
+	// AmountPaid is ignored from an HTTP client — PaymentService.UpdatePayment
+	// clears it unconditionally. Recording money received must go through
+	// POST /payments/:id/transactions instead, so partial/installment
+	// payments accumulate correctly rather than overwriting each other. This
+	// field still exists because PaymentService.RecordPaymentTransaction/
+	// DeletePaymentTransaction call PaymentRepository.Update directly (not
+	// through PaymentService.UpdatePayment) with the recomputed cumulative
+	// total, reusing its amount-vs-amount_due status derivation.
 	AmountPaid *float64 `json:"amount_paid" binding:"omitempty,gte=0"`
 	// Status is ignored — PaymentRepository.Update always (re)derives it from
 	// amount_paid vs amount_due (and due_date, for Overdue). Accepted here
@@ -62,10 +70,8 @@ type UpdatePaymentRequest struct {
 	PaymentMethod *string        `json:"payment_method" binding:"omitempty"`
 	PaymentDate   *string        `json:"payment_date" binding:"omitempty"`
 	Notes         *string        `json:"notes" binding:"omitempty"`
-	// ReceiptNumber is ignored — see CreatePaymentRequest.ReceiptNumber.
-	// PaymentService.UpdatePayment lazily backfills one via
-	// PaymentRepository.NextReceiptNumber the first time a payment actually
-	// receives money, instead of trusting a client-supplied value.
+	// ReceiptNumber is ignored from an HTTP client for the same reason as
+	// AmountPaid above — see CreatePaymentRequest.ReceiptNumber.
 	ReceiptNumber *string `json:"receipt_number" binding:"omitempty"`
 }
 

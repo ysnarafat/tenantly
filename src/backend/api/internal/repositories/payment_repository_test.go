@@ -1411,6 +1411,74 @@ func TestPaymentRepository_GetActiveLeasesForPeriod(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// TestPaymentRepository_Update_ClearsFieldsToNull
+// ---------------------------------------------------------------------------
+
+func TestPaymentRepository_Update_ClearsFieldsToNull(t *testing.T) {
+	// PaymentService.refreshPaymentFromTransactions passes an empty string
+	// (rather than nil) for payment_method/payment_date/receipt_number when
+	// a payment's last remaining transaction is deleted, to explicitly clear
+	// them instead of leaving stale values from the deleted transaction.
+	// payment_date is a real DATE column, so binding "" as its value would
+	// error at the driver level unless Update special-cases it — this test
+	// exists specifically to catch a regression there.
+	db, cleanup := testutil.SetupTestDB(t)
+	defer cleanup()
+
+	orgID := testutil.CreateTestOrganization(t, db)
+	propID := testutil.CreateTestProperty(t, db)
+	bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
+	unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+	tenantID := testutil.CreateTestTenant(t, db, orgID)
+
+	repo := NewPaymentRepository(db)
+	amountPaid := 5000.0
+	created, err := repo.Create(&models.CreatePaymentRequest{
+		UnitID:         unitID,
+		TenantID:       tenantID,
+		BuildingID:     bldgID,
+		PropertyID:     propID,
+		OrganizationID: orgID,
+		Month:          9,
+		Year:           2026,
+		AmountDue:      5000.0,
+		AmountPaid:     &amountPaid,
+		PaymentMethod:  ptrString("Cash"),
+		ReceiptNumber:  ptrString("RCP-CLEAR-TEST-1"),
+	})
+	if err != nil {
+		t.Fatalf("failed to create payment: %v", err)
+	}
+	if created.PaymentDate == nil || created.PaymentMethod == "" || created.ReceiptNumber == "" {
+		t.Fatalf("expected payment to start with method/date/receipt populated, got %+v", created)
+	}
+
+	empty := ""
+	zero := 0.0
+	updated, err := repo.Update(created.ID, &models.UpdatePaymentRequest{
+		AmountPaid:    &zero,
+		PaymentMethod: &empty,
+		PaymentDate:   &empty,
+		ReceiptNumber: &empty,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error clearing fields: %v", err)
+	}
+	if updated.PaymentDate != nil {
+		t.Errorf("expected payment_date to be cleared to nil, got %v", updated.PaymentDate)
+	}
+	if updated.PaymentMethod != "" {
+		t.Errorf("expected payment_method to be cleared, got %q", updated.PaymentMethod)
+	}
+	if updated.ReceiptNumber != "" {
+		t.Errorf("expected receipt_number to be cleared, got %q", updated.ReceiptNumber)
+	}
+	if updated.Status != models.PaymentStatusDue {
+		t.Errorf("expected status to revert to Due, got %q", updated.Status)
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Helper functions
 // ---------------------------------------------------------------------------
 

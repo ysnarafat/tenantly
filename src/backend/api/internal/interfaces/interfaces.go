@@ -253,11 +253,23 @@ type PaymentRepositoryInterface interface {
 	NextReceiptNumber(orgID int, yearMonth string) (string, error)
 }
 
+// PaymentTransactionRepositoryInterface defines the interface for payment transaction repository operations
+type PaymentTransactionRepositoryInterface interface {
+	Create(paymentID int, amount float64, paymentMethod, receiptNumber, notes string, paymentDate time.Time) (*models.PaymentTransaction, error)
+	GetByID(id int) (*models.PaymentTransaction, error)
+	GetByPaymentID(paymentID int) ([]*models.PaymentTransaction, error)
+	Delete(id int) error
+	SumByPaymentID(paymentID int) (float64, error)
+}
+
 // PaymentServiceInterface defines the interface for payment service operations
 type PaymentServiceInterface interface {
 	CreatePayment(req *models.CreatePaymentRequest, userID int) (*models.Payment, error)
 	GetPayment(id, orgID int) (*models.PaymentWithDetails, error)
 	UpdatePayment(id int, req *models.UpdatePaymentRequest, userID, orgID int) (*models.Payment, error)
+	RecordPaymentTransaction(paymentID int, req *models.CreatePaymentTransactionRequest, userID, orgID int) (*models.Payment, error)
+	GetPaymentTransactions(paymentID, orgID int) ([]*models.PaymentTransaction, error)
+	DeletePaymentTransaction(paymentID, transactionID, userID, orgID int) (*models.Payment, error)
 	GetPayments(page, pageSize int, filters map[string]any) ([]*models.PaymentWithDetails, int, error)
 	GetPaymentsByBuilding(buildingID int, page, pageSize int, filters map[string]any) ([]*models.PaymentWithDetails, int, error)
 	GetPaymentsByProperty(propertyID int, page, pageSize int, filters map[string]any) ([]*models.PaymentWithDetails, int, error)

@@ -71,14 +71,28 @@ func (r *PaymentRepository) Update(id int, req *models.UpdatePaymentRequest) (*m
 		argIdx++
 	}
 	if req.PaymentMethod != nil {
-		setClauses = append(setClauses, fmt.Sprintf("payment_method = $%d", argIdx))
-		args = append(args, *req.PaymentMethod)
-		argIdx++
+		if *req.PaymentMethod == "" {
+			// Empty string is a "clear it" sentinel (used when a payment's
+			// last remaining transaction is removed) rather than a literal
+			// value to store.
+			setClauses = append(setClauses, "payment_method = NULL")
+		} else {
+			setClauses = append(setClauses, fmt.Sprintf("payment_method = $%d", argIdx))
+			args = append(args, *req.PaymentMethod)
+			argIdx++
+		}
 	}
 	if req.PaymentDate != nil {
-		setClauses = append(setClauses, fmt.Sprintf("payment_date = $%d", argIdx))
-		args = append(args, *req.PaymentDate)
-		argIdx++
+		if *req.PaymentDate == "" {
+			// payment_date is a DATE column — binding an empty string as its
+			// value errors at the driver level, so clearing it needs its own
+			// branch rather than falling through to the parameterized SET.
+			setClauses = append(setClauses, "payment_date = NULL")
+		} else {
+			setClauses = append(setClauses, fmt.Sprintf("payment_date = $%d", argIdx))
+			args = append(args, *req.PaymentDate)
+			argIdx++
+		}
 	} else if req.AmountPaid != nil && *req.AmountPaid > 0 {
 		// A payment is being recorded but no explicit date was given —
 		// default to today rather than leaving payment_date null/stale.
@@ -90,9 +104,13 @@ func (r *PaymentRepository) Update(id int, req *models.UpdatePaymentRequest) (*m
 		argIdx++
 	}
 	if req.ReceiptNumber != nil {
-		setClauses = append(setClauses, fmt.Sprintf("receipt_number = $%d", argIdx))
-		args = append(args, *req.ReceiptNumber)
-		argIdx++
+		if *req.ReceiptNumber == "" {
+			setClauses = append(setClauses, "receipt_number = NULL")
+		} else {
+			setClauses = append(setClauses, fmt.Sprintf("receipt_number = $%d", argIdx))
+			args = append(args, *req.ReceiptNumber)
+			argIdx++
+		}
 	}
 
 	args = append(args, id)
