@@ -48,7 +48,7 @@ describe('PaymentCollect', () => {
   beforeEach(async () => {
     const paymentServiceSpy = jasmine.createSpyObj('PaymentService', [
       'getAllDuePayments',
-      'updatePayment',
+      'recordPaymentTransaction',
       'generateMonthlyPayments',
     ]);
     const dialogSpy = jasmine.createSpyObj('MatDialog', ['open']);
@@ -201,10 +201,10 @@ describe('PaymentCollect', () => {
   });
 
   describe('saveAll', () => {
-    it('sends amount_paid/payment_method/payment_date for every pending row and marks them saved', () => {
+    it('sends amount/payment_method/payment_date for every pending row and marks them saved', () => {
       const payment = makePayment({ id: 1 });
       paymentService.getAllDuePayments.and.returnValue(of([payment]));
-      paymentService.updatePayment.and.returnValue(of({ ...payment, status: 'Paid' }));
+      paymentService.recordPaymentTransaction.and.returnValue(of({ ...payment, status: 'Paid' }));
       fixture.detectChanges();
 
       const row = component.rows()[0];
@@ -214,8 +214,8 @@ describe('PaymentCollect', () => {
 
       component.saveAll();
 
-      expect(paymentService.updatePayment).toHaveBeenCalledWith(1, {
-        amount_paid: 10000,
+      expect(paymentService.recordPaymentTransaction).toHaveBeenCalledWith(1, {
+        amount: 10000,
         payment_method: 'bKash',
         payment_date: '2026-06-15',
       });
@@ -224,26 +224,26 @@ describe('PaymentCollect', () => {
       expect(snackBar.open).toHaveBeenCalled();
     });
 
-    it('does not call updatePayment for skipped, already-saved, or zero-amount rows', () => {
+    it('does not call recordPaymentTransaction for skipped, already-saved, or zero-amount rows', () => {
       const skipped = makePayment({ id: 1 });
       const zero = makePayment({ id: 2, amount_due: 5000, amount_paid: 5000 });
       const normal = makePayment({ id: 3 });
       paymentService.getAllDuePayments.and.returnValue(of([skipped, zero, normal]));
-      paymentService.updatePayment.and.returnValue(of(normal));
+      paymentService.recordPaymentTransaction.and.returnValue(of(normal));
       fixture.detectChanges();
 
       component.toggleSkip(component.rows()[0]);
       component.saveAll();
 
-      expect(paymentService.updatePayment).toHaveBeenCalledTimes(1);
-      expect(paymentService.updatePayment).toHaveBeenCalledWith(3, jasmine.any(Object));
+      expect(paymentService.recordPaymentTransaction).toHaveBeenCalledTimes(1);
+      expect(paymentService.recordPaymentTransaction).toHaveBeenCalledWith(3, jasmine.any(Object));
     });
 
     it('keeps failed rows unsaved with an error message while succeeded rows are marked saved', () => {
       const ok = makePayment({ id: 1 });
       const bad = makePayment({ id: 2 });
       paymentService.getAllDuePayments.and.returnValue(of([ok, bad]));
-      paymentService.updatePayment.and.callFake((id: number) =>
+      paymentService.recordPaymentTransaction.and.callFake((id: number) =>
         id === 1
           ? of({ ...ok, status: 'Paid' as const })
           : throwError(() => ({ error: { error: 'unit locked' } }))
@@ -263,7 +263,7 @@ describe('PaymentCollect', () => {
 
     it('falls back to a generic message when the server error has no detail', () => {
       paymentService.getAllDuePayments.and.returnValue(of([makePayment({ id: 1 })]));
-      paymentService.updatePayment.and.returnValue(throwError(() => ({})));
+      paymentService.recordPaymentTransaction.and.returnValue(throwError(() => ({})));
       fixture.detectChanges();
 
       component.saveAll();
@@ -275,25 +275,27 @@ describe('PaymentCollect', () => {
       fixture.detectChanges();
       component.saveAll();
 
-      expect(paymentService.updatePayment).not.toHaveBeenCalled();
+      expect(paymentService.recordPaymentTransaction).not.toHaveBeenCalled();
     });
 
     it('re-saving after a partial failure only retries the still-failed rows', () => {
       const ok = makePayment({ id: 1 });
       const bad = makePayment({ id: 2 });
       paymentService.getAllDuePayments.and.returnValue(of([ok, bad]));
-      paymentService.updatePayment.and.callFake((id: number) =>
+      paymentService.recordPaymentTransaction.and.callFake((id: number) =>
         id === 1 ? of({ ...ok, status: 'Paid' as const }) : throwError(() => ({}))
       );
       fixture.detectChanges();
       component.saveAll();
-      paymentService.updatePayment.calls.reset();
+      paymentService.recordPaymentTransaction.calls.reset();
 
-      paymentService.updatePayment.and.returnValue(of({ ...bad, status: 'Paid' as const }));
+      paymentService.recordPaymentTransaction.and.returnValue(
+        of({ ...bad, status: 'Paid' as const })
+      );
       component.saveAll();
 
-      expect(paymentService.updatePayment).toHaveBeenCalledTimes(1);
-      expect(paymentService.updatePayment).toHaveBeenCalledWith(2, jasmine.any(Object));
+      expect(paymentService.recordPaymentTransaction).toHaveBeenCalledTimes(1);
+      expect(paymentService.recordPaymentTransaction).toHaveBeenCalledWith(2, jasmine.any(Object));
       expect(component.rows()[1].saved).toBeTrue();
     });
   });

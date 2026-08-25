@@ -7,6 +7,8 @@ import {
   PaymentListResponse,
   CreatePaymentRequest,
   UpdatePaymentRequest,
+  PaymentTransaction,
+  CreatePaymentTransactionRequest,
   DashboardSummary,
 } from '../models/payment.model';
 import { environment } from '../../../environments/environment';
@@ -69,7 +71,6 @@ describe('PaymentService', () => {
   };
 
   const mockUpdateRequest: UpdatePaymentRequest = {
-    amount_paid: 15000,
     payment_method: 'Cash',
     payment_date: '2026-05-10',
     notes: 'Paid in full',
@@ -307,6 +308,108 @@ describe('PaymentService', () => {
 
       const req = httpMock.expectOne(`${apiUrl}/999`);
       req.flush('Not found', { status: 404, statusText: 'Not Found' });
+    });
+  });
+
+  // ── recordPaymentTransaction / getPaymentTransactions / deletePaymentTransaction ──
+
+  describe('recordPaymentTransaction', () => {
+    it('should POST /payments/:id/transactions with the transaction body', () => {
+      const req: CreatePaymentTransactionRequest = {
+        amount: 10000,
+        payment_method: 'Cash',
+        payment_date: '2026-05-05',
+      };
+      const updatedPayment: Payment = { ...mockPayment, amount_paid: 10000, status: 'Partial' };
+
+      service.recordPaymentTransaction(5, req).subscribe((res) => {
+        expect(res.amount_paid).toBe(10000);
+        expect(res.status).toBe('Partial');
+      });
+
+      const httpReq = httpMock.expectOne(`${apiUrl}/5/transactions`);
+      expect(httpReq.request.method).toBe('POST');
+      expect(httpReq.request.body).toEqual(req);
+      httpReq.flush(updatedPayment);
+    });
+
+    it('should emit a 400 error when the amount is invalid', () => {
+      service.recordPaymentTransaction(5, { amount: -100 }).subscribe({
+        next: () => fail('expected an error'),
+        error: (err) => expect(err.status).toBe(400),
+      });
+
+      const httpReq = httpMock.expectOne(`${apiUrl}/5/transactions`);
+      httpReq.flush('Validation failed', { status: 400, statusText: 'Bad Request' });
+    });
+  });
+
+  describe('getPaymentTransactions', () => {
+    it('should GET /payments/:id/transactions and unwrap the transactions array', () => {
+      const transactions: PaymentTransaction[] = [
+        {
+          id: 1,
+          payment_id: 5,
+          amount: 10000,
+          payment_method: 'Cash',
+          payment_date: '2026-05-05',
+          receipt_number: 'RCP-001',
+          created_at: '2026-05-05T00:00:00Z',
+        },
+        {
+          id: 2,
+          payment_id: 5,
+          amount: 5000,
+          payment_method: 'bKash',
+          payment_date: '2026-05-20',
+          receipt_number: 'RCP-002',
+          created_at: '2026-05-20T00:00:00Z',
+        },
+      ];
+
+      let result: PaymentTransaction[] | undefined;
+      service.getPaymentTransactions(5).subscribe((res) => (result = res));
+
+      const httpReq = httpMock.expectOne(`${apiUrl}/5/transactions`);
+      expect(httpReq.request.method).toBe('GET');
+      httpReq.flush({ transactions });
+
+      expect(result?.length).toBe(2);
+      expect(result?.[0].receipt_number).toBe('RCP-001');
+    });
+
+    it('should resolve to an empty array when the transactions field is missing', () => {
+      let result: PaymentTransaction[] | undefined;
+      service.getPaymentTransactions(5).subscribe((res) => (result = res));
+
+      const httpReq = httpMock.expectOne(`${apiUrl}/5/transactions`);
+      httpReq.flush({});
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('deletePaymentTransaction', () => {
+    it('should DELETE /payments/:id/transactions/:transactionId', () => {
+      const updatedPayment: Payment = { ...mockPayment, amount_paid: 0, status: 'Due' };
+
+      service.deletePaymentTransaction(5, 2).subscribe((res) => {
+        expect(res.amount_paid).toBe(0);
+      });
+
+      const httpReq = httpMock.expectOne(`${apiUrl}/5/transactions/2`);
+      expect(httpReq.request.method).toBe('DELETE');
+      httpReq.flush(updatedPayment);
+    });
+
+    it('should emit a 404 error when the transaction does not exist', () => {
+      service.deletePaymentTransaction(5, 999).subscribe({
+        next: () => fail('expected an error'),
+        error: (err) => expect(err.status).toBe(404),
+      });
+
+      const httpReq = httpMock.expectOne(`${apiUrl}/5/transactions/999`);
+      httpReq.flush('Not found', { status: 404, statusText: 'Not Found' });
     });
   });
 

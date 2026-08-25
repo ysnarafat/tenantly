@@ -18,7 +18,7 @@ import { catchError, map } from 'rxjs/operators';
 import { PaymentService } from '../../../core/services/payment.service';
 import {
   PaymentWithDetails,
-  UpdatePaymentRequest,
+  CreatePaymentTransactionRequest,
   GenerateMonthlyPaymentsRequest,
   GenerateMonthlyPaymentsResult,
 } from '../../../core/models/payment.model';
@@ -172,12 +172,15 @@ export class PaymentCollect implements OnInit {
     this.saving.set(true);
 
     const requests = pending.map((row) => {
-      const req: UpdatePaymentRequest = {
-        amount_paid: row.amountPaid,
+      // Records this row's amount as a new transaction, adding to whatever
+      // the payment already has recorded rather than replacing it — so
+      // collecting a partial amount here doesn't erase an earlier installment.
+      const req: CreatePaymentTransactionRequest = {
+        amount: row.amountPaid,
         payment_method: row.paymentMethod || undefined,
         payment_date: row.paymentDate || undefined,
       };
-      return this.paymentService.updatePayment(row.payment.id, req).pipe(
+      return this.paymentService.recordPaymentTransaction(row.payment.id, req).pipe(
         map((): SaveOutcome => ({ row, ok: true })),
         catchError((err) =>
           of<SaveOutcome>({

@@ -77,6 +77,7 @@ describe('PaymentList', () => {
       'getDashboardSummary',
       'createPayment',
       'updatePayment',
+      'recordPaymentTransaction',
     ]);
     paymentServiceSpy.getPayments.and.returnValue(of(mockListResponse));
     paymentServiceSpy.getDashboardSummary.and.returnValue(of(mockSummary));
@@ -500,26 +501,46 @@ describe('PaymentList', () => {
       );
     });
 
-    it('should call updatePayment and reload when dialog returns an update request', () => {
-      const updateReq = { amount_paid: 15000, status: 'Paid' as PaymentStatus };
-      dialogSpy.open.and.returnValue({ afterClosed: () => of(updateReq) } as any);
+    it('should call recordPaymentTransaction and reload when the dialog records a new amount', () => {
+      const result = { kind: 'transaction' as const, req: { amount: 15000 } };
+      dialogSpy.open.and.returnValue({ afterClosed: () => of(result) } as any);
+      paymentServiceSpy.recordPaymentTransaction.and.returnValue(of({} as any));
+      paymentServiceSpy.getPayments.calls.reset();
+      paymentServiceSpy.getDashboardSummary.calls.reset();
+
+      component.openUpdateDialog(mockPayment);
+
+      expect(paymentServiceSpy.recordPaymentTransaction).toHaveBeenCalledWith(
+        mockPayment.id,
+        result.req
+      );
+      expect(paymentServiceSpy.updatePayment).not.toHaveBeenCalled();
+      expect(paymentServiceSpy.getPayments).toHaveBeenCalled();
+      expect(paymentServiceSpy.getDashboardSummary).toHaveBeenCalled();
+    });
+
+    it('should call updatePayment and reload when the dialog makes a metadata-only correction', () => {
+      const result = { kind: 'metadata' as const, req: { notes: 'Tenant requested a delay' } };
+      dialogSpy.open.and.returnValue({ afterClosed: () => of(result) } as any);
       paymentServiceSpy.updatePayment.and.returnValue(of({} as any));
       paymentServiceSpy.getPayments.calls.reset();
       paymentServiceSpy.getDashboardSummary.calls.reset();
 
       component.openUpdateDialog(mockPayment);
 
-      expect(paymentServiceSpy.updatePayment).toHaveBeenCalledWith(mockPayment.id, updateReq);
+      expect(paymentServiceSpy.updatePayment).toHaveBeenCalledWith(mockPayment.id, result.req);
+      expect(paymentServiceSpy.recordPaymentTransaction).not.toHaveBeenCalled();
       expect(paymentServiceSpy.getPayments).toHaveBeenCalled();
       expect(paymentServiceSpy.getDashboardSummary).toHaveBeenCalled();
     });
 
-    it('should not call updatePayment when dialog is cancelled (returns undefined)', () => {
+    it('should call neither service when dialog is cancelled (returns undefined)', () => {
       dialogSpy.open.and.returnValue({ afterClosed: () => of(undefined) } as any);
 
       component.openUpdateDialog(mockPayment);
 
       expect(paymentServiceSpy.updatePayment).not.toHaveBeenCalled();
+      expect(paymentServiceSpy.recordPaymentTransaction).not.toHaveBeenCalled();
     });
   });
 

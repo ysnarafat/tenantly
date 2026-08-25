@@ -38,6 +38,7 @@ import { LeaseWithDetails } from '../../../core/models/lease.model';
 import {
   PaymentWithDetails,
   UpdatePaymentRequest,
+  CreatePaymentTransactionRequest,
   PaymentStatus,
   DashboardSummary,
   CreatePaymentRequest,
@@ -335,19 +336,24 @@ export class PaymentList implements OnInit {
       maxWidth: '95vw',
       data: payment,
     });
-    ref.afterClosed().subscribe((req: UpdatePaymentRequest | undefined) => {
-      if (req) {
-        this.paymentService.updatePayment(payment.id, req).subscribe({
-          next: () => {
-            notifySuccess(this.snackBar, 'Payment updated');
-            this.loadPayments();
-            this.loadSummary();
-            if (this.activeTab() === 1) this.loadTreePayments();
-          },
-          error: (err) =>
-            notifyError(this.snackBar, err?.error?.error ?? 'Failed to update payment'),
-        });
-      }
+    ref.afterClosed().subscribe((result: PaymentUpdateResult | undefined) => {
+      if (!result) return;
+      // A positive amount records a new installment (accumulates on top of
+      // whatever's already paid); otherwise it's a metadata-only correction
+      // (payment method/date/notes) with no money involved.
+      const obs =
+        result.kind === 'transaction'
+          ? this.paymentService.recordPaymentTransaction(payment.id, result.req)
+          : this.paymentService.updatePayment(payment.id, result.req);
+      obs.subscribe({
+        next: () => {
+          notifySuccess(this.snackBar, 'Payment updated');
+          this.loadPayments();
+          this.loadSummary();
+          if (this.activeTab() === 1) this.loadTreePayments();
+        },
+        error: (err) => notifyError(this.snackBar, err?.error?.error ?? 'Failed to update payment'),
+      });
     });
   }
 
@@ -903,6 +909,13 @@ export class GeneratePaymentsDialog {
 }
 
 // ── Update Dialog ──────────────────────────────────────────────────────────────
+// Recording money received always creates a new transaction (accumulates on
+// top of prior installments); everything else (payment method/date/notes
+// with no amount) is a metadata-only correction with no money involved.
+export type PaymentUpdateResult =
+  | { kind: 'transaction'; req: CreatePaymentTransactionRequest }
+  | { kind: 'metadata'; req: UpdatePaymentRequest };
+
 @Component({
   selector: 'app-payment-update-dialog',
   standalone: true,
@@ -946,8 +959,9 @@ export class GeneratePaymentsDialog {
       </p>
       <form [formGroup]="form" class="dialog-form">
         <mat-form-field appearance="outline">
-          <mat-label>Amount Paid (BDT)</mat-label>
-          <input matInput type="number" formControlName="amount_paid" step="0.01" />
+          <mat-label>Amount to Record (BDT)</mat-label>
+          <input matInput type="number" formControlName="amount_to_add" step="0.01" />
+          <mat-hint>Adds a new installment on top of the amount already paid</mat-hint>
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Payment Method</mat-label>
@@ -1052,7 +1066,9 @@ export class PaymentUpdateDialog {
   readonly data: PaymentWithDetails = inject(MAT_DIALOG_DATA);
 
   form: FormGroup = this.fb.group({
-    amount_paid: [this.data.amount_paid, [Validators.min(0)]],
+    // Defaults to the remaining balance, not the amount already paid — this
+    // field is money to add now, via a new transaction, not the new total.
+    amount_to_add: [Math.max(this.data.amount_due - this.data.amount_paid, 0), [Validators.min(0)]],
     payment_method: [this.data.payment_method ?? ''],
     payment_date: [
       this.data.payment_date
@@ -1066,7 +1082,8 @@ export class PaymentUpdateDialog {
   // dialog previews the status the server will actually compute, instead of
   // letting the user pick one that might not match.
   computedStatus(): PaymentStatus {
-    const amountPaid = Number(this.form.get('amount_paid')?.value) || 0;
+    const amountToAdd = Number(this.form.get('amount_to_add')?.value) || 0;
+    const amountPaid = this.data.amount_paid + amountToAdd;
     const amountDue = this.data.amount_due;
     if (amountDue > 0 && amountPaid >= amountDue) return 'Paid';
     if (amountPaid > 0) return 'Partial';
@@ -1082,15 +1099,27 @@ export class PaymentUpdateDialog {
 
   submit(): void {
     const raw = this.form.value;
+    const amount = raw.amount_to_add !== null && raw.amount_to_add !== '' ? +raw.amount_to_add : 0;
+
+    if (amount > 0) {
+      const req: CreatePaymentTransactionRequest = { amount };
+      if (raw.payment_method) req.payment_method = raw.payment_method;
+      if (raw.payment_date) req.payment_date = raw.payment_date;
+      if (raw.notes) req.notes = raw.notes;
+      this.dialogRef.close({ kind: 'transaction', req } as PaymentUpdateResult);
+      return;
+    }
+
+    // No money recorded — treat any filled fields as a metadata-only
+    // correction (e.g. fixing a typo'd payment method or note).
     const req: UpdatePaymentRequest = {};
-    if (raw.amount_paid !== null && raw.amount_paid !== '') req.amount_paid = +raw.amount_paid;
     if (raw.payment_method) req.payment_method = raw.payment_method;
-    // Only meaningful once money has actually been recorded — sending a date
-    // alongside a $0 amount_paid would misleadingly mark a still-unpaid
-    // record as "paid". The backend defaults this to today itself when
-    // omitted, so there's no need to duplicate that default here.
-    if (raw.payment_date && raw.amount_paid > 0) req.payment_date = raw.payment_date;
+    if (raw.payment_date) req.payment_date = raw.payment_date;
     if (raw.notes) req.notes = raw.notes;
-    this.dialogRef.close(req);
+    if (Object.keys(req).length === 0) {
+      this.dialogRef.close();
+      return;
+    }
+    this.dialogRef.close({ kind: 'metadata', req } as PaymentUpdateResult);
   }
 }

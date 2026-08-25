@@ -46,14 +46,35 @@ export interface CreatePaymentRequest {
   due_date?: string;
 }
 
-// status and receipt_number are intentionally absent — the backend always
-// derives status from amount_paid vs amount_due and server-generates the
-// receipt number (see PaymentService.UpdatePayment), so the UI never sets
-// either directly.
+// amount_paid, status, and receipt_number are intentionally absent —
+// recording money received must go through PaymentService.recordTransaction
+// instead (see PaymentTransaction below), so partial/installment payments
+// accumulate correctly instead of overwriting each other. Status and the
+// receipt number are always derived/generated server-side either way.
 export interface UpdatePaymentRequest {
-  amount_paid?: number;
   payment_method?: string;
   payment_date?: string;
+  notes?: string;
+}
+
+// One amount actually received against a payment. A payment can be settled
+// across several of these (partial/installment payments) — amount_paid on
+// the parent Payment is the sum of its transactions.
+export interface PaymentTransaction {
+  id: number;
+  payment_id: number;
+  amount: number;
+  payment_method?: string;
+  payment_date: string; // ISO 8601 date
+  receipt_number?: string;
+  notes?: string;
+  created_at: string; // ISO 8601 UTC timestamp
+}
+
+export interface CreatePaymentTransactionRequest {
+  amount: number;
+  payment_method?: string;
+  payment_date?: string; // defaults to today when omitted
   notes?: string;
 }
 

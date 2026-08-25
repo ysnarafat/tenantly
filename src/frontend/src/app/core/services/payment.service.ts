@@ -9,6 +9,8 @@ import {
   PaymentListResponse,
   UpdatePaymentRequest,
   PaymentWithDetails,
+  PaymentTransaction,
+  CreatePaymentTransactionRequest,
   LeaseSearchResponse,
   GenerateMonthlyPaymentsRequest,
   GenerateMonthlyPaymentsResult,
@@ -60,6 +62,27 @@ export class PaymentService {
 
   updatePayment(id: number, req: UpdatePaymentRequest): Observable<Payment> {
     return this.http.put<Payment>(`${this.apiUrl}/${id}`, req);
+  }
+
+  /**
+   * Records a new amount received against a payment — adds to whatever's
+   * already been paid rather than replacing it, so a second installment
+   * against the same month's due amount doesn't overwrite the first. This is
+   * the only way to record money received; UpdatePaymentRequest no longer
+   * accepts amount_paid.
+   */
+  recordPaymentTransaction(id: number, req: CreatePaymentTransactionRequest): Observable<Payment> {
+    return this.http.post<Payment>(`${this.apiUrl}/${id}/transactions`, req);
+  }
+
+  getPaymentTransactions(id: number): Observable<PaymentTransaction[]> {
+    return this.http
+      .get<{ transactions: PaymentTransaction[] }>(`${this.apiUrl}/${id}/transactions`)
+      .pipe(map((res) => res.transactions ?? []));
+  }
+
+  deletePaymentTransaction(id: number, transactionId: number): Observable<Payment> {
+    return this.http.delete<Payment>(`${this.apiUrl}/${id}/transactions/${transactionId}`);
   }
 
   bulkCreatePayments(requests: CreatePaymentRequest[]): Observable<unknown> {
