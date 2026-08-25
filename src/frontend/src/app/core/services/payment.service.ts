@@ -11,6 +11,7 @@ import {
   PaymentWithDetails,
   PaymentTransaction,
   CreatePaymentTransactionRequest,
+  PaymentTransactionAttachment,
   LeaseSearchResponse,
   GenerateMonthlyPaymentsRequest,
   GenerateMonthlyPaymentsResult,
@@ -83,6 +84,51 @@ export class PaymentService {
 
   deletePaymentTransaction(id: number, transactionId: number): Observable<Payment> {
     return this.http.delete<Payment>(`${this.apiUrl}/${id}/transactions/${transactionId}`);
+  }
+
+  uploadPaymentTransactionAttachment(
+    id: number,
+    transactionId: number,
+    file: File
+  ): Observable<PaymentTransactionAttachment> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<PaymentTransactionAttachment>(
+      `${this.apiUrl}/${id}/transactions/${transactionId}/attachments`,
+      formData
+    );
+  }
+
+  getPaymentTransactionAttachments(
+    id: number,
+    transactionId: number
+  ): Observable<PaymentTransactionAttachment[]> {
+    return this.http
+      .get<{
+        attachments: PaymentTransactionAttachment[];
+      }>(`${this.apiUrl}/${id}/transactions/${transactionId}/attachments`)
+      .pipe(map((res) => res.attachments ?? []));
+  }
+
+  downloadPaymentTransactionAttachment(
+    id: number,
+    transactionId: number,
+    attachmentId: number
+  ): Observable<Blob> {
+    return this.http.get(
+      `${this.apiUrl}/${id}/transactions/${transactionId}/attachments/${attachmentId}`,
+      { responseType: 'blob' }
+    );
+  }
+
+  deletePaymentTransactionAttachment(
+    id: number,
+    transactionId: number,
+    attachmentId: number
+  ): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(
+      `${this.apiUrl}/${id}/transactions/${transactionId}/attachments/${attachmentId}`
+    );
   }
 
   bulkCreatePayments(requests: CreatePaymentRequest[]): Observable<unknown> {

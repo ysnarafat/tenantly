@@ -39,6 +39,10 @@ import {
   PaymentWithDetails,
   UpdatePaymentRequest,
   CreatePaymentTransactionRequest,
+  PaymentTransaction,
+  PaymentTransactionAttachment,
+  MAX_ATTACHMENT_FILE_SIZE,
+  ALLOWED_ATTACHMENT_CONTENT_TYPES,
   PaymentStatus,
   DashboardSummary,
   CreatePaymentRequest,
@@ -927,6 +931,9 @@ export type PaymentUpdateResult =
     MatSelectModule,
     MatButtonModule,
     MatDialogModule,
+    MatIconModule,
+    MatTooltipModule,
+    MatProgressSpinnerModule,
   ],
   template: `
     <h2 mat-dialog-title>Update Payment</h2>
@@ -989,6 +996,92 @@ export type PaymentUpdateResult =
           }
         </p>
       </form>
+
+      <div class="history-section">
+        <h3 class="history-title">Payment History</h3>
+        @if (loadingTransactions()) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else if (transactions().length === 0) {
+          <p class="history-empty">No installments recorded yet.</p>
+        } @else {
+          @for (txn of transactions(); track txn.id) {
+            <div class="txn-row">
+              <div class="txn-summary">
+                <span class="txn-amount">৳{{ txn.amount | number: '1.2-2' }}</span>
+                <span class="txn-meta"
+                  >{{ txn.payment_date }}
+                  @if (txn.payment_method) {
+                    · {{ txn.payment_method }}
+                  }
+                  @if (txn.receipt_number) {
+                    · {{ txn.receipt_number }}
+                  }
+                </span>
+              </div>
+              <div class="txn-actions">
+                <button
+                  mat-icon-button
+                  type="button"
+                  matTooltip="Attachments"
+                  (click)="toggleAttachments(txn.id)"
+                >
+                  <mat-icon>attach_file</mat-icon>
+                  @if (attachmentCount(txn.id) > 0) {
+                    <span class="attachment-count">{{ attachmentCount(txn.id) }}</span>
+                  }
+                </button>
+                <button
+                  mat-icon-button
+                  type="button"
+                  matTooltip="Attach a file"
+                  [disabled]="uploadingTxnId() === txn.id"
+                  (click)="fileInput.click()"
+                >
+                  <mat-icon>upload_file</mat-icon>
+                </button>
+                <input
+                  #fileInput
+                  type="file"
+                  hidden
+                  accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
+                  (change)="onFileSelected(txn.id, $event, fileInput)"
+                />
+              </div>
+            </div>
+            @if (expandedTxnId() === txn.id) {
+              <div class="attachment-list">
+                @for (att of attachmentsFor(txn.id); track att.id) {
+                  <div class="attachment-row">
+                    <mat-icon class="attachment-icon">{{
+                      att.content_type === 'application/pdf' ? 'picture_as_pdf' : 'image'
+                    }}</mat-icon>
+                    <span class="attachment-name">{{ att.file_name }}</span>
+                    <span class="attachment-size">{{ formatFileSize(att.file_size) }}</span>
+                    <button
+                      mat-icon-button
+                      type="button"
+                      matTooltip="Download"
+                      (click)="downloadAttachment(txn.id, att)"
+                    >
+                      <mat-icon>download</mat-icon>
+                    </button>
+                    <button
+                      mat-icon-button
+                      type="button"
+                      matTooltip="Delete"
+                      (click)="deleteAttachment(txn.id, att)"
+                    >
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                } @empty {
+                  <p class="history-empty">No attachments for this installment yet.</p>
+                }
+              </div>
+            }
+          }
+        }
+      </div>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-button mat-dialog-close>Cancel</button>
@@ -1057,13 +1150,104 @@ export type PaymentUpdateResult =
           color: var(--color-overdue, #f44336);
         }
       }
+      .history-section {
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border-color, #e0e0e0);
+      }
+      .history-title {
+        font-size: 13px;
+        font-weight: 600;
+        margin: 0 0 8px;
+        color: var(--text-secondary, #666);
+      }
+      .history-empty {
+        font-size: 12px;
+        color: var(--text-secondary, #666);
+        margin: 4px 0;
+      }
+      .txn-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 4px 0;
+        border-bottom: 1px solid var(--border-color, #f0f0f0);
+      }
+      .txn-summary {
+        display: flex;
+        flex-direction: column;
+        font-size: 13px;
+      }
+      .txn-amount {
+        font-weight: 600;
+      }
+      .txn-meta {
+        font-size: 11px;
+        color: var(--text-secondary, #666);
+      }
+      .txn-actions {
+        display: flex;
+        align-items: center;
+        position: relative;
+      }
+      .attachment-count {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: var(--color-primary, #1e88e5);
+        color: #fff;
+        font-size: 9px;
+        line-height: 1;
+        border-radius: 8px;
+        padding: 2px 4px;
+        min-width: 12px;
+        text-align: center;
+      }
+      .attachment-list {
+        padding: 4px 0 8px 8px;
+      }
+      .attachment-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        padding: 2px 0;
+      }
+      .attachment-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        color: var(--text-secondary, #666);
+      }
+      .attachment-name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .attachment-size {
+        color: var(--text-secondary, #666);
+        font-size: 11px;
+      }
     `,
   ],
 })
 export class PaymentUpdateDialog {
   private fb = inject(FormBuilder);
   private dialogRef = inject(MatDialogRef<PaymentUpdateDialog>);
+  private paymentService = inject(PaymentService);
+  private snackBar = inject(MatSnackBar);
   readonly data: PaymentWithDetails = inject(MAT_DIALOG_DATA);
+
+  transactions = signal<PaymentTransaction[]>([]);
+  loadingTransactions = signal(false);
+  attachmentsByTxn = signal<Record<number, PaymentTransactionAttachment[]>>({});
+  expandedTxnId = signal<number | null>(null);
+  uploadingTxnId = signal<number | null>(null);
+
+  constructor() {
+    this.loadTransactions();
+  }
 
   form: FormGroup = this.fb.group({
     // Defaults to the remaining balance, not the amount already paid — this
@@ -1121,5 +1305,112 @@ export class PaymentUpdateDialog {
       return;
     }
     this.dialogRef.close({ kind: 'metadata', req } as PaymentUpdateResult);
+  }
+
+  private loadTransactions(): void {
+    this.loadingTransactions.set(true);
+    this.paymentService.getPaymentTransactions(this.data.id).subscribe({
+      next: (txns) => {
+        this.transactions.set(txns);
+        this.loadingTransactions.set(false);
+        // Loaded eagerly (rather than only on expand) so the attachment
+        // count badge is accurate before the user opens any row.
+        txns.forEach((txn) => this.loadAttachments(txn.id));
+      },
+      error: () => {
+        this.loadingTransactions.set(false);
+      },
+    });
+  }
+
+  private loadAttachments(transactionId: number): void {
+    this.paymentService.getPaymentTransactionAttachments(this.data.id, transactionId).subscribe({
+      next: (atts) => {
+        this.attachmentsByTxn.update((map) => ({ ...map, [transactionId]: atts }));
+      },
+    });
+  }
+
+  attachmentsFor(transactionId: number): PaymentTransactionAttachment[] {
+    return this.attachmentsByTxn()[transactionId] ?? [];
+  }
+
+  attachmentCount(transactionId: number): number {
+    return this.attachmentsFor(transactionId).length;
+  }
+
+  toggleAttachments(transactionId: number): void {
+    this.expandedTxnId.set(this.expandedTxnId() === transactionId ? null : transactionId);
+  }
+
+  onFileSelected(transactionId: number, event: Event, fileInput: HTMLInputElement): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    fileInput.value = ''; // allow re-selecting the same file later
+    if (!file) return;
+
+    if (file.size > MAX_ATTACHMENT_FILE_SIZE) {
+      notifyError(this.snackBar, 'File exceeds the maximum allowed size of 10MB');
+      return;
+    }
+    if (!ALLOWED_ATTACHMENT_CONTENT_TYPES.includes(file.type)) {
+      notifyError(this.snackBar, 'Only images and PDF files are allowed');
+      return;
+    }
+
+    this.uploadingTxnId.set(transactionId);
+    this.paymentService
+      .uploadPaymentTransactionAttachment(this.data.id, transactionId, file)
+      .subscribe({
+        next: (attachment) => {
+          this.attachmentsByTxn.update((map) => ({
+            ...map,
+            [transactionId]: [...(map[transactionId] ?? []), attachment],
+          }));
+          this.expandedTxnId.set(transactionId);
+          this.uploadingTxnId.set(null);
+          notifySuccess(this.snackBar, 'Attachment uploaded');
+        },
+        error: (err) => {
+          this.uploadingTxnId.set(null);
+          notifyError(this.snackBar, err?.error?.error ?? 'Failed to upload attachment');
+        },
+      });
+  }
+
+  downloadAttachment(transactionId: number, attachment: PaymentTransactionAttachment): void {
+    this.paymentService
+      .downloadPaymentTransactionAttachment(this.data.id, transactionId, attachment.id)
+      .subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = attachment.file_name;
+          a.click();
+          URL.revokeObjectURL(url);
+        },
+        error: () => notifyError(this.snackBar, 'Failed to download attachment'),
+      });
+  }
+
+  deleteAttachment(transactionId: number, attachment: PaymentTransactionAttachment): void {
+    this.paymentService
+      .deletePaymentTransactionAttachment(this.data.id, transactionId, attachment.id)
+      .subscribe({
+        next: () => {
+          this.attachmentsByTxn.update((map) => ({
+            ...map,
+            [transactionId]: (map[transactionId] ?? []).filter((a) => a.id !== attachment.id),
+          }));
+          notifySuccess(this.snackBar, 'Attachment deleted');
+        },
+        error: () => notifyError(this.snackBar, 'Failed to delete attachment'),
+      });
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 }

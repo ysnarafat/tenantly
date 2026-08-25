@@ -78,6 +78,34 @@ export interface CreatePaymentTransactionRequest {
   notes?: string;
 }
 
+// Max file size accepted for a payment transaction attachment, in bytes —
+// mirrors models.MaxAttachmentFileSize on the backend.
+export const MAX_ATTACHMENT_FILE_SIZE = 10 * 1024 * 1024;
+
+// MIME types accepted for a payment transaction attachment — mirrors
+// models.AllowedAttachmentContentTypes on the backend. The backend is the
+// source of truth (it sniffs actual file bytes); this list is only used to
+// give the user an immediate error before an upload is attempted.
+export const ALLOWED_ATTACHMENT_CONTENT_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'application/pdf',
+];
+
+// A file (receipt photo, bKash/Nagad screenshot, etc.) evidencing one
+// installment of a payment.
+export interface PaymentTransactionAttachment {
+  id: number;
+  payment_transaction_id: number;
+  file_name: string;
+  content_type: string;
+  file_size: number;
+  uploaded_by?: number;
+  created_at: string; // ISO 8601 UTC timestamp
+}
+
 export interface PaymentListResponse {
   payments: PaymentWithDetails[];
   total: number;
