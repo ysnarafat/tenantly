@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Serilog;
 using TenantlyNotificationService.Configuration;
 using TenantlyNotificationService.Data;
@@ -33,7 +34,12 @@ builder.Services.AddHttpClient();
 
 // Add services
 builder.Services.AddScoped<IDatabaseService, DatabaseService>();
-builder.Services.AddSingleton<ISmsService, SmsService>();
+
+// SMS provider is selected by Notifications:Sms:Provider — see
+// SmsProviderFactory for how to add a new provider.
+builder.Services.AddSingleton<SslWirelessSmsService>();
+builder.Services.AddSingleton<ISmsService>(sp => SmsProviderFactory.Resolve(
+    sp.GetRequiredService<IOptions<NotificationSettings>>().Value.Sms.Provider, sp));
 builder.Services.AddSingleton<IEmailService, EmailService>();
 builder.Services.AddSingleton<INotificationChannelListener, PostgresNotificationChannelListener>();
 

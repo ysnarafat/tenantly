@@ -59,7 +59,7 @@ public class DatabaseServiceTests : IDisposable
 
         _context.NotificationQueue.AddRange(
             new NotificationQueue { TenantId = tenant.Id, UnitId = unit.Id, Message = "pending", NotificationType = "SMS", Recipient = "x", Status = "Pending", RetryCount = 0, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
-            new NotificationQueue { TenantId = tenant.Id, UnitId = unit.Id, Message = "exhausted", NotificationType = "SMS", Recipient = "x", Status = "Pending", RetryCount = 3, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
+            new NotificationQueue { TenantId = tenant.Id, UnitId = unit.Id, Message = "exhausted", NotificationType = "SMS", Recipient = "x", Status = "Pending", RetryCount = 5, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow },
             new NotificationQueue { TenantId = tenant.Id, UnitId = unit.Id, Message = "sent", NotificationType = "SMS", Recipient = "x", Status = "Sent", RetryCount = 0, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow }
         );
         await _context.SaveChangesAsync();
@@ -72,8 +72,12 @@ public class DatabaseServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task UpdateNotificationStatusAsync_SetsStatusAndIncrementsRetryCount()
+    public async Task UpdateNotificationStatusAsync_ReturnsToPendingWhenRetryBudgetRemains()
     {
+        // MaxRetryAttempts defaults to 5; a single failure must not be the
+        // last word — GetPendingNotificationsAsync only ever selects
+        // Status == Pending, so leaving this Failed here would silently
+        // stop retrying after just one transient failure.
         var (tenant, unit) = await SeedTenantAndUnitAsync();
         var notification = new NotificationQueue { TenantId = tenant.Id, UnitId = unit.Id, Message = "m", NotificationType = "SMS", Recipient = "x", Status = "Pending", RetryCount = 0, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
         _context.NotificationQueue.Add(notification);
@@ -83,9 +87,47 @@ public class DatabaseServiceTests : IDisposable
 
         var updated = await _context.NotificationQueue.FindAsync(notification.Id);
         Assert.NotNull(updated);
-        Assert.Equal("Failed", updated!.Status);
+        Assert.Equal("Pending", updated!.Status);
         Assert.Equal(1, updated.RetryCount);
         Assert.Equal("delivery failed", updated.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task UpdateNotificationStatusAsync_MarksFailedOnceRetryBudgetExhausted()
+    {
+        var (tenant, unit) = await SeedTenantAndUnitAsync();
+        // One failure away from the default MaxRetryAttempts (5).
+        var notification = new NotificationQueue { TenantId = tenant.Id, UnitId = unit.Id, Message = "m", NotificationType = "SMS", Recipient = "x", Status = "Pending", RetryCount = 4, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+        _context.NotificationQueue.Add(notification);
+        await _context.SaveChangesAsync();
+
+        await _service.UpdateNotificationStatusAsync(notification.Id, NotificationStatus.Failed, "delivery failed");
+
+        var updated = await _context.NotificationQueue.FindAsync(notification.Id);
+        Assert.NotNull(updated);
+        Assert.Equal("Failed", updated!.Status);
+        Assert.Equal(5, updated.RetryCount);
+
+        // Exhausted and Failed — must not be picked up again.
+        var pending = await _service.GetPendingNotificationsAsync();
+        Assert.DoesNotContain(pending, n => n.Id == notification.Id);
+    }
+
+    [Fact]
+    public async Task UpdateNotificationStatusAsync_SentDoesNotIncrementRetryCount()
+    {
+        var (tenant, unit) = await SeedTenantAndUnitAsync();
+        var notification = new NotificationQueue { TenantId = tenant.Id, UnitId = unit.Id, Message = "m", NotificationType = "SMS", Recipient = "x", Status = "Pending", RetryCount = 0, CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+        _context.NotificationQueue.Add(notification);
+        await _context.SaveChangesAsync();
+
+        await _service.UpdateNotificationStatusAsync(notification.Id, NotificationStatus.Sent);
+
+        var updated = await _context.NotificationQueue.FindAsync(notification.Id);
+        Assert.NotNull(updated);
+        Assert.Equal("Sent", updated!.Status);
+        Assert.Equal(0, updated.RetryCount);
+        Assert.Null(updated.ErrorMessage);
     }
 
     [Fact]

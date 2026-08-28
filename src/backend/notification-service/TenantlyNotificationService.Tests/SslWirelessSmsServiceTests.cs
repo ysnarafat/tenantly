@@ -6,7 +6,7 @@ using TenantlyNotificationService.Services;
 
 namespace TenantlyNotificationService.Tests;
 
-public class SmsServiceTests
+public class SslWirelessSmsServiceTests
 {
     private static NotificationSettings SettingsWithApiKey(string apiKey = "test-key") => new()
     {
@@ -19,11 +19,11 @@ public class SmsServiceTests
         },
     };
 
-    private static SmsService CreateService(NotificationSettings settings, HttpResponseMessage response)
+    private static SslWirelessSmsService CreateService(NotificationSettings settings, HttpResponseMessage response)
     {
         var handler = new StubHttpMessageHandler(response);
         var httpClient = new HttpClient(handler);
-        return new SmsService(Options.Create(settings), httpClient, NullLogger<SmsService>.Instance);
+        return new SslWirelessSmsService(Options.Create(settings), httpClient, NullLogger<SslWirelessSmsService>.Instance);
     }
 
     [Fact]

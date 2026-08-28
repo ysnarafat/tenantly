@@ -43,19 +43,35 @@ public class DatabaseService : IDatabaseService
             var notification = await _context.NotificationQueue.FindAsync(notificationId);
             if (notification != null)
             {
-                notification.Status = status.ToString();
                 notification.ErrorMessage = errorMessage;
-                notification.RetryCount++;
                 notification.UpdatedAt = DateTime.UtcNow;
 
-                await _context.SaveChangesAsync();
-
-                if (status == NotificationStatus.Failed && notification.RetryCount >= _settings.MaxRetryAttempts)
+                if (status == NotificationStatus.Failed)
                 {
-                    _logger.LogWarning(
-                        "Notification {NotificationId} exhausted retry attempts ({RetryCount}) and will not be retried again. Last error: {ErrorMessage}",
-                        notificationId, notification.RetryCount, errorMessage);
+                    notification.RetryCount++;
+
+                    // GetPendingNotificationsAsync only ever selects
+                    // Status == Pending, so a failure that leaves this as
+                    // Failed would never be retried — persist it back to
+                    // Pending until the retry budget is actually exhausted.
+                    var exhausted = notification.RetryCount >= _settings.MaxRetryAttempts;
+                    notification.Status = exhausted
+                        ? NotificationStatus.Failed.ToString()
+                        : NotificationStatus.Pending.ToString();
+
+                    if (exhausted)
+                    {
+                        _logger.LogWarning(
+                            "Notification {NotificationId} exhausted retry attempts ({RetryCount}) and will not be retried again. Last error: {ErrorMessage}",
+                            notificationId, notification.RetryCount, errorMessage);
+                    }
                 }
+                else
+                {
+                    notification.Status = status.ToString();
+                }
+
+                await _context.SaveChangesAsync();
             }
         }
         catch (Exception ex)

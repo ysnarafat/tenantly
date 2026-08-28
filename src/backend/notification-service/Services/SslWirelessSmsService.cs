@@ -6,14 +6,19 @@ using TenantlyNotificationService.Configuration;
 
 namespace TenantlyNotificationService.Services;
 
-public class SmsService : ISmsService
+// SSL Wireless is the current SMS gateway for Bangladesh delivery. This class
+// holds all of its provider-specific request/response shape; ISmsService is
+// the only contract callers (NotificationWorker) depend on, so a future
+// provider swap means adding a new ISmsService implementation and a case in
+// SmsProviderFactory — not touching this class or its callers.
+public class SslWirelessSmsService : ISmsService
 {
     private readonly NotificationSettings _settings;
     private readonly HttpClient _httpClient;
-    private readonly ILogger<SmsService> _logger;
+    private readonly ILogger<SslWirelessSmsService> _logger;
     private bool _missingCredentialsWarningLogged;
 
-    public SmsService(IOptions<NotificationSettings> settings, HttpClient httpClient, ILogger<SmsService> logger)
+    public SslWirelessSmsService(IOptions<NotificationSettings> settings, HttpClient httpClient, ILogger<SslWirelessSmsService> logger)
     {
         _settings = settings.Value;
         _httpClient = httpClient;
