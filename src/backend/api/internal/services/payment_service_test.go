@@ -1232,6 +1232,63 @@ func TestRecordPaymentTransaction_CrossOrgPaymentNotFound(t *testing.T) {
 	}
 }
 
+func TestRecordPaymentTransaction_RejectsAmountExceedingDue(t *testing.T) {
+	svc, _, _, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
+
+	unitRepo.addUnit(sampleUnit(1, 2, 3))
+	bldgRepo.addBuilding(sampleBuilding(2, 3))
+	propRepo.addProperty(sampleProperty(3))
+	req := sampleCreateRequest(1, 2, 3)
+	req.AmountDue = 10000
+	created, err := svc.CreatePayment(req, 99)
+	if err != nil {
+		t.Fatalf("failed to create payment: %v", err)
+	}
+
+	// A landlord recording an advance/next-month amount should create a
+	// separate payment period instead of overpaying this one.
+	_, err = svc.RecordPaymentTransaction(created.ID, &models.CreatePaymentTransactionRequest{Amount: 10001}, 99, 1)
+	if err == nil {
+		t.Fatal("expected an error recording a transaction that exceeds the amount due, got nil")
+	}
+}
+
+func TestRecordPaymentTransaction_RejectsExceedingRemainingDueAfterPartialPayment(t *testing.T) {
+	svc, _, _, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
+
+	unitRepo.addUnit(sampleUnit(1, 2, 3))
+	bldgRepo.addBuilding(sampleBuilding(2, 3))
+	propRepo.addProperty(sampleProperty(3))
+	req := sampleCreateRequest(1, 2, 3)
+	req.AmountDue = 12000
+	created, err := svc.CreatePayment(req, 99)
+	if err != nil {
+		t.Fatalf("failed to create payment: %v", err)
+	}
+
+	if _, err := svc.RecordPaymentTransaction(created.ID, &models.CreatePaymentTransactionRequest{Amount: 10000}, 99, 1); err != nil {
+		t.Fatalf("unexpected error recording first installment: %v", err)
+	}
+
+	// Only 2,000 remains — 2,001 must be rejected even though it's less
+	// than the original amount_due.
+	if _, err := svc.RecordPaymentTransaction(created.ID, &models.CreatePaymentTransactionRequest{Amount: 2001}, 99, 1); err == nil {
+		t.Fatal("expected an error recording an installment that exceeds the remaining due, got nil")
+	}
+
+	// Exactly the remaining balance must still succeed (boundary check).
+	afterSecond, err := svc.RecordPaymentTransaction(created.ID, &models.CreatePaymentTransactionRequest{Amount: 2000}, 99, 1)
+	if err != nil {
+		t.Fatalf("unexpected error recording exact remaining balance: %v", err)
+	}
+	if afterSecond.AmountPaid != 12000 {
+		t.Errorf("amount_paid got %.2f, want 12000.00", afterSecond.AmountPaid)
+	}
+	if afterSecond.Status != models.PaymentStatusPaid {
+		t.Errorf("status got %q, want %q", afterSecond.Status, models.PaymentStatusPaid)
+	}
+}
+
 // ---------------------------------------------------------------------------
 // TestDeletePaymentTransaction
 // ---------------------------------------------------------------------------

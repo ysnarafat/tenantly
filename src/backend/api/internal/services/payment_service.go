@@ -193,6 +193,15 @@ func (s *PaymentService) RecordPaymentTransaction(paymentID int, req *models.Cre
 		return nil, fmt.Errorf("payment not found")
 	}
 
+	// An installment can never push the total paid past what's actually
+	// due — a landlord recording a genuine advance/next-month payment
+	// should create that as its own payment period instead. The 0.005
+	// epsilon absorbs float rounding on 2-decimal currency amounts.
+	remainingDue := existingPayment.AmountDue - existingPayment.AmountPaid
+	if req.Amount > remainingDue+0.005 {
+		return nil, fmt.Errorf("payment amount %.2f exceeds the remaining due balance of %.2f", req.Amount, remainingDue)
+	}
+
 	paymentDateStr := time.Now().UTC().Format("2006-01-02")
 	if req.PaymentDate != nil && *req.PaymentDate != "" {
 		paymentDateStr = *req.PaymentDate

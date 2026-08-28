@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -213,6 +214,10 @@ func (h *PaymentHandler) RecordPaymentTransaction(c *gin.Context) {
 
 	payment, err := h.paymentService.RecordPaymentTransaction(id, &req, userID, orgID)
 	if err != nil {
+		if strings.Contains(err.Error(), "exceeds the remaining due balance") {
+			respondError(c, http.StatusConflict, "RECORD_PAYMENT_TRANSACTION_EXCEEDS_DUE", err.Error(), err)
+			return
+		}
 		respondError(c, http.StatusBadRequest, "RECORD_PAYMENT_TRANSACTION_FAILED", "Failed to record payment", err)
 		return
 	}
