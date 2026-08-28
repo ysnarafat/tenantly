@@ -117,10 +117,11 @@
                   matInput
                   type="number"
                   min="0"
+                  [max]="remainingDue(row)"
                   step="0.01"
                   class="amount-input"
                   [ngModel]="row.amountPaid"
-                  (ngModelChange)="row.amountPaid = $event; touch()"
+                  (ngModelChange)="onAmountChange(row, $event)"
                   [disabled]="row.saved || row.skip || row.saving"
                 />
               </td>

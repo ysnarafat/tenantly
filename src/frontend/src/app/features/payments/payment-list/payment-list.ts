@@ -967,8 +967,20 @@ export type PaymentUpdateResult =
       <form [formGroup]="form" class="dialog-form">
         <mat-form-field appearance="outline">
           <mat-label>Amount to Record (BDT)</mat-label>
-          <input matInput type="number" formControlName="amount_to_add" step="0.01" />
-          <mat-hint>Adds a new installment on top of the amount already paid</mat-hint>
+          <input
+            matInput
+            type="number"
+            formControlName="amount_to_add"
+            step="0.01"
+            [max]="remainingDue"
+          />
+          @if (form.get('amount_to_add')?.hasError('max')) {
+            <mat-error
+              >Cannot exceed the remaining due of ৳{{ remainingDue | number: '1.2-2' }}</mat-error
+            >
+          } @else {
+            <mat-hint>Adds a new installment on top of the amount already paid</mat-hint>
+          }
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Payment Method</mat-label>
@@ -1249,10 +1261,15 @@ export class PaymentUpdateDialog {
     this.loadTransactions();
   }
 
+  // The backend rejects an installment that would push amount_paid past
+  // amount_due — recording a genuine advance/next-month payment belongs on
+  // its own payment period instead.
+  readonly remainingDue = Math.max(this.data.amount_due - this.data.amount_paid, 0);
+
   form: FormGroup = this.fb.group({
     // Defaults to the remaining balance, not the amount already paid — this
     // field is money to add now, via a new transaction, not the new total.
-    amount_to_add: [Math.max(this.data.amount_due - this.data.amount_paid, 0), [Validators.min(0)]],
+    amount_to_add: [this.remainingDue, [Validators.min(0), Validators.max(this.remainingDue)]],
     payment_method: [this.data.payment_method ?? ''],
     payment_date: [
       this.data.payment_date

@@ -154,6 +154,17 @@ export class PaymentCollect implements OnInit {
     this.touch();
   }
 
+  remainingDue(row: CollectRow): number {
+    return Math.max(row.payment.amount_due - row.payment.amount_paid, 0);
+  }
+
+  // The backend rejects an installment that would exceed the remaining due
+  // balance — clamp here so a typo/paste can't produce a doomed request.
+  onAmountChange(row: CollectRow, value: number): void {
+    row.amountPaid = Math.min(Math.max(value, 0), this.remainingDue(row));
+    this.touch();
+  }
+
   // Called from the template on every input change — signals need a new array
   // reference to notify computed()s, since we mutate the row objects in place.
   touch(): void {
