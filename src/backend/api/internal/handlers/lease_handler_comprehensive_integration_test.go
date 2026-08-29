@@ -500,6 +500,43 @@ func (suite *LeaseIntegrationTestSuite) TestUpdateLease_ExplicitEndDateOverrides
 	assert.Equal(suite.T(), 1, updatedLease.DurationMonths)
 }
 
+// TestUpdateLease_RoundTrippingEndDateDoesNotDriftDuration covers an edit
+// that resends the lease's own current start/end dates unchanged (e.g. the
+// UI submits them alongside an unrelated field like monthly_rent) — the
+// derived duration_months must reproduce the exact existing value, not drift
+// down from averaging error (a fixed 30.44-day-per-month approximation would
+// undercount an exact whole-month span).
+func (suite *LeaseIntegrationTestSuite) TestUpdateLease_RoundTrippingEndDateDoesNotDriftDuration() {
+	startDate := time.Now().Format("2006-01-02")
+	endDate := time.Now().AddDate(0, 6, 0).Format("2006-01-02") // exactly 6 calendar months
+	leaseReq := &models.CreateLeaseRequest{
+		UnitID:          suite.testUnit.ID,
+		TenantID:        suite.testTenant.ID,
+		LeaseType:       models.LeaseTypeResidential,
+		StartDate:       startDate,
+		EndDate:         &endDate,
+		DurationMonths:  6,
+		MonthlyRent:     15000,
+		SecurityDeposit: 30000,
+		OrganizationID:  suite.testOrg.ID,
+	}
+	lease, err := suite.leaseRepo.Create(leaseReq)
+	require.NoError(suite.T(), err)
+
+	updateReq := map[string]interface{}{
+		"start_date":   startDate,
+		"end_date":     endDate,
+		"monthly_rent": 16000.0,
+	}
+	w := suite.makeAuthenticatedRequest("PUT", fmt.Sprintf("/api/v1/leases/%d", lease.ID), updateReq)
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	updatedLease, err := suite.leaseRepo.GetByID(lease.ID)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), 6, updatedLease.DurationMonths,
+		"duration_months must round-trip exactly, not drift from date-averaging error")
+}
+
 // TestUpdateLease_EndDateBeforeStartDateRejected covers the validation
 // guarding against an obviously-inverted correction.
 func (suite *LeaseIntegrationTestSuite) TestUpdateLease_EndDateBeforeStartDateRejected() {

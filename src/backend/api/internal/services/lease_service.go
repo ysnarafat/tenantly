@@ -248,9 +248,18 @@ func (s *LeaseService) UpdateLease(id int, req *models.UpdateLeaseRequest, userI
 		// periods from it) — it's purely a display/renewal-default value, so
 		// deriving it here keeps it roughly in sync with the real date range
 		// without forcing that range onto a whole-month boundary the way
-		// setting duration_months directly would.
+		// setting duration_months directly would. Calendar-month arithmetic
+		// (not a fixed day-length average) matters here: a submit that
+		// round-trips the lease's existing start/end unchanged — e.g. saving
+		// an edit to some other field — must reproduce the exact existing
+		// duration_months, not silently drift it down by one from averaging
+		// error (a 30.44-day average undercounts an exact 6-month span by a
+		// full month).
 		if req.DurationMonths == nil {
-			months := int(endDate.Sub(effectiveStart).Hours() / 24 / 30.44)
+			months := (endDate.Year()-effectiveStart.Year())*12 + int(endDate.Month()) - int(effectiveStart.Month())
+			if endDate.Day() < effectiveStart.Day() {
+				months--
+			}
 			if months < 1 {
 				months = 1
 			}
