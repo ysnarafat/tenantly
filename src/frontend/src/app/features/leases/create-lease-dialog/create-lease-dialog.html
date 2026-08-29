@@ -106,8 +106,9 @@
     <mat-form-field appearance="outline">
       <mat-label>{{ 'CREATE_LEASE_DIALOG.FIELDS.UNIT' | translate }}</mat-label>
       <mat-select formControlName="unit_id" [compareWith]="compareById">
-        <mat-option *ngFor="let unit of units" [value]="unit.id">
-          Unit {{ unit.unit_number }} - {{ unit.unit_type }}
+        <mat-option *ngFor="let unit of units" [value]="unit.id" [disabled]="unit.lease_active">
+          Unit {{ unit.unit_number }} - {{ unit.unit_type }}{{ unit.lease_active ? ' (Leased)' : ''
+          }}
         </mat-option>
       </mat-select>
       <mat-spinner *ngIf="unitsLoading" matSuffix diameter="18"></mat-spinner>
@@ -116,6 +117,12 @@
       >
       <mat-hint *ngIf="!unitsLoading && leaseForm.get('building_id')?.value && units.length === 0">
         {{ 'CREATE_LEASE_DIALOG.ERRORS.NO_UNITS' | translate }}
+      </mat-hint>
+      <mat-hint
+        *ngIf="!unitsLoading && units.length > 0 && allUnitsInBuildingLeased"
+        class="all-leased-hint"
+      >
+        Every unit in this building already has an active lease
       </mat-hint>
       <mat-error *ngIf="leaseForm.get('unit_id')?.touched && leaseForm.get('unit_id')?.invalid">
         {{ getErrorMessage('unit_id') }}

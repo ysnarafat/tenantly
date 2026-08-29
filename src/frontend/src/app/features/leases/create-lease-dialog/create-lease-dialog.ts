@@ -36,7 +36,7 @@ import { UnitService } from '../../../core/services/unit.service';
 import { TenantService } from '../../../core/services/tenant.service';
 import { Property } from '../../../core/models/property.model';
 import { Building } from '../../../core/models/building.model';
-import { Unit } from '../../../core/models/unit.model';
+import { UnitWithDetails } from '../../../core/models/unit.model';
 import { Tenant } from '../../../core/models/tenant.model';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
 import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
@@ -93,7 +93,7 @@ export class CreateLeaseDialog implements OnInit {
 
   properties: Property[] = [];
   buildings: Building[] = [];
-  units: Unit[] = [];
+  units: UnitWithDetails[] = [];
   tenants: Tenant[] = [];
   filteredTenants: Tenant[] = [];
 
@@ -226,6 +226,14 @@ export class CreateLeaseDialog implements OnInit {
         );
       },
     });
+  }
+
+  // A unit already carrying an active lease can't be assigned another one
+  // (enforced backend-side too — see LeaseService.CreateLease /
+  // idx_leases_unit_active_unique) — disabled in the dropdown rather than
+  // hidden, so it's still clear the unit exists, just unavailable right now.
+  get allUnitsInBuildingLeased(): boolean {
+    return this.units.length > 0 && this.units.every((u) => u.lease_active);
   }
 
   onBuildingChange(buildingId: number) {
