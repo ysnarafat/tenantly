@@ -777,7 +777,7 @@ func (r *BuildingRepository) GetBuildingUnits(buildingID int, offset, limit int)
 			COALESCE(t.name, '') as tenant_name,
 			COALESCE(l.active, false) as lease_active
 		FROM %s u
-		LEFT JOIN leases l ON u.%s = l.unit_id AND l.active = true
+		LEFT JOIN leases l ON u.%s = l.unit_id AND l.active = true AND l.end_date >= CURRENT_DATE
 		LEFT JOIN tenants t ON l.tenant_id = t.id
 		WHERE u.%s = $1
 		ORDER BY u.%s, u.%s, u.%s

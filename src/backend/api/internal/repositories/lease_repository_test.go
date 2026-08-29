@@ -103,6 +103,144 @@ func TestLeaseRepository_Create_RejectsSecondActiveLeaseOnUnit(t *testing.T) {
 	}
 }
 
+// TestLeaseRepository_HasPayableLeaseForUnitAndTenant locks in the rule
+// behind the "no payment against an expired/inactive lease" guard: active
+// alone is not sufficient (a lease can sit active=true long past its
+// end_date until staff explicitly terminates/renews it), and "expiring
+// soon" (active, end_date still in the future, however close) must remain
+// payable.
+func TestLeaseRepository_HasPayableLeaseForUnitAndTenant(t *testing.T) {
+	repo, cleanup := setupTestLeaseRepository(t)
+	defer cleanup()
+
+	orgID := testutil.CreateTestOrganization(t, repo.db)
+	propertyID := testutil.CreateTestProperty(t, repo.db)
+	buildingID := testutil.CreateTestBuilding(t, repo.db, propertyID, orgID)
+
+	newLeaseReq := func(unitID, tenantID int, endDate string) *models.CreateLeaseRequest {
+		return &models.CreateLeaseRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			LeaseType:      models.LeaseTypeResidential,
+			StartDate:      time.Now().AddDate(-1, 0, 0).Format("2006-01-02"),
+			EndDate:        &endDate,
+			DurationMonths: 12,
+			MonthlyRent:    15000,
+			OrganizationID: orgID,
+		}
+	}
+
+	t.Run("active lease far from expiry is payable", func(t *testing.T) {
+		unitID := testutil.CreateTestUnit(t, repo.db, buildingID, orgID)
+		tenantID := testutil.CreateTestTenant(t, repo.db, orgID)
+		endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
+		if _, err := repo.Create(newLeaseReq(unitID, tenantID, endDate)); err != nil {
+			t.Fatalf("failed to create lease: %v", err)
+		}
+
+		payable, err := repo.HasPayableLeaseForUnitAndTenant(unitID, tenantID)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !payable {
+			t.Error("expected payable=true for an active lease far from expiry")
+		}
+	})
+
+	t.Run("active lease expiring soon (end_date tomorrow) is still payable", func(t *testing.T) {
+		unitID := testutil.CreateTestUnit(t, repo.db, buildingID, orgID)
+		tenantID := testutil.CreateTestTenant(t, repo.db, orgID)
+		endDate := time.Now().AddDate(0, 0, 1).Format("2006-01-02")
+		if _, err := repo.Create(newLeaseReq(unitID, tenantID, endDate)); err != nil {
+			t.Fatalf("failed to create lease: %v", err)
+		}
+
+		payable, err := repo.HasPayableLeaseForUnitAndTenant(unitID, tenantID)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !payable {
+			t.Error("expected payable=true for a lease that is merely expiring soon")
+		}
+	})
+
+	t.Run("active lease whose end_date has already passed is not payable", func(t *testing.T) {
+		unitID := testutil.CreateTestUnit(t, repo.db, buildingID, orgID)
+		tenantID := testutil.CreateTestTenant(t, repo.db, orgID)
+		// Created with a future end_date (Create rejects a past one), then
+		// force end_date into the past directly — this is exactly the real
+		// production state: active=true never flipped, but the term ended.
+		endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
+		lease, err := repo.Create(newLeaseReq(unitID, tenantID, endDate))
+		if err != nil {
+			t.Fatalf("failed to create lease: %v", err)
+		}
+		if _, err := repo.db.Exec(`UPDATE leases SET end_date = $1 WHERE id = $2`, time.Now().AddDate(0, 0, -1), lease.ID); err != nil {
+			t.Fatalf("failed to force end_date into the past: %v", err)
+		}
+
+		payable, err := repo.HasPayableLeaseForUnitAndTenant(unitID, tenantID)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if payable {
+			t.Error("expected payable=false for an active lease past its end_date")
+		}
+	})
+
+	t.Run("inactive (terminated) lease is not payable even with a future end_date", func(t *testing.T) {
+		unitID := testutil.CreateTestUnit(t, repo.db, buildingID, orgID)
+		tenantID := testutil.CreateTestTenant(t, repo.db, orgID)
+		endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
+		lease, err := repo.Create(newLeaseReq(unitID, tenantID, endDate))
+		if err != nil {
+			t.Fatalf("failed to create lease: %v", err)
+		}
+		if err := repo.SoftDelete(lease.ID, time.Now(), models.LeaseEndReasonTerminated); err != nil {
+			t.Fatalf("failed to terminate lease: %v", err)
+		}
+
+		payable, err := repo.HasPayableLeaseForUnitAndTenant(unitID, tenantID)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if payable {
+			t.Error("expected payable=false for a terminated (active=false) lease")
+		}
+	})
+
+	t.Run("no lease at all for this unit/tenant is not payable", func(t *testing.T) {
+		unitID := testutil.CreateTestUnit(t, repo.db, buildingID, orgID)
+		tenantID := testutil.CreateTestTenant(t, repo.db, orgID)
+
+		payable, err := repo.HasPayableLeaseForUnitAndTenant(unitID, tenantID)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if payable {
+			t.Error("expected payable=false when no lease exists at all")
+		}
+	})
+
+	t.Run("active non-expired lease on the unit for a different tenant is not payable", func(t *testing.T) {
+		unitID := testutil.CreateTestUnit(t, repo.db, buildingID, orgID)
+		tenantA := testutil.CreateTestTenant(t, repo.db, orgID)
+		tenantB := testutil.CreateTestTenant(t, repo.db, orgID)
+		endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
+		if _, err := repo.Create(newLeaseReq(unitID, tenantA, endDate)); err != nil {
+			t.Fatalf("failed to create lease: %v", err)
+		}
+
+		payable, err := repo.HasPayableLeaseForUnitAndTenant(unitID, tenantB)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if payable {
+			t.Error("expected payable=false when the active lease on this unit belongs to a different tenant")
+		}
+	})
+}
+
 func TestLeaseRepository_GetByID(t *testing.T) {
 	repo, cleanup := setupTestLeaseRepository(t)
 	defer cleanup()

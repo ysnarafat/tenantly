@@ -105,7 +105,7 @@ func (s *Server) setupRoutes() {
 	tenantService := services.NewTenantService(tenantRepo, leaseRepo, auditService)
 	mfaService := services.NewMFAService(mfaRepo, s.config.NIDProtector, s.config.JWTSecret)
 	leaseService := services.NewLeaseService(leaseRepo, tenantRepo, unitRepo, leaseChargeRepo, auditService)
-	paymentService := services.NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, s.config.PublicAppURL)
+	paymentService := services.NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, leaseRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, s.config.PublicAppURL)
 	reportService := services.NewReportService(paymentRepo, propertyRepo)
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService, s.config.CookieDomain, s.config.CookieSecure)

@@ -167,7 +167,7 @@ func (r *UnitRepository) GetByIDWithDetails(id int) (*models.UnitWithDetails, er
 		FROM units u
 		JOIN properties p ON u.property_id = p.id
 		JOIN buildings b ON u.building_id = b.id
-		LEFT JOIN leases l ON u.id = l.unit_id AND l.active = true
+		LEFT JOIN leases l ON u.id = l.unit_id AND l.active = true AND l.end_date >= CURRENT_DATE
 		LEFT JOIN tenants t ON l.tenant_id = t.id
 		WHERE u.id = $1 AND u.active = true`
 
@@ -356,7 +356,7 @@ func (r *UnitRepository) GetByBuildingWithDetails(buildingID int, limit, offset,
 		FROM units u
 		JOIN properties p ON u.property_id = p.id
 		JOIN buildings b ON u.building_id = b.id
-		LEFT JOIN leases l ON u.id = l.unit_id AND l.active = true
+		LEFT JOIN leases l ON u.id = l.unit_id AND l.active = true AND l.end_date >= CURRENT_DATE
 		LEFT JOIN tenants t ON l.tenant_id = t.id
 		WHERE u.building_id = $1 AND u.active = true%s
 		ORDER BY u.floor, u.unit_number
@@ -423,7 +423,7 @@ func (r *UnitRepository) GetByPropertyWithDetails(propertyID int, limit, offset,
 		FROM units u
 		JOIN properties p ON u.property_id = p.id
 		JOIN buildings b ON u.building_id = b.id
-		LEFT JOIN leases l ON u.id = l.unit_id AND l.active = true
+		LEFT JOIN leases l ON u.id = l.unit_id AND l.active = true AND l.end_date >= CURRENT_DATE
 		LEFT JOIN tenants t ON l.tenant_id = t.id
 		WHERE u.property_id = $1 AND u.active = true AND p.organization_id = $2
 		ORDER BY b.building_name, u.floor, u.unit_number

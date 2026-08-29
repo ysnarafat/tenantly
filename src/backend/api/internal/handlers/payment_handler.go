@@ -46,6 +46,10 @@ func (h *PaymentHandler) CreatePayment(c *gin.Context) {
 			respondError(c, http.StatusConflict, "PAYMENT_ALREADY_EXISTS", "A payment already exists for this unit for the selected month/year", err)
 			return
 		}
+		if err.Error() == "no active, non-expired lease found for this tenant and unit" {
+			respondError(c, http.StatusConflict, "PAYMENT_LEASE_NOT_PAYABLE", "No active, non-expired lease found for this tenant and unit", err)
+			return
+		}
 		respondError(c, http.StatusBadRequest, "CREATE_PAYMENT_FAILED", "Failed to create payment", err)
 		return
 	}

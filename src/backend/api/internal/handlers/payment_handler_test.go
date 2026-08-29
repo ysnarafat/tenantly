@@ -354,6 +354,28 @@ func TestPaymentHandler_CreatePayment(t *testing.T) {
 		checkStatus(t, w.Code, http.StatusBadRequest)
 	})
 
+	t.Run("no payable lease returns 409 with PAYMENT_LEASE_NOT_PAYABLE", func(t *testing.T) {
+		svc := &mockPaymentService{
+			createPaymentFn: func(req *models.CreatePaymentRequest, userID int) (*models.Payment, error) {
+				return nil, errors.New("no active, non-expired lease found for this tenant and unit")
+			},
+		}
+		router := setupPaymentTestRouter(svc)
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/payments", toJSON(t, sampleCreatePaymentRequest()))
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
+
+		checkStatus(t, w.Code, http.StatusConflict)
+
+		var body map[string]interface{}
+		decodeBody(t, w, &body)
+		if code, _ := body["code"].(string); code != "PAYMENT_LEASE_NOT_PAYABLE" {
+			t.Errorf("error code: got %v, want PAYMENT_LEASE_NOT_PAYABLE", body["code"])
+		}
+	})
+
 	t.Run("org_id is set from context not from request body", func(t *testing.T) {
 		const contextOrgID = 1
 

@@ -361,6 +361,7 @@ type LeaseRepositoryInterface interface {
 	RenewLease(oldLeaseID int, req *models.RenewLeaseRequest) (*models.Lease, error)
 	HasActiveLeaseOnUnit(unitID int, excludeLeaseID *int) (bool, error)
 	HasActiveLeaseForTenant(tenantID int) (bool, error)
+	HasPayableLeaseForUnitAndTenant(unitID, tenantID int) (bool, error)
 	GetLeasesDueForMonth(orgID int) ([]models.LeaseDue, error)
 	GetDueSummary(orgID int) (*models.DueSummary, error)
 }

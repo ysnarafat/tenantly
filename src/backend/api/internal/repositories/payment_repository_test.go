@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
@@ -1408,6 +1409,122 @@ func TestPaymentRepository_GetActiveLeasesForPeriod(t *testing.T) {
 			t.Errorf("ChargesTotal: got %.2f, want 0.00", found.ChargesTotal)
 		}
 	})
+}
+
+// ---------------------------------------------------------------------------
+// TestPaymentRepository_SearchLeases
+//
+// SearchLeases backs the lease-picker used by the manual "add payment"
+// dialog (and the property-menu quick-add flow) — it must not surface a
+// lease that is past its end_date, even if active hasn't been flipped to
+// false yet, so a user can't pick an expired lease to bill against.
+// ---------------------------------------------------------------------------
+
+func TestPaymentRepository_SearchLeases(t *testing.T) {
+	db, cleanup := testutil.SetupTestDB(t)
+	defer cleanup()
+
+	orgID := testutil.CreateTestOrganization(t, db)
+	propID := testutil.CreateTestProperty(t, db)
+	bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
+	leaseRepo := NewLeaseRepository(db)
+	repo := NewPaymentRepository(db)
+
+	t.Run("active lease far from expiry is returned", func(t *testing.T) {
+		unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+		tenantID := testutil.CreateTestTenant(t, db, orgID)
+		endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
+		lease, err := leaseRepo.Create(&models.CreateLeaseRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			LeaseType:      models.LeaseTypeResidential,
+			StartDate:      time.Now().AddDate(-1, 0, 0).Format("2006-01-02"),
+			EndDate:        &endDate,
+			DurationMonths: 12,
+			MonthlyRent:    5000,
+			OrganizationID: orgID,
+		})
+		if err != nil {
+			t.Fatalf("failed to create lease: %v", err)
+		}
+
+		results, err := repo.SearchLeases(orgID, strconv.Itoa(lease.ID))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !leaseSearchContains(results, lease.ID) {
+			t.Errorf("expected lease %d (active, far from expiry) to be returned", lease.ID)
+		}
+	})
+
+	t.Run("active lease whose end_date has already passed is excluded", func(t *testing.T) {
+		unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+		tenantID := testutil.CreateTestTenant(t, db, orgID)
+		endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
+		lease, err := leaseRepo.Create(&models.CreateLeaseRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			LeaseType:      models.LeaseTypeResidential,
+			StartDate:      time.Now().AddDate(-1, 0, 0).Format("2006-01-02"),
+			EndDate:        &endDate,
+			DurationMonths: 12,
+			MonthlyRent:    5000,
+			OrganizationID: orgID,
+		})
+		if err != nil {
+			t.Fatalf("failed to create lease: %v", err)
+		}
+		if _, err := db.Exec(`UPDATE leases SET end_date = $1 WHERE id = $2`, time.Now().AddDate(0, 0, -1), lease.ID); err != nil {
+			t.Fatalf("failed to force end_date into the past: %v", err)
+		}
+
+		results, err := repo.SearchLeases(orgID, strconv.Itoa(lease.ID))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if leaseSearchContains(results, lease.ID) {
+			t.Errorf("expected expired lease %d to be excluded from search results", lease.ID)
+		}
+	})
+
+	t.Run("terminated (active=false) lease is excluded", func(t *testing.T) {
+		unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+		tenantID := testutil.CreateTestTenant(t, db, orgID)
+		endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
+		lease, err := leaseRepo.Create(&models.CreateLeaseRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			LeaseType:      models.LeaseTypeResidential,
+			StartDate:      time.Now().AddDate(-1, 0, 0).Format("2006-01-02"),
+			EndDate:        &endDate,
+			DurationMonths: 12,
+			MonthlyRent:    5000,
+			OrganizationID: orgID,
+		})
+		if err != nil {
+			t.Fatalf("failed to create lease: %v", err)
+		}
+		if err := leaseRepo.SoftDelete(lease.ID, time.Now(), models.LeaseEndReasonTerminated); err != nil {
+			t.Fatalf("failed to terminate lease: %v", err)
+		}
+
+		results, err := repo.SearchLeases(orgID, strconv.Itoa(lease.ID))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if leaseSearchContains(results, lease.ID) {
+			t.Errorf("expected terminated lease %d to be excluded from search results", lease.ID)
+		}
+	})
+}
+
+func leaseSearchContains(results []*models.LeaseSearchResult, leaseID int) bool {
+	for _, r := range results {
+		if r.LeaseID == leaseID {
+			return true
+		}
+	}
+	return false
 }
 
 // ---------------------------------------------------------------------------

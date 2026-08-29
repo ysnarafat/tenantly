@@ -42,6 +42,82 @@ func TestUnitRepository_BulkCreate(t *testing.T) {
 	}
 }
 
+// TestUnitRepository_GetByIDWithDetails_LeaseActiveIsExpiryAware locks in
+// that lease_active (which gates the "Add Payment" button in the property
+// list UI) reflects whether the unit's lease is truly payable right now —
+// active=true alone is not enough once its end_date has passed.
+func TestUnitRepository_GetByIDWithDetails_LeaseActiveIsExpiryAware(t *testing.T) {
+	repo, db, cleanup := setupUnitRepository(t)
+	defer cleanup()
+
+	orgID := testutil.CreateTestOrganization(t, db)
+	propertyID := testutil.CreateTestProperty(t, db)
+	buildingID := testutil.CreateTestBuilding(t, db, propertyID, orgID)
+	leaseRepo := NewLeaseRepository(db)
+
+	t.Run("active lease not yet expired reports lease_active=true", func(t *testing.T) {
+		unitID := testutil.CreateTestUnit(t, db, buildingID, orgID)
+		if _, err := db.Exec(`UPDATE units SET unit_name = 'Test Unit', section = 'A' WHERE id = $1`, unitID); err != nil {
+			t.Fatalf("failed to set unit_name: %v", err)
+		}
+		tenantID := testutil.CreateTestTenant(t, db, orgID)
+		endDate := "2099-01-01"
+		if _, err := leaseRepo.Create(&models.CreateLeaseRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			LeaseType:      models.LeaseTypeResidential,
+			StartDate:      "2026-01-01",
+			EndDate:        &endDate,
+			DurationMonths: 12,
+			MonthlyRent:    5000,
+			OrganizationID: orgID,
+		}); err != nil {
+			t.Fatalf("failed to create lease: %v", err)
+		}
+
+		unit, err := repo.GetByIDWithDetails(unitID)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !unit.LeaseActive {
+			t.Error("expected lease_active=true for an active, non-expired lease")
+		}
+	})
+
+	t.Run("active=true lease past its end_date reports lease_active=false", func(t *testing.T) {
+		unitID := testutil.CreateTestUnit(t, db, buildingID, orgID)
+		if _, err := db.Exec(`UPDATE units SET unit_name = 'Test Unit', section = 'A' WHERE id = $1`, unitID); err != nil {
+			t.Fatalf("failed to set unit_name: %v", err)
+		}
+		tenantID := testutil.CreateTestTenant(t, db, orgID)
+		endDate := "2099-01-01"
+		lease, err := leaseRepo.Create(&models.CreateLeaseRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			LeaseType:      models.LeaseTypeResidential,
+			StartDate:      "2026-01-01",
+			EndDate:        &endDate,
+			DurationMonths: 12,
+			MonthlyRent:    5000,
+			OrganizationID: orgID,
+		})
+		if err != nil {
+			t.Fatalf("failed to create lease: %v", err)
+		}
+		if _, err := db.Exec(`UPDATE leases SET end_date = '2020-01-01' WHERE id = $1`, lease.ID); err != nil {
+			t.Fatalf("failed to force end_date into the past: %v", err)
+		}
+
+		unit, err := repo.GetByIDWithDetails(unitID)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if unit.LeaseActive {
+			t.Error("expected lease_active=false for an active=true lease whose end_date has already passed")
+		}
+	})
+}
+
 func TestUnitRepository_BulkCreate_RollsBackOnConflict(t *testing.T) {
 	repo, db, cleanup := setupUnitRepository(t)
 	defer cleanup()

@@ -446,6 +446,7 @@ func (r *PaymentRepository) SearchLeases(orgID int, query string) ([]*models.Lea
 		LEFT JOIN properties p ON u.property_id = p.id
 		WHERE l.organization_id = $1
 			AND l.active = true
+			AND l.end_date >= CURRENT_DATE
 			AND (
 				LOWER(t.name) LIKE $2
 				OR LOWER(p.property_name) LIKE $2

@@ -69,7 +69,7 @@ func TestGenerateMonthlyPayments_IncludesLeaseCharges(t *testing.T) {
 		t.Fatalf("failed to add second lease charge: %v", err)
 	}
 
-	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, "http://localhost:8080")
+	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, leaseRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, "http://localhost:8080")
 
 	result, err := paymentService.GenerateMonthlyPayments(&models.GenerateMonthlyPaymentsRequest{
 		Month: 6,
@@ -164,7 +164,7 @@ func TestGenerateMonthlyPayments_SkipsDeactivatedCharges(t *testing.T) {
 		t.Fatalf("failed to deactivate lease charge: %v", err)
 	}
 
-	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, "http://localhost:8080")
+	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, leaseRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, "http://localhost:8080")
 	if _, err := paymentService.GenerateMonthlyPayments(&models.GenerateMonthlyPaymentsRequest{
 		Month: 6,
 		Year:  2026,
@@ -214,6 +214,7 @@ func TestRecordPaymentTransaction_RealDB_InstallmentsAccumulate(t *testing.T) {
 	buildingRepo := repositories.NewBuildingRepository(db)
 	propertyRepo := repositories.NewPropertyRepository(db)
 	userRepo := repositories.NewUserRepository(db)
+	leaseRepo := repositories.NewLeaseRepository(db)
 	auditService := database.NewAuditService(db)
 
 	payment, err := paymentRepo.Create(&models.CreatePaymentRequest{
@@ -230,7 +231,7 @@ func TestRecordPaymentTransaction_RealDB_InstallmentsAccumulate(t *testing.T) {
 		t.Fatalf("failed to create payment: %v", err)
 	}
 
-	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, "http://localhost:8080")
+	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, leaseRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, "http://localhost:8080")
 
 	afterFirst, err := paymentService.RecordPaymentTransaction(payment.ID, &models.CreatePaymentTransactionRequest{
 		Amount:        10000,
@@ -304,6 +305,7 @@ func TestPaymentTransactionAttachment_RealDB_UploadListDownloadDelete(t *testing
 	buildingRepo := repositories.NewBuildingRepository(db)
 	propertyRepo := repositories.NewPropertyRepository(db)
 	userRepo := repositories.NewUserRepository(db)
+	leaseRepo := repositories.NewLeaseRepository(db)
 	auditService := database.NewAuditService(db)
 
 	payment, err := paymentRepo.Create(&models.CreatePaymentRequest{
@@ -320,7 +322,7 @@ func TestPaymentTransactionAttachment_RealDB_UploadListDownloadDelete(t *testing
 		t.Fatalf("failed to create payment: %v", err)
 	}
 
-	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, "http://localhost:8080")
+	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, leaseRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, "http://localhost:8080")
 
 	afterFirst, err := paymentService.RecordPaymentTransaction(payment.ID, &models.CreatePaymentTransactionRequest{
 		Amount: 10000,
@@ -405,6 +407,7 @@ func TestReceiptLinkSms_RealDB_EndToEnd(t *testing.T) {
 	buildingRepo := repositories.NewBuildingRepository(db)
 	propertyRepo := repositories.NewPropertyRepository(db)
 	userRepo := repositories.NewUserRepository(db)
+	leaseRepo := repositories.NewLeaseRepository(db)
 	auditService := database.NewAuditService(db)
 
 	payment, err := paymentRepo.Create(&models.CreatePaymentRequest{
@@ -421,7 +424,7 @@ func TestReceiptLinkSms_RealDB_EndToEnd(t *testing.T) {
 		t.Fatalf("failed to create payment: %v", err)
 	}
 
-	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, "https://app.example.com")
+	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, leaseRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, "https://app.example.com")
 
 	if _, err := paymentService.RecordPaymentTransaction(payment.ID, &models.CreatePaymentTransactionRequest{
 		Amount: 12000,

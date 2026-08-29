@@ -18,6 +18,7 @@ type PaymentService struct {
 	paymentTransactionAttachmentRepo interfaces.PaymentTransactionAttachmentRepositoryInterface
 	receiptTokenRepo                 interfaces.ReceiptAccessTokenRepositoryInterface
 	notificationRepo                 interfaces.NotificationRepositoryInterface
+	leaseRepo                        interfaces.LeaseRepositoryInterface
 	unitRepo                         interfaces.UnitRepositoryInterface
 	buildingRepo                     interfaces.BuildingRepositoryInterface
 	propertyRepo                     interfaces.PropertyRepositoryInterface
@@ -34,6 +35,7 @@ func NewPaymentService(
 	paymentTransactionAttachmentRepo interfaces.PaymentTransactionAttachmentRepositoryInterface,
 	receiptTokenRepo interfaces.ReceiptAccessTokenRepositoryInterface,
 	notificationRepo interfaces.NotificationRepositoryInterface,
+	leaseRepo interfaces.LeaseRepositoryInterface,
 	unitRepo interfaces.UnitRepositoryInterface,
 	buildingRepo interfaces.BuildingRepositoryInterface,
 	propertyRepo interfaces.PropertyRepositoryInterface,
@@ -47,6 +49,7 @@ func NewPaymentService(
 		paymentTransactionAttachmentRepo: paymentTransactionAttachmentRepo,
 		receiptTokenRepo:                 receiptTokenRepo,
 		notificationRepo:                 notificationRepo,
+		leaseRepo:                        leaseRepo,
 		unitRepo:                         unitRepo,
 		buildingRepo:                     buildingRepo,
 		propertyRepo:                     propertyRepo,
@@ -88,6 +91,20 @@ func (s *PaymentService) CreatePayment(req *models.CreatePaymentRequest, userID 
 	property, err := s.propertyRepo.GetByID(req.PropertyID)
 	if err != nil {
 		return nil, fmt.Errorf("property not found: %w", err)
+	}
+
+	// A payment may only be recorded against a lease that is still active AND
+	// has not yet passed its end_date. "active" alone is not enough — active
+	// only flips via explicit staff action (terminate/renew), so a lease can
+	// sit active=true long after its end_date has passed. A lease that is
+	// merely "expiring soon" (active, end_date still in the future) remains
+	// payable — only a truly expired/inactive lease is rejected here.
+	payable, err := s.leaseRepo.HasPayableLeaseForUnitAndTenant(req.UnitID, req.TenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify lease status: %w", err)
+	}
+	if !payable {
+		return nil, fmt.Errorf("no active, non-expired lease found for this tenant and unit")
 	}
 
 	// Reject a second payment for the same unit/month/year up front so the

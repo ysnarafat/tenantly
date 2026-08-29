@@ -449,6 +449,60 @@ func (m *MockReceiptAccessTokenRepo) GetByToken(token string) (*models.ReceiptAc
 }
 
 // ---------------------------------------------------------------------------
+// MockLeaseRepo - implements interfaces.LeaseRepositoryInterface
+// ---------------------------------------------------------------------------
+
+// MockLeaseRepo only really exercises HasPayableLeaseForUnitAndTenant (the
+// method PaymentService.CreatePayment relies on) — every other method is a
+// bare stub per the interface-maintenance-invariant convention in this file.
+type MockLeaseRepo struct {
+	payable    bool
+	payableErr error
+}
+
+func (m *MockLeaseRepo) HasPayableLeaseForUnitAndTenant(unitID, tenantID int) (bool, error) {
+	if m.payableErr != nil {
+		return false, m.payableErr
+	}
+	return m.payable, nil
+}
+
+func (m *MockLeaseRepo) Create(req *models.CreateLeaseRequest) (*models.Lease, error) {
+	return nil, nil
+}
+func (m *MockLeaseRepo) GetByID(id int) (*models.Lease, error) { return nil, nil }
+func (m *MockLeaseRepo) GetByIDWithDetails(id int) (*models.LeaseWithDetails, error) {
+	return nil, nil
+}
+func (m *MockLeaseRepo) GetAll(page, pageSize, orgID int) ([]*models.LeaseWithDetails, int, error) {
+	return nil, 0, nil
+}
+func (m *MockLeaseRepo) GetByUnitID(unitID, page, pageSize, orgID int) ([]*models.LeaseWithDetails, int, error) {
+	return nil, 0, nil
+}
+func (m *MockLeaseRepo) GetByTenantID(tenantID, page, pageSize, orgID int) ([]*models.LeaseWithDetails, int, error) {
+	return nil, 0, nil
+}
+func (m *MockLeaseRepo) Update(id int, req *models.UpdateLeaseRequest) (*models.Lease, error) {
+	return nil, nil
+}
+func (m *MockLeaseRepo) Delete(id int) error { return nil }
+func (m *MockLeaseRepo) SoftDelete(id int, endDate time.Time, reason models.LeaseEndReason) error {
+	return nil
+}
+func (m *MockLeaseRepo) RenewLease(oldLeaseID int, req *models.RenewLeaseRequest) (*models.Lease, error) {
+	return nil, nil
+}
+func (m *MockLeaseRepo) HasActiveLeaseOnUnit(unitID int, excludeLeaseID *int) (bool, error) {
+	return false, nil
+}
+func (m *MockLeaseRepo) HasActiveLeaseForTenant(tenantID int) (bool, error) { return false, nil }
+func (m *MockLeaseRepo) GetLeasesDueForMonth(orgID int) ([]models.LeaseDue, error) {
+	return nil, nil
+}
+func (m *MockLeaseRepo) GetDueSummary(orgID int) (*models.DueSummary, error) { return nil, nil }
+
+// ---------------------------------------------------------------------------
 // MockNotificationRepo - implements interfaces.NotificationRepositoryInterface
 // ---------------------------------------------------------------------------
 
@@ -855,8 +909,38 @@ func newPaymentServiceWithMocksAndTxns() (
 	propRepo := newMockPaymentPropertyRepo()
 	audit := newMockPaymentAuditService()
 	userRepo := newMockPaymentUserRepo()
-	svc := NewPaymentService(payRepo, txnRepo, attachRepo, receiptTokenRepo, notificationRepo, unitRepo, bldgRepo, propRepo, audit, userRepo, testPublicBaseURL)
+	// Every test using this helper predates the lease-payability guard and
+	// doesn't set up leases, so default to "payable" — the tests below that
+	// specifically exercise the guard use newPaymentServiceForLeaseGuardTests
+	// instead, which lets the caller control this.
+	leaseRepo := &MockLeaseRepo{payable: true}
+	svc := NewPaymentService(payRepo, txnRepo, attachRepo, receiptTokenRepo, notificationRepo, leaseRepo, unitRepo, bldgRepo, propRepo, audit, userRepo, testPublicBaseURL)
 	return svc, payRepo, txnRepo, attachRepo, receiptTokenRepo, notificationRepo, unitRepo, bldgRepo, propRepo, audit, userRepo
+}
+
+// newPaymentServiceForLeaseGuardTests builds a PaymentService with a
+// controllable MockLeaseRepo, for tests exercising the
+// "no payment against an expired/inactive lease" guard in CreatePayment.
+func newPaymentServiceForLeaseGuardTests(payable bool) (
+	*PaymentService,
+	*MockPaymentUnitRepo,
+	*MockPaymentBuildingRepo,
+	*MockPaymentPropertyRepo,
+	*MockLeaseRepo,
+) {
+	payRepo := newMockPaymentRepo()
+	txnRepo := newMockPaymentTransactionRepo()
+	attachRepo := newMockPaymentTransactionAttachmentRepo()
+	receiptTokenRepo := newMockReceiptAccessTokenRepo()
+	notificationRepo := newMockNotificationRepo()
+	unitRepo := newMockPaymentUnitRepo()
+	bldgRepo := newMockPaymentBuildingRepo()
+	propRepo := newMockPaymentPropertyRepo()
+	audit := newMockPaymentAuditService()
+	userRepo := newMockPaymentUserRepo()
+	leaseRepo := &MockLeaseRepo{payable: payable}
+	svc := NewPaymentService(payRepo, txnRepo, attachRepo, receiptTokenRepo, notificationRepo, leaseRepo, unitRepo, bldgRepo, propRepo, audit, userRepo, testPublicBaseURL)
+	return svc, unitRepo, bldgRepo, propRepo, leaseRepo
 }
 
 func sampleUnit(id, buildingID, propertyID int) *models.Unit {
@@ -1049,6 +1133,88 @@ func TestCreatePayment(t *testing.T) {
 			}
 			if audit.lastAction != "CREATE" {
 				t.Errorf("expected audit action CREATE, got %q", audit.lastAction)
+			}
+		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// TestCreatePayment_LeasePayabilityGuard
+//
+// Rule: a payment may only be created against a lease that is active AND
+// not yet past its end_date. "Expiring soon" (active, end_date still in the
+// future — however close) must remain payable; only a truly expired lease
+// (whether or not staff has flipped active=false yet) is rejected.
+// ---------------------------------------------------------------------------
+
+func TestCreatePayment_LeasePayabilityGuard(t *testing.T) {
+	tests := []struct {
+		name        string
+		payable     bool
+		payableErr  error
+		wantErr     bool
+		errContains string
+	}{
+		{
+			name:    "active lease, far from expiry - allowed",
+			payable: true,
+			wantErr: false,
+		},
+		{
+			name:    "active lease, expiring soon (not yet past end_date) - allowed",
+			payable: true,
+			wantErr: false,
+		},
+		{
+			name:        "active=true but end_date already passed - rejected",
+			payable:     false,
+			wantErr:     true,
+			errContains: "no active, non-expired lease found for this tenant and unit",
+		},
+		{
+			name:        "lease terminated (active=false) - rejected",
+			payable:     false,
+			wantErr:     true,
+			errContains: "no active, non-expired lease found for this tenant and unit",
+		},
+		{
+			name:        "no lease at all for this tenant/unit - rejected",
+			payable:     false,
+			wantErr:     true,
+			errContains: "no active, non-expired lease found for this tenant and unit",
+		},
+		{
+			name:        "lease repo failure surfaces as an error, not a silent allow",
+			payableErr:  errors.New("connection reset"),
+			wantErr:     true,
+			errContains: "failed to verify lease status",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			svc, unitRepo, bldgRepo, propRepo, leaseRepo := newPaymentServiceForLeaseGuardTests(tc.payable)
+			leaseRepo.payableErr = tc.payableErr
+			unitRepo.addUnit(sampleUnit(1, 2, 3))
+			bldgRepo.addBuilding(sampleBuilding(2, 3))
+			propRepo.addProperty(sampleProperty(3))
+
+			payment, err := svc.CreatePayment(sampleCreateRequest(1, 2, 3), 99)
+
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil", tc.errContains)
+				}
+				if !paymentTestContains(err.Error(), tc.errContains) {
+					t.Errorf("expected error containing %q, got %q", tc.errContains, err.Error())
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if payment == nil {
+				t.Fatalf("expected non-nil payment")
 			}
 		})
 	}

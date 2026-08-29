@@ -756,6 +756,29 @@ func (r *LeaseRepository) HasActiveLeaseForTenant(tenantID int) (bool, error) {
 	return exists, nil
 }
 
+// HasPayableLeaseForUnitAndTenant reports whether the given tenant currently
+// holds an active lease on the given unit whose end_date has not yet passed.
+// A lease that is active=true but past its end_date (i.e. staff has not yet
+// terminated/renewed it) does NOT count — such a lease is expired for
+// payment purposes even though the active flag hasn't been flipped. A lease
+// that is merely "expiring soon" (active, end_date in the future) DOES count.
+func (r *LeaseRepository) HasPayableLeaseForUnitAndTenant(unitID, tenantID int) (bool, error) {
+	query := `
+		SELECT EXISTS(
+			SELECT 1 FROM leases
+			WHERE unit_id = $1 AND tenant_id = $2 AND active = true AND end_date >= CURRENT_DATE
+		)
+	`
+
+	var exists bool
+	err := r.db.QueryRow(query, unitID, tenantID).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check payable lease for unit and tenant: %w", err)
+	}
+
+	return exists, nil
+}
+
 // GetLeasesDueForMonth returns all leases with unpaid rent for the current month
 func (r *LeaseRepository) GetLeasesDueForMonth(orgID int) ([]models.LeaseDue, error) {
 	now := time.Now()
