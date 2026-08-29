@@ -3,6 +3,7 @@ import { provideRouter, TitleStrategy, withInMemoryScrolling } from '@angular/ro
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { MatSnackBarModule, MAT_SNACK_BAR_DEFAULT_OPTIONS } from '@angular/material/snack-bar';
 import { MAT_FORM_FIELD_DEFAULT_OPTIONS } from '@angular/material/form-field';
+import { provideNativeDateAdapter } from '@angular/material/core';
 import { provideStore } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
 import { provideStoreDevtools } from '@ngrx/store-devtools';
@@ -19,6 +20,12 @@ import { LanguageService } from './core/services/language.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
+    // Datepickers need a DateAdapter from the root environment injector —
+    // importing MatNativeDateModule only at the component level doesn't
+    // reliably reach it inside a MatDialog-opened component's calendar
+    // overlay (NG0201: No provider found for DateAdapter), so it's provided
+    // once here for every datepicker in the app.
+    provideNativeDateAdapter(),
     provideRouter(
       routes,
       withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' })

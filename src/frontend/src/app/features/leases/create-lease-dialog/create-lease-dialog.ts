@@ -11,7 +11,6 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import {
   AbstractControl,
@@ -63,7 +62,6 @@ function integerValidator(control: AbstractControl): ValidationErrors | null {
     MatButtonModule,
     MatIconModule,
     MatDatepickerModule,
-    MatNativeDateModule,
     MatProgressSpinnerModule,
     ReactiveFormsModule,
     TranslateModule,

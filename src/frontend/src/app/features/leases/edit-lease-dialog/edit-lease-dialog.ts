@@ -7,7 +7,6 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import {
   FormBuilder,
@@ -50,7 +49,6 @@ function endDateAfterStartDate(group: AbstractControl): ValidationErrors | null 
     MatButtonModule,
     MatIconModule,
     MatDatepickerModule,
-    MatNativeDateModule,
     MatProgressSpinnerModule,
     ReactiveFormsModule,
     TranslateModule,
