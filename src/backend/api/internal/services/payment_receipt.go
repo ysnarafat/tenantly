@@ -32,15 +32,19 @@ func receiptStatusColor(status models.PaymentStatus) [3]int {
 	}
 }
 
-// GenerateReceiptPDF renders a one-page payment receipt as PDF bytes. It is
-// deliberately decoupled from the HTTP layer so future email/SMS delivery
-// jobs can call it directly without going through the download endpoint.
+// GenerateReceiptPDF renders a one-page payment receipt as PDF bytes for a
+// staff member with access to the org. It is deliberately decoupled from the
+// HTTP layer so future email/SMS delivery jobs can call it directly without
+// going through the download endpoint.
 func (s *PaymentService) GenerateReceiptPDF(paymentID, orgID int) ([]byte, error) {
 	payment, err := s.GetPayment(paymentID, orgID)
 	if err != nil {
 		return nil, err
 	}
+	return renderReceiptPDF(payment)
+}
 
+func renderReceiptPDF(payment *models.PaymentWithDetails) ([]byte, error) {
 	pdf := fpdf.New("P", "mm", "A4", "")
 	pdf.SetTitle(fmt.Sprintf("Receipt %s", payment.ReceiptNumber), false)
 	pdf.SetAutoPageBreak(true, 15)

@@ -1,8 +1,11 @@
 package services
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/ysnarafat/tenantly/internal/interfaces"
@@ -13,31 +16,42 @@ type PaymentService struct {
 	paymentRepo                      interfaces.PaymentRepositoryInterface
 	paymentTransactionRepo           interfaces.PaymentTransactionRepositoryInterface
 	paymentTransactionAttachmentRepo interfaces.PaymentTransactionAttachmentRepositoryInterface
+	receiptTokenRepo                 interfaces.ReceiptAccessTokenRepositoryInterface
+	notificationRepo                 interfaces.NotificationRepositoryInterface
 	unitRepo                         interfaces.UnitRepositoryInterface
 	buildingRepo                     interfaces.BuildingRepositoryInterface
 	propertyRepo                     interfaces.PropertyRepositoryInterface
 	auditService                     interfaces.AuditServiceInterface
 	userRepo                         interfaces.UserRepositoryInterface
+	// publicBaseURL is prepended to receipt tokens to build the link sent in
+	// the "payment recorded" SMS (see queueReceiptSms) — e.g. https://app.example.com.
+	publicBaseURL string
 }
 
 func NewPaymentService(
 	paymentRepo interfaces.PaymentRepositoryInterface,
 	paymentTransactionRepo interfaces.PaymentTransactionRepositoryInterface,
 	paymentTransactionAttachmentRepo interfaces.PaymentTransactionAttachmentRepositoryInterface,
+	receiptTokenRepo interfaces.ReceiptAccessTokenRepositoryInterface,
+	notificationRepo interfaces.NotificationRepositoryInterface,
 	unitRepo interfaces.UnitRepositoryInterface,
 	buildingRepo interfaces.BuildingRepositoryInterface,
 	propertyRepo interfaces.PropertyRepositoryInterface,
 	auditService interfaces.AuditServiceInterface,
 	userRepo interfaces.UserRepositoryInterface,
+	publicBaseURL string,
 ) *PaymentService {
 	return &PaymentService{
 		paymentRepo:                      paymentRepo,
 		paymentTransactionRepo:           paymentTransactionRepo,
 		paymentTransactionAttachmentRepo: paymentTransactionAttachmentRepo,
+		receiptTokenRepo:                 receiptTokenRepo,
+		notificationRepo:                 notificationRepo,
 		unitRepo:                         unitRepo,
 		buildingRepo:                     buildingRepo,
 		propertyRepo:                     propertyRepo,
 		auditService:                     auditService,
+		publicBaseURL:                    publicBaseURL,
 		userRepo:                         userRepo,
 	}
 }
@@ -249,7 +263,97 @@ func (s *PaymentService) RecordPaymentTransaction(paymentID int, req *models.Cre
 		"transaction_receipt": receiptNumber,
 	})
 
+	// Best-effort: a tenant should hear about a recorded payment, but a
+	// failure here (e.g. no phone on file) must never fail the payment
+	// itself, which is why every error along this path is swallowed.
+	s.queueReceiptSms(existingPayment, req.Amount)
+
 	return updatedPayment, nil
+}
+
+// queueReceiptSms queues an SMS telling the tenant a payment was recorded,
+// with a link to download the receipt — the link works without any login
+// since tenants have none; see ReceiptAccessToken.
+func (s *PaymentService) queueReceiptSms(payment *models.PaymentWithDetails, installmentAmount float64) {
+	if payment.TenantPhone == "" {
+		return
+	}
+
+	token, err := s.getOrCreateReceiptToken(payment.ID)
+	if err != nil {
+		return
+	}
+
+	link := fmt.Sprintf("%s/api/v1/receipts/%s", strings.TrimRight(s.publicBaseURL, "/"), token)
+	message := fmt.Sprintf(
+		"Dear %s, we've received your payment of BDT %.2f for %s (%02d/%d). Download your receipt: %s",
+		payment.TenantName, installmentAmount, payment.UnitNumber, payment.Month, payment.Year, link,
+	)
+
+	propertyID := payment.PropertyID
+	buildingID := payment.BuildingID
+	_, _ = s.notificationRepo.Create(&models.CreateNotificationRequest{
+		TenantID:         payment.TenantID,
+		UnitID:           payment.UnitID,
+		PropertyID:       &propertyID,
+		BuildingID:       &buildingID,
+		Message:          message,
+		NotificationType: models.NotificationTypeSMS,
+		Recipient:        payment.TenantPhone,
+	})
+}
+
+// getOrCreateReceiptToken reuses a still-valid token for the payment if one
+// exists, so the same SMS link keeps working across installments, rather
+// than issuing (and having to resend) a new one every time.
+func (s *PaymentService) getOrCreateReceiptToken(paymentID int) (string, error) {
+	if existing, err := s.receiptTokenRepo.GetValidByPaymentID(paymentID); err == nil {
+		return existing.Token, nil
+	}
+
+	token, err := generateReceiptToken()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate receipt token: %w", err)
+	}
+	created, err := s.receiptTokenRepo.Create(paymentID, token, time.Now().UTC().Add(models.ReceiptTokenValidity))
+	if err != nil {
+		return "", fmt.Errorf("failed to store receipt token: %w", err)
+	}
+	return created.Token, nil
+}
+
+func generateReceiptToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
+}
+
+// DownloadReceiptByToken serves a receipt PDF with no staff authentication —
+// the unguessable, expiring token itself is the authorization, since tenants
+// (the intended audience for a receipt-link SMS) have no login at all.
+func (s *PaymentService) DownloadReceiptByToken(token string) ([]byte, string, error) {
+	accessToken, err := s.receiptTokenRepo.GetByToken(token)
+	if err != nil {
+		return nil, "", fmt.Errorf("receipt link not found")
+	}
+	if time.Now().UTC().After(accessToken.ExpiresAt) {
+		return nil, "", fmt.Errorf("receipt link has expired")
+	}
+
+	payment, err := s.paymentRepo.GetByIDWithDetails(accessToken.PaymentID)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to get payment: %w", err)
+	}
+
+	pdfBytes, err := renderReceiptPDF(payment)
+	if err != nil {
+		return nil, "", err
+	}
+
+	filename := fmt.Sprintf("receipt-%s.pdf", payment.ReceiptNumber)
+	return pdfBytes, filename, nil
 }
 
 // GetPaymentTransactions returns the ledger of amounts received against a

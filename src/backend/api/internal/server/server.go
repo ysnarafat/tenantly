@@ -85,6 +85,8 @@ func (s *Server) setupRoutes() {
 	paymentRepo := repositories.NewPaymentRepository(s.db)
 	paymentTransactionRepo := repositories.NewPaymentTransactionRepository(s.db)
 	paymentTransactionAttachmentRepo := repositories.NewPaymentTransactionAttachmentRepository(s.db)
+	receiptAccessTokenRepo := repositories.NewReceiptAccessTokenRepository(s.db)
+	notificationRepo := repositories.NewNotificationRepository(s.db)
 	leaseRepo := repositories.NewLeaseRepository(s.db)
 	leaseChargeRepo := repositories.NewLeaseChargeRepository(s.db)
 	organizationRepo := repositories.NewOrganizationRepository(s.db)
@@ -103,7 +105,7 @@ func (s *Server) setupRoutes() {
 	tenantService := services.NewTenantService(tenantRepo, leaseRepo, auditService)
 	mfaService := services.NewMFAService(mfaRepo, s.config.NIDProtector, s.config.JWTSecret)
 	leaseService := services.NewLeaseService(leaseRepo, tenantRepo, unitRepo, leaseChargeRepo, auditService)
-	paymentService := services.NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
+	paymentService := services.NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, s.config.PublicAppURL)
 	reportService := services.NewReportService(paymentRepo, propertyRepo)
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService, s.config.CookieDomain, s.config.CookieSecure)
@@ -143,6 +145,13 @@ func (s *Server) setupRoutes() {
 		invitations := v1.Group("/invitations")
 		{
 			invitations.GET("/validate", organizationHandler.ValidateInvitationToken)
+		}
+
+		// Public receipt download route — no auth, reached via the "payment
+		// recorded" SMS link (tenants have no login to authenticate with).
+		receipts := v1.Group("/receipts")
+		{
+			receipts.GET("/:token", paymentHandler.DownloadReceiptByToken)
 		}
 
 		// Protected routes

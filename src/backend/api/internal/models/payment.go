@@ -83,6 +83,10 @@ type PaymentWithDetails struct {
 	UnitNumber   string `json:"unit_number" db:"unit_number"`
 	UnitType     string `json:"unit_type" db:"unit_type"`
 	TenantName   string `json:"tenant_name" db:"tenant_name"`
+	// TenantPhone is used to queue the "payment recorded" receipt-link SMS
+	// (see PaymentService.RecordPaymentTransaction) — not sensitive beyond
+	// what staff can already see on the tenant's own record.
+	TenantPhone string `json:"tenant_phone" db:"tenant_phone"`
 }
 
 // PaymentListResponse is the paginated response for payment list endpoints

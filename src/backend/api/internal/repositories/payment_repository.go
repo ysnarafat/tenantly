@@ -47,7 +47,8 @@ const paymentWithDetailCols = `
 	COALESCE(b.building_code, '')  AS building_code,
 	COALESCE(u.unit_number, '')    AS unit_number,
 	COALESCE(u.unit_type::text, '') AS unit_type,
-	COALESCE(t.name, '')           AS tenant_name`
+	COALESCE(t.name, '')           AS tenant_name,
+	COALESCE(t.phone_number, '')   AS tenant_phone`
 
 const paymentDetailJoinsQ = `
 	LEFT JOIN units u       ON p.unit_id = u.id

@@ -1,6 +1,8 @@
 package services
 
 import (
+	"bytes"
+	"strings"
 	"testing"
 
 	"github.com/ysnarafat/tenantly/internal/database"
@@ -30,6 +32,8 @@ func TestGenerateMonthlyPayments_IncludesLeaseCharges(t *testing.T) {
 	paymentRepo := repositories.NewPaymentRepository(db)
 	paymentTransactionRepo := repositories.NewPaymentTransactionRepository(db)
 	paymentTransactionAttachmentRepo := repositories.NewPaymentTransactionAttachmentRepository(db)
+	receiptAccessTokenRepo := repositories.NewReceiptAccessTokenRepository(db)
+	notificationRepo := repositories.NewNotificationRepository(db)
 	unitRepo := repositories.NewUnitRepository(db)
 	buildingRepo := repositories.NewBuildingRepository(db)
 	propertyRepo := repositories.NewPropertyRepository(db)
@@ -65,7 +69,7 @@ func TestGenerateMonthlyPayments_IncludesLeaseCharges(t *testing.T) {
 		t.Fatalf("failed to add second lease charge: %v", err)
 	}
 
-	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
+	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, "http://localhost:8080")
 
 	result, err := paymentService.GenerateMonthlyPayments(&models.GenerateMonthlyPaymentsRequest{
 		Month: 6,
@@ -126,6 +130,8 @@ func TestGenerateMonthlyPayments_SkipsDeactivatedCharges(t *testing.T) {
 	paymentRepo := repositories.NewPaymentRepository(db)
 	paymentTransactionRepo := repositories.NewPaymentTransactionRepository(db)
 	paymentTransactionAttachmentRepo := repositories.NewPaymentTransactionAttachmentRepository(db)
+	receiptAccessTokenRepo := repositories.NewReceiptAccessTokenRepository(db)
+	notificationRepo := repositories.NewNotificationRepository(db)
 	unitRepo := repositories.NewUnitRepository(db)
 	buildingRepo := repositories.NewBuildingRepository(db)
 	propertyRepo := repositories.NewPropertyRepository(db)
@@ -158,7 +164,7 @@ func TestGenerateMonthlyPayments_SkipsDeactivatedCharges(t *testing.T) {
 		t.Fatalf("failed to deactivate lease charge: %v", err)
 	}
 
-	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
+	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, "http://localhost:8080")
 	if _, err := paymentService.GenerateMonthlyPayments(&models.GenerateMonthlyPaymentsRequest{
 		Month: 6,
 		Year:  2026,
@@ -202,6 +208,8 @@ func TestRecordPaymentTransaction_RealDB_InstallmentsAccumulate(t *testing.T) {
 	paymentRepo := repositories.NewPaymentRepository(db)
 	paymentTransactionRepo := repositories.NewPaymentTransactionRepository(db)
 	paymentTransactionAttachmentRepo := repositories.NewPaymentTransactionAttachmentRepository(db)
+	receiptAccessTokenRepo := repositories.NewReceiptAccessTokenRepository(db)
+	notificationRepo := repositories.NewNotificationRepository(db)
 	unitRepo := repositories.NewUnitRepository(db)
 	buildingRepo := repositories.NewBuildingRepository(db)
 	propertyRepo := repositories.NewPropertyRepository(db)
@@ -222,7 +230,7 @@ func TestRecordPaymentTransaction_RealDB_InstallmentsAccumulate(t *testing.T) {
 		t.Fatalf("failed to create payment: %v", err)
 	}
 
-	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
+	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, "http://localhost:8080")
 
 	afterFirst, err := paymentService.RecordPaymentTransaction(payment.ID, &models.CreatePaymentTransactionRequest{
 		Amount:        10000,
@@ -290,6 +298,8 @@ func TestPaymentTransactionAttachment_RealDB_UploadListDownloadDelete(t *testing
 	paymentRepo := repositories.NewPaymentRepository(db)
 	paymentTransactionRepo := repositories.NewPaymentTransactionRepository(db)
 	paymentTransactionAttachmentRepo := repositories.NewPaymentTransactionAttachmentRepository(db)
+	receiptAccessTokenRepo := repositories.NewReceiptAccessTokenRepository(db)
+	notificationRepo := repositories.NewNotificationRepository(db)
 	unitRepo := repositories.NewUnitRepository(db)
 	buildingRepo := repositories.NewBuildingRepository(db)
 	propertyRepo := repositories.NewPropertyRepository(db)
@@ -310,7 +320,7 @@ func TestPaymentTransactionAttachment_RealDB_UploadListDownloadDelete(t *testing
 		t.Fatalf("failed to create payment: %v", err)
 	}
 
-	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
+	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, "http://localhost:8080")
 
 	afterFirst, err := paymentService.RecordPaymentTransaction(payment.ID, &models.CreatePaymentTransactionRequest{
 		Amount: 10000,
@@ -368,6 +378,97 @@ func TestPaymentTransactionAttachment_RealDB_UploadListDownloadDelete(t *testing
 	}
 	if len(attsAfterDelete) != 0 {
 		t.Errorf("expected 0 attachments after delete, got %d", len(attsAfterDelete))
+	}
+}
+
+// TestReceiptLinkSms_RealDB_EndToEnd exercises the actual flow behind "give
+// the tenant a URL to download their receipt via SMS": recording a payment
+// queues a real notification_queue row with a working link, and that link
+// (a bare token, no auth) actually renders the receipt via a genuine
+// receipt_access_tokens round-trip through Postgres.
+func TestReceiptLinkSms_RealDB_EndToEnd(t *testing.T) {
+	db, cleanup := testutil.SetupTestDBNamed(t, servicesTestDB)
+	defer cleanup()
+
+	orgID := testutil.CreateTestOrganization(t, db)
+	propID := testutil.CreateTestProperty(t, db)
+	bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
+	unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+	tenantID := testutil.CreateTestTenant(t, db, orgID) // seeded with phone_number +8801234567890
+
+	paymentRepo := repositories.NewPaymentRepository(db)
+	paymentTransactionRepo := repositories.NewPaymentTransactionRepository(db)
+	paymentTransactionAttachmentRepo := repositories.NewPaymentTransactionAttachmentRepository(db)
+	receiptAccessTokenRepo := repositories.NewReceiptAccessTokenRepository(db)
+	notificationRepo := repositories.NewNotificationRepository(db)
+	unitRepo := repositories.NewUnitRepository(db)
+	buildingRepo := repositories.NewBuildingRepository(db)
+	propertyRepo := repositories.NewPropertyRepository(db)
+	userRepo := repositories.NewUserRepository(db)
+	auditService := database.NewAuditService(db)
+
+	payment, err := paymentRepo.Create(&models.CreatePaymentRequest{
+		UnitID:         unitID,
+		TenantID:       tenantID,
+		BuildingID:     bldgID,
+		PropertyID:     propID,
+		OrganizationID: orgID,
+		Month:          6,
+		Year:           2026,
+		AmountDue:      12000,
+	})
+	if err != nil {
+		t.Fatalf("failed to create payment: %v", err)
+	}
+
+	paymentService := NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, "https://app.example.com")
+
+	if _, err := paymentService.RecordPaymentTransaction(payment.ID, &models.CreatePaymentTransactionRequest{
+		Amount: 12000,
+	}, 1, orgID); err != nil {
+		t.Fatalf("unexpected error recording transaction: %v", err)
+	}
+
+	// A real row must have been queued for the .NET notification-service to
+	// pick up and deliver.
+	var queuedMessage, recipient, notificationType, status string
+	err = db.QueryRow(`SELECT message, recipient, notification_type, status FROM notification_queue WHERE tenant_id = $1 ORDER BY id DESC LIMIT 1`, tenantID).
+		Scan(&queuedMessage, &recipient, &notificationType, &status)
+	if err != nil {
+		t.Fatalf("expected a notification_queue row to have been inserted: %v", err)
+	}
+	if recipient != "+8801234567890" {
+		t.Errorf("recipient got %q, want the tenant's phone number", recipient)
+	}
+	if notificationType != models.NotificationTypeSMS {
+		t.Errorf("notification type got %q, want %q", notificationType, models.NotificationTypeSMS)
+	}
+	if status != models.NotificationStatusPending {
+		t.Errorf("status got %q, want %q", status, models.NotificationStatusPending)
+	}
+
+	const linkPrefix = "https://app.example.com/api/v1/receipts/"
+	idx := strings.Index(queuedMessage, linkPrefix)
+	if idx == -1 {
+		t.Fatalf("expected message to contain a receipt link, got %q", queuedMessage)
+	}
+	token := queuedMessage[idx+len(linkPrefix):]
+
+	// The bare token — exactly what a tenant would have after tapping the
+	// SMS link, no session/auth of any kind — must resolve to the receipt.
+	pdfBytes, filename, err := paymentService.DownloadReceiptByToken(token)
+	if err != nil {
+		t.Fatalf("unexpected error downloading receipt by token: %v", err)
+	}
+	if !bytes.HasPrefix(pdfBytes, []byte("%PDF")) {
+		t.Error("expected valid PDF bytes")
+	}
+	if !strings.HasSuffix(filename, ".pdf") {
+		t.Errorf("expected a .pdf filename, got %q", filename)
+	}
+
+	if _, _, err := paymentService.DownloadReceiptByToken("not-a-real-token"); err == nil {
+		t.Error("expected an unknown token to be rejected")
 	}
 }
 

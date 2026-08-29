@@ -271,6 +271,18 @@ type PaymentTransactionAttachmentRepositoryInterface interface {
 	Delete(id int) error
 }
 
+// ReceiptAccessTokenRepositoryInterface defines the interface for receipt access token repository operations
+type ReceiptAccessTokenRepositoryInterface interface {
+	Create(paymentID int, token string, expiresAt time.Time) (*models.ReceiptAccessToken, error)
+	GetValidByPaymentID(paymentID int) (*models.ReceiptAccessToken, error)
+	GetByToken(token string) (*models.ReceiptAccessToken, error)
+}
+
+// NotificationRepositoryInterface defines the interface for queuing notifications for the notification-service to deliver
+type NotificationRepositoryInterface interface {
+	Create(req *models.CreateNotificationRequest) (*models.NotificationQueue, error)
+}
+
 // PaymentServiceInterface defines the interface for payment service operations
 type PaymentServiceInterface interface {
 	CreatePayment(req *models.CreatePaymentRequest, userID int) (*models.Payment, error)
@@ -296,6 +308,7 @@ type PaymentServiceInterface interface {
 	SearchLeases(orgID int, query string) (*models.LeaseSearchResponse, error)
 	GenerateMonthlyPayments(req *models.GenerateMonthlyPaymentsRequest, orgID, userID int) (*models.GenerateMonthlyPaymentsResult, error)
 	GenerateReceiptPDF(paymentID, orgID int) ([]byte, error)
+	DownloadReceiptByToken(token string) ([]byte, string, error)
 }
 
 // TenantRepositoryInterface defines the interface for tenant repository operations

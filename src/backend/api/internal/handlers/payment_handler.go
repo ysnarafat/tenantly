@@ -124,6 +124,23 @@ func (h *PaymentHandler) DownloadReceipt(c *gin.Context) {
 	c.Data(http.StatusOK, "application/pdf", pdfBytes)
 }
 
+// DownloadReceiptByToken handles GET /receipts/:token — a public,
+// unauthenticated download used by the "payment recorded" SMS link, since
+// tenants (its recipients) have no login. The unguessable, expiring token is
+// the only authorization.
+func (h *PaymentHandler) DownloadReceiptByToken(c *gin.Context) {
+	token := c.Param("token")
+
+	pdfBytes, filename, err := h.paymentService.DownloadReceiptByToken(token)
+	if err != nil {
+		respondError(c, http.StatusNotFound, "RECEIPT_LINK_INVALID", "This receipt link is invalid or has expired", err)
+		return
+	}
+
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+	c.Data(http.StatusOK, "application/pdf", pdfBytes)
+}
+
 // UpdatePayment handles PUT /payments/:id
 func (h *PaymentHandler) UpdatePayment(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))

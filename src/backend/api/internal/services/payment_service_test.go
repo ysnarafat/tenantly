@@ -1,8 +1,10 @@
 package services
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -399,6 +401,86 @@ func (m *MockPaymentTransactionAttachmentRepo) Delete(id int) error {
 }
 
 // ---------------------------------------------------------------------------
+// MockReceiptAccessTokenRepo - implements interfaces.ReceiptAccessTokenRepositoryInterface
+// ---------------------------------------------------------------------------
+
+type MockReceiptAccessTokenRepo struct {
+	byPaymentID map[int]*models.ReceiptAccessToken
+	byToken     map[string]*models.ReceiptAccessToken
+	nextID      int
+}
+
+func newMockReceiptAccessTokenRepo() *MockReceiptAccessTokenRepo {
+	return &MockReceiptAccessTokenRepo{
+		byPaymentID: make(map[int]*models.ReceiptAccessToken),
+		byToken:     make(map[string]*models.ReceiptAccessToken),
+		nextID:      1,
+	}
+}
+
+func (m *MockReceiptAccessTokenRepo) Create(paymentID int, token string, expiresAt time.Time) (*models.ReceiptAccessToken, error) {
+	t := &models.ReceiptAccessToken{
+		ID:        m.nextID,
+		Token:     token,
+		PaymentID: paymentID,
+		ExpiresAt: expiresAt,
+		CreatedAt: time.Now(),
+	}
+	m.nextID++
+	m.byPaymentID[paymentID] = t
+	m.byToken[token] = t
+	return t, nil
+}
+
+func (m *MockReceiptAccessTokenRepo) GetValidByPaymentID(paymentID int) (*models.ReceiptAccessToken, error) {
+	t, ok := m.byPaymentID[paymentID]
+	if !ok || time.Now().After(t.ExpiresAt) {
+		return nil, errors.New("no valid receipt access token for payment")
+	}
+	return t, nil
+}
+
+func (m *MockReceiptAccessTokenRepo) GetByToken(token string) (*models.ReceiptAccessToken, error) {
+	t, ok := m.byToken[token]
+	if !ok {
+		return nil, errors.New("receipt access token not found")
+	}
+	return t, nil
+}
+
+// ---------------------------------------------------------------------------
+// MockNotificationRepo - implements interfaces.NotificationRepositoryInterface
+// ---------------------------------------------------------------------------
+
+type MockNotificationRepo struct {
+	created []*models.CreateNotificationRequest
+	nextID  int
+}
+
+func newMockNotificationRepo() *MockNotificationRepo {
+	return &MockNotificationRepo{nextID: 1}
+}
+
+func (m *MockNotificationRepo) Create(req *models.CreateNotificationRequest) (*models.NotificationQueue, error) {
+	m.created = append(m.created, req)
+	n := &models.NotificationQueue{
+		ID:               m.nextID,
+		TenantID:         req.TenantID,
+		UnitID:           req.UnitID,
+		PropertyID:       req.PropertyID,
+		BuildingID:       req.BuildingID,
+		Message:          req.Message,
+		NotificationType: req.NotificationType,
+		Recipient:        req.Recipient,
+		Status:           models.NotificationStatusPending,
+		CreatedAt:        time.Now(),
+		UpdatedAt:        time.Now(),
+	}
+	m.nextID++
+	return n, nil
+}
+
+// ---------------------------------------------------------------------------
 // MockPaymentUnitRepo â€“ implements interfaces.UnitRepositoryInterface
 // ---------------------------------------------------------------------------
 
@@ -739,19 +821,24 @@ func newPaymentServiceWithMocks() (
 	*MockPaymentPropertyRepo,
 	*MockPaymentAuditService,
 ) {
-	svc, payRepo, _, _, unitRepo, bldgRepo, propRepo, audit, _ := newPaymentServiceWithMocksAndTxns()
+	svc, payRepo, _, _, _, _, unitRepo, bldgRepo, propRepo, audit, _ := newPaymentServiceWithMocksAndTxns()
 	return svc, payRepo, unitRepo, bldgRepo, propRepo, audit
 }
 
+const testPublicBaseURL = "https://app.test.example"
+
 // newPaymentServiceWithMocksAndTxns is like newPaymentServiceWithMocks but
-// also exposes the mock transaction and attachment repos, for tests
-// exercising RecordPaymentTransaction/GetPaymentTransactions/
-// DeletePaymentTransaction/*PaymentTransactionAttachment*.
+// also exposes the mock transaction, attachment, receipt-token, and
+// notification repos, for tests exercising RecordPaymentTransaction/
+// GetPaymentTransactions/DeletePaymentTransaction/*PaymentTransactionAttachment*/
+// the receipt-link SMS side effect.
 func newPaymentServiceWithMocksAndTxns() (
 	*PaymentService,
 	*MockPaymentRepo,
 	*MockPaymentTransactionRepo,
 	*MockPaymentTransactionAttachmentRepo,
+	*MockReceiptAccessTokenRepo,
+	*MockNotificationRepo,
 	*MockPaymentUnitRepo,
 	*MockPaymentBuildingRepo,
 	*MockPaymentPropertyRepo,
@@ -761,13 +848,15 @@ func newPaymentServiceWithMocksAndTxns() (
 	payRepo := newMockPaymentRepo()
 	txnRepo := newMockPaymentTransactionRepo()
 	attachRepo := newMockPaymentTransactionAttachmentRepo()
+	receiptTokenRepo := newMockReceiptAccessTokenRepo()
+	notificationRepo := newMockNotificationRepo()
 	unitRepo := newMockPaymentUnitRepo()
 	bldgRepo := newMockPaymentBuildingRepo()
 	propRepo := newMockPaymentPropertyRepo()
 	audit := newMockPaymentAuditService()
 	userRepo := newMockPaymentUserRepo()
-	svc := NewPaymentService(payRepo, txnRepo, attachRepo, unitRepo, bldgRepo, propRepo, audit, userRepo)
-	return svc, payRepo, txnRepo, attachRepo, unitRepo, bldgRepo, propRepo, audit, userRepo
+	svc := NewPaymentService(payRepo, txnRepo, attachRepo, receiptTokenRepo, notificationRepo, unitRepo, bldgRepo, propRepo, audit, userRepo, testPublicBaseURL)
+	return svc, payRepo, txnRepo, attachRepo, receiptTokenRepo, notificationRepo, unitRepo, bldgRepo, propRepo, audit, userRepo
 }
 
 func sampleUnit(id, buildingID, propertyID int) *models.Unit {
@@ -1148,7 +1237,7 @@ func TestUpdatePayment_AmountPaidIsIgnoredFromClient(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestRecordPaymentTransaction_AccumulatesAcrossInstallments(t *testing.T) {
-	svc, _, txnRepo, _, unitRepo, bldgRepo, propRepo, audit, _ := newPaymentServiceWithMocksAndTxns()
+	svc, _, txnRepo, _, _, _, unitRepo, bldgRepo, propRepo, audit, _ := newPaymentServiceWithMocksAndTxns()
 
 	unitRepo.addUnit(sampleUnit(1, 2, 3))
 	bldgRepo.addBuilding(sampleBuilding(2, 3))
@@ -1215,7 +1304,7 @@ func TestRecordPaymentTransaction_AccumulatesAcrossInstallments(t *testing.T) {
 }
 
 func TestRecordPaymentTransaction_CrossOrgPaymentNotFound(t *testing.T) {
-	svc, _, _, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
+	svc, _, _, _, _, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
 
 	unitRepo.addUnit(sampleUnit(1, 2, 3))
 	bldgRepo.addBuilding(sampleBuilding(2, 3))
@@ -1233,7 +1322,7 @@ func TestRecordPaymentTransaction_CrossOrgPaymentNotFound(t *testing.T) {
 }
 
 func TestRecordPaymentTransaction_RejectsAmountExceedingDue(t *testing.T) {
-	svc, _, _, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
+	svc, _, _, _, _, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
 
 	unitRepo.addUnit(sampleUnit(1, 2, 3))
 	bldgRepo.addBuilding(sampleBuilding(2, 3))
@@ -1254,7 +1343,7 @@ func TestRecordPaymentTransaction_RejectsAmountExceedingDue(t *testing.T) {
 }
 
 func TestRecordPaymentTransaction_RejectsExceedingRemainingDueAfterPartialPayment(t *testing.T) {
-	svc, _, _, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
+	svc, _, _, _, _, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
 
 	unitRepo.addUnit(sampleUnit(1, 2, 3))
 	bldgRepo.addBuilding(sampleBuilding(2, 3))
@@ -1290,11 +1379,176 @@ func TestRecordPaymentTransaction_RejectsExceedingRemainingDueAfterPartialPaymen
 }
 
 // ---------------------------------------------------------------------------
+// TestRecordPaymentTransaction_ReceiptSms
+// ---------------------------------------------------------------------------
+
+func TestRecordPaymentTransaction_QueuesReceiptSmsWhenTenantHasPhone(t *testing.T) {
+	svc, payRepo, _, _, _, notificationRepo, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
+
+	unitRepo.addUnit(sampleUnit(1, 2, 3))
+	bldgRepo.addBuilding(sampleBuilding(2, 3))
+	propRepo.addProperty(sampleProperty(3))
+	created, err := svc.CreatePayment(sampleCreateRequest(1, 2, 3), 99)
+	if err != nil {
+		t.Fatalf("failed to create payment: %v", err)
+	}
+	payRepo.payments[created.ID].TenantName = "Rahim Uddin"
+	payRepo.payments[created.ID].TenantPhone = "+8801700000000"
+
+	if _, err := svc.RecordPaymentTransaction(created.ID, &models.CreatePaymentTransactionRequest{Amount: 1000}, 99, 1); err != nil {
+		t.Fatalf("unexpected error recording transaction: %v", err)
+	}
+
+	if len(notificationRepo.created) != 1 {
+		t.Fatalf("expected 1 notification queued, got %d", len(notificationRepo.created))
+	}
+	queued := notificationRepo.created[0]
+	if queued.Recipient != "+8801700000000" {
+		t.Errorf("recipient got %q, want the tenant's phone number", queued.Recipient)
+	}
+	if queued.NotificationType != models.NotificationTypeSMS {
+		t.Errorf("notification type got %q, want %q", queued.NotificationType, models.NotificationTypeSMS)
+	}
+	if !strings.Contains(queued.Message, testPublicBaseURL+"/api/v1/receipts/") {
+		t.Errorf("expected message to contain a receipt download link, got %q", queued.Message)
+	}
+	if !strings.Contains(queued.Message, "Rahim Uddin") {
+		t.Errorf("expected message to address the tenant by name, got %q", queued.Message)
+	}
+}
+
+func TestRecordPaymentTransaction_SkipsSmsWhenTenantHasNoPhone(t *testing.T) {
+	svc, _, _, _, _, notificationRepo, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
+
+	unitRepo.addUnit(sampleUnit(1, 2, 3))
+	bldgRepo.addBuilding(sampleBuilding(2, 3))
+	propRepo.addProperty(sampleProperty(3))
+	created, err := svc.CreatePayment(sampleCreateRequest(1, 2, 3), 99)
+	if err != nil {
+		t.Fatalf("failed to create payment: %v", err)
+	}
+	// TenantPhone left empty (the mock's CreatePayment doesn't populate it).
+
+	if _, err := svc.RecordPaymentTransaction(created.ID, &models.CreatePaymentTransactionRequest{Amount: 1000}, 99, 1); err != nil {
+		t.Fatalf("unexpected error recording transaction: %v", err)
+	}
+
+	if len(notificationRepo.created) != 0 {
+		t.Errorf("expected no notification queued without a phone number, got %d", len(notificationRepo.created))
+	}
+}
+
+func TestRecordPaymentTransaction_ReusesReceiptTokenAcrossInstallments(t *testing.T) {
+	svc, payRepo, _, _, _, notificationRepo, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
+
+	unitRepo.addUnit(sampleUnit(1, 2, 3))
+	bldgRepo.addBuilding(sampleBuilding(2, 3))
+	propRepo.addProperty(sampleProperty(3))
+	req := sampleCreateRequest(1, 2, 3)
+	req.AmountDue = 12000
+	created, err := svc.CreatePayment(req, 99)
+	if err != nil {
+		t.Fatalf("failed to create payment: %v", err)
+	}
+	payRepo.payments[created.ID].TenantPhone = "+8801700000000"
+
+	if _, err := svc.RecordPaymentTransaction(created.ID, &models.CreatePaymentTransactionRequest{Amount: 10000}, 99, 1); err != nil {
+		t.Fatalf("unexpected error recording first installment: %v", err)
+	}
+	if _, err := svc.RecordPaymentTransaction(created.ID, &models.CreatePaymentTransactionRequest{Amount: 2000}, 99, 1); err != nil {
+		t.Fatalf("unexpected error recording second installment: %v", err)
+	}
+
+	if len(notificationRepo.created) != 2 {
+		t.Fatalf("expected 2 notifications queued, got %d", len(notificationRepo.created))
+	}
+	linkOf := func(msg string) string {
+		idx := strings.Index(msg, testPublicBaseURL+"/api/v1/receipts/")
+		return msg[idx:]
+	}
+	firstLink := linkOf(notificationRepo.created[0].Message)
+	secondLink := linkOf(notificationRepo.created[1].Message)
+	if firstLink != secondLink {
+		t.Errorf("expected the same receipt link across installments, got %q and %q", firstLink, secondLink)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// TestDownloadReceiptByToken
+// ---------------------------------------------------------------------------
+
+func TestDownloadReceiptByToken_ReturnsRenderedPDF(t *testing.T) {
+	svc, payRepo, _, _, receiptTokenRepo, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
+
+	unitRepo.addUnit(sampleUnit(1, 2, 3))
+	bldgRepo.addBuilding(sampleBuilding(2, 3))
+	propRepo.addProperty(sampleProperty(3))
+	created, err := svc.CreatePayment(sampleCreateRequest(1, 2, 3), 99)
+	if err != nil {
+		t.Fatalf("failed to create payment: %v", err)
+	}
+	payRepo.payments[created.ID].TenantPhone = "+8801700000000"
+
+	// RecordPaymentTransaction's own refresh step (re)assigns the real
+	// receipt number, overwriting any manual value set beforehand — so the
+	// expected filename is derived from the payment afterward, not hardcoded.
+	updated, err := svc.RecordPaymentTransaction(created.ID, &models.CreatePaymentTransactionRequest{Amount: 1000}, 99, 1)
+	if err != nil {
+		t.Fatalf("unexpected error recording transaction: %v", err)
+	}
+
+	token, err := receiptTokenRepo.GetValidByPaymentID(created.ID)
+	if err != nil {
+		t.Fatalf("expected a receipt token to have been created: %v", err)
+	}
+
+	pdfBytes, filename, err := svc.DownloadReceiptByToken(token.Token)
+	if err != nil {
+		t.Fatalf("unexpected error downloading receipt by token: %v", err)
+	}
+	if len(pdfBytes) == 0 || !bytes.HasPrefix(pdfBytes, []byte("%PDF")) {
+		t.Error("expected valid, non-empty PDF bytes")
+	}
+	wantFilename := fmt.Sprintf("receipt-%s.pdf", updated.ReceiptNumber)
+	if filename != wantFilename {
+		t.Errorf("filename got %q, want %q", filename, wantFilename)
+	}
+}
+
+func TestDownloadReceiptByToken_UnknownTokenRejected(t *testing.T) {
+	svc, _, _, _, _, _, _, _, _, _, _ := newPaymentServiceWithMocksAndTxns()
+
+	if _, _, err := svc.DownloadReceiptByToken("does-not-exist"); err == nil {
+		t.Fatal("expected an error for an unknown receipt token, got nil")
+	}
+}
+
+func TestDownloadReceiptByToken_ExpiredTokenRejected(t *testing.T) {
+	svc, _, _, _, receiptTokenRepo, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
+
+	unitRepo.addUnit(sampleUnit(1, 2, 3))
+	bldgRepo.addBuilding(sampleBuilding(2, 3))
+	propRepo.addProperty(sampleProperty(3))
+	created, err := svc.CreatePayment(sampleCreateRequest(1, 2, 3), 99)
+	if err != nil {
+		t.Fatalf("failed to create payment: %v", err)
+	}
+
+	if _, err := receiptTokenRepo.Create(created.ID, "expired-token", time.Now().Add(-time.Hour)); err != nil {
+		t.Fatalf("failed to seed expired token: %v", err)
+	}
+
+	if _, _, err := svc.DownloadReceiptByToken("expired-token"); err == nil {
+		t.Fatal("expected an error for an expired receipt token, got nil")
+	}
+}
+
+// ---------------------------------------------------------------------------
 // TestDeletePaymentTransaction
 // ---------------------------------------------------------------------------
 
 func TestDeletePaymentTransaction_RecomputesRemainingBalance(t *testing.T) {
-	svc, _, _, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
+	svc, _, _, _, _, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
 
 	unitRepo.addUnit(sampleUnit(1, 2, 3))
 	bldgRepo.addBuilding(sampleBuilding(2, 3))
@@ -1351,7 +1605,7 @@ func TestDeletePaymentTransaction_RecomputesRemainingBalance(t *testing.T) {
 }
 
 func TestDeletePaymentTransaction_WrongPaymentRejected(t *testing.T) {
-	svc, _, _, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
+	svc, _, _, _, _, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
 
 	unitRepo.addUnit(sampleUnit(1, 2, 3))
 	bldgRepo.addBuilding(sampleBuilding(2, 3))
@@ -1401,7 +1655,7 @@ var pdfBytes = []byte("%PDF-1.4\n%âãÏÓ\n")
 
 func setupPaymentWithTransaction(t *testing.T, amount float64) (*PaymentService, *MockPaymentTransactionAttachmentRepo, int, int) {
 	t.Helper()
-	svc, _, _, attachRepo, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
+	svc, _, _, attachRepo, _, _, unitRepo, bldgRepo, propRepo, _, _ := newPaymentServiceWithMocksAndTxns()
 
 	unitRepo.addUnit(sampleUnit(1, 2, 3))
 	bldgRepo.addBuilding(sampleBuilding(2, 3))

@@ -176,6 +176,10 @@ func (m *mockPaymentService) GenerateReceiptPDF(paymentID, orgID int) ([]byte, e
 	return m.generateReceiptPDFFn(paymentID, orgID)
 }
 
+func (m *mockPaymentService) DownloadReceiptByToken(token string) ([]byte, string, error) {
+	return nil, "", errors.New("download receipt by token not mocked")
+}
+
 // Ensure the mock satisfies the interface at compile time.
 var _ interfaces.PaymentServiceInterface = (*mockPaymentService)(nil)
 
