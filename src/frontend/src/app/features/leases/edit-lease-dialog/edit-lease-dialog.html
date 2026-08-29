@@ -71,6 +71,38 @@
       </mat-select>
     </mat-form-field>
 
+    @if (!isRenewing) {
+    <!-- Corrects the lease's own term (e.g. a wrong date entered at creation)
+         — for extending/renewing the lease, use "Renew lease" below instead,
+         which starts a new term rather than editing this one. -->
+    <div class="row-fields">
+      <mat-form-field appearance="outline">
+        <mat-label>Start Date</mat-label>
+        <input matInput [matDatepicker]="editStartDate" formControlName="start_date" />
+        <mat-datepicker-toggle matSuffix [for]="editStartDate"></mat-datepicker-toggle>
+        <mat-datepicker #editStartDate></mat-datepicker>
+        <mat-error *ngIf="editForm.get('start_date')?.hasError('required')">Required</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Duration (Months)</mat-label>
+        <input matInput type="number" formControlName="duration_months" min="1" max="60" />
+        <mat-error *ngIf="editForm.get('duration_months')?.hasError('required')"
+          >Required</mat-error
+        >
+        <mat-error
+          *ngIf="editForm.get('duration_months')?.hasError('min') || editForm.get('duration_months')?.hasError('max')"
+          >1 – 60</mat-error
+        >
+      </mat-form-field>
+    </div>
+    @if (correctedEndDate) {
+    <div class="renew-hint">
+      <mat-icon>event</mat-icon>
+      Ends {{ formatDate(correctedEndDate) }}
+    </div>
+    } }
+
     <div class="row-fields">
       <mat-form-field appearance="outline">
         <mat-label>{{ 'EDIT_LEASE_DIALOG.FIELDS.MONTHLY_RENT' | translate }}</mat-label>

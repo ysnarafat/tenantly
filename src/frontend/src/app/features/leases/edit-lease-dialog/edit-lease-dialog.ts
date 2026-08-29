@@ -94,6 +94,14 @@ export class EditLeaseDialog {
     this.loadFullDetails();
     this.editForm = this.fb.group({
       lease_type: [this.lease.lease_type, Validators.required],
+      // Corrects the CURRENT lease's own term (e.g. a data-entry mistake made
+      // at creation) — distinct from "Renew lease" below, which starts a new
+      // lease term rather than editing this one's dates.
+      start_date: [new Date(this.lease.start_date), Validators.required],
+      duration_months: [
+        this.lease.duration_months,
+        [Validators.required, Validators.min(1), Validators.max(60)],
+      ],
       monthly_rent: [this.lease.monthly_rent, [Validators.required, Validators.min(1)]],
       security_deposit: [this.lease.security_deposit ?? 0, [Validators.min(0)]],
       renew_lease: [false],
@@ -153,6 +161,18 @@ export class EditLeaseDialog {
     return d;
   }
 
+  // Preview of what end_date becomes from the corrected start_date/duration —
+  // mirrors the backend's own recalculation (LeaseRepository.Update) so the
+  // dialog shows the result before saving rather than only after.
+  get correctedEndDate(): Date | null {
+    const start = this.editForm.get('start_date')?.value as Date | null;
+    const months = Number(this.editForm.get('duration_months')?.value) || 0;
+    if (!start || months <= 0) return null;
+    const d = new Date(start);
+    d.setMonth(d.getMonth() + months);
+    return d;
+  }
+
   get renewalInvalid(): boolean {
     const renewal = this.editForm.get('renewal');
     return !!renewal?.enabled && !!renewal?.errors?.['extensionZero'] && renewal?.touched;
@@ -203,6 +223,8 @@ export class EditLeaseDialog {
 
     const payload: UpdateLeaseRequest = {
       lease_type: v.lease_type,
+      start_date: this.formatDateForApi(v.start_date),
+      duration_months: v.duration_months,
       monthly_rent: v.monthly_rent,
       security_deposit: v.security_deposit,
       custom_fields: this.customFields,
@@ -257,5 +279,9 @@ export class EditLeaseDialog {
 
   onCancel() {
     this.dialogRef.close(false);
+  }
+
+  private formatDateForApi(date: Date): string {
+    return date.toISOString().split('T')[0];
   }
 }
