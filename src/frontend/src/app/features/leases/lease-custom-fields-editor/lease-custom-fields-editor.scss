@@ -1,0 +1,78 @@
+.fields-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fields-list {
+  border-top: 1px solid var(--border-table, #e0e0e0);
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--border-table, #e0e0e0);
+}
+
+.field-key {
+  flex: 0 0 140px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-value-input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+}
+
+.no-fields {
+  color: var(--text-hint);
+  font-size: 13px;
+  margin: 4px 0 8px;
+}
+
+.add-field-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.key-field {
+  width: 180px;
+}
+
+.value-field {
+  flex: 1 1 160px;
+  min-width: 140px;
+}
+
+@media (max-width: 480px) {
+  .add-field-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .key-field,
+  .value-field {
+    width: 100%;
+  }
+}

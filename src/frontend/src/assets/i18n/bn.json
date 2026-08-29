@@ -938,5 +938,11 @@
       "TAGLINE": "বাংলাদেশের জন্য সম্পত্তি ও ভাড়া ব্যবস্থাপনা।",
       "RIGHTS": "© {{ year }} Tenantly. সর্বস্বত্ব সংরক্ষিত।"
     }
+  },
+  "LEASE_CHARGES": {
+    "SECTION_TITLE": "নিয়মিত চার্জ"
+  },
+  "LEASE_CUSTOM_FIELDS": {
+    "SECTION_TITLE": "কাস্টম ফিল্ড"
   }
 }

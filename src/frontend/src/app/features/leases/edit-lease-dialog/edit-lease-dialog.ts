@@ -21,13 +21,17 @@ import {
 } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
 import { TranslateModule } from '@ngx-translate/core';
 import {
   LeaseService,
   LeaseWithDetails,
   UpdateLeaseRequest,
   RenewLeaseRequest,
+  LeaseCustomFields,
 } from '../../../core/services/lease.service';
+import { LeaseChargesEditor, LeaseChargeDraft } from '../lease-charges-editor/lease-charges-editor';
+import { LeaseCustomFieldsEditor } from '../lease-custom-fields-editor/lease-custom-fields-editor';
 
 function atLeastOnePositive(group: AbstractControl): ValidationErrors | null {
   const years = Number(group.get('renew_years')?.value) || 0;
@@ -52,6 +56,8 @@ function atLeastOnePositive(group: AbstractControl): ValidationErrors | null {
     MatSlideToggleModule,
     ReactiveFormsModule,
     TranslateModule,
+    LeaseChargesEditor,
+    LeaseCustomFieldsEditor,
   ],
   templateUrl: './edit-lease-dialog.html',
   styleUrls: ['./edit-lease-dialog.scss'],
@@ -74,9 +80,18 @@ export class EditLeaseDialog {
   moveOutDate = new FormControl<Date>(new Date(), Validators.required);
   minMoveOutDate: Date;
 
+  // The lease passed in from the list view doesn't carry its charges/custom
+  // fields (the list endpoint omits them to avoid an N+1 query per row) —
+  // fetched separately below once the dialog opens.
+  charges: LeaseChargeDraft[] = [];
+  chargesLoading = true;
+  customFields: LeaseCustomFields = {};
+
   constructor(@Inject(MAT_DIALOG_DATA) data: { lease: LeaseWithDetails }) {
     this.lease = data.lease;
     this.minMoveOutDate = new Date(this.lease.start_date);
+    this.customFields = this.lease.custom_fields ?? {};
+    this.loadFullDetails();
     this.editForm = this.fb.group({
       lease_type: [this.lease.lease_type, Validators.required],
       monthly_rent: [this.lease.monthly_rent, [Validators.required, Validators.min(1)]],
@@ -103,6 +118,20 @@ export class EditLeaseDialog {
 
     // Start with renewal fields disabled
     this.editForm.get('renewal')!.disable();
+  }
+
+  private loadFullDetails(): void {
+    this.leaseService.getLeaseById(this.lease.id).subscribe({
+      next: (details) => {
+        this.charges = details.charges ?? [];
+        this.customFields = details.custom_fields ?? {};
+        this.chargesLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading lease charges:', safeErrorMessage(error));
+        this.chargesLoading = false;
+      },
+    });
   }
 
   get isRenewing(): boolean {
@@ -176,6 +205,7 @@ export class EditLeaseDialog {
       lease_type: v.lease_type,
       monthly_rent: v.monthly_rent,
       security_deposit: v.security_deposit,
+      custom_fields: this.customFields,
     };
 
     this.leaseService.updateLease(this.lease.id, payload).subscribe({

@@ -164,6 +164,22 @@
       </div>
       }
     </div>
+    } @if (!isRenewing) {
+    <!-- ── Recurring Charges Section ─────────────────────────────────────── -->
+    <div class="section-divider"></div>
+    <h3 class="section-title">{{ 'LEASE_CHARGES.SECTION_TITLE' | translate }}</h3>
+    @if (chargesLoading) {
+    <mat-spinner diameter="24"></mat-spinner>
+    } @else {
+    <app-lease-charges-editor [leaseId]="lease.id" [(charges)]="charges"></app-lease-charges-editor>
+    }
+
+    <!-- ── Custom Fields Section ────────────────────────────────────────── -->
+    <div class="section-divider"></div>
+    <h3 class="section-title">{{ 'LEASE_CUSTOM_FIELDS.SECTION_TITLE' | translate }}</h3>
+    <app-lease-custom-fields-editor
+      [(customFields)]="customFields"
+    ></app-lease-custom-fields-editor>
     } @if (lease.active && !isRenewing) {
     <div class="section-divider"></div>
     <button type="button" class="end-tenancy-link" (click)="startEndingTenancy()">

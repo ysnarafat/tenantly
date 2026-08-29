@@ -938,5 +938,11 @@
       "TAGLINE": "Property and rent management for Bangladesh.",
       "RIGHTS": "© {{ year }} Tenantly. All rights reserved."
     }
+  },
+  "LEASE_CHARGES": {
+    "SECTION_TITLE": "Recurring Charges"
+  },
+  "LEASE_CUSTOM_FIELDS": {
+    "SECTION_TITLE": "Custom Fields"
   }
 }

@@ -23,8 +23,14 @@ import {
   Validators,
 } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { LeaseService, CreateLeaseRequest } from '../../../core/services/lease.service';
+import {
+  LeaseService,
+  CreateLeaseRequest,
+  LeaseCustomFields,
+} from '../../../core/services/lease.service';
 import { PropertyService } from '../../../core/services/property.service';
 import { BuildingService } from '../../../core/services/building.service';
 import { UnitService } from '../../../core/services/unit.service';
@@ -35,6 +41,8 @@ import { Unit } from '../../../core/models/unit.model';
 import { Tenant } from '../../../core/models/tenant.model';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
 import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
+import { LeaseChargesEditor, LeaseChargeDraft } from '../lease-charges-editor/lease-charges-editor';
+import { LeaseCustomFieldsEditor } from '../lease-custom-fields-editor/lease-custom-fields-editor';
 
 function integerValidator(control: AbstractControl): ValidationErrors | null {
   const value = control.value;
@@ -59,6 +67,8 @@ function integerValidator(control: AbstractControl): ValidationErrors | null {
     MatProgressSpinnerModule,
     ReactiveFormsModule,
     TranslateModule,
+    LeaseChargesEditor,
+    LeaseCustomFieldsEditor,
   ],
   templateUrl: './create-lease-dialog.html',
   styleUrls: ['./create-lease-dialog.scss'],
@@ -93,6 +103,11 @@ export class CreateLeaseDialog implements OnInit {
   tenantsLoadFailed = false;
 
   minDate: Date = new Date();
+
+  // The lease doesn't exist yet, so charges/custom fields are held here as a
+  // draft and only persisted once the lease itself is created — see onSubmit.
+  pendingCharges: LeaseChargeDraft[] = [];
+  customFields: LeaseCustomFields = {};
 
   constructor() {
     this.leaseForm = this.fb.group({
@@ -321,13 +336,12 @@ export class CreateLeaseDialog implements OnInit {
       duration_months: formValue.duration_months,
       monthly_rent: formValue.monthly_rent,
       security_deposit: formValue.security_deposit,
+      custom_fields: this.customFields,
     };
 
     this.leaseService.createLease(request).subscribe({
-      next: () => {
-        notifySuccess(this.snackBar, this.translate.instant('CREATE_LEASE_DIALOG.SUCCESS.CREATED'));
-        this.dialogRef.close(true);
-        this.submitLoading = false;
+      next: (lease) => {
+        this.persistPendingCharges(lease.id);
       },
       error: (error) => {
         console.error('Error creating lease:', safeErrorMessage(error));
@@ -337,6 +351,38 @@ export class CreateLeaseDialog implements OnInit {
         this.submitLoading = false;
         this.dialogRef.disableClose = false;
       },
+    });
+  }
+
+  // The lease has to exist before charges can be attached to it (they're
+  // keyed by lease ID on the backend), so any charges added while building
+  // the form are only sent now, after creation succeeds.
+  private persistPendingCharges(leaseId: number): void {
+    if (this.pendingCharges.length === 0) {
+      notifySuccess(this.snackBar, this.translate.instant('CREATE_LEASE_DIALOG.SUCCESS.CREATED'));
+      this.dialogRef.close(true);
+      this.submitLoading = false;
+      return;
+    }
+
+    const requests = this.pendingCharges.map((c) =>
+      this.leaseService
+        .addLeaseCharge(leaseId, { charge_type: c.charge_type, label: c.label, amount: c.amount })
+        .pipe(catchError(() => of(null)))
+    );
+
+    forkJoin(requests).subscribe((results) => {
+      const failed = results.filter((r) => r === null).length;
+      if (failed > 0) {
+        notifyError(
+          this.snackBar,
+          `Lease created, but ${failed} charge(s) failed to save — add them from the lease's edit dialog`
+        );
+      } else {
+        notifySuccess(this.snackBar, this.translate.instant('CREATE_LEASE_DIALOG.SUCCESS.CREATED'));
+      }
+      this.dialogRef.close(true);
+      this.submitLoading = false;
     });
   }
 

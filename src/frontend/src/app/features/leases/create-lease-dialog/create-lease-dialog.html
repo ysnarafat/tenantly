@@ -191,6 +191,22 @@
       <strong>{{ 'CREATE_LEASE_DIALOG.INFO.END_DATE' | translate }}</strong> {{ calculateEndDate() |
       date:'mediumDate' }}
     </div>
+
+    <!-- Recurring Charges (utility, service charge, etc. on top of rent) -->
+    <div class="section-divider full-width"></div>
+    <h3 class="section-title full-width">{{ 'LEASE_CHARGES.SECTION_TITLE' | translate }}</h3>
+    <app-lease-charges-editor
+      class="full-width"
+      [(charges)]="pendingCharges"
+    ></app-lease-charges-editor>
+
+    <!-- Custom Fields (arbitrary org-defined reference data) -->
+    <div class="section-divider full-width"></div>
+    <h3 class="section-title full-width">{{ 'LEASE_CUSTOM_FIELDS.SECTION_TITLE' | translate }}</h3>
+    <app-lease-custom-fields-editor
+      class="full-width"
+      [(customFields)]="customFields"
+    ></app-lease-custom-fields-editor>
   </form>
 </mat-dialog-content>
 <mat-dialog-actions align="end">

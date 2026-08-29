@@ -29,6 +29,12 @@ export interface DueSummary {
 
 export type LeaseEndReason = 'Expired' | 'Terminated' | 'Renewed';
 
+// Custom fields are arbitrary org-defined key/value data not covered by
+// structured lease fields (e.g. "Parking Slot": "B-12") — same JSONB pattern
+// as the recurring-charges list below. Kept as strings on the frontend for a
+// simple text-based editor; the backend stores them as a raw JSONB map.
+export type LeaseCustomFields = Record<string, string>;
+
 export interface Lease {
   id: number;
   unit_id: number;
@@ -45,6 +51,7 @@ export interface Lease {
   end_reason?: LeaseEndReason;
   // Present when this lease was created by renewing an earlier one.
   renewed_from_lease_id?: number;
+  custom_fields?: LeaseCustomFields;
   created_at: string;
   updated_at: string;
 }
@@ -61,6 +68,39 @@ export interface LeaseWithDetails extends Lease {
   tenant_phone?: string;
   is_expired: boolean;
   days_remaining: number;
+  // Only populated by getLeaseById — the list endpoint omits it to avoid an
+  // N+1 query per row.
+  charges?: LeaseCharge[];
+}
+
+// The controlled set of recurring charges a lease can carry on top of its
+// monthly_rent (utility, service charge, etc.) — charge_type stays an enum
+// so charges remain reportable across leases, while label is free text (so
+// e.g. "Gas" is charge_type: Utility, label: "Gas").
+export type ChargeType = 'Utility' | 'ServiceCharge' | 'Maintenance' | 'Parking' | 'Other';
+
+export interface LeaseCharge {
+  id: number;
+  lease_id: number;
+  charge_type: ChargeType;
+  label: string;
+  amount: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateLeaseChargeRequest {
+  charge_type: ChargeType;
+  label: string;
+  amount: number;
+}
+
+export interface UpdateLeaseChargeRequest {
+  charge_type?: ChargeType;
+  label?: string;
+  amount?: number;
+  active?: boolean;
 }
 
 export interface Payment {
@@ -104,6 +144,7 @@ export interface CreateLeaseRequest {
   duration_months: number;
   monthly_rent: number;
   security_deposit?: number;
+  custom_fields?: LeaseCustomFields;
 }
 
 export interface UpdateLeaseRequest {
@@ -113,6 +154,7 @@ export interface UpdateLeaseRequest {
   monthly_rent?: number;
   security_deposit?: number;
   active?: boolean;
+  custom_fields?: LeaseCustomFields;
 }
 
 export interface TerminateLeaseRequest {
@@ -151,6 +193,22 @@ export class LeaseService {
 
   createLease(request: CreateLeaseRequest): Observable<LeaseWithDetails> {
     return this.http.post<LeaseWithDetails>(this.apiUrl, request);
+  }
+
+  addLeaseCharge(leaseId: number, request: CreateLeaseChargeRequest): Observable<LeaseCharge> {
+    return this.http.post<LeaseCharge>(`${this.apiUrl}/${leaseId}/charges`, request);
+  }
+
+  updateLeaseCharge(
+    leaseId: number,
+    chargeId: number,
+    request: UpdateLeaseChargeRequest
+  ): Observable<LeaseCharge> {
+    return this.http.put<LeaseCharge>(`${this.apiUrl}/${leaseId}/charges/${chargeId}`, request);
+  }
+
+  deleteLeaseCharge(leaseId: number, chargeId: number): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/${leaseId}/charges/${chargeId}`);
   }
 
   updateLease(id: number, request: UpdateLeaseRequest): Observable<LeaseWithDetails> {
