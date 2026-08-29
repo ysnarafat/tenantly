@@ -151,6 +151,12 @@ export interface UpdateLeaseRequest {
   lease_type?: LeaseType;
   start_date?: string;
   duration_months?: number;
+  // Sets the lease's end date directly, independent of duration_months — the
+  // only way to correct it onto a date that isn't a whole-month offset from
+  // start_date (an integer duration_months can never express that exactly).
+  // When provided without duration_months, the backend derives the latter
+  // from the date range for display purposes only.
+  end_date?: string;
   monthly_rent?: number;
   security_deposit?: number;
   active?: boolean;

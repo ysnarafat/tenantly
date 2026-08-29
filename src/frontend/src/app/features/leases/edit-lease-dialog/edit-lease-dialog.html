@@ -85,22 +85,15 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline">
-        <mat-label>Duration (Months)</mat-label>
-        <input matInput type="number" formControlName="duration_months" min="1" max="60" />
-        <mat-error *ngIf="editForm.get('duration_months')?.hasError('required')"
-          >Required</mat-error
-        >
-        <mat-error
-          *ngIf="editForm.get('duration_months')?.hasError('min') || editForm.get('duration_months')?.hasError('max')"
-          >1 – 60</mat-error
-        >
+        <mat-label>End Date</mat-label>
+        <input matInput [matDatepicker]="editEndDate" formControlName="end_date" />
+        <mat-datepicker-toggle matSuffix [for]="editEndDate"></mat-datepicker-toggle>
+        <mat-datepicker #editEndDate></mat-datepicker>
+        <mat-error *ngIf="editForm.get('end_date')?.hasError('required')">Required</mat-error>
       </mat-form-field>
     </div>
-    @if (correctedEndDate) {
-    <div class="renew-hint">
-      <mat-icon>event</mat-icon>
-      Ends {{ formatDate(correctedEndDate) }}
-    </div>
+    @if (editForm.hasError('endBeforeStart') && editForm.get('end_date')?.touched) {
+    <div class="renew-error">End date must be after the start date</div>
     } }
 
     <div class="row-fields">

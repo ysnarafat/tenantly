@@ -39,6 +39,13 @@ function atLeastOnePositive(group: AbstractControl): ValidationErrors | null {
   return years + months > 0 ? null : { extensionZero: true };
 }
 
+function endDateAfterStartDate(group: AbstractControl): ValidationErrors | null {
+  const start = group.get('start_date')?.value as Date | null;
+  const end = group.get('end_date')?.value as Date | null;
+  if (!start || !end) return null;
+  return end > start ? null : { endBeforeStart: true };
+}
+
 @Component({
   selector: 'app-edit-lease-dialog',
   standalone: true,
@@ -92,27 +99,27 @@ export class EditLeaseDialog {
     this.minMoveOutDate = new Date(this.lease.start_date);
     this.customFields = this.lease.custom_fields ?? {};
     this.loadFullDetails();
-    this.editForm = this.fb.group({
-      lease_type: [this.lease.lease_type, Validators.required],
-      // Corrects the CURRENT lease's own term (e.g. a data-entry mistake made
-      // at creation) — distinct from "Renew lease" below, which starts a new
-      // lease term rather than editing this one's dates.
-      start_date: [new Date(this.lease.start_date), Validators.required],
-      duration_months: [
-        this.lease.duration_months,
-        [Validators.required, Validators.min(1), Validators.max(60)],
-      ],
-      monthly_rent: [this.lease.monthly_rent, [Validators.required, Validators.min(1)]],
-      security_deposit: [this.lease.security_deposit ?? 0, [Validators.min(0)]],
-      renew_lease: [false],
-      renewal: this.fb.group(
-        {
-          renew_years: [0, [Validators.min(0), Validators.max(50)]],
-          renew_months: [0, [Validators.min(0), Validators.max(11)]],
-        },
-        { validators: atLeastOnePositive }
-      ),
-    });
+    this.editForm = this.fb.group(
+      {
+        lease_type: [this.lease.lease_type, Validators.required],
+        // Corrects the CURRENT lease's own term (e.g. a data-entry mistake
+        // made at creation) — distinct from "Renew lease" below, which
+        // starts a new lease term rather than editing this one's dates.
+        start_date: [new Date(this.lease.start_date), Validators.required],
+        end_date: [new Date(this.lease.end_date), Validators.required],
+        monthly_rent: [this.lease.monthly_rent, [Validators.required, Validators.min(1)]],
+        security_deposit: [this.lease.security_deposit ?? 0, [Validators.min(0)]],
+        renew_lease: [false],
+        renewal: this.fb.group(
+          {
+            renew_years: [0, [Validators.min(0), Validators.max(50)]],
+            renew_months: [0, [Validators.min(0), Validators.max(11)]],
+          },
+          { validators: atLeastOnePositive }
+        ),
+      },
+      { validators: endDateAfterStartDate }
+    );
 
     // Enable/disable the renewal sub-group based on the toggle
     this.editForm.get('renew_lease')!.valueChanges.subscribe((on: boolean) => {
@@ -158,18 +165,6 @@ export class EditLeaseDialog {
     if (!this.isRenewing || this.renewDurationMonths === 0) return null;
     const d = new Date(this.lease.end_date);
     d.setMonth(d.getMonth() + this.renewDurationMonths);
-    return d;
-  }
-
-  // Preview of what end_date becomes from the corrected start_date/duration —
-  // mirrors the backend's own recalculation (LeaseRepository.Update) so the
-  // dialog shows the result before saving rather than only after.
-  get correctedEndDate(): Date | null {
-    const start = this.editForm.get('start_date')?.value as Date | null;
-    const months = Number(this.editForm.get('duration_months')?.value) || 0;
-    if (!start || months <= 0) return null;
-    const d = new Date(start);
-    d.setMonth(d.getMonth() + months);
     return d;
   }
 
@@ -224,7 +219,7 @@ export class EditLeaseDialog {
     const payload: UpdateLeaseRequest = {
       lease_type: v.lease_type,
       start_date: this.formatDateForApi(v.start_date),
-      duration_months: v.duration_months,
+      end_date: this.formatDateForApi(v.end_date),
       monthly_rent: v.monthly_rent,
       security_deposit: v.security_deposit,
       custom_fields: this.customFields,
