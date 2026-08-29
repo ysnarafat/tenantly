@@ -450,6 +450,31 @@ func (suite *LeaseIntegrationTestSuite) TestUpdateLease_Success() {
 	assert.Equal(suite.T(), newDuration, updatedLease.DurationMonths)
 }
 
+// TestUpdateLease_StartDateOnlyRecalculatesEndDate covers correcting a
+// data-entry mistake on just the start date (e.g. it was set wrong when the
+// lease was created) — end_date must still shift using the lease's existing
+// duration_months, not go stale, even though duration_months itself isn't
+// part of this request.
+func (suite *LeaseIntegrationTestSuite) TestUpdateLease_StartDateOnlyRecalculatesEndDate() {
+	lease := suite.createTestLease() // duration_months: 12
+
+	correctedStart := time.Now().AddDate(0, -1, 0).Format("2006-01-02")
+	updateReq := map[string]interface{}{
+		"start_date": correctedStart,
+	}
+
+	w := suite.makeAuthenticatedRequest("PUT", fmt.Sprintf("/api/v1/leases/%d", lease.ID), updateReq)
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	updatedLease, err := suite.leaseRepo.GetByID(lease.ID)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), 12, updatedLease.DurationMonths, "duration_months must be unchanged")
+
+	wantEndDate := time.Now().AddDate(0, -1, 0).AddDate(0, 12, 0).Format("2006-01-02")
+	assert.Equal(suite.T(), wantEndDate, updatedLease.EndDate.Format("2006-01-02"),
+		"end_date must be recalculated from the corrected start_date + existing duration_months")
+}
+
 func (suite *LeaseIntegrationTestSuite) TestDeleteLease_Success() {
 	// Create a lease with future start date
 	futureStartDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")

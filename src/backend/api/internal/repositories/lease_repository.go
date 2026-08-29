@@ -447,26 +447,45 @@ func (r *LeaseRepository) Update(id int, req *models.UpdateLeaseRequest) (*model
 		argPos++
 	}
 
-	startDateArgPos := -1
-	if req.StartDate != nil {
+	startDateChanged := req.StartDate != nil
+	if startDateChanged {
 		updates = append(updates, fmt.Sprintf("start_date = $%d", argPos))
 		args = append(args, *req.StartDate)
-		startDateArgPos = argPos
 		argPos++
 	}
 
-	if req.DurationMonths != nil {
+	durationChanged := req.DurationMonths != nil
+	if durationChanged {
 		updates = append(updates, fmt.Sprintf("duration_months = $%d", argPos))
 		args = append(args, *req.DurationMonths)
 		argPos++
-		// Recalculate end_date from start_date + duration
-		if startDateArgPos >= 0 {
-			updates = append(updates, fmt.Sprintf("end_date = $%d::date + ($%d * INTERVAL '1 month')", startDateArgPos, argPos))
-		} else {
-			updates = append(updates, fmt.Sprintf("end_date = start_date + ($%d * INTERVAL '1 month')", argPos))
+	}
+
+	// end_date must be recalculated whenever EITHER start_date or
+	// duration_months changes — not just when both change together.
+	// Previously this only fired inside the DurationMonths branch, so
+	// correcting just the start_date (e.g. fixing a data-entry mistake)
+	// silently left end_date stale/inconsistent with the new start_date.
+	//
+	// Each value gets its own fresh placeholder here rather than reusing the
+	// one bound above (even though it's the same value) — Postgres infers a
+	// single type per placeholder across the whole query, and reusing $N for
+	// both an `integer` column assignment and an `integer * INTERVAL`
+	// expression trips "inconsistent types deduced" (42P08).
+	if startDateChanged || durationChanged {
+		startExpr := "start_date"
+		if startDateChanged {
+			startExpr = fmt.Sprintf("$%d::date", argPos)
+			args = append(args, *req.StartDate)
+			argPos++
 		}
-		args = append(args, *req.DurationMonths)
-		argPos++
+		durationExpr := "duration_months"
+		if durationChanged {
+			durationExpr = fmt.Sprintf("$%d", argPos)
+			args = append(args, *req.DurationMonths)
+			argPos++
+		}
+		updates = append(updates, fmt.Sprintf("end_date = %s + (%s * INTERVAL '1 month')", startExpr, durationExpr))
 	}
 
 	if req.MonthlyRent != nil {
