@@ -169,68 +169,53 @@ func (b *receiptBuilder) Header() *receiptBuilder {
 	return b
 }
 
-// BilledToSummary draws the two-column tenant/address block on the left and
-// the status badge/period/payment-method block on the right. Both columns
-// wrap or grow independently; b.y ends up at whichever column ran longer, so
-// a long property/building/unit name can never overlap the summary column
-// (CellFormat neither wraps nor clips — it just draws past its stated width
-// if given text wider than that — which is what caused that overlap before).
+// BilledToSummary draws the tenant, address, and status/period/method as a
+// single top-to-bottom flow (not columns) — each line fully occupies the
+// content width and wraps naturally, so a long property/building/unit name
+// just pushes b.y further down instead of ever being able to collide with
+// anything beside it.
 func (b *receiptBuilder) BilledToSummary() *receiptBuilder {
 	pdf, payment := b.pdf, b.payment
-	y := b.y
 	statusColor := receiptStatusColor(payment.Status)
-
-	leftColW := b.contentW * 0.55
-	summaryX := b.marginL + leftColW
-	summaryColW := b.contentW - leftColW
-	gutter := 8.0
-	leftTextW := leftColW - gutter
 
 	pdf.SetTextColor(receiptMutedText[0], receiptMutedText[1], receiptMutedText[2])
 	pdf.SetFont("Helvetica", "B", 8)
-	pdf.SetXY(b.marginL, y)
-	pdf.CellFormat(leftTextW, 4, "BILLED TO", "", 0, "L", false, 0, "")
-	pdf.SetXY(summaryX, y)
-	pdf.CellFormat(summaryColW, 4, "SUMMARY", "", 1, "L", false, 0, "")
+	pdf.SetXY(b.marginL, b.y)
+	pdf.CellFormat(b.contentW, 4, "BILLED TO", "", 1, "L", false, 0, "")
+	b.y += 6
 
 	pdf.SetTextColor(receiptDarkText[0], receiptDarkText[1], receiptDarkText[2])
-	pdf.SetFont("Helvetica", "B", 13)
-	pdf.SetXY(b.marginL, y+6)
-	pdf.CellFormat(leftTextW, 7, payment.TenantName, "", 0, "L", false, 0, "")
+	pdf.SetFont("Helvetica", "B", 14)
+	pdf.SetXY(b.marginL, b.y)
+	pdf.CellFormat(b.contentW, 7, payment.TenantName, "", 1, "L", false, 0, "")
+	b.y = pdf.GetY() + 1
+
+	pdf.SetTextColor(receiptMutedText[0], receiptMutedText[1], receiptMutedText[2])
+	pdf.SetFont("Helvetica", "", 10)
+	pdf.SetXY(b.marginL, b.y)
+	pdf.MultiCell(b.contentW, 5, fmt.Sprintf("%s, %s (%s), Unit %s", payment.PropertyName, payment.BuildingName, payment.BuildingCode, payment.UnitNumber), "", "L", false)
+	b.y = pdf.GetY() + 6
 
 	badgeW, badgeH := 26.0, 7.0
 	pdf.SetFillColor(statusColor[0], statusColor[1], statusColor[2])
-	pdf.RoundedRect(summaryX, y+5, badgeW, badgeH, 1.5, "1234", "F")
+	pdf.RoundedRect(b.marginL, b.y, badgeW, badgeH, 1.5, "1234", "F")
 	pdf.SetTextColor(255, 255, 255)
 	pdf.SetFont("Helvetica", "B", 9)
-	pdf.SetXY(summaryX, y+5)
+	pdf.SetXY(b.marginL, b.y)
 	pdf.CellFormat(badgeW, badgeH, strings.ToUpper(string(payment.Status)), "", 0, "C", false, 0, "")
 
-	pdf.SetTextColor(receiptMutedText[0], receiptMutedText[1], receiptMutedText[2])
-	pdf.SetFont("Helvetica", "", 10)
-	pdf.SetXY(summaryX+badgeW+4, y+5)
-	pdf.CellFormat(summaryColW-badgeW-4, badgeH, fmt.Sprintf("Period %02d/%d", payment.Month, payment.Year), "", 1, "L", false, 0, "")
-
-	rightY := y + 5 + badgeH + 3
+	meta := fmt.Sprintf("Period %02d/%d", payment.Month, payment.Year)
 	if payment.PaymentMethod != "" {
-		pdf.SetTextColor(receiptMutedText[0], receiptMutedText[1], receiptMutedText[2])
-		pdf.SetFont("Helvetica", "", 10)
-		pdf.SetXY(summaryX, rightY)
-		pdf.CellFormat(summaryColW, 6, "Paid via "+payment.PaymentMethod, "", 1, "L", false, 0, "")
-		rightY = pdf.GetY()
+		// A plain ASCII separator, not "·" — the core Helvetica font isn't
+		// UTF-8 aware and renders non-Latin-1 characters as mojibake.
+		meta += "   |   Paid via " + payment.PaymentMethod
 	}
-
 	pdf.SetTextColor(receiptMutedText[0], receiptMutedText[1], receiptMutedText[2])
 	pdf.SetFont("Helvetica", "", 10)
-	pdf.SetXY(b.marginL, y+14)
-	pdf.MultiCell(leftTextW, 5, fmt.Sprintf("%s, %s (%s), Unit %s", payment.PropertyName, payment.BuildingName, payment.BuildingCode, payment.UnitNumber), "", "L", false)
-	leftY := pdf.GetY()
+	pdf.SetXY(b.marginL+badgeW+4, b.y)
+	pdf.CellFormat(b.contentW-badgeW-4, badgeH, meta, "", 1, "L", false, 0, "")
 
-	b.y = leftY
-	if rightY > b.y {
-		b.y = rightY
-	}
-	b.y += 6
+	b.y += badgeH + 6
 	return b
 }
 
