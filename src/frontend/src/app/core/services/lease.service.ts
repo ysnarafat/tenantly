@@ -176,6 +176,9 @@ export interface RenewLeaseRequest {
   monthly_rent?: number;
   security_deposit?: number;
   lease_type?: LeaseType;
+  // Defaults to true server-side (nil) — the new lease inherits the old
+  // lease's active recurring charges unless explicitly opted out.
+  carry_forward_charges?: boolean;
 }
 
 @Injectable({

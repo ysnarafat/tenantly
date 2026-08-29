@@ -249,6 +249,14 @@
                       <span>{{ 'COMMON.BUTTONS.EDIT' | translate }}</span>
                     </button>
                     <button
+                      *ngIf="canEdit() && lease.active"
+                      mat-menu-item
+                      (click)="renewLease(lease)"
+                    >
+                      <mat-icon>event_repeat</mat-icon>
+                      <span>Renew</span>
+                    </button>
+                    <button
                       *ngIf="canDelete()"
                       mat-menu-item
                       (click)="deleteLease(lease)"
@@ -321,6 +329,10 @@
                     <button mat-stroked-button (click)="editLease(lease)">
                       <mat-icon>edit</mat-icon>
                       {{ 'LEASE_LIST.BUTTONS.EDIT_LEASE' | translate }}
+                    </button>
+                    <button *ngIf="lease.active" mat-stroked-button (click)="renewLease(lease)">
+                      <mat-icon>event_repeat</mat-icon>
+                      Renew
                     </button>
                   </div>
                 </div>

@@ -21,6 +21,7 @@ import { LeaseService, LeaseWithDetails } from '../../../core/services/lease.ser
 import { AuthService } from '../../../core/services/auth.service';
 import { CreateLeaseDialog } from '../create-lease-dialog/create-lease-dialog';
 import { EditLeaseDialog } from '../edit-lease-dialog/edit-lease-dialog';
+import { RenewLeaseDialog } from '../renew-lease-dialog/renew-lease-dialog';
 import { LoadingSpinner } from '../../../shared/components/loading-spinner/loading-spinner';
 import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm-delete-dialog/confirm-delete-dialog';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
@@ -247,6 +248,16 @@ export class LeaseList implements OnInit {
 
   editLease(lease: LeaseWithDetails): void {
     const dialogRef = this.dialog.open(EditLeaseDialog, {
+      width: '520px',
+      data: { lease },
+    });
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) this.loadLeases();
+    });
+  }
+
+  renewLease(lease: LeaseWithDetails): void {
+    const dialogRef = this.dialog.open(RenewLeaseDialog, {
       width: '520px',
       data: { lease },
     });

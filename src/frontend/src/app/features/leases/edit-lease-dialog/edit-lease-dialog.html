@@ -71,10 +71,9 @@
       </mat-select>
     </mat-form-field>
 
-    @if (!isRenewing) {
     <!-- Corrects the lease's own term (e.g. a wrong date entered at creation)
-         — for extending/renewing the lease, use "Renew lease" below instead,
-         which starts a new term rather than editing this one. -->
+         — to extend/renew the lease into a new term instead, use "Renew"
+         from the lease list, which keeps this term's history intact. -->
     <div class="row-fields">
       <mat-form-field appearance="outline">
         <mat-label>Start Date</mat-label>
@@ -93,8 +92,8 @@
       </mat-form-field>
     </div>
     @if (editForm.hasError('endBeforeStart') && editForm.get('end_date')?.touched) {
-    <div class="renew-error">End date must be after the start date</div>
-    } }
+    <div class="field-error">End date must be after the start date</div>
+    }
 
     <div class="row-fields">
       <mat-form-field appearance="outline">
@@ -114,82 +113,6 @@
       </mat-form-field>
     </div>
 
-    @if (isRenewing) {
-    <div class="renew-hint">
-      <mat-icon>info</mat-icon>
-      These values apply to the new, renewed lease term below — the current lease keeps its original
-      terms in history.
-    </div>
-    }
-
-    <!-- ── Renew Lease Section ─────────────────────────────────────────────── -->
-    <div class="section-divider"></div>
-
-    <div class="toggle-row">
-      <mat-slide-toggle formControlName="renew_lease" color="accent">
-        <mat-icon class="toggle-icon">event_repeat</mat-icon>
-        Renew lease
-      </mat-slide-toggle>
-    </div>
-
-    @if (isRenewing) {
-    <div class="renew-section" formGroupName="renewal">
-      <div class="renew-fields">
-        <mat-form-field appearance="outline">
-          <mat-label>Years</mat-label>
-          <mat-icon matPrefix>calendar_today</mat-icon>
-          <input
-            matInput
-            type="number"
-            formControlName="renew_years"
-            min="0"
-            max="50"
-            placeholder="0"
-          />
-          <mat-hint>0 – 50</mat-hint>
-          <mat-error
-            *ngIf="editForm.get('renewal.renew_years')?.hasError('min') || editForm.get('renewal.renew_years')?.hasError('max')"
-          >
-            0 – 50
-          </mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Months</mat-label>
-          <mat-icon matPrefix>calendar_month</mat-icon>
-          <input
-            matInput
-            type="number"
-            formControlName="renew_months"
-            min="0"
-            max="11"
-            placeholder="0"
-          />
-          <mat-hint>0 – 11</mat-hint>
-          <mat-error
-            *ngIf="editForm.get('renewal.renew_months')?.hasError('min') || editForm.get('renewal.renew_months')?.hasError('max')"
-          >
-            0 – 11
-          </mat-error>
-        </mat-form-field>
-      </div>
-
-      <div class="renew-error" *ngIf="renewalInvalid">
-        Enter at least 1 month or 1 year to renew for
-      </div>
-
-      @if (renewedEndDate) {
-      <div class="renew-preview">
-        <mat-icon>arrow_forward</mat-icon>
-        <div class="preview-body">
-          <span class="preview-label">New lease runs until</span>
-          <span class="preview-date">{{ formatDate(renewedEndDate) }}</span>
-          <span class="preview-total">New term: {{ renewDurationMonths }} months</span>
-        </div>
-      </div>
-      }
-    </div>
-    } @if (!isRenewing) {
     <!-- ── Recurring Charges Section ─────────────────────────────────────── -->
     <div class="section-divider"></div>
     <h3 class="section-title">{{ 'LEASE_CHARGES.SECTION_TITLE' | translate }}</h3>
@@ -205,7 +128,8 @@
     <app-lease-custom-fields-editor
       [(customFields)]="customFields"
     ></app-lease-custom-fields-editor>
-    } @if (lease.active && !isRenewing) {
+
+    @if (lease.active) {
     <div class="section-divider"></div>
     <button type="button" class="end-tenancy-link" (click)="startEndingTenancy()">
       <mat-icon>logout</mat-icon>
@@ -251,8 +175,8 @@
       diameter="18"
       style="display: inline-block; margin-right: 8px"
     ></mat-spinner>
-    {{ submitLoading ? ('EDIT_LEASE_DIALOG.BUTTONS.SAVING' | translate) : (isRenewing ? 'Renew
-    Lease' : ('EDIT_LEASE_DIALOG.BUTTONS.SAVE' | translate)) }}
+    {{ submitLoading ? ('EDIT_LEASE_DIALOG.BUTTONS.SAVING' | translate) :
+    ('EDIT_LEASE_DIALOG.BUTTONS.SAVE' | translate) }}
   </button>
   }
 </mat-dialog-actions>
