@@ -475,6 +475,45 @@ func (suite *LeaseIntegrationTestSuite) TestUpdateLease_StartDateOnlyRecalculate
 		"end_date must be recalculated from the corrected start_date + existing duration_months")
 }
 
+// TestUpdateLease_ExplicitEndDateOverridesDuration covers correcting a lease
+// onto an exact end date that doesn't land on a whole-month boundary —
+// duration_months (an integer column) can never express that precisely, so
+// an explicit end_date must win outright rather than being derived from it.
+func (suite *LeaseIntegrationTestSuite) TestUpdateLease_ExplicitEndDateOverridesDuration() {
+	lease := suite.createTestLease() // start_date: today, duration_months: 12
+
+	// 45 days out — not a whole number of months from start_date.
+	correctedEnd := time.Now().AddDate(0, 0, 45).Format("2006-01-02")
+	updateReq := map[string]interface{}{
+		"end_date": correctedEnd,
+	}
+
+	w := suite.makeAuthenticatedRequest("PUT", fmt.Sprintf("/api/v1/leases/%d", lease.ID), updateReq)
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	updatedLease, err := suite.leaseRepo.GetByID(lease.ID)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), correctedEnd, updatedLease.EndDate.Format("2006-01-02"),
+		"end_date must be set exactly as requested, not rounded onto a whole-month boundary")
+	// duration_months is derived only for display — 45 days rounds to 1 month
+	// (30.44-day average), not the original 12.
+	assert.Equal(suite.T(), 1, updatedLease.DurationMonths)
+}
+
+// TestUpdateLease_EndDateBeforeStartDateRejected covers the validation
+// guarding against an obviously-inverted correction.
+func (suite *LeaseIntegrationTestSuite) TestUpdateLease_EndDateBeforeStartDateRejected() {
+	lease := suite.createTestLease()
+
+	pastEnd := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
+	updateReq := map[string]interface{}{
+		"end_date": pastEnd,
+	}
+
+	w := suite.makeAuthenticatedRequest("PUT", fmt.Sprintf("/api/v1/leases/%d", lease.ID), updateReq)
+	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
+}
+
 func (suite *LeaseIntegrationTestSuite) TestDeleteLease_Success() {
 	// Create a lease with future start date
 	futureStartDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")

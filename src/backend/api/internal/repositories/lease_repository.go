@@ -461,18 +461,26 @@ func (r *LeaseRepository) Update(id int, req *models.UpdateLeaseRequest) (*model
 		argPos++
 	}
 
-	// end_date must be recalculated whenever EITHER start_date or
-	// duration_months changes — not just when both change together.
-	// Previously this only fired inside the DurationMonths branch, so
-	// correcting just the start_date (e.g. fixing a data-entry mistake)
-	// silently left end_date stale/inconsistent with the new start_date.
-	//
-	// Each value gets its own fresh placeholder here rather than reusing the
-	// one bound above (even though it's the same value) — Postgres infers a
-	// single type per placeholder across the whole query, and reusing $N for
-	// both an `integer` column assignment and an `integer * INTERVAL`
-	// expression trips "inconsistent types deduced" (42P08).
-	if startDateChanged || durationChanged {
+	if req.EndDate != nil {
+		// An explicit end_date always wins — it's the one way to correct a
+		// lease onto a date that isn't a whole-month offset from start_date,
+		// which duration_months (an integer column) can never exactly express.
+		updates = append(updates, fmt.Sprintf("end_date = $%d::date", argPos))
+		args = append(args, *req.EndDate)
+		argPos++
+	} else if startDateChanged || durationChanged {
+		// Otherwise end_date must be recalculated whenever EITHER start_date
+		// or duration_months changes — not just when both change together.
+		// Previously this only fired inside the DurationMonths branch, so
+		// correcting just the start_date (e.g. fixing a data-entry mistake)
+		// silently left end_date stale/inconsistent with the new start_date.
+		//
+		// Each value gets its own fresh placeholder here rather than reusing
+		// the one bound above (even though it's the same value) — Postgres
+		// infers a single type per placeholder across the whole query, and
+		// reusing $N for both an `integer` column assignment and an
+		// `integer * INTERVAL` expression trips "inconsistent types deduced"
+		// (42P08).
 		startExpr := "start_date"
 		if startDateChanged {
 			startExpr = fmt.Sprintf("$%d::date", argPos)

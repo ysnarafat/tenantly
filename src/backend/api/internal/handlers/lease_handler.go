@@ -96,6 +96,10 @@ func (h *LeaseHandler) UpdateLease(c *gin.Context) {
 
 	lease, err := h.leaseService.UpdateLease(id, &req, userID, orgID)
 	if err != nil {
+		if err.Error() == "end date must be after start date" {
+			respondError(c, http.StatusBadRequest, "UPDATE_LEASE_INVALID_DATES", err.Error(), err)
+			return
+		}
 		respondError(c, http.StatusBadRequest, "UPDATE_LEASE_FAILED", "Failed to update lease", err)
 		return
 	}

@@ -227,6 +227,37 @@ func (s *LeaseService) UpdateLease(id int, req *models.UpdateLeaseRequest, userI
 	// Store old values for audit
 	oldLease := *existingLease
 
+	if req.EndDate != nil {
+		effectiveStart := existingLease.StartDate
+		if req.StartDate != nil {
+			parsed, err := time.Parse("2006-01-02", *req.StartDate)
+			if err != nil {
+				return nil, fmt.Errorf("invalid start_date format (expected YYYY-MM-DD): %w", err)
+			}
+			effectiveStart = parsed
+		}
+		endDate, err := time.Parse("2006-01-02", *req.EndDate)
+		if err != nil {
+			return nil, fmt.Errorf("invalid end_date format (expected YYYY-MM-DD): %w", err)
+		}
+		if !endDate.After(effectiveStart) {
+			return nil, fmt.Errorf("end date must be after start date")
+		}
+
+		// duration_months isn't billing-relevant (nothing derives payment
+		// periods from it) — it's purely a display/renewal-default value, so
+		// deriving it here keeps it roughly in sync with the real date range
+		// without forcing that range onto a whole-month boundary the way
+		// setting duration_months directly would.
+		if req.DurationMonths == nil {
+			months := int(endDate.Sub(effectiveStart).Hours() / 24 / 30.44)
+			if months < 1 {
+				months = 1
+			}
+			req.DurationMonths = &months
+		}
+	}
+
 	// Update lease
 	updatedLease, err := s.leaseRepo.Update(id, req)
 	if err != nil {

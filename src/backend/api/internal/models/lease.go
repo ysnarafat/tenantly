@@ -80,9 +80,14 @@ type CreateLeaseRequest struct {
 }
 
 type UpdateLeaseRequest struct {
-	LeaseType       *LeaseType         `json:"lease_type" binding:"omitempty,oneof=Residential Commercial"`
-	StartDate       *string            `json:"start_date" binding:"omitempty"`
-	DurationMonths  *int               `json:"duration_months" binding:"omitempty,min=1"`
+	LeaseType      *LeaseType `json:"lease_type" binding:"omitempty,oneof=Residential Commercial"`
+	StartDate      *string    `json:"start_date" binding:"omitempty"`
+	DurationMonths *int       `json:"duration_months" binding:"omitempty,min=1"`
+	// EndDate directly overrides the lease's end date — set independently of
+	// DurationMonths so a correction isn't forced onto a whole-month
+	// boundary. When provided, duration_months (if not itself also given) is
+	// derived from it for display purposes only; it is not billing-relevant.
+	EndDate         *string            `json:"end_date" binding:"omitempty"`
 	MonthlyRent     *float64           `json:"monthly_rent" binding:"omitempty,gt=0"`
 	SecurityDeposit *float64           `json:"security_deposit" binding:"omitempty,gte=0"`
 	Active          *bool              `json:"active"`
