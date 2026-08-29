@@ -2,13 +2,28 @@ package repositories
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/ysnarafat/tenantly/internal/models"
 )
+
+// isUniqueViolation reports whether err is a Postgres unique-constraint
+// violation (SQLSTATE 23505) — used to translate the idx_leases_unit_active_unique
+// index's rejection into the same friendly error LeaseService.CreateLease's
+// own (non-atomic, TOCTOU-able) HasActiveLeaseOnUnit check normally produces,
+// for the rare case where a concurrent request wins that race.
+func isUniqueViolation(err error) bool {
+	var pqErr *pq.Error
+	if errors.As(err, &pqErr) {
+		return pqErr.Code == "23505"
+	}
+	return false
+}
 
 // LeaseRepository handles lease data operations
 type LeaseRepository struct {
@@ -75,6 +90,9 @@ func (r *LeaseRepository) Create(req *models.CreateLeaseRequest) (*models.Lease,
 	).Scan(&lease.ID, &lease.CreatedAt, &lease.UpdatedAt)
 
 	if err != nil {
+		if isUniqueViolation(err) {
+			return nil, fmt.Errorf("unit already has an active lease")
+		}
 		return nil, fmt.Errorf("failed to create lease: %w", err)
 	}
 

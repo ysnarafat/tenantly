@@ -60,6 +60,49 @@ func TestLeaseRepository_Create(t *testing.T) {
 	}
 }
 
+// TestLeaseRepository_Create_RejectsSecondActiveLeaseOnUnit exercises the
+// idx_leases_unit_active_unique DB constraint directly at the repository
+// layer (bypassing LeaseService.CreateLease's own HasActiveLeaseOnUnit
+// pre-check entirely) — proving the guard holds even if two requests raced
+// past that non-atomic check, not just when going through the service.
+func TestLeaseRepository_Create_RejectsSecondActiveLeaseOnUnit(t *testing.T) {
+	repo, cleanup := setupTestLeaseRepository(t)
+	defer cleanup()
+
+	orgID := testutil.CreateTestOrganization(t, repo.db)
+	propertyID := testutil.CreateTestProperty(t, repo.db)
+	buildingID := testutil.CreateTestBuilding(t, repo.db, propertyID, orgID)
+	unitID := testutil.CreateTestUnit(t, repo.db, buildingID, orgID)
+	tenantA := testutil.CreateTestTenant(t, repo.db, orgID)
+	tenantB := testutil.CreateTestTenant(t, repo.db, orgID)
+
+	endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
+	baseReq := func(tenantID int) *models.CreateLeaseRequest {
+		return &models.CreateLeaseRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			LeaseType:      models.LeaseTypeResidential,
+			StartDate:      time.Now().Format("2006-01-02"),
+			EndDate:        &endDate,
+			DurationMonths: 12,
+			MonthlyRent:    15000,
+			OrganizationID: orgID,
+		}
+	}
+
+	if _, err := repo.Create(baseReq(tenantA)); err != nil {
+		t.Fatalf("failed to create first lease: %v", err)
+	}
+
+	_, err := repo.Create(baseReq(tenantB))
+	if err == nil {
+		t.Fatal("expected an error creating a second active lease on the same unit, got nil")
+	}
+	if err.Error() != "unit already has an active lease" {
+		t.Errorf("error got %q, want %q", err.Error(), "unit already has an active lease")
+	}
+}
+
 func TestLeaseRepository_GetByID(t *testing.T) {
 	repo, cleanup := setupTestLeaseRepository(t)
 	defer cleanup()

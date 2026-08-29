@@ -404,9 +404,32 @@ func (suite *LeaseIntegrationTestSuite) TestGetLeaseByID_NotFound() {
 }
 
 func (suite *LeaseIntegrationTestSuite) TestGetAllLeases_Success() {
-	// Create multiple leases
+	// Create multiple leases — each on its own unit, since a unit can only
+	// ever carry one active lease at a time (idx_leases_unit_active_unique).
+	startDate := time.Now().Format("2006-01-02")
+	endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
 	for i := 0; i < 3; i++ {
-		suite.createTestLease()
+		unit, err := suite.unitRepo.Create(&models.CreateUnitRequest{
+			BuildingID: suite.testBuilding.ID,
+			PropertyID: suite.testProperty.ID,
+			UnitNumber: fmt.Sprintf("GAL-%d", i),
+			UnitType:   models.UnitTypeApartment,
+			Floor:      1,
+		}, suite.testOrg.ID)
+		require.NoError(suite.T(), err)
+
+		_, err = suite.leaseRepo.Create(&models.CreateLeaseRequest{
+			UnitID:          unit.ID,
+			TenantID:        suite.testTenant.ID,
+			LeaseType:       models.LeaseTypeResidential,
+			StartDate:       startDate,
+			EndDate:         &endDate,
+			DurationMonths:  12,
+			MonthlyRent:     15000,
+			SecurityDeposit: 30000,
+			OrganizationID:  suite.testOrg.ID,
+		})
+		require.NoError(suite.T(), err)
 	}
 
 	w := suite.makeAuthenticatedRequest("GET", "/api/v1/leases?page=1&page_size=10", nil)
