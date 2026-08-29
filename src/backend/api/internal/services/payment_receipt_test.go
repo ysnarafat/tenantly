@@ -7,6 +7,27 @@ import (
 	"github.com/ysnarafat/tenantly/internal/models"
 )
 
+func TestFormatBDT(t *testing.T) {
+	tests := []struct {
+		amount float64
+		want   string
+	}{
+		{0, "BDT 0.00"},
+		{5, "BDT 5.00"},
+		{999, "BDT 999.00"},
+		{1000, "BDT 1,000.00"},
+		{12500, "BDT 12,500.00"},
+		{100000, "BDT 1,00,000.00"},      // 1 lakh
+		{1234567.89, "BDT 12,34,567.89"}, // 12 lakh 34 thousand 567
+		{-500, "-BDT 500.00"},
+	}
+	for _, tt := range tests {
+		if got := formatBDT(tt.amount); got != tt.want {
+			t.Errorf("formatBDT(%v) = %q, want %q", tt.amount, got, tt.want)
+		}
+	}
+}
+
 func TestGenerateReceiptPDF_ProducesValidPDF(t *testing.T) {
 	svc, payRepo, unitRepo, bldgRepo, propRepo, _ := newPaymentServiceWithMocks()
 

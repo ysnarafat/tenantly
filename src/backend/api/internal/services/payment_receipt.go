@@ -3,6 +3,7 @@ package services
 import (
 	"bytes"
 	"fmt"
+	"strings"
 
 	"github.com/go-pdf/fpdf"
 	"github.com/ysnarafat/tenantly/internal/models"
@@ -12,11 +13,13 @@ import (
 // (--color-primary, --color-paid, --color-due, --color-pending,
 // --color-overdue in payment-list.scss) so the receipt matches the app.
 var (
-	receiptBrandColor  = [3]int{30, 136, 229}  // #1E88E5
-	receiptDarkText    = [3]int{26, 26, 26}    // #1a1a1a
-	receiptMutedText   = [3]int{102, 102, 102} // #666666
-	receiptZebraFill   = [3]int{245, 247, 250} // light gray-blue
-	receiptBorderColor = [3]int{224, 224, 224} // #e0e0e0
+	receiptBrandColor    = [3]int{30, 136, 229}  // #1E88E5
+	receiptBrandTintText = [3]int{214, 234, 253} // header subtitle — brand color at low contrast against white
+	receiptDarkText      = [3]int{26, 26, 26}    // #1a1a1a
+	receiptMutedText     = [3]int{102, 102, 102} // #666666
+	receiptZebraFill     = [3]int{245, 247, 250} // light gray-blue
+	receiptBorderColor   = [3]int{224, 224, 224} // #e0e0e0
+	receiptBalanceColor  = [3]int{244, 67, 54}   // #f44336 — any unpaid balance, regardless of status
 )
 
 func receiptStatusColor(status models.PaymentStatus) [3]int {
@@ -30,6 +33,39 @@ func receiptStatusColor(status models.PaymentStatus) [3]int {
 	default: // Due
 		return [3]int{144, 164, 174} // #90a4ae
 	}
+}
+
+// formatBDT renders an amount using Bangladeshi digit grouping (lakh/crore —
+// e.g. 1,234,567.89 is written 12,34,567.89), matching how tenants actually
+// read currency amounts rather than the international 3-digit grouping.
+func formatBDT(amount float64) string {
+	neg := amount < 0
+	if neg {
+		amount = -amount
+	}
+
+	whole := fmt.Sprintf("%.2f", amount)
+	intPart, decPart, _ := strings.Cut(whole, ".")
+
+	grouped := intPart
+	if len(intPart) > 3 {
+		head, tail := intPart[:len(intPart)-3], intPart[len(intPart)-3:]
+		var segments []string
+		for len(head) > 2 {
+			segments = append([]string{head[len(head)-2:]}, segments...)
+			head = head[:len(head)-2]
+		}
+		if head != "" {
+			segments = append([]string{head}, segments...)
+		}
+		grouped = strings.Join(append(segments, tail), ",")
+	}
+
+	result := "BDT " + grouped + "." + decPart
+	if neg {
+		result = "-" + result
+	}
+	return result
 }
 
 // GenerateReceiptPDF renders a one-page payment receipt as PDF bytes for a
@@ -54,112 +90,144 @@ func renderReceiptPDF(payment *models.PaymentWithDetails) ([]byte, error) {
 	marginL, _, marginR, _ := pdf.GetMargins()
 	contentW := pageW - marginL - marginR
 
+	statusColor := receiptStatusColor(payment.Status)
+
 	// ── Header band ──────────────────────────────────────────────────────
-	headerH := 32.0
+	headerH := 36.0
 	pdf.SetFillColor(receiptBrandColor[0], receiptBrandColor[1], receiptBrandColor[2])
 	pdf.Rect(0, 0, pageW, headerH, "F")
 
 	pdf.SetTextColor(255, 255, 255)
-	pdf.SetXY(marginL, 8)
-	pdf.SetFont("Helvetica", "B", 20)
-	pdf.CellFormat(contentW, 10, "Tenantly", "", 1, "L", false, 0, "")
+	pdf.SetXY(marginL, 10)
+	pdf.SetFont("Helvetica", "B", 22)
+	pdf.CellFormat(contentW/2, 9, "Tenantly", "", 1, "L", false, 0, "")
 
-	pdf.SetXY(marginL, 18)
-	pdf.SetFont("Helvetica", "", 12)
-	pdf.CellFormat(contentW, 7, "Payment Receipt", "", 1, "L", false, 0, "")
+	pdf.SetTextColor(receiptBrandTintText[0], receiptBrandTintText[1], receiptBrandTintText[2])
+	pdf.SetXY(marginL, 21)
+	pdf.SetFont("Helvetica", "", 11)
+	pdf.CellFormat(contentW/2, 6, "Payment Receipt", "", 1, "L", false, 0, "")
 
-	pdf.SetFont("Helvetica", "B", 11)
-	pdf.SetXY(marginL, 8)
-	pdf.CellFormat(contentW, 6, payment.ReceiptNumber, "", 1, "R", false, 0, "")
-	if payment.PaymentDate != nil {
-		pdf.SetFont("Helvetica", "", 9)
-		pdf.SetXY(marginL, 15)
-		pdf.CellFormat(contentW, 6, payment.PaymentDate.Format("02 Jan 2006"), "", 1, "R", false, 0, "")
-	}
+	rightColW := 75.0
+	rightX := pageW - marginR - rightColW
+	pdf.SetTextColor(receiptBrandTintText[0], receiptBrandTintText[1], receiptBrandTintText[2])
+	pdf.SetFont("Helvetica", "", 9)
+	pdf.SetXY(rightX, 10)
+	pdf.CellFormat(rightColW, 5, "RECEIPT NO.", "", 1, "R", false, 0, "")
 
-	y := headerH + 8
-
-	// ── Status badge ─────────────────────────────────────────────────────
-	statusColor := receiptStatusColor(payment.Status)
-	pdf.SetFillColor(statusColor[0], statusColor[1], statusColor[2])
-	badgeW := 32.0
-	pdf.RoundedRect(marginL, y, badgeW, 9, 2, "1234", "F")
 	pdf.SetTextColor(255, 255, 255)
-	pdf.SetFont("Helvetica", "B", 10)
+	pdf.SetFont("Helvetica", "B", 13)
+	pdf.SetXY(rightX, 15)
+	pdf.CellFormat(rightColW, 7, payment.ReceiptNumber, "", 1, "R", false, 0, "")
+
+	dateStr := payment.CreatedAt.Format("02 Jan 2006")
+	if payment.PaymentDate != nil {
+		dateStr = payment.PaymentDate.Format("02 Jan 2006")
+	}
+	pdf.SetTextColor(receiptBrandTintText[0], receiptBrandTintText[1], receiptBrandTintText[2])
+	pdf.SetFont("Helvetica", "", 9)
+	pdf.SetXY(rightX, 24)
+	pdf.CellFormat(rightColW, 5, dateStr, "", 1, "R", false, 0, "")
+
+	// ── Billed To / Summary ──────────────────────────────────────────────
+	y := headerH + 10
+	leftColW := contentW * 0.55
+	rightSummaryX := marginL + leftColW
+
+	pdf.SetTextColor(receiptMutedText[0], receiptMutedText[1], receiptMutedText[2])
+	pdf.SetFont("Helvetica", "B", 8)
 	pdf.SetXY(marginL, y)
-	pdf.CellFormat(badgeW, 9, string(payment.Status), "", 0, "C", false, 0, "")
+	pdf.CellFormat(leftColW, 4, "BILLED TO", "", 0, "L", false, 0, "")
+	pdf.SetXY(rightSummaryX, y)
+	pdf.CellFormat(contentW-leftColW, 4, "SUMMARY", "", 1, "L", false, 0, "")
+
+	pdf.SetTextColor(receiptDarkText[0], receiptDarkText[1], receiptDarkText[2])
+	pdf.SetFont("Helvetica", "B", 13)
+	pdf.SetXY(marginL, y+6)
+	pdf.CellFormat(leftColW, 7, payment.TenantName, "", 0, "L", false, 0, "")
+
+	badgeW, badgeH := 26.0, 7.0
+	pdf.SetFillColor(statusColor[0], statusColor[1], statusColor[2])
+	pdf.RoundedRect(rightSummaryX, y+5, badgeW, badgeH, 1.5, "1234", "F")
+	pdf.SetTextColor(255, 255, 255)
+	pdf.SetFont("Helvetica", "B", 9)
+	pdf.SetXY(rightSummaryX, y+5)
+	pdf.CellFormat(badgeW, badgeH, strings.ToUpper(string(payment.Status)), "", 0, "C", false, 0, "")
 
 	pdf.SetTextColor(receiptMutedText[0], receiptMutedText[1], receiptMutedText[2])
 	pdf.SetFont("Helvetica", "", 10)
-	pdf.SetXY(marginL+badgeW+4, y)
-	pdf.CellFormat(contentW-badgeW-4, 9, fmt.Sprintf("Period: %02d/%d", payment.Month, payment.Year), "", 1, "L", false, 0, "")
+	pdf.SetXY(rightSummaryX+badgeW+4, y+5)
+	pdf.CellFormat(contentW-leftColW-badgeW-4, badgeH, fmt.Sprintf("Period %02d/%d", payment.Month, payment.Year), "", 1, "L", false, 0, "")
 
-	y += 16
+	pdf.SetTextColor(receiptMutedText[0], receiptMutedText[1], receiptMutedText[2])
+	pdf.SetFont("Helvetica", "", 10)
+	pdf.SetXY(marginL, y+14)
+	pdf.CellFormat(leftColW, 6, fmt.Sprintf("%s, %s (%s), Unit %s", payment.PropertyName, payment.BuildingName, payment.BuildingCode, payment.UnitNumber), "", 0, "L", false, 0, "")
 
-	// ── Details table ────────────────────────────────────────────────────
-	rows := [][2]string{
-		{"Tenant", payment.TenantName},
-		{"Property", payment.PropertyName},
-		{"Building", fmt.Sprintf("%s (%s)", payment.BuildingName, payment.BuildingCode)},
-		{"Unit", payment.UnitNumber},
-		{"Payment Method", payment.PaymentMethod},
+	if payment.PaymentMethod != "" {
+		pdf.SetXY(rightSummaryX, y+16)
+		pdf.CellFormat(contentW-leftColW, 6, "Paid via "+payment.PaymentMethod, "", 0, "L", false, 0, "")
 	}
 
-	rowH := 9.0
+	y += 28
+
+	// ── Divider ──────────────────────────────────────────────────────────
 	pdf.SetDrawColor(receiptBorderColor[0], receiptBorderColor[1], receiptBorderColor[2])
 	pdf.SetLineWidth(0.2)
-	labelW := 50.0
+	pdf.Line(marginL, y, pageW-marginR, y)
+	y += 6
 
-	for i, row := range rows {
-		fill := i%2 == 0
-		if fill {
-			pdf.SetFillColor(receiptZebraFill[0], receiptZebraFill[1], receiptZebraFill[2])
+	// ── Itemized summary table ───────────────────────────────────────────
+	amountColW := 45.0
+	descColW := contentW - amountColW
+	rowH := 9.0
+
+	pdf.SetFillColor(receiptZebraFill[0], receiptZebraFill[1], receiptZebraFill[2])
+	pdf.Rect(marginL, y, contentW, rowH, "F")
+	pdf.SetTextColor(receiptMutedText[0], receiptMutedText[1], receiptMutedText[2])
+	pdf.SetFont("Helvetica", "B", 9)
+	pdf.SetXY(marginL+3, y)
+	pdf.CellFormat(descColW-3, rowH, "DESCRIPTION", "", 0, "L", false, 0, "")
+	pdf.SetXY(marginL+descColW, y)
+	pdf.CellFormat(amountColW-3, rowH, "AMOUNT", "", 0, "R", false, 0, "")
+	y += rowH
+
+	drawRow := func(label string, amount float64, bold bool, color [3]int) {
+		pdf.SetXY(marginL+3, y)
+		if bold {
+			pdf.SetFont("Helvetica", "B", 10)
+		} else {
+			pdf.SetFont("Helvetica", "", 10)
 		}
-		pdf.SetXY(marginL, y)
-		pdf.SetFont("Helvetica", "B", 10)
-		pdf.SetTextColor(receiptMutedText[0], receiptMutedText[1], receiptMutedText[2])
-		pdf.CellFormat(labelW, rowH, row[0], "1", 0, "L", fill, 0, "")
-		pdf.SetFont("Helvetica", "", 10)
 		pdf.SetTextColor(receiptDarkText[0], receiptDarkText[1], receiptDarkText[2])
-		pdf.CellFormat(contentW-labelW, rowH, row[1], "1", 1, "L", fill, 0, "")
+		pdf.CellFormat(descColW-3, rowH, label, "", 0, "L", false, 0, "")
+		pdf.SetXY(marginL+descColW, y)
+		pdf.SetTextColor(color[0], color[1], color[2])
+		pdf.CellFormat(amountColW-3, rowH, formatBDT(amount), "", 0, "R", false, 0, "")
 		y += rowH
+		pdf.SetDrawColor(receiptBorderColor[0], receiptBorderColor[1], receiptBorderColor[2])
+		pdf.Line(marginL, y, pageW-marginR, y)
 	}
 
-	// ── Amount summary ───────────────────────────────────────────────────
-	y += 6
-	summaryH := 16.0
-	pdf.SetFillColor(receiptZebraFill[0], receiptZebraFill[1], receiptZebraFill[2])
-	pdf.RoundedRect(marginL, y, contentW, summaryH, 2, "1234", "F")
+	drawRow(fmt.Sprintf("Rent & charges due for %02d/%d", payment.Month, payment.Year), payment.AmountDue, false, receiptDarkText)
+	drawRow("Amount Paid", payment.AmountPaid, true, statusColor)
 
-	colW := contentW / 2
-	pdf.SetFont("Helvetica", "", 9)
-	pdf.SetTextColor(receiptMutedText[0], receiptMutedText[1], receiptMutedText[2])
-	pdf.SetXY(marginL+6, y+3)
-	pdf.CellFormat(colW-6, 5, "AMOUNT DUE", "", 0, "L", false, 0, "")
-	pdf.SetXY(marginL+colW, y+3)
-	pdf.CellFormat(colW-6, 5, "AMOUNT PAID", "", 0, "L", false, 0, "")
+	balance := payment.AmountDue - payment.AmountPaid
+	if balance > 0.005 {
+		drawRow("Balance Due", balance, true, receiptBalanceColor)
+	}
 
-	pdf.SetFont("Helvetica", "B", 15)
-	pdf.SetTextColor(receiptDarkText[0], receiptDarkText[1], receiptDarkText[2])
-	pdf.SetXY(marginL+6, y+8)
-	pdf.CellFormat(colW-6, 7, fmt.Sprintf("BDT %.2f", payment.AmountDue), "", 0, "L", false, 0, "")
+	y += 8
 
-	paidColor := receiptStatusColor(models.PaymentStatusPaid)
-	pdf.SetTextColor(paidColor[0], paidColor[1], paidColor[2])
-	pdf.SetXY(marginL+colW, y+8)
-	pdf.CellFormat(colW-6, 7, fmt.Sprintf("BDT %.2f", payment.AmountPaid), "", 0, "L", false, 0, "")
-
-	y += summaryH + 8
-
+	// ── Notes ────────────────────────────────────────────────────────────
 	if payment.Notes != "" {
-		pdf.SetFont("Helvetica", "B", 10)
+		pdf.SetFont("Helvetica", "B", 9)
 		pdf.SetTextColor(receiptMutedText[0], receiptMutedText[1], receiptMutedText[2])
 		pdf.SetXY(marginL, y)
-		pdf.CellFormat(labelW, 7, "Notes", "", 0, "L", false, 0, "")
+		pdf.CellFormat(contentW, 5, "NOTES", "", 1, "L", false, 0, "")
 		pdf.SetFont("Helvetica", "", 10)
 		pdf.SetTextColor(receiptDarkText[0], receiptDarkText[1], receiptDarkText[2])
-		pdf.SetXY(marginL+labelW, y)
-		pdf.MultiCell(contentW-labelW, 7, payment.Notes, "", "L", false)
+		pdf.SetXY(marginL, y+5)
+		pdf.MultiCell(contentW, 6, payment.Notes, "", "L", false)
 		y = pdf.GetY() + 4
 	}
 
