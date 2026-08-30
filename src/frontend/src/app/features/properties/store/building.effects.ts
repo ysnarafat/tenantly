@@ -6,6 +6,7 @@ import { BuildingService } from '../../../core/services/building.service';
 import { BuildingActions } from './building.actions';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Building, BuildingListResponse } from '../../../core/models';
+import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
 
 @Injectable()
 export class BuildingEffects {
@@ -54,11 +55,11 @@ export class BuildingEffects {
       mergeMap(({ request }) =>
         this.buildingService.createBuilding(request).pipe(
           map((building: Building) => {
-            this.snackBar.open('Building created successfully', 'Close', { duration: 3000 });
+            notifySuccess(this.snackBar, 'Building created successfully');
             return BuildingActions.createBuildingSuccess({ building });
           }),
           catchError((error) => {
-            this.snackBar.open('Error creating building', 'Close', { duration: 3000 });
+            notifyError(this.snackBar, 'Error creating building');
             return of(BuildingActions.createBuildingFailure({ error }));
           })
         )
@@ -72,11 +73,11 @@ export class BuildingEffects {
       mergeMap(({ id, request }) =>
         this.buildingService.updateBuilding(id, request).pipe(
           map((building: Building) => {
-            this.snackBar.open('Building updated successfully', 'Close', { duration: 3000 });
+            notifySuccess(this.snackBar, 'Building updated successfully');
             return BuildingActions.updateBuildingSuccess({ building });
           }),
           catchError((error) => {
-            this.snackBar.open('Error updating building', 'Close', { duration: 3000 });
+            notifyError(this.snackBar, 'Error updating building');
             return of(BuildingActions.updateBuildingFailure({ error }));
           })
         )
@@ -90,11 +91,11 @@ export class BuildingEffects {
       mergeMap(({ id }) =>
         this.buildingService.deleteBuilding(id).pipe(
           map(() => {
-            this.snackBar.open('Building deleted successfully', 'Close', { duration: 3000 });
+            notifySuccess(this.snackBar, 'Building deleted successfully');
             return BuildingActions.deleteBuildingSuccess({ id });
           }),
           catchError((error) => {
-            this.snackBar.open('Error deleting building', 'Close', { duration: 3000 });
+            notifyError(this.snackBar, 'Error deleting building');
             return of(BuildingActions.deleteBuildingFailure({ error }));
           })
         )

@@ -1,0 +1,191 @@
+<div class="payment-collect-container">
+  <div class="page-header">
+    <div class="header-left">
+      <h1>{{ 'PAYMENT_COLLECT.PAGE_TITLE' | translate }}</h1>
+      <p class="subtitle">{{ 'PAYMENT_COLLECT.SUBTITLE' | translate }}</p>
+    </div>
+  </div>
+
+  <mat-card class="period-card">
+    <mat-card-content>
+      <div class="period-row">
+        <mat-form-field appearance="outline" class="period-field">
+          <mat-label>{{ 'PAYMENT_COLLECT.MONTH_LABEL' | translate }}</mat-label>
+          <mat-select
+            [value]="month()"
+            (selectionChange)="month.set($event.value); onPeriodChange()"
+          >
+            @for (m of months; track m) {
+            <mat-option [value]="m"
+              >{{ 'PAYMENT_COLLECT.MONTHS.' + monthKeys[m - 1] | translate }}</mat-option
+            >
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="period-field">
+          <mat-label>{{ 'PAYMENT_COLLECT.YEAR_LABEL' | translate }}</mat-label>
+          <mat-select [value]="year()" (selectionChange)="year.set($event.value); onPeriodChange()">
+            @for (y of years; track y) {
+            <mat-option [value]="y">{{ y }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <button mat-button (click)="openGenerateDialog()">
+          <mat-icon>bolt</mat-icon>
+          {{ 'PAYMENT_COLLECT.GENERATE_BUTTON' | translate }}
+        </button>
+
+        @if (rows().length > 0) {
+        <div class="stats-row">
+          <span class="stat-chip pending">
+            {{ pendingCount() }} {{ 'PAYMENT_COLLECT.STATS.PENDING' | translate }}
+          </span>
+          @if (savedCount() > 0) {
+          <span class="stat-chip saved">
+            {{ savedCount() }} {{ 'PAYMENT_COLLECT.STATS.SAVED' | translate }}
+          </span>
+          } @if (failedCount() > 0) {
+          <span class="stat-chip failed">
+            {{ failedCount() }} {{ 'PAYMENT_COLLECT.STATS.FAILED' | translate }}
+          </span>
+          }
+          <span class="stat-chip outstanding">
+            ৳{{ totalOutstanding() | number: '1.0-0' }} {{ 'PAYMENT_COLLECT.STATS.OUTSTANDING' |
+            translate }}
+          </span>
+        </div>
+        }
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  @if (loading()) {
+  <app-loading-spinner [message]="'PAYMENT_COLLECT.LOADING' | translate"></app-loading-spinner>
+  } @if (isEmpty()) {
+  <mat-card class="empty-state">
+    <mat-card-content>
+      <mat-icon>task_alt</mat-icon>
+      <h2>{{ 'PAYMENT_COLLECT.EMPTY_STATE.TITLE' | translate }}</h2>
+      <p>{{ 'PAYMENT_COLLECT.EMPTY_STATE.DESCRIPTION' | translate }}</p>
+      <button mat-flat-button color="primary" (click)="openGenerateDialog()">
+        <mat-icon>bolt</mat-icon>
+        {{ 'PAYMENT_COLLECT.GENERATE_BUTTON' | translate }}
+      </button>
+    </mat-card-content>
+  </mat-card>
+  } @if (!loading() && rows().length > 0) {
+  <mat-card class="collect-table-card">
+    <mat-card-content>
+      <div class="collect-table-wrapper">
+        <table class="collect-table">
+          <thead>
+            <tr>
+              <th>{{ 'PAYMENT_COLLECT.TABLE.TENANT' | translate }}</th>
+              <th>{{ 'PAYMENT_COLLECT.TABLE.UNIT' | translate }}</th>
+              <th class="amount-column">{{ 'PAYMENT_COLLECT.TABLE.AMOUNT_DUE' | translate }}</th>
+              <th class="amount-column">{{ 'PAYMENT_COLLECT.TABLE.AMOUNT_PAID' | translate }}</th>
+              <th>{{ 'PAYMENT_COLLECT.TABLE.METHOD' | translate }}</th>
+              <th>{{ 'PAYMENT_COLLECT.TABLE.DATE' | translate }}</th>
+              <th class="status-column">{{ 'PAYMENT_COLLECT.TABLE.STATUS' | translate }}</th>
+              <th class="skip-column">{{ 'PAYMENT_COLLECT.TABLE.SKIP' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.payment.id) {
+            <tr
+              [class.is-saved]="row.saved"
+              [class.is-skipped]="row.skip"
+              [class.has-error]="!!row.error"
+            >
+              <td>
+                <div class="tenant-cell">
+                  <span class="tenant-name">{{ row.payment.tenant_name }}</span>
+                  <span class="property-name">{{ row.payment.property_name }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="unit-info">
+                  {{ row.payment.unit_number }}
+                  <small>{{ row.payment.building_name }}</small>
+                </span>
+              </td>
+              <td class="amount-column">৳{{ row.payment.amount_due | number: '1.0-0' }}</td>
+              <td class="amount-column">
+                <input
+                  matInput
+                  type="number"
+                  min="0"
+                  [max]="remainingDue(row)"
+                  step="0.01"
+                  class="amount-input"
+                  [ngModel]="row.amountPaid"
+                  (ngModelChange)="onAmountChange(row, $event)"
+                  [disabled]="row.saved || row.skip || row.saving"
+                />
+              </td>
+              <td>
+                <select
+                  class="method-select"
+                  [ngModel]="row.paymentMethod"
+                  (ngModelChange)="row.paymentMethod = $event; touch()"
+                  [disabled]="row.saved || row.skip || row.saving"
+                >
+                  <option value="">{{ 'PAYMENT_COLLECT.METHOD_NONE' | translate }}</option>
+                  @for (pm of paymentMethods; track pm) {
+                  <option [value]="pm">{{ pm }}</option>
+                  }
+                </select>
+              </td>
+              <td>
+                <input
+                  matInput
+                  type="date"
+                  class="date-input"
+                  [ngModel]="row.paymentDate"
+                  (ngModelChange)="row.paymentDate = $event; touch()"
+                  [disabled]="row.saved || row.skip || row.saving"
+                />
+              </td>
+              <td class="status-column">
+                @if (row.saving) {
+                <mat-icon
+                  class="status-icon saving"
+                  [matTooltip]="'PAYMENT_COLLECT.STATUS.SAVING' | translate"
+                  >sync</mat-icon
+                >
+                } @else if (row.saved) {
+                <mat-icon
+                  class="status-icon saved"
+                  [matTooltip]="'PAYMENT_COLLECT.STATUS.SAVED' | translate"
+                  >check_circle</mat-icon
+                >
+                } @else if (row.error) {
+                <mat-icon class="status-icon failed" [matTooltip]="row.error">error</mat-icon>
+                }
+              </td>
+              <td class="skip-column">
+                <mat-checkbox
+                  [checked]="row.skip"
+                  (change)="toggleSkip(row)"
+                  [disabled]="row.saved || row.saving"
+                  [matTooltip]="'PAYMENT_COLLECT.TOOLTIPS.SKIP' | translate"
+                ></mat-checkbox>
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <div class="collect-actions">
+    <button mat-flat-button color="primary" [disabled]="!canSaveAll()" (click)="saveAll()">
+      <mat-icon>save</mat-icon>
+      {{ 'PAYMENT_COLLECT.SAVE_ALL_BUTTON' | translate }} ({{ pendingCount() }})
+    </button>
+  </div>
+  }
+</div>

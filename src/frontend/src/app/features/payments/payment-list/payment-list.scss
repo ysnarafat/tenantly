@@ -228,6 +228,7 @@
 .filter-actions {
   display: flex;
   gap: 8px;
+  margin-left: auto;
   // Compensate for Material outlined form field's subscript wrapper (~20px)
   // so buttons visually align with the bottom of the inputs
   padding-bottom: 20px;
@@ -274,49 +275,8 @@
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Desktop Table
+// Desktop Table (cell styles projected into <app-data-table>'s columns)
 // ──────────────────────────────────────────────────────────────────────────────
-
-.table-wrapper {
-  overflow-x: auto;
-  border-radius: 8px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-
-  @media (max-width: 768px) {
-    display: none;
-  }
-}
-
-.payment-table {
-  width: 100%;
-  border-collapse: collapse;
-
-  th {
-    background: var(--bg-secondary);
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 14px 16px;
-    text-align: left;
-    color: var(--text-muted);
-    border-bottom: 1px solid var(--border-subtle);
-  }
-
-  td {
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border-subtle);
-
-    &:last-child {
-      text-align: right;
-    }
-  }
-
-  tr:hover {
-    background: var(--bg-hover);
-  }
-}
 
 .cell-stack {
   display: flex;
@@ -336,7 +296,7 @@
 
 .amount-cell {
   text-align: right;
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'IBM Plex Mono', 'Roboto Mono', monospace;
   font-weight: 500;
 }
 
@@ -368,6 +328,16 @@
 // ──────────────────────────────────────────────────────────────────────────────
 // Mobile Cards View
 // ──────────────────────────────────────────────────────────────────────────────
+
+// app-data-table renders its own stacked-card fallback below 768px too — the
+// two would otherwise both show the same list at once. This custom card view
+// is the richer, currency-aware one (৳ amounts, receipt download), so it
+// wins below 768px and the generic one is hidden instead of deleting this.
+app-data-table {
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
 
 .mobile-cards-list {
   display: none;
@@ -477,7 +447,7 @@
 .amount-value {
   font-size: 15px;
   font-weight: 700;
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'IBM Plex Mono', 'Roboto Mono', monospace;
 }
 
 .edit-btn {
@@ -788,7 +758,7 @@
 .prop-fin-value {
   font-size: 18px;
   font-weight: 700;
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'IBM Plex Mono', 'Roboto Mono', monospace;
   letter-spacing: -0.5px;
 
   &.collected {
@@ -848,7 +818,7 @@
 .prop-rate-pct {
   font-size: 20px;
   font-weight: 800;
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'IBM Plex Mono', 'Roboto Mono', monospace;
   line-height: 1;
 }
 
@@ -931,18 +901,18 @@
 .bldg-paid {
   color: var(--color-paid, #4caf50);
   font-weight: 600;
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'IBM Plex Mono', 'Roboto Mono', monospace;
 }
 .bldg-sep {
   color: var(--border-color);
 }
 .bldg-due {
   color: var(--text-muted);
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'IBM Plex Mono', 'Roboto Mono', monospace;
 }
 .bldg-rate {
   font-weight: 700;
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'IBM Plex Mono', 'Roboto Mono', monospace;
   font-size: 13px;
 }
 
@@ -964,11 +934,11 @@
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-muted);
-    padding: 10px 16px;
+    letter-spacing: 0.04em;
+    color: var(--text-hint);
+    padding: 8px 16px;
     text-align: left;
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 2px solid var(--border-light);
     white-space: nowrap;
 
     &.num {
@@ -977,17 +947,22 @@
   }
 
   td {
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--border-subtle);
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border-table);
+    font-size: 13px;
     vertical-align: middle;
 
     &.num {
       text-align: right;
     }
     &.mono {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'IBM Plex Mono', 'Roboto Mono', monospace;
       font-weight: 500;
     }
+  }
+
+  tr:nth-child(even) td {
+    background: var(--bg-table-stripe);
   }
 
   tr:last-child td {
@@ -1060,6 +1035,66 @@
   .building-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  // Stack the tree's per-building payment table into cards instead of
+  // horizontally scrolling it, matching the pattern lease-list.scss uses.
+  .bldg-table-wrap {
+    overflow-x: visible;
+  }
+
+  .bldg-table {
+    display: block;
+    width: 100%;
+
+    thead {
+      display: none;
+    }
+
+    tbody,
+    tr {
+      display: block;
+      width: 100%;
+    }
+
+    .bldg-row {
+      display: block;
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      margin-bottom: 12px;
+
+      &:hover td {
+        background: transparent;
+      }
+    }
+
+    td {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      text-align: right;
+      width: 100%;
+
+      &::before {
+        content: attr(data-label);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--text-muted);
+        text-align: left;
+      }
+    }
+
+    .action-cell {
+      justify-content: flex-end;
+      width: 100%;
+
+      &::before {
+        content: none;
+      }
+    }
   }
 }
 

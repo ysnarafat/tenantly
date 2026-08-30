@@ -29,7 +29,7 @@ public class ReminderWorker : BackgroundService
             try
             {
                 await ProcessOverduePayments();
-                
+
                 // Run reminder check every hour
                 await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
             }
@@ -47,26 +47,26 @@ public class ReminderWorker : BackgroundService
     {
         using var scope = _serviceProvider.CreateScope();
         var databaseService = scope.ServiceProvider.GetRequiredService<IDatabaseService>();
-        
+
         var overduePayments = await databaseService.GetOverduePaymentsAsync();
-        
+
         foreach (var payment in overduePayments)
         {
             try
             {
-                var message = $"Dear {payment.TenantName}, your rent for {payment.ShopName} for {payment.Month}/{payment.Year} is overdue. Amount: ৳{payment.AmountDue}. Please pay as soon as possible.";
-                
+                var message = $"Dear {payment.TenantName}, your rent for {payment.UnitName} for {payment.Month}/{payment.Year} is overdue. Amount: ৳{payment.AmountDue}. Please pay as soon as possible.";
+
                 // Create SMS reminder if phone number exists
                 if (!string.IsNullOrEmpty(payment.PhoneNumber))
                 {
                     await databaseService.CreateReminderNotificationAsync(
-                        payment.TenantId, 
-                        payment.ShopId, 
-                        message, 
+                        payment.TenantId,
+                        payment.UnitId,
+                        message,
                         NotificationType.SMS);
                 }
-                
-                _logger.LogInformation("Created reminder for tenant {TenantId} shop {ShopId}", payment.TenantId, payment.ShopId);
+
+                _logger.LogInformation("Created reminder for tenant {TenantId} unit {UnitId}", payment.TenantId, payment.UnitId);
             }
             catch (Exception ex)
             {

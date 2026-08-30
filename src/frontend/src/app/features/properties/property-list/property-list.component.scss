@@ -102,6 +102,12 @@
       margin-right: 4px;
     }
   }
+
+  .filter-field {
+    flex: 0 1 180px;
+    min-width: 150px;
+    margin: 0;
+  }
 }
 
 .error-container {
@@ -404,9 +410,16 @@
     align-items: stretch;
     gap: 12px;
 
-    .search-field {
+    .search-field,
+    .filter-field {
       width: 100%;
       min-width: unset;
+      // Stop the row-direction flex-basis from becoming a height once the bar stacks
+      flex: none;
+    }
+
+    .reset-filters-btn {
+      align-self: flex-start;
     }
   }
 

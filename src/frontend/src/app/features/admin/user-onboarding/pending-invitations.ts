@@ -5,7 +5,6 @@ import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCardModule } from '@angular/material/card';
@@ -18,6 +17,9 @@ import { OrganizationService } from '../../../core/services/organization.service
 import { UserInvitation, Organization } from '../../../core/models';
 import { AppState } from '../../../store';
 import * as AuthSelectors from '../../../store/auth/auth.selectors';
+import { actWithUndo } from '../../../shared/utils/undo-toast.utils';
+import { notifyError } from '../../../shared/utils/notify.utils';
+import { DataTable } from '../../../shared/components/data-table/data-table';
 
 @Component({
   selector: 'app-pending-invitations',
@@ -29,11 +31,11 @@ import * as AuthSelectors from '../../../store/auth/auth.selectors';
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
-    MatProgressSpinnerModule,
     MatSnackBarModule,
     MatTooltipModule,
     MatCardModule,
     MatSelectModule,
+    DataTable,
   ],
   template: `
     <div class="invitations-container">
@@ -67,60 +69,58 @@ import * as AuthSelectors from '../../../store/auth/auth.selectors';
         </div>
       }
 
-      @if (loading()) {
-        <div class="spinner-wrap">
-          <mat-spinner diameter="40"></mat-spinner>
-        </div>
-      } @else if (invitations().length === 0) {
-        <div class="empty-state">
-          <mat-icon>mail_outline</mat-icon>
-          <p>No pending invitations</p>
-          <button mat-button color="primary" (click)="inviteUser()">Send First Invitation</button>
-        </div>
-      } @else {
-        <div class="table-scroll">
-          <table mat-table [dataSource]="invitations()">
-            <ng-container matColumnDef="email">
-              <th mat-header-cell *matHeaderCellDef>Email</th>
-              <td mat-cell *matCellDef="let inv">{{ inv.email }}</td>
-            </ng-container>
+      <app-data-table
+        [dataSource]="invitations()"
+        [displayedColumns]="displayedColumns"
+        [loading]="loading()"
+        [showPaginator]="false"
+        emptyIcon="mail_outline"
+        emptyMessage="No pending invitations"
+      >
+        <ng-container matColumnDef="email">
+          <th mat-header-cell *matHeaderCellDef>Email</th>
+          <td mat-cell *matCellDef="let inv" data-label="Email">{{ inv.email }}</td>
+        </ng-container>
 
-            <ng-container matColumnDef="role">
-              <th mat-header-cell *matHeaderCellDef>Role</th>
-              <td mat-cell *matCellDef="let inv">
-                <mat-chip>{{ inv.role }}</mat-chip>
-              </td>
-            </ng-container>
+        <ng-container matColumnDef="role">
+          <th mat-header-cell *matHeaderCellDef>Role</th>
+          <td mat-cell *matCellDef="let inv" data-label="Role">
+            <mat-chip>{{ inv.role }}</mat-chip>
+          </td>
+        </ng-container>
 
-            <ng-container matColumnDef="expires">
-              <th mat-header-cell *matHeaderCellDef>Expires</th>
-              <td mat-cell *matCellDef="let inv">{{ inv.expires_at | date: 'mediumDate' }}</td>
-            </ng-container>
+        <ng-container matColumnDef="expires">
+          <th mat-header-cell *matHeaderCellDef>Expires</th>
+          <td mat-cell *matCellDef="let inv" data-label="Expires">
+            {{ inv.expires_at | date: 'mediumDate' }}
+          </td>
+        </ng-container>
 
-            <ng-container matColumnDef="created">
-              <th mat-header-cell *matHeaderCellDef>Sent</th>
-              <td mat-cell *matCellDef="let inv">{{ inv.created_at | date: 'mediumDate' }}</td>
-            </ng-container>
+        <ng-container matColumnDef="created">
+          <th mat-header-cell *matHeaderCellDef>Sent</th>
+          <td mat-cell *matCellDef="let inv" data-label="Sent">
+            {{ inv.created_at | date: 'mediumDate' }}
+          </td>
+        </ng-container>
 
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>Actions</th>
-              <td mat-cell *matCellDef="let inv">
-                <button
-                  mat-icon-button
-                  color="warn"
-                  matTooltip="Revoke invitation"
-                  (click)="revokeInvitation(inv)"
-                >
-                  <mat-icon>cancel</mat-icon>
-                </button>
-              </td>
-            </ng-container>
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let inv" data-label="">
+            <button
+              mat-icon-button
+              color="warn"
+              matTooltip="Revoke invitation"
+              (click)="revokeInvitation(inv)"
+            >
+              <mat-icon>cancel</mat-icon>
+            </button>
+          </td>
+        </ng-container>
 
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-          </table>
-        </div>
-      }
+        <button dtEmptyAction mat-button color="primary" (click)="inviteUser()">
+          Send First Invitation
+        </button>
+      </app-data-table>
     </div>
   `,
   styles: [
@@ -234,8 +234,7 @@ export class PendingInvitationsComponent implements OnInit {
               this.loadInvitations(this.selectedOrgId);
             }
           },
-          error: () =>
-            this.snackBar.open('Failed to load organizations', 'Close', { duration: 3000 }),
+          error: () => notifyError(this.snackBar, 'Failed to load organizations'),
         });
       } else if (user.organization_id) {
         this.selectedOrgId = user.organization_id;
@@ -267,27 +266,32 @@ export class PendingInvitationsComponent implements OnInit {
         this.loading.set(false);
       },
       error: () => {
-        this.snackBar.open('Failed to load invitations', 'Close', { duration: 3000 });
+        notifyError(this.snackBar, 'Failed to load invitations');
         this.loading.set(false);
       },
     });
   }
 
   revokeInvitation(inv: UserInvitation): void {
-    if (!confirm(`Revoke invitation for ${inv.email}?`)) return;
-    if (!this.selectedOrgId) return;
+    const orgId = this.selectedOrgId;
+    if (!orgId) return;
 
-    this.invitationService.revokeInvitation(inv.id, this.selectedOrgId).subscribe({
-      next: () => {
-        this.snackBar.open('Invitation revoked', 'Close', { duration: 3000 });
-        if (this.selectedOrgId) this.loadInvitations(this.selectedOrgId);
-      },
-      error: (err) => {
-        this.snackBar.open(err.error?.error || 'Failed to revoke invitation', 'Close', {
-          duration: 5000,
+    const previousInvitations = this.invitations();
+    this.invitations.set(previousInvitations.filter((i) => i.id !== inv.id));
+
+    actWithUndo(
+      this.snackBar,
+      `Invitation for ${inv.email} revoked`,
+      () => {
+        this.invitationService.revokeInvitation(inv.id, orgId).subscribe({
+          error: (err) => {
+            notifyError(this.snackBar, err.error?.error || 'Failed to revoke invitation');
+            this.loadInvitations(orgId);
+          },
         });
       },
-    });
+      { onUndo: () => this.invitations.set(previousInvitations) }
+    );
   }
 
   inviteUser(): void {

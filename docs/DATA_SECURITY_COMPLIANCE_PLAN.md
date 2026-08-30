@@ -136,24 +136,24 @@ This document tracks the implementation of security and legal compliance measure
 
 ### 2.1 - Payment Audit Logging Enhancement
 **Description:** Enhance audit logs to redact/protect sensitive payment data  
-**Status:** ⚪ NOT STARTED  
+**Status:** 🟡 IN PROGRESS — PII redaction complete; admin audit view & access control pending  
 **Priority:** 🟡 HIGH  
 **Owner:** Backend Team
 
 #### Current State:
 - ✅ Payment access IS logged (CREATE, GET, UPDATE, DELETE)
-- ❌ Audit logs store `old_values`/`new_values` JSONB with PII
+- ✅ Audit values redacted before write — app-level (`maskAuditValue`) + DB trigger (`mask_audit_json`, migration 000004)
 - ❌ No distinction between "admin can view full audit" vs "user cannot view their own audit logs"
 
 #### Tasks:
 
 | Task | Status | Started | Target | Notes |
 |------|--------|---------|--------|-------|
-| Create `internal/audit/payment_audit.go` for payment-specific logging | ⚪ NOT STARTED | - | 2026-07-07 | Redact PII from logged values |
-| Update `PaymentService.LogPaymentAccess()` to redact sensitive fields | ⚪ NOT STARTED | - | 2026-07-07 | Example: log `payment_id`, `amount`, `status`, NOT tenant phone |
+| Redact PII/secrets from logged values | ✅ COMPLETE | - | - | Done centrally in `internal/database/audit.go` (`maskAuditValue`) — covers all audited actions, not only payments (03cc332) |
+| Redact sensitive fields on payment audit writes | ✅ COMPLETE | - | - | Covered by the central `AuditService.logAudit` redaction; every caller incl. payment access is masked (03cc332) |
 | Add admin audit log view with access control | ⚪ NOT STARTED | - | 2026-07-14 | Only SUPER_ADMIN/ORG_ADMIN can view full audit logs |
 | Extend `audit_log` table with `redacted` flag | ⚪ NOT STARTED | - | 2026-07-10 | Track which logs have PII removed |
-| Update audit tests to verify redaction | ⚪ NOT STARTED | - | 2026-07-14 | Assert sensitive fields are not in log JSONB |
+| Update audit tests to verify redaction | ✅ COMPLETE | - | - | `internal/database/audit_test.go` asserts sensitive values are absent from the log JSON (03cc332) |
 
 **Dependencies:** Phase 1  
 **Blocks:** Phase 2.2
@@ -400,7 +400,7 @@ This document tracks the implementation of security and legal compliance measure
 | Risk | Severity | Impact | Mitigation |
 |------|----------|--------|-----------|
 | Plaintext PII storage | 🔴 CRITICAL | Full tenant identity exposure + financial data | Phase 1 in progress |
-| Unencrypted audit logs with PII | 🔴 CRITICAL | Audit trail itself leaks sensitive data | Phase 2.1 planned |
+| Audit logs leaking PII | 🟢 MITIGATED | PII/secrets redacted at write, both layers (03cc332); admin-view access control still pending | Phase 2.1 partial |
 | No data retention policy | 🟠 HIGH | Unclear legal compliance, unlimited data storage | Phase 2.2 planned |
 | Access control untested | 🟡 MEDIUM | Potential unauthorized access not caught | Phase 2.3 in progress |
 | No incident response plan | 🟡 MEDIUM | Delayed response to breaches | Phase 3.3 planned |

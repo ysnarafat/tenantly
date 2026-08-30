@@ -141,14 +141,11 @@ $hp-nav-height: 56px;
   gap: 24px;
   height: $hp-nav-height;
   padding: 0 24px;
-  max-width: 1400px;
-  margin: 0 auto;
   // A plain opaque background rather than a translucent + backdrop-filter
   // blur: combined with `position: sticky`, blur compositing has a known
   // Chromium glitch where the blurred backdrop can paint a stale snapshot
   // of unrelated content from elsewhere on the page.
   background: var(--hp-ink);
-  border-radius: 0 0 18px 18px;
 }
 
 .hp-brand {
@@ -212,10 +209,8 @@ $hp-nav-height: 56px;
   grid-template-columns: 1.05fr 0.95fr;
   align-items: center;
   gap: 40px;
-  max-width: 1400px;
-  margin: 0 auto;
   min-height: calc(100vh - #{$hp-nav-height});
-  padding: 20px 24px;
+  padding: 20px max(24px, calc((100% - 1280px) / 2));
   color: var(--hp-cream);
 
   background:
@@ -526,18 +521,13 @@ $hp-nav-height: 56px;
 }
 
 .hp-faq-answer-wrap {
-  display: grid;
-  grid-template-rows: 0fr;
+  max-height: 0;
   overflow: hidden;
-  transition: grid-template-rows 0.3s ease;
-
-  p {
-    min-height: 0;
-  }
+  transition: max-height 0.3s ease;
 }
 
 .hp-faq-item.open .hp-faq-answer-wrap {
-  grid-template-rows: 1fr;
+  max-height: 400px;
 }
 
 .hp-faq-answer {

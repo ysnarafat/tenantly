@@ -62,6 +62,12 @@ func (s *PropertyService) CreateProperty(req *models.CreatePropertyRequest, user
 func (s *PropertyService) GetProperty(id, orgID int) (*models.Property, error) {
 	property, err := s.propertyRepo.GetByID(id)
 	if err != nil {
+		// Pass the not-found error through unwrapped — the handler matches on
+		// this exact string to return 404 instead of 500. Wrapping it here (as
+		// with the other errors) would break that check.
+		if err.Error() == "property not found" {
+			return nil, err
+		}
 		return nil, fmt.Errorf("failed to get property: %w", err)
 	}
 	if property.OrganizationID != orgID {
@@ -74,6 +80,9 @@ func (s *PropertyService) GetProperty(id, orgID int) (*models.Property, error) {
 func (s *PropertyService) GetPropertyWithStats(id, orgID int) (*models.PropertyWithStats, error) {
 	property, err := s.propertyRepo.GetByIDWithStats(id)
 	if err != nil {
+		if err.Error() == "property not found" {
+			return nil, err
+		}
 		return nil, fmt.Errorf("failed to get property with stats: %w", err)
 	}
 	if property.OrganizationID != orgID {
@@ -106,6 +115,12 @@ func (s *PropertyService) ListProperties(filters map[string]interface{}, page, p
 		return nil, 0, fmt.Errorf("failed to list properties: %w", err)
 	}
 
+	// An empty result must serialize as [], not null: clients (and the search
+	// endpoint, which routes through here) iterate this directly.
+	if properties == nil {
+		properties = []*models.Property{}
+	}
+
 	return properties, total, nil
 }
 
@@ -114,6 +129,9 @@ func (s *PropertyService) UpdateProperty(id int, req *models.UpdatePropertyReque
 	// Get existing property for audit logging
 	existingProperty, err := s.propertyRepo.GetByID(id)
 	if err != nil {
+		if err.Error() == "property not found" {
+			return nil, err
+		}
 		return nil, fmt.Errorf("failed to get existing property: %w", err)
 	}
 	if existingProperty.OrganizationID != orgID {
@@ -155,6 +173,9 @@ func (s *PropertyService) DeleteProperty(id int, userID, orgID int) error {
 	// Get existing property for audit logging
 	existingProperty, err := s.propertyRepo.GetByID(id)
 	if err != nil {
+		if err.Error() == "property not found" {
+			return err
+		}
 		return fmt.Errorf("failed to get existing property: %w", err)
 	}
 	if existingProperty.OrganizationID != orgID {

@@ -47,7 +47,8 @@ const paymentWithDetailCols = `
 	COALESCE(b.building_code, '')  AS building_code,
 	COALESCE(u.unit_number, '')    AS unit_number,
 	COALESCE(u.unit_type::text, '') AS unit_type,
-	COALESCE(t.name, '')           AS tenant_name`
+	COALESCE(t.name, '')           AS tenant_name,
+	COALESCE(t.phone_number, '')   AS tenant_phone`
 
 const paymentDetailJoinsQ = `
 	LEFT JOIN units u       ON p.unit_id = u.id
@@ -109,6 +110,11 @@ func (r *PaymentRepository) Create(req *models.CreatePaymentRequest) (*models.Pa
 		dueDate = sql.NullTime{Time: t, Valid: true}
 	}
 
+	amountPaid := 0.0
+	if req.AmountPaid != nil {
+		amountPaid = *req.AmountPaid
+	}
+
 	var paymentDate sql.NullTime
 	if req.PaymentDate != nil && *req.PaymentDate != "" {
 		t, err := time.Parse("2006-01-02", *req.PaymentDate)
@@ -116,22 +122,24 @@ func (r *PaymentRepository) Create(req *models.CreatePaymentRequest) (*models.Pa
 			return nil, fmt.Errorf("invalid payment_date format (expected YYYY-MM-DD): %w", err)
 		}
 		paymentDate = sql.NullTime{Time: t, Valid: true}
-	}
-
-	amountPaid := 0.0
-	if req.AmountPaid != nil {
-		amountPaid = *req.AmountPaid
-	}
-
-	status := string(models.PaymentStatusDue)
-	if req.Status != nil {
-		status = string(*req.Status)
 	} else if amountPaid > 0 {
+		// A payment is being recorded but no explicit date was given —
+		// default to today rather than leaving payment_date null.
+		paymentDate = sql.NullTime{Time: time.Now().UTC().Truncate(24 * time.Hour), Valid: true}
+	}
+
+	// Status is always derived server-side from amount_paid vs amount_due (and
+	// due_date, for Overdue) — req.Status is ignored on create so a client
+	// can't misreport payment state.
+	status := string(models.PaymentStatusDue)
+	if amountPaid > 0 {
 		if amountPaid >= req.AmountDue {
 			status = string(models.PaymentStatusPaid)
 		} else {
 			status = string(models.PaymentStatusPartial)
 		}
+	} else if dueDate.Valid && dueDate.Time.Before(time.Now().UTC().Truncate(24*time.Hour)) {
+		status = string(models.PaymentStatusOverdue)
 	}
 
 	var paymentMethod sql.NullString
@@ -425,7 +433,12 @@ func (r *PaymentRepository) SearchLeases(orgID int, query string) ([]*models.Lea
 			l.start_date                   AS lease_start_date,
 			l.end_date                     AS lease_end_date,
 			l.monthly_rent,
-			l.active
+			l.active,
+			COALESCE((
+				SELECT SUM(pay.amount_due - pay.amount_paid)
+				FROM payments pay
+				WHERE pay.unit_id = u.id AND pay.status IN ('Due', 'Partial', 'Overdue')
+			), 0) AS outstanding_balance
 		FROM leases l
 		LEFT JOIN tenants t    ON l.tenant_id = t.id
 		LEFT JOIN units u      ON l.unit_id = u.id
@@ -433,6 +446,7 @@ func (r *PaymentRepository) SearchLeases(orgID int, query string) ([]*models.Lea
 		LEFT JOIN properties p ON u.property_id = p.id
 		WHERE l.organization_id = $1
 			AND l.active = true
+			AND l.end_date >= CURRENT_DATE
 			AND (
 				LOWER(t.name) LIKE $2
 				OR LOWER(p.property_name) LIKE $2
@@ -462,6 +476,7 @@ func (r *PaymentRepository) SearchLeases(orgID int, query string) ([]*models.Lea
 			&lr.UnitID, &lr.UnitNumber, &lr.UnitType,
 			&lr.LeaseStartDate, &endDate,
 			&lr.MonthlyRent, &lr.Active,
+			&lr.OutstandingBalance,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan lease row: %w", err)
 		}
@@ -474,6 +489,49 @@ func (r *PaymentRepository) SearchLeases(orgID int, query string) ([]*models.Lea
 		return nil, fmt.Errorf("lease rows error: %w", err)
 	}
 	return results, nil
+}
+
+// NextReceiptNumber atomically issues the next sequential receipt number for
+// an organization/period, formatted as ORG<id>-<yearMonth>-<4-digit seq>.
+// The sequence resets to 1 whenever yearMonth changes from the stored value.
+func (r *PaymentRepository) NextReceiptNumber(orgID int, yearMonth string) (string, error) {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return "", fmt.Errorf("failed to begin receipt sequence transaction: %w", err)
+	}
+	// Rollback is a no-op once the transaction commits below.
+	defer func() { _ = tx.Rollback() }()
+
+	var storedYearMonth string
+	var nextSeq int
+	err = tx.QueryRow(
+		`INSERT INTO payment_receipt_sequences (organization_id, year_month, next_seq)
+		 VALUES ($1, $2, 1)
+		 ON CONFLICT (organization_id) DO UPDATE SET organization_id = payment_receipt_sequences.organization_id
+		 RETURNING year_month, next_seq`,
+		orgID, yearMonth,
+	).Scan(&storedYearMonth, &nextSeq)
+	if err != nil {
+		return "", fmt.Errorf("failed to load receipt sequence: %w", err)
+	}
+
+	seq := nextSeq
+	if storedYearMonth != yearMonth {
+		seq = 1
+	}
+
+	if _, err := tx.Exec(
+		`UPDATE payment_receipt_sequences SET year_month = $2, next_seq = $3 WHERE organization_id = $1`,
+		orgID, yearMonth, seq+1,
+	); err != nil {
+		return "", fmt.Errorf("failed to advance receipt sequence: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return "", fmt.Errorf("failed to commit receipt sequence: %w", err)
+	}
+
+	return fmt.Sprintf("ORG%d-%s-%04d", orgID, yearMonth, seq), nil
 }
 
 // GetBuildingPaymentAnalytics returns detailed analytics for a building over a date range.

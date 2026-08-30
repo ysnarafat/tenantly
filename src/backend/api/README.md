@@ -16,8 +16,9 @@ Go REST API for the Tenantly platform, built with Gin.
 ```bash
 cp .env.example .env          # configure DB_URL and JWT_SECRET
 go mod download
-go run cmd/server/main.go migrate
-go run cmd/server/main.go     # or: air
+go run cmd/migrate/main.go up   # apply migrations (also runs automatically on server startup)
+go run cmd/migrate/main.go seed # seed dev data (orgs, users, property, buildings, units, tenants, leases)
+go run cmd/server/main.go       # or: air
 ```
 
 API is available at `http://localhost:8080/api/v1`.
@@ -57,6 +58,7 @@ internal/
 ├── middleware/    # JWT auth, logging, CORS
 ├── config/        # Environment loading
 ├── database/      # Connection pool + migration runner
+├── server/        # Gin server setup + route registration
 └── testutil/      # Shared mocks for table-driven tests
 
 cmd/server/        # Entry point
@@ -77,9 +79,7 @@ Apply the same pattern to any module that develops significant analytical querie
 
 ## Multi-Tenancy
 
-Migration `000007_admin_hierarchy_phase1` added `organization_id` to every data table (`users`, `properties`, `buildings`, `units`, `tenants`, `leases`, `payments`). All repository queries must be scoped by `organization_id`.
-
-Migration `000008_user_organization_roles` introduced the `user_organization_roles` table — a user can belong to multiple organisations with different roles.
+Migration `000002_multi_tenancy` added `organization_id` to every data table (`users`, `properties`, `buildings`, `units`, `tenants`, `leases`, `payments`) and introduced the `user_organization_roles` table — a user can belong to multiple organisations with different roles. All repository queries must be scoped by `organization_id`.
 
 ### Role System
 
@@ -114,7 +114,7 @@ Tests are table-driven. Mocks for all interfaces live in `internal/testutil/` �
 
 ## Development Seed Users
 
-Migration `000009_test_seed_users` inserts test accounts for every role. Run it (or apply the SQL via `psql`) after initial setup.
+Migration `000002_multi_tenancy` inserts test accounts for every role. Run it (or apply the SQL via `psql`) after initial setup.
 
 **Password for all accounts: `Test@1234`**
 
@@ -140,3 +140,44 @@ Migration `000009_test_seed_users` inserts test accounts for every role. Run it 
 | `superadmin` | superadmin@test.com | `SUPER_ADMIN` |
 
 > These accounts are for local development only. Remove or disable before deploying to any shared environment.
+
+## Seed Data
+
+Two ways to populate demo data — choose whichever fits your workflow.
+
+### Go seed command (recommended)
+
+Reads JSON files from `seeds/dev/` and inserts via the repository layer — no SQL, no HTTP server required. Safe to run repeatedly (idempotent: skips records that already exist).
+
+```bash
+# From src/backend/api/
+go run cmd/migrate/main.go seed        # seeds from seeds/dev/ (default)
+go run cmd/migrate/main.go seed dev    # same, explicit env name
+go run cmd/migrate/main.go seed staging  # loads from seeds/staging/
+```
+
+**What gets created (dev env):**
+
+| Resource | Count | Notes |
+|----------|-------|-------|
+| Organizations | 2 | Default Organization, Acme Properties |
+| Users | 6 | One per role — all use password `Test@1234` |
+| Property | 1 | Mirpur Residential Complex, Dhaka |
+| Buildings | 5 | Nilufer Tower, Meghna Mansion, Padma Villa, Jamuna Complex, Shitalakkhya House |
+| Units | 250 | 5 floors × 10 units per building, type Apartment |
+| Tenants | 250 | Bangladeshi names, one per unit |
+| Leases | 250 | 24-month residential leases, rent BDT 12,200–22,000 |
+
+**Seed data files** live in `seeds/{env}/` — edit the JSON to change what gets created. Buildings drive unit/tenant/lease generation via a `generate_units` block in `buildings.json`:
+
+```json
+{
+  "generate_units": {
+    "floors": 5, "units_per_floor": 10, "unit_type": "Apartment",
+    "base_rent": 10000, "rent_per_floor": 2000, "rent_per_unit": 200,
+    "lease_start": "2024-01-01", "lease_end": "2025-12-31", "lease_months": 24,
+    "lease_type": "Residential"
+  }
+}
+```
+

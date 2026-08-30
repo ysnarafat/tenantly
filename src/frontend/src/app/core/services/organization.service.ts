@@ -13,6 +13,7 @@ import {
   SetOrganizationResponse,
 } from '../models/organization.model';
 import { User } from './auth.service';
+import { authStorage } from '../../shared/utils/auth-storage.utils';
 
 interface OrgListResponse {
   organizations: Organization[];
@@ -95,8 +96,8 @@ export class OrganizationService {
       .post<SetOrganizationResponse>(`${this.authApiUrl}/set-organization`, request)
       .pipe(
         tap((response) => {
-          localStorage.setItem(this.ORG_ID_KEY, organizationId.toString());
-          localStorage.setItem(
+          authStorage.setItem(this.ORG_ID_KEY, organizationId.toString());
+          authStorage.setItem(
             'tenantly_current_org',
             JSON.stringify(response.organization.organization)
           );
@@ -106,17 +107,17 @@ export class OrganizationService {
   }
 
   getCurrentOrganizationId(): number | null {
-    const orgId = localStorage.getItem(this.ORG_ID_KEY);
+    const orgId = authStorage.getItem(this.ORG_ID_KEY);
     return orgId ? parseInt(orgId, 10) : null;
   }
 
   storeOrganizationContext(orgId: number, organization: UserOrganization): void {
-    localStorage.setItem(this.ORG_ID_KEY, orgId.toString());
-    localStorage.setItem('tenantly_current_org', JSON.stringify(organization.organization));
+    authStorage.setItem(this.ORG_ID_KEY, orgId.toString());
+    authStorage.setItem('tenantly_current_org', JSON.stringify(organization.organization));
   }
 
   restoreOrganizationContext(): void {
-    const orgData = localStorage.getItem('tenantly_current_org');
+    const orgData = authStorage.getItem('tenantly_current_org');
     if (orgData) {
       try {
         const org: Organization = JSON.parse(orgData);
@@ -128,8 +129,8 @@ export class OrganizationService {
   }
 
   clearOrganizationContext(): void {
-    localStorage.removeItem(this.ORG_ID_KEY);
-    localStorage.removeItem('tenantly_current_org');
+    authStorage.removeItem(this.ORG_ID_KEY);
+    authStorage.removeItem('tenantly_current_org');
     this.currentOrganization$.next(null);
   }
 }

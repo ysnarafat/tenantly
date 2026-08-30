@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import {
   Property,
   PropertyWithStats,
@@ -30,7 +31,10 @@ export class PropertyService {
   }
 
   getPropertyWithStats(id: number): Observable<PropertyWithStats> {
-    return this.http.get<PropertyWithStats>(`${this.apiUrl}/${id}/stats`);
+    const params = new HttpParams().set('include_stats', 'true').set('include_buildings', 'true');
+    return this.http
+      .get<{ property: PropertyWithStats }>(`${this.apiUrl}/${id}`, { params })
+      .pipe(map((res) => res.property));
   }
 
   createProperty(property: CreatePropertyRequest): Observable<Property> {

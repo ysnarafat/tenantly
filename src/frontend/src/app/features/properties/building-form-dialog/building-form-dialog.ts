@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
@@ -8,8 +8,12 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSelectModule } from '@angular/material/select';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslateModule } from '@ngx-translate/core';
-import { Building, BuildingType, Property } from '../../../core/models';
+import { Building, BuildingType, CreateBuildingRequest, Property } from '../../../core/models';
+import { BuildingService } from '../../../core/services/building.service';
+import { notifyError } from '../../../shared/utils/notify.utils';
 
 export interface BuildingFormDialogData {
   building?: Building;
@@ -30,6 +34,7 @@ export interface BuildingFormDialogData {
     MatSelectModule,
     MatIconModule,
     MatCheckboxModule,
+    MatProgressSpinnerModule,
     TranslateModule,
   ],
   templateUrl: './building-form-dialog.html',
@@ -38,14 +43,32 @@ export interface BuildingFormDialogData {
 export class BuildingFormDialogComponent implements OnInit {
   private fb = inject(FormBuilder);
   private dialogRef = inject(MatDialogRef<BuildingFormDialogComponent>);
+  private buildingService = inject(BuildingService);
+  private snackBar = inject(MatSnackBar);
   public data = inject<BuildingFormDialogData>(MAT_DIALOG_DATA);
 
   buildingForm!: FormGroup;
   buildingTypes: BuildingType[] = ['Residential', 'Commercial', 'Mixed'];
   currentYear = new Date().getFullYear();
+  loading = signal(false);
+
+  private codeUserEdited = false;
 
   ngOnInit() {
     this.initializeForm();
+
+    if (!this.isEditMode) {
+      this.buildingForm.get('building_name')!.valueChanges.subscribe((name: string) => {
+        if (!this.codeUserEdited && name) {
+          const code = this.generateBuildingCode(name);
+          this.buildingForm.get('building_code')!.setValue(code, { emitEvent: false });
+        }
+      });
+
+      this.buildingForm.get('building_code')!.valueChanges.subscribe(() => {
+        this.codeUserEdited = true;
+      });
+    }
   }
 
   private initializeForm() {
@@ -57,7 +80,7 @@ export class BuildingFormDialogComponent implements OnInit {
         [Validators.required, Validators.minLength(3), Validators.maxLength(100)],
       ],
       building_code: [
-        building?.building_code || this.generateBuildingCode(),
+        building?.building_code || '',
         [Validators.required, Validators.pattern(/^[A-Z0-9-]+$/)],
       ],
       building_type: [building?.building_type || 'Residential', [Validators.required]],
@@ -69,39 +92,61 @@ export class BuildingFormDialogComponent implements OnInit {
       ],
     });
 
-    // Disable building_code in edit mode
-    if (this.data.mode === 'edit') {
+    if (this.isEditMode) {
       this.buildingForm.get('building_code')?.disable();
     }
   }
 
-  private generateBuildingCode(): string {
-    const timestamp = Date.now().toString().slice(-6);
-    return `BLD-${timestamp}`;
+  private generateBuildingCode(name: string): string {
+    const initials = name
+      .split(/\s+/)
+      .filter((w) => w.length > 0)
+      .map((w) => w[0].toUpperCase())
+      .join('');
+    return initials ? `${initials}-001` : '';
   }
 
   onSubmit() {
-    if (this.buildingForm.valid) {
-      const formValue = this.buildingForm.getRawValue();
-
-      // Remove building_code from updates (it's immutable)
-      if (this.data.mode === 'edit') {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { building_code, ...updateData } = formValue;
-        this.dialogRef.close(updateData);
-      } else {
-        // Add property_id for creation
-        this.dialogRef.close({
-          ...formValue,
-          property_id: this.data.property.id,
-        });
-      }
-    } else {
-      // Mark all fields as touched to show validation errors
+    if (this.buildingForm.invalid) {
       Object.keys(this.buildingForm.controls).forEach((key) => {
         this.buildingForm.get(key)?.markAsTouched();
       });
+      return;
     }
+
+    if (this.isEditMode) {
+      const formValue = this.buildingForm.getRawValue();
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { building_code, ...updateData } = formValue;
+      this.dialogRef.close(updateData);
+      return;
+    }
+
+    const payload: CreateBuildingRequest = {
+      ...this.buildingForm.getRawValue(),
+      property_id: this.data.property.id,
+    };
+
+    this.loading.set(true);
+    this.buildingService.createBuilding(payload).subscribe({
+      next: (building) => {
+        this.loading.set(false);
+        this.dialogRef.close(building);
+      },
+      error: (err) => {
+        this.loading.set(false);
+        if (err?.error?.code === 'BUILDING_CODE_EXISTS') {
+          const codeControl = this.buildingForm.get('building_code')!;
+          codeControl.setErrors({
+            serverError: 'Building code already exists — try a different one',
+          });
+          codeControl.markAsTouched();
+          this.codeUserEdited = true;
+        } else {
+          notifyError(this.snackBar, 'Failed to create building');
+        }
+      },
+    });
   }
 
   onCancel() {
@@ -110,30 +155,18 @@ export class BuildingFormDialogComponent implements OnInit {
 
   getErrorMessage(fieldName: string): string {
     const control = this.buildingForm.get(fieldName);
-    if (!control || !control.errors || !control.touched) {
-      return '';
-    }
+    if (!control || !control.errors || !control.touched) return '';
 
-    if (control.errors['required']) {
-      return `${this.getFieldLabel(fieldName)} is required`;
-    }
-    if (control.errors['minlength']) {
+    if (control.errors['serverError']) return control.errors['serverError'];
+    if (control.errors['required']) return `${this.getFieldLabel(fieldName)} is required`;
+    if (control.errors['minlength'])
       return `Minimum length is ${control.errors['minlength'].requiredLength}`;
-    }
-    if (control.errors['maxlength']) {
+    if (control.errors['maxlength'])
       return `Maximum length is ${control.errors['maxlength'].requiredLength}`;
-    }
-    if (control.errors['min']) {
-      return `Minimum value is ${control.errors['min'].min}`;
-    }
-    if (control.errors['max']) {
-      return `Maximum value is ${control.errors['max'].max}`;
-    }
-    if (control.errors['pattern']) {
-      if (fieldName === 'building_code') {
-        return 'Only uppercase letters, numbers, and hyphens allowed';
-      }
-    }
+    if (control.errors['min']) return `Minimum value is ${control.errors['min'].min}`;
+    if (control.errors['max']) return `Maximum value is ${control.errors['max'].max}`;
+    if (control.errors['pattern'] && fieldName === 'building_code')
+      return 'Only uppercase letters, numbers, and hyphens allowed';
     return 'Invalid value';
   }
 

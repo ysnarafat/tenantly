@@ -70,7 +70,8 @@
       "DAYS_OVERDUE": "দিন বাকি"
     },
     "DAYS": "দিন",
-    "ERROR_LOADING": "ভাড়া তালিকা লোড করতে সমস্যা হয়েছে"
+    "ERROR_LOADING": "ভাড়া তালিকা লোড করতে সমস্যা হয়েছে",
+    "TABLE_EMPTY": "কোনো বাকি ভাড়া নেই"
   },
   "LEASE_LIST": {
     "PAGE_TITLE": "লীজ ব্যবস্থাপনা",
@@ -212,17 +213,41 @@
       "START_DATE": "শুরু তারিখ",
       "DURATION_MONTHS": "মেয়াদ (মাস)",
       "MONTHLY_RENT": "মাসিক ভাড়া (টাকা)",
-      "SECURITY_DEPOSIT": "নিরাপত্তা জমা (টাকা) - ঐচ্ছিক"
+      "SECURITY_DEPOSIT": "নিরাপত্তা জমা (টাকা) - ঐচ্ছিক",
+      "TENANT_SEARCH_PLACEHOLDER": "নাম, ফোন বা ইমেইল দিয়ে খুঁজুন"
     },
     "ERRORS": {
-      "NO_PHONE": "ফোন নেই"
+      "NO_PHONE": "ফোন নেই",
+      "REQUIRED": "এই ফিল্ডটি আবশ্যক",
+      "MIN_VALUE": "মান অবশ্যই ধনাত্মক হতে হবে",
+      "MAX_VALUE": "মান অনেক বেশি",
+      "NOT_INTEGER": "একটি পূর্ণ সংখ্যা হতে হবে",
+      "FORM_INVALID": "অনুগ্রহ করে সব আবশ্যক ফিল্ড পূরণ করুন",
+      "LOAD_PROPERTIES": "সম্পত্তি লোড করতে সমস্যা হয়েছে",
+      "LOAD_TENANTS": "ভাড়াটে লোড করতে সমস্যা হয়েছে",
+      "LOAD_BUILDINGS": "ভবন লোড করতে সমস্যা হয়েছে",
+      "LOAD_UNITS": "ইউনিট লোড করতে সমস্যা হয়েছে",
+      "CREATE_FAILED": "লীজ তৈরি করা যায়নি",
+      "NO_TENANTS_FOUND": "কোনো মিলিত ভাড়াটে পাওয়া যায়নি",
+      "NO_PROPERTIES": "কোনো সক্রিয় সম্পত্তি পাওয়া যায়নি",
+      "NO_BUILDINGS": "এই সম্পত্তিতে কোনো ভবন পাওয়া যায়নি",
+      "NO_UNITS": "এই ভবনে কোনো খালি ইউনিট পাওয়া যায়নি"
     },
     "INFO": {
-      "END_DATE": "শেষ তারিখ:"
+      "END_DATE": "শেষ তারিখ:",
+      "LOADING_BUILDINGS": "ভবন লোড হচ্ছে...",
+      "LOADING_UNITS": "ইউনিট লোড হচ্ছে..."
     },
     "BUTTONS": {
       "CREATE": "লীজ তৈরি করুন",
       "CREATING": "তৈরি হচ্ছে..."
+    },
+    "LEASE_TYPES": {
+      "RESIDENTIAL": "আবাসিক",
+      "COMMERCIAL": "বাণিজ্যিক"
+    },
+    "SUCCESS": {
+      "CREATED": "লীজ সফলভাবে তৈরি হয়েছে"
     }
   },
   "EDIT_LEASE_DIALOG": {
@@ -299,10 +324,15 @@
   },
   "LOGIN": {
     "TITLE": "ট্যানেন্টলি লগইন",
+    "EYEBROW": "আপনার অ্যাকাউন্ট",
+    "WELCOME": "স্বাগতম",
+    "SUBTITLE": "Tenantly-তে প্রবেশ করতে সাইন ইন করুন",
+    "FORGOT_PASSWORD": "পাসওয়ার্ড ভুলে গেছেন?",
     "FIELDS": {
       "USERNAME": "ব্যবহারকারীর নাম",
       "PASSWORD": "পাসওয়ার্ড"
     },
+    "REMEMBER_ME": "আমাকে মনে রাখুন",
     "BUTTONS": {
       "LOGIN": "লগইন"
     },
@@ -377,6 +407,32 @@
       "UPDATE": "ইউনিট আপডেট করুন"
     }
   },
+  "BULK_UNIT_FORM_DIALOG": {
+    "TITLE": "একাধিক ইউনিট যোগ করুন",
+    "COMMON_FIELDS_LABEL": "সব ইউনিটের জন্য সাধারণ",
+    "FIELDS": {
+      "UNIT_TYPE": "ইউনিটের ধরন",
+      "FLOOR": "তল",
+      "SECTION": "বিভাগ",
+      "ROW_COUNT": "ইউনিটের সংখ্যা"
+    },
+    "TABLE": {
+      "ROW_NUMBER": "#",
+      "UNIT_NUMBER": "ইউনিট নম্বর",
+      "UNIT_NAME": "ইউনিটের নাম (ঐচ্ছিক)"
+    },
+    "BUTTONS": {
+      "ADD_ROW": "সারি যোগ করুন",
+      "REMOVE_ROW": "সরান",
+      "CREATE": "{{count}}টি ইউনিট তৈরি করুন",
+      "CANCEL": "বাতিল"
+    },
+    "ERRORS": {
+      "DUPLICATE_UNIT_NUMBER": "এই ব্যাচে ইউনিট নম্বরের পুনরাবৃত্তি",
+      "REQUIRED_UNIT_NUMBER": "ইউনিট নম্বর আবশ্যক"
+    },
+    "SUMMARY": "{{count}}টি ইউনিট তৈরি হবে"
+  },
   "PROPERTY_LIST": {
     "PAGE_TITLE": "সম্পত্তি",
     "STATS": {
@@ -388,7 +444,10 @@
     },
     "FILTERS": {
       "SEARCH_LABEL": "সম্পত্তি খুঁজুন",
-      "SEARCH_PLACEHOLDER": "সম্পত্তি, ভবন বা ইউনিট…"
+      "SEARCH_PLACEHOLDER": "সম্পত্তি, ভবন বা ইউনিট…",
+      "TYPE_LABEL": "সম্পত্তির ধরন",
+      "STATUS_LABEL": "অবস্থা",
+      "CITY_LABEL": "শহর"
     },
     "LOADING": "সম্পত্তি লোড হচ্ছে...",
     "EMPTY_STATE": {
@@ -400,6 +459,62 @@
       "DELETE_PROPERTY": "আপনি কি এটি মুছতে চান",
       "DELETE_BUILDING": "আপনি কি এটি মুছতে চান",
       "DELETE_UNIT": "আপনি কি ইউনিট মুছতে চান"
+    }
+  },
+  "PROPERTY_DETAIL": {
+    "BACK_TO_LIST": "সম্পত্তির তালিকায় ফিরে যান",
+    "LOADING": "সম্পত্তি লোড হচ্ছে...",
+    "LOADING_BUILDINGS": "ভবন লোড হচ্ছে...",
+    "LOADING_UNITS": "ইউনিট লোড হচ্ছে...",
+    "NO_BUILDINGS": "এখনও কোনো ভবন নেই",
+    "NO_UNITS": "এখনও কোনো ইউনিট নেই",
+    "VIEW_FULL_REPORT": "সম্পূর্ণ আর্থিক প্রতিবেদন দেখুন",
+    "VIEW_FULL_DETAILS": "সম্পূর্ণ বিবরণ দেখুন",
+    "ADD_BUILDING": "ভবন যোগ করুন",
+    "SEARCH_LABEL": "ভবন খুঁজুন",
+    "SEARCH_PLACEHOLDER": "ভবনের নাম, কোড বা ধরন…",
+    "NO_MATCHING_BUILDINGS": "কোনো মিল খুঁজে পাওয়া যায়নি",
+    "NOT_FOUND": {
+      "TITLE": "সম্পত্তি পাওয়া যায়নি",
+      "DESCRIPTION": "এই সম্পত্তিটি মুছে ফেলা হতে পারে, অথবা আপনার এতে প্রবেশাধিকার নেই।"
+    },
+    "STATS": {
+      "BUILDINGS": "ভবন",
+      "UNITS": "ইউনিট",
+      "OCCUPANCY": "দখলের হার",
+      "REVENUE": "মোট আয়"
+    },
+    "TABS": {
+      "BUILDINGS": "ভবন"
+    }
+  },
+  "BUILDING_DETAIL": {
+    "BACK_TO_PROPERTY": "সম্পত্তিতে ফিরে যান",
+    "LOADING": "ভবন লোড হচ্ছে...",
+    "LOADING_UNITS": "ইউনিট লোড হচ্ছে...",
+    "NO_UNITS": "এখনও কোনো ইউনিট নেই",
+    "VIEW_FULL_REPORT": "সম্পূর্ণ আর্থিক প্রতিবেদন দেখুন",
+    "ADD_UNIT": "ইউনিট যোগ করুন",
+    "BULK_ADD_UNITS": "একাধিক ইউনিট যোগ করুন",
+    "SEARCH_LABEL": "ইউনিট খুঁজুন",
+    "SEARCH_PLACEHOLDER": "ইউনিট নম্বর, নাম বা ধরন…",
+    "NO_MATCHING_UNITS": "কোনো মিল খুঁজে পাওয়া যায়নি",
+    "NOT_FOUND": {
+      "TITLE": "ভবন পাওয়া যায়নি",
+      "DESCRIPTION": "এই ভবনটি মুছে ফেলা হতে পারে, অথবা আপনার এতে প্রবেশাধিকার নেই।"
+    },
+    "STATS": {
+      "UNITS": "ইউনিট",
+      "OCCUPANCY": "দখলের হার",
+      "REVENUE": "মোট আয়",
+      "COLLECTION_RATE": "সংগ্রহের হার"
+    },
+    "TABS": {
+      "UNITS": "ইউনিট"
+    },
+    "UNIT_STATUS": {
+      "OCCUPIED": "ভাড়াটে আছে",
+      "VACANT": "খালি"
     }
   },
   "PAYMENT_LIST": {
@@ -422,7 +537,8 @@
       "CLEAR": "সাফ করুন",
       "UPDATE": "আপডেট করুন",
       "LOAD": "লোড করুন",
-      "GENERATE_MONTHLY": "মাসিক তৈরি করুন"
+      "GENERATE_MONTHLY": "মাসিক তৈরি করুন",
+      "COLLECT_PAYMENTS": "পেমেন্ট সংগ্রহ করুন"
     },
     "FILTERS": {
       "STATUS": "স্থিতি",
@@ -467,6 +583,57 @@
     },
     "EMPTY_STATE": "কোনো পেমেন্ট পাওয়া যায়নি",
     "LOADING": "পেমেন্ট লোড হচ্ছে..."
+  },
+  "PAYMENT_COLLECT": {
+    "PAGE_TITLE": "পেমেন্ট সংগ্রহ করুন",
+    "SUBTITLE": "একবারে সব বকেয়া ভাড়াটের পেমেন্ট রেকর্ড করুন",
+    "MONTH_LABEL": "মাস",
+    "YEAR_LABEL": "বছর",
+    "GENERATE_BUTTON": "মাসিক পেমেন্ট তৈরি করুন",
+    "SAVE_ALL_BUTTON": "সব সংরক্ষণ করুন",
+    "LOADING": "বকেয়া পেমেন্ট লোড হচ্ছে...",
+    "METHOD_NONE": "— কোনোটি না —",
+    "STATS": {
+      "PENDING": "বাকি",
+      "SAVED": "সংরক্ষিত",
+      "FAILED": "ব্যর্থ",
+      "OUTSTANDING": "বকেয়া"
+    },
+    "EMPTY_STATE": {
+      "TITLE": "সব পরিশোধিত",
+      "DESCRIPTION": "এই সময়ের জন্য কোনো বকেয়া পেমেন্ট নেই — সবাই পরিশোধ করেছেন, অথবা এখনও পেমেন্ট তৈরি করা হয়নি।"
+    },
+    "TABLE": {
+      "TENANT": "ভাড়াটে",
+      "UNIT": "ইউনিট",
+      "AMOUNT_DUE": "বকেয়া পরিমাণ",
+      "AMOUNT_PAID": "পরিশোধিত পরিমাণ",
+      "METHOD": "পদ্ধতি",
+      "DATE": "তারিখ",
+      "STATUS": "অবস্থা",
+      "SKIP": "এড়িয়ে যান"
+    },
+    "STATUS": {
+      "SAVING": "সংরক্ষণ হচ্ছে…",
+      "SAVED": "সংরক্ষিত"
+    },
+    "TOOLTIPS": {
+      "SKIP": "এই ভাড়াটেকে এখন এড়িয়ে যান"
+    },
+    "MONTHS": {
+      "JAN": "জানুয়ারি",
+      "FEB": "ফেব্রুয়ারি",
+      "MAR": "মার্চ",
+      "APR": "এপ্রিল",
+      "MAY": "মে",
+      "JUN": "জুন",
+      "JUL": "জুলাই",
+      "AUG": "আগস্ট",
+      "SEP": "সেপ্টেম্বর",
+      "OCT": "অক্টোবর",
+      "NOV": "নভেম্বর",
+      "DEC": "ডিসেম্বর"
+    }
   },
   "CREATE_PAYMENT_DIALOG": {
     "TITLE": "নতুন পেমেন্ট তৈরি করুন",
@@ -535,6 +702,10 @@
   },
   "USER_LIST": {
     "PAGE_TITLE": "ব্যবহারকারী ব্যবস্থাপনা",
+    "STATS": {
+      "TOTAL": "মোট",
+      "ACTIVE": "সক্রিয়"
+    },
     "BUTTONS": {
       "CREATE_USER": "ব্যবহারকারী তৈরি করুন",
       "INVITE_USER": "ব্যবহারকারী আমন্ত্রণ করুন"
@@ -554,6 +725,8 @@
       "CREATED": "তৈরির তারিখ",
       "ACTIONS": "কার্যক্রম"
     },
+    "LOADING": "ব্যবহারকারী লোড হচ্ছে...",
+    "EMPTY_STATE": "কোনো ব্যবহারকারী পাওয়া যায়নি",
     "STATUS": {
       "ACTIVE": "সক্রিয়",
       "INACTIVE": "নিষ্ক্রিয়"
@@ -562,6 +735,7 @@
       "PROMOTE": "পদোন্নতি/পদাবনতি",
       "DEACTIVATE": "নিষ্ক্রিয় করুন",
       "ACTIVATE": "সক্রিয় করুন",
+      "RESET_PASSWORD": "পাসওয়ার্ড রিসেট করুন",
       "DELETE": "মুছুন"
     }
   },
@@ -582,6 +756,8 @@
       "ACTIVE": "সক্রিয়",
       "ACTIONS": "কার্যক্রম"
     },
+    "LOADING": "সংগঠন লোড হচ্ছে...",
+    "EMPTY_STATE": "কোনো সংগঠন পাওয়া যায়নি",
     "TOOLTIPS": {
       "VIEW": "দেখুন",
       "EDIT": "সম্পাদনা করুন",
@@ -648,6 +824,58 @@
     "LOADING": "সংযুক্তি লোড হচ্ছে...",
     "NO_DESCRIPTION": "কোনো বিবরণ নেই"
   },
+  "NAV": {
+    "SUBTITLE": "সম্পত্তি ব্যবস্থাপনা",
+    "SECTIONS": {
+      "WORKSPACE": "কর্মক্ষেত্র",
+      "ADMIN": "প্রশাসন"
+    },
+    "ITEMS": {
+      "DASHBOARD": "ড্যাশবোর্ড",
+      "PROPERTIES": "সম্পত্তি",
+      "TENANTS": "ভাড়াটেরা",
+      "LEASES": "লীজ",
+      "PAYMENTS": "পেমেন্ট",
+      "REPORTS": "রিপোর্ট",
+      "DOCUMENTS": "ডকুমেন্ট",
+      "ORGANIZATIONS": "সংগঠনসমূহ",
+      "INVITATIONS": "আমন্ত্রণ",
+      "USERS": "ব্যবহারকারী"
+    },
+    "USER_MENU": {
+      "LOGOUT": "লগআউট"
+    },
+    "TOOLTIPS": {
+      "LIGHT_MODE": "লাইট মোডে স্যুইচ করুন",
+      "DARK_MODE": "ডার্ক মোডে স্যুইচ করুন"
+    }
+  },
+  "CONTACT_PAGE": {
+    "SEO": {
+      "TITLE": "যোগাযোগ — Tenantly",
+      "DESCRIPTION": "সেটআপ সহায়তা, অ্যাকাউন্ট প্রশ্ন বা মূল্য নির্ধারণের জন্য Tenantly দলের সাথে যোগাযোগ করুন।"
+    },
+    "NAV": {
+      "HOME": "হোম",
+      "LOGIN": "লগ ইন"
+    },
+    "HERO": {
+      "EYEBROW": "যোগাযোগ করুন",
+      "TITLE": "আমরা আপনার কথা শুনতে চাই",
+      "SUBTITLE": "প্রথমবার সেটআপ করছেন, অ্যাকাউন্ট নিয়ে প্রশ্ন আছে, বা মূল্য নিয়ে কথা বলতে চান? আমাদের একটা মেইল করুন — আমরা এক কার্যদিবসের মধ্যে উত্তর দিই।"
+    },
+    "EMAIL": {
+      "LABEL": "ইমেইল করুন",
+      "COPY": "ইমেইল কপি করুন",
+      "COPIED": "কপি হয়েছে!",
+      "OPEN": "ইমেইল ক্লায়েন্ট খুলুন",
+      "RESPONSE": "আমরা সাধারণত এক কার্যদিবসের মধ্যে উত্তর দিই।"
+    },
+    "FOOTER": {
+      "TAGLINE": "বাংলাদেশের জন্য সম্পত্তি ও ভাড়া ব্যবস্থাপনা।",
+      "RIGHTS": "© {{ year }} Tenantly. সর্বস্বত্ব সংরক্ষিত।"
+    }
+  },
   "HOMEPAGE": {
     "SEO": {
       "TITLE": "Tenantly - বাংলাদেশের জন্য সম্পত্তি ও ভাড়া ব্যবস্থাপনা",
@@ -655,6 +883,7 @@
     },
     "NAV": {
       "FAQ": "প্রশ্নোত্তর",
+      "CONTACT": "যোগাযোগ",
       "LOGIN": "লগ ইন"
     },
     "HERO": {
@@ -713,7 +942,13 @@
     },
     "FOOTER": {
       "TAGLINE": "বাংলাদেশের জন্য সম্পত্তি ও ভাড়া ব্যবস্থাপনা।",
-      "RIGHTS": "© ২০২৬ Tenantly. সর্বস্বত্ব সংরক্ষিত।"
+      "RIGHTS": "© {{ year }} Tenantly. সর্বস্বত্ব সংরক্ষিত।"
     }
+  },
+  "LEASE_CHARGES": {
+    "SECTION_TITLE": "নিয়মিত চার্জ"
+  },
+  "LEASE_CUSTOM_FIELDS": {
+    "SECTION_TITLE": "কাস্টম ফিল্ড"
   }
 }

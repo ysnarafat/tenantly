@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/ysnarafat/tenantly/internal/models"
@@ -121,7 +122,7 @@ func (h *PropertyHandler) GetProperty(c *gin.Context) {
 	if includeStats {
 		property, err := h.propertyService.GetPropertyWithStats(id, orgID)
 		if err != nil {
-			if err.Error() == "property not found" {
+			if strings.Contains(err.Error(), "property not found") {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Property not found"})
 				return
 			}
@@ -143,7 +144,7 @@ func (h *PropertyHandler) GetProperty(c *gin.Context) {
 	} else {
 		property, err := h.propertyService.GetProperty(id, orgID)
 		if err != nil {
-			if err.Error() == "property not found" {
+			if strings.Contains(err.Error(), "property not found") {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Property not found"})
 				return
 			}
@@ -190,7 +191,7 @@ func (h *PropertyHandler) UpdateProperty(c *gin.Context) {
 	orgID := c.GetInt("org_id")
 	property, err := h.propertyService.UpdateProperty(id, &req, userID.(int), orgID)
 	if err != nil {
-		if err.Error() == "property not found" {
+		if strings.Contains(err.Error(), "property not found") {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Property not found"})
 			return
 		}
@@ -224,7 +225,7 @@ func (h *PropertyHandler) DeleteProperty(c *gin.Context) {
 	orgID := c.GetInt("org_id")
 	err = h.propertyService.DeleteProperty(id, userID.(int), orgID)
 	if err != nil {
-		if err.Error() == "property not found" {
+		if strings.Contains(err.Error(), "property not found") {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Property not found"})
 			return
 		}
@@ -252,7 +253,7 @@ func (h *PropertyHandler) GetPropertyAggregations(c *gin.Context) {
 	orgID := c.GetInt("org_id")
 	aggregations, err := h.propertyService.GetPropertyAggregations(id, orgID)
 	if err != nil {
-		if err.Error() == "property not found" {
+		if strings.Contains(err.Error(), "property not found") {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Property not found"})
 			return
 		}

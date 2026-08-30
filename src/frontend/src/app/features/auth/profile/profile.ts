@@ -13,6 +13,7 @@ import { Actions, ofType } from '@ngrx/effects';
 import { take } from 'rxjs/operators';
 import { AuthService, User, ChangePasswordRequest } from '../../../core/services/auth.service';
 import * as AuthActions from '../../../store/auth/auth.actions';
+import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
 
 @Component({
   selector: 'app-profile',
@@ -96,7 +97,7 @@ export class Profile implements OnInit {
         .subscribe((action) => {
           this.isChangingPassword = false;
           if (action.type === AuthActions.changePasswordSuccess.type) {
-            this.snackBar.open('Password changed successfully!', 'Close', { duration: 3000 });
+            notifySuccess(this.snackBar, 'Password changed successfully!');
             this.changePasswordForm.reset();
             this.showChangePassword = false;
           } else {
@@ -104,7 +105,7 @@ export class Profile implements OnInit {
             const msg =
               (failure.error as { message?: string })?.message ||
               'Failed to change password. Please try again.';
-            this.snackBar.open(msg, 'Close', { duration: 5000 });
+            notifyError(this.snackBar, msg);
           }
         });
     }

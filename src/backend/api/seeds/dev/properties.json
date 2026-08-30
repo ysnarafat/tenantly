@@ -1,0 +1,29 @@
+[
+  {
+    "org_slug": "default",
+    "property_name": "Mirpur Residential Complex",
+    "property_code": "MRC-001",
+    "address": "Road 5, Block D, Mirpur-10",
+    "city": "Dhaka",
+    "postal_code": "1216",
+    "property_type": "Residential"
+  },
+  {
+    "org_slug": "default",
+    "property_name": "Gulshan Tower Complex",
+    "property_code": "GTC-001",
+    "address": "Road 11, Block CEN(C), Gulshan-1",
+    "city": "Dhaka",
+    "postal_code": "1212",
+    "property_type": "Commercial"
+  },
+  {
+    "org_slug": "default",
+    "property_name": "Dhanmondi Heights",
+    "property_code": "DHC-001",
+    "address": "House 32, Road 2A, Dhanmondi",
+    "city": "Dhaka",
+    "postal_code": "1209",
+    "property_type": "Residential"
+  }
+]

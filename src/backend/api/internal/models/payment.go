@@ -46,18 +46,33 @@ type CreatePaymentRequest struct {
 	Status         *PaymentStatus `json:"status" binding:"omitempty,oneof=Paid Due Partial Overdue"`
 	PaymentMethod  *string        `json:"payment_method" binding:"omitempty"`
 	PaymentDate    *string        `json:"payment_date" binding:"omitempty"`
-	ReceiptNumber  *string        `json:"receipt_number" binding:"omitempty"`
-	Notes          *string        `json:"notes" binding:"omitempty"`
-	DueDate        string         `json:"due_date" binding:"omitempty"`
+	// ReceiptNumber is ignored on create — the server always generates it via
+	// PaymentRepository.NextReceiptNumber. Accepted here only for JSON binding.
+	ReceiptNumber *string `json:"receipt_number" binding:"omitempty"`
+	Notes         *string `json:"notes" binding:"omitempty"`
+	DueDate       string  `json:"due_date" binding:"omitempty"`
 }
 
 type UpdatePaymentRequest struct {
-	AmountPaid    *float64       `json:"amount_paid" binding:"omitempty,gte=0"`
+	// AmountPaid is ignored from an HTTP client — PaymentService.UpdatePayment
+	// clears it unconditionally. Recording money received must go through
+	// POST /payments/:id/transactions instead, so partial/installment
+	// payments accumulate correctly rather than overwriting each other. This
+	// field still exists because PaymentService.RecordPaymentTransaction/
+	// DeletePaymentTransaction call PaymentRepository.Update directly (not
+	// through PaymentService.UpdatePayment) with the recomputed cumulative
+	// total, reusing its amount-vs-amount_due status derivation.
+	AmountPaid *float64 `json:"amount_paid" binding:"omitempty,gte=0"`
+	// Status is ignored — PaymentRepository.Update always (re)derives it from
+	// amount_paid vs amount_due (and due_date, for Overdue). Accepted here
+	// only so existing/external clients don't fail JSON binding.
 	Status        *PaymentStatus `json:"status" binding:"omitempty,oneof=Paid Due Partial Overdue"`
 	PaymentMethod *string        `json:"payment_method" binding:"omitempty"`
 	PaymentDate   *string        `json:"payment_date" binding:"omitempty"`
 	Notes         *string        `json:"notes" binding:"omitempty"`
-	ReceiptNumber *string        `json:"receipt_number" binding:"omitempty"`
+	// ReceiptNumber is ignored from an HTTP client for the same reason as
+	// AmountPaid above — see CreatePaymentRequest.ReceiptNumber.
+	ReceiptNumber *string `json:"receipt_number" binding:"omitempty"`
 }
 
 type PaymentWithDetails struct {
@@ -68,6 +83,10 @@ type PaymentWithDetails struct {
 	UnitNumber   string `json:"unit_number" db:"unit_number"`
 	UnitType     string `json:"unit_type" db:"unit_type"`
 	TenantName   string `json:"tenant_name" db:"tenant_name"`
+	// TenantPhone is used to queue the "payment recorded" receipt-link SMS
+	// (see PaymentService.RecordPaymentTransaction) — not sensitive beyond
+	// what staff can already see on the tenant's own record.
+	TenantPhone string `json:"tenant_phone" db:"tenant_phone"`
 }
 
 // PaymentListResponse is the paginated response for payment list endpoints
@@ -124,6 +143,14 @@ type LeaseSearchResult struct {
 	LeaseEndDate   time.Time `json:"lease_end_date" db:"lease_end_date"`
 	MonthlyRent    float64   `json:"monthly_rent" db:"monthly_rent"`
 	Active         bool      `json:"active" db:"active"`
+	// OutstandingBalance is the sum of (amount_due - amount_paid) across all
+	// of this unit's Due/Partial/Overdue payment records — i.e. total arrears,
+	// not just the current month's rent.
+	OutstandingBalance float64 `json:"outstanding_balance" db:"outstanding_balance"`
+	// ChargesTotal is the sum of this lease's active lease_charges (utility,
+	// service charge, etc.) — added to MonthlyRent when generating payments.
+	// Only populated by GetActiveLeasesForPeriod; zero elsewhere.
+	ChargesTotal float64 `json:"charges_total" db:"charges_total"`
 }
 
 // LeaseSearchResponse represents paginated search results

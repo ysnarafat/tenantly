@@ -1,135 +1,34 @@
 package services
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/database"
 	"github.com/ysnarafat/tenantly/internal/models"
 	"github.com/ysnarafat/tenantly/internal/repositories"
+	"github.com/ysnarafat/tenantly/internal/testutil"
 
 	_ "github.com/lib/pq"
 )
 
-func setupPropertyTestDB(t *testing.T) (*sqlx.DB, func()) {
-	db, err := sqlx.Open("postgres", "postgres://postgres:password@localhost:5432/tenantly_test?sslmode=disable")
-	if err != nil {
-		t.Skip("Skipping test: PostgreSQL not available")
-	}
+// servicesTestDB is this package's own database: go test ./internal/... runs
+// packages in parallel and teardown drops every table, so sharing one database
+// with the repository tests would tear down their schema mid-run.
+const servicesTestDB = "tenantly_test_services"
 
-	if err := db.Ping(); err != nil {
-		_ = db.Close()
-		t.Skipf("Skipping test: PostgreSQL not available: %v", err)
-	}
-
-	// Create test tables
-	createTestTables(t, db)
-
-	cleanup := func() {
-		dropTestTables(t, db)
-		_ = db.Close()
-	}
-
-	return db, cleanup
-}
-
-func createTestTables(t *testing.T, db *sqlx.DB) {
-	// Create properties table for testing
-	_, err := db.Exec(`
-		CREATE TABLE IF NOT EXISTS properties (
-			id SERIAL PRIMARY KEY,
-			property_name VARCHAR(200) NOT NULL,
-			property_code VARCHAR(50) UNIQUE NOT NULL,
-			address TEXT NOT NULL,
-			city VARCHAR(100),
-			postal_code VARCHAR(20),
-			property_type VARCHAR(50) NOT NULL CHECK (property_type IN ('Residential', 'Commercial', 'Mixed')),
-			total_buildings INTEGER DEFAULT 1,
-			metadata JSONB,
-			active BOOLEAN DEFAULT true,
-			created_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC'),
-			updated_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC')
-		)
-	`)
-	if err != nil {
-		t.Fatalf("Failed to create properties table: %v", err)
-	}
-
-	// Create buildings table for testing
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS buildings (
-			id SERIAL PRIMARY KEY,
-			property_id INTEGER NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
-			building_name VARCHAR(100) NOT NULL,
-			building_code VARCHAR(20) NOT NULL,
-			building_type VARCHAR(50) NOT NULL,
-			total_floors INTEGER,
-			has_elevator BOOLEAN DEFAULT false,
-			construction_year INTEGER,
-			metadata JSONB,
-			active BOOLEAN DEFAULT true,
-			created_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC'),
-			updated_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC'),
-			UNIQUE(property_id, building_code)
-		)
-	`)
-	if err != nil {
-		t.Fatalf("Failed to create buildings table: %v", err)
-	}
-
-	// Create units table for testing
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS units (
-			id SERIAL PRIMARY KEY,
-			building_id INTEGER NOT NULL REFERENCES buildings(id) ON DELETE CASCADE,
-			property_id INTEGER NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
-			unit_number VARCHAR(50) NOT NULL,
-			unit_name VARCHAR(100),
-			floor INTEGER,
-			section VARCHAR(50),
-			unit_type VARCHAR(50) NOT NULL,
-			monthly_rent DECIMAL(10,2) NOT NULL,
-			metadata JSONB,
-			active BOOLEAN DEFAULT true,
-			created_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC'),
-			updated_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC'),
-			UNIQUE(building_id, unit_number)
-		)
-	`)
-	if err != nil {
-		t.Fatalf("Failed to create units table: %v", err)
-	}
-
-	// Create audit_log table for testing
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS audit_log (
-			id SERIAL PRIMARY KEY,
-			user_id INTEGER,
-			action VARCHAR(50) NOT NULL,
-			table_name VARCHAR(50) NOT NULL,
-			record_id INTEGER,
-			old_values JSONB,
-			new_values JSONB,
-			created_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC')
-		)
-	`)
-	if err != nil {
-		t.Fatalf("Failed to create audit_log table: %v", err)
-	}
-}
-
-func dropTestTables(t *testing.T, db *sqlx.DB) {
-	tables := []string{"units", "buildings", "properties", "audit_log"}
-	for _, table := range tables {
-		_, err := db.Exec("DROP TABLE IF EXISTS " + table + " CASCADE")
-		if err != nil {
-			t.Logf("Warning: Failed to drop table %s: %v", table, err)
-		}
-	}
+// setupPropertyTestDB migrates a real schema rather than hand-rolling one. The
+// bespoke CREATE TABLEs this replaced predated multi-tenancy and carried no
+// organization_id, and it connected as a "postgres" role that exists neither
+// here nor in CI — so these tests silently skipped instead of running.
+func setupPropertyTestDB(t *testing.T) (*sqlx.DB, int, func()) {
+	db, cleanup := testutil.SetupTestDBNamed(t, servicesTestDB)
+	return db, testutil.CreateTestOrganization(t, db), cleanup
 }
 
 func TestPropertyService_CreateProperty(t *testing.T) {
-	db, cleanup := setupPropertyTestDB(t)
+	db, orgID, cleanup := setupPropertyTestDB(t)
 	defer cleanup()
 
 	propertyRepo := repositories.NewPropertyRepository(db)
@@ -197,6 +96,7 @@ func TestPropertyService_CreateProperty(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt.request.OrganizationID = orgID
 			property, err := service.CreateProperty(tt.request, tt.userID)
 
 			if tt.expectError {
@@ -204,7 +104,7 @@ func TestPropertyService_CreateProperty(t *testing.T) {
 					t.Errorf("Expected error but got none")
 					return
 				}
-				if tt.errorMsg != "" && err.Error() != tt.errorMsg {
+				if tt.errorMsg != "" && !strings.Contains(err.Error(), tt.errorMsg) {
 					t.Errorf("Expected error message '%s', got '%s'", tt.errorMsg, err.Error())
 				}
 				return
@@ -236,7 +136,7 @@ func TestPropertyService_CreateProperty(t *testing.T) {
 }
 
 func TestPropertyService_GetProperty(t *testing.T) {
-	db, cleanup := setupPropertyTestDB(t)
+	db, orgID, cleanup := setupPropertyTestDB(t)
 	defer cleanup()
 
 	propertyRepo := repositories.NewPropertyRepository(db)
@@ -250,6 +150,7 @@ func TestPropertyService_GetProperty(t *testing.T) {
 		Address:      "123 Test Street",
 		PropertyType: models.PropertyTypeCommercial,
 	}
+	createReq.OrganizationID = orgID
 	createdProperty, err := service.CreateProperty(createReq, 1)
 	if err != nil {
 		t.Fatalf("Failed to create test property: %v", err)
@@ -259,6 +160,7 @@ func TestPropertyService_GetProperty(t *testing.T) {
 		name        string
 		propertyID  int
 		expectError bool
+		errorMsg    string
 	}{
 		{
 			name:        "Valid property ID",
@@ -269,16 +171,106 @@ func TestPropertyService_GetProperty(t *testing.T) {
 			name:        "Invalid property ID",
 			propertyID:  99999,
 			expectError: true,
+			// Regression check: the repo's "property not found" must reach the
+			// handler unwrapped, or its 404 detection silently falls through to 500.
+			errorMsg: "property not found",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			property, err := service.GetProperty(tt.propertyID, 0)
+			property, err := service.GetProperty(tt.propertyID, orgID)
 
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("Expected error but got none")
+					return
+				}
+				if tt.errorMsg != "" && err.Error() != tt.errorMsg {
+					t.Errorf("Expected error message '%s', got '%s'", tt.errorMsg, err.Error())
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if property == nil {
+				t.Errorf("Expected property but got nil")
+				return
+			}
+
+			if property.ID != tt.propertyID {
+				t.Errorf("Expected property ID %d, got %d", tt.propertyID, property.ID)
+			}
+		})
+	}
+}
+
+func TestPropertyService_GetPropertyWithStats(t *testing.T) {
+	db, orgID, cleanup := setupPropertyTestDB(t)
+	defer cleanup()
+
+	propertyRepo := repositories.NewPropertyRepository(db)
+	auditService := database.NewAuditService(db)
+	service := NewPropertyService(propertyRepo, auditService)
+
+	createReq := &models.CreatePropertyRequest{
+		PropertyName: "Test Property",
+		PropertyCode: "TEST001",
+		Address:      "123 Test Street",
+		PropertyType: models.PropertyTypeCommercial,
+	}
+	createReq.OrganizationID = orgID
+	createdProperty, err := service.CreateProperty(createReq, 1)
+	if err != nil {
+		t.Fatalf("Failed to create test property: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		propertyID  int
+		orgID       int
+		expectError bool
+		errorMsg    string
+	}{
+		{
+			name:        "Valid property ID",
+			propertyID:  createdProperty.ID,
+			orgID:       orgID,
+			expectError: false,
+		},
+		{
+			name:        "Invalid property ID",
+			propertyID:  99999,
+			orgID:       orgID,
+			expectError: true,
+			// Regression check: the repo's "property not found" must reach the
+			// handler unwrapped, or its 404 detection silently falls through to 500.
+			errorMsg: "property not found",
+		},
+		{
+			name:        "Property belongs to a different organization",
+			propertyID:  createdProperty.ID,
+			orgID:       999,
+			expectError: true,
+			errorMsg:    "property not found",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			property, err := service.GetPropertyWithStats(tt.propertyID, tt.orgID)
+
+			if tt.expectError {
+				if err == nil {
+					t.Errorf("Expected error but got none")
+					return
+				}
+				if tt.errorMsg != "" && err.Error() != tt.errorMsg {
+					t.Errorf("Expected error message '%s', got '%s'", tt.errorMsg, err.Error())
 				}
 				return
 			}
@@ -301,7 +293,7 @@ func TestPropertyService_GetProperty(t *testing.T) {
 }
 
 func TestPropertyService_ListProperties(t *testing.T) {
-	db, cleanup := setupPropertyTestDB(t)
+	db, orgID, cleanup := setupPropertyTestDB(t)
 	defer cleanup()
 
 	propertyRepo := repositories.NewPropertyRepository(db)
@@ -331,6 +323,7 @@ func TestPropertyService_ListProperties(t *testing.T) {
 	}
 
 	for _, prop := range properties {
+		prop.OrganizationID = orgID
 		_, err := service.CreateProperty(prop, 1)
 		if err != nil {
 			t.Fatalf("Failed to create test property: %v", err)
@@ -381,6 +374,11 @@ func TestPropertyService_ListProperties(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Scope to this test's organization, exactly as PropertyHandler
+			// does. Without it the list also returns the "Default Property"
+			// the initial migration seeds.
+			tt.filters["organization_id"] = orgID
+
 			properties, total, err := service.ListProperties(tt.filters, tt.page, tt.pageSize)
 
 			if tt.expectError {
@@ -407,7 +405,7 @@ func TestPropertyService_ListProperties(t *testing.T) {
 }
 
 func TestPropertyService_UpdateProperty(t *testing.T) {
-	db, cleanup := setupPropertyTestDB(t)
+	db, orgID, cleanup := setupPropertyTestDB(t)
 	defer cleanup()
 
 	propertyRepo := repositories.NewPropertyRepository(db)
@@ -421,6 +419,7 @@ func TestPropertyService_UpdateProperty(t *testing.T) {
 		Address:      "123 Test Street",
 		PropertyType: models.PropertyTypeCommercial,
 	}
+	createReq.OrganizationID = orgID
 	createdProperty, err := service.CreateProperty(createReq, 1)
 	if err != nil {
 		t.Fatalf("Failed to create test property: %v", err)
@@ -433,6 +432,7 @@ func TestPropertyService_UpdateProperty(t *testing.T) {
 		Address:      "456 Another Street",
 		PropertyType: models.PropertyTypeResidential,
 	}
+	createReq2.OrganizationID = orgID
 	_, err = service.CreateProperty(createReq2, 1)
 	if err != nil {
 		t.Fatalf("Failed to create second test property: %v", err)
@@ -489,19 +489,22 @@ func TestPropertyService_UpdateProperty(t *testing.T) {
 			},
 			userID:      1,
 			expectError: true,
+			// Regression check: the repo's "property not found" must reach the
+			// handler unwrapped, or its 404 detection silently falls through to 500.
+			errorMsg: "property not found",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			property, err := service.UpdateProperty(tt.propertyID, tt.request, tt.userID, 0)
+			property, err := service.UpdateProperty(tt.propertyID, tt.request, tt.userID, orgID)
 
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("Expected error but got none")
 					return
 				}
-				if tt.errorMsg != "" && err.Error() != tt.errorMsg {
+				if tt.errorMsg != "" && !strings.Contains(err.Error(), tt.errorMsg) {
 					t.Errorf("Expected error message '%s', got '%s'", tt.errorMsg, err.Error())
 				}
 				return
@@ -529,7 +532,7 @@ func TestPropertyService_UpdateProperty(t *testing.T) {
 }
 
 func TestPropertyService_DeleteProperty(t *testing.T) {
-	db, cleanup := setupPropertyTestDB(t)
+	db, orgID, cleanup := setupPropertyTestDB(t)
 	defer cleanup()
 
 	propertyRepo := repositories.NewPropertyRepository(db)
@@ -543,6 +546,7 @@ func TestPropertyService_DeleteProperty(t *testing.T) {
 		Address:      "123 Test Street",
 		PropertyType: models.PropertyTypeCommercial,
 	}
+	createReq.OrganizationID = orgID
 	createdProperty, err := service.CreateProperty(createReq, 1)
 	if err != nil {
 		t.Fatalf("Failed to create test property: %v", err)
@@ -553,6 +557,7 @@ func TestPropertyService_DeleteProperty(t *testing.T) {
 		propertyID  int
 		userID      int
 		expectError bool
+		errorMsg    string
 	}{
 		{
 			name:        "Valid deletion",
@@ -565,16 +570,23 @@ func TestPropertyService_DeleteProperty(t *testing.T) {
 			propertyID:  99999,
 			userID:      1,
 			expectError: true,
+			// Regression check: the repo's "property not found" must reach the
+			// handler unwrapped, or its 404 detection silently falls through to 500.
+			errorMsg: "property not found",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := service.DeleteProperty(tt.propertyID, tt.userID, 0)
+			err := service.DeleteProperty(tt.propertyID, tt.userID, orgID)
 
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("Expected error but got none")
+					return
+				}
+				if tt.errorMsg != "" && err.Error() != tt.errorMsg {
+					t.Errorf("Expected error message '%s', got '%s'", tt.errorMsg, err.Error())
 				}
 				return
 			}
@@ -585,7 +597,7 @@ func TestPropertyService_DeleteProperty(t *testing.T) {
 			}
 
 			// Verify property is marked as inactive
-			property, err := service.GetProperty(tt.propertyID, 0)
+			property, err := service.GetProperty(tt.propertyID, orgID)
 			if err == nil && property.Active {
 				t.Errorf("Expected property to be inactive after deletion")
 			}
@@ -594,7 +606,7 @@ func TestPropertyService_DeleteProperty(t *testing.T) {
 }
 
 func TestPropertyService_ValidatePropertyType(t *testing.T) {
-	db, cleanup := setupPropertyTestDB(t)
+	db, _, cleanup := setupPropertyTestDB(t)
 	defer cleanup()
 
 	propertyRepo := repositories.NewPropertyRepository(db)

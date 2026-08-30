@@ -5,7 +5,10 @@ public class NotificationSettings
     public SmsSettings Sms { get; set; } = new();
     public EmailSettings Email { get; set; } = new();
     public int ProcessingIntervalSeconds { get; set; } = 30;
-    public int MaxRetryAttempts { get; set; } = 3;
+    // A notification is retried on subsequent poll cycles until it either
+    // succeeds or exhausts this many attempts, after which it is left
+    // permanently Failed rather than retried indefinitely.
+    public int MaxRetryAttempts { get; set; } = 5;
 }
 
 public class SmsSettings

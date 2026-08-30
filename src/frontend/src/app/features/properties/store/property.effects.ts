@@ -5,6 +5,7 @@ import { map, mergeMap, catchError } from 'rxjs/operators';
 import { PropertyService } from '../../../core/services/property.service';
 import { PropertyActions } from './property.actions';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
 
 @Injectable()
 export class PropertyEffects {
@@ -44,11 +45,11 @@ export class PropertyEffects {
       mergeMap(({ property }) =>
         this.propertyService.createProperty(property).pipe(
           map((newProperty) => {
-            this.snackBar.open('Property created successfully', 'Close', { duration: 3000 });
+            notifySuccess(this.snackBar, 'Property created successfully');
             return PropertyActions.createPropertySuccess({ property: newProperty });
           }),
           catchError((error) => {
-            this.snackBar.open('Failed to create property', 'Close', { duration: 3000 });
+            notifyError(this.snackBar, 'Failed to create property');
             return of(PropertyActions.createPropertyFailure({ error: error.message }));
           })
         )
@@ -62,11 +63,11 @@ export class PropertyEffects {
       mergeMap(({ id, property }) =>
         this.propertyService.updateProperty(id, property).pipe(
           map((updatedProperty) => {
-            this.snackBar.open('Property updated successfully', 'Close', { duration: 3000 });
+            notifySuccess(this.snackBar, 'Property updated successfully');
             return PropertyActions.updatePropertySuccess({ property: updatedProperty });
           }),
           catchError((error) => {
-            this.snackBar.open('Failed to update property', 'Close', { duration: 3000 });
+            notifyError(this.snackBar, 'Failed to update property');
             return of(PropertyActions.updatePropertyFailure({ error: error.message }));
           })
         )
@@ -80,11 +81,11 @@ export class PropertyEffects {
       mergeMap(({ id }) =>
         this.propertyService.deleteProperty(id).pipe(
           map(() => {
-            this.snackBar.open('Property deleted successfully', 'Close', { duration: 3000 });
+            notifySuccess(this.snackBar, 'Property deleted successfully');
             return PropertyActions.deletePropertySuccess({ id });
           }),
           catchError((error) => {
-            this.snackBar.open('Failed to delete property', 'Close', { duration: 3000 });
+            notifyError(this.snackBar, 'Failed to delete property');
             return of(PropertyActions.deletePropertyFailure({ error: error.message }));
           })
         )

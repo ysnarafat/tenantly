@@ -13,8 +13,8 @@ public class Payment : IAuditableEntity
     public int Id { get; set; }
 
     [Required]
-    [Column("shop_id")]
-    public int ShopId { get; set; }
+    [Column("unit_id")]
+    public int UnitId { get; set; }
 
     [Required]
     [Column("tenant_id")]
@@ -63,11 +63,9 @@ public class Payment : IAuditableEntity
     public DateTime UpdatedAt { get; set; }
 
     // Navigation properties
-    [ForeignKey("ShopId")]
-    public virtual Shop Shop { get; set; } = null!;
+    [ForeignKey("UnitId")]
+    public virtual Unit Unit { get; set; } = null!;
 
     [ForeignKey("TenantId")]
     public virtual Tenant Tenant { get; set; } = null!;
-    
-    public virtual ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
 }

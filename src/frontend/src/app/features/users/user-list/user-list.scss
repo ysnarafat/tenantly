@@ -6,17 +6,49 @@
   .header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 24px;
+    gap: 16px;
+
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
 
     h1 {
       margin: 0;
       font-size: 28px;
+      line-height: 1;
     }
 
     .header-actions {
       display: flex;
       gap: 8px;
+    }
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .stat-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+
+    &.total {
+      background: var(--bg-chip-blue);
+      color: var(--text-chip-blue);
+    }
+    &.active {
+      background: var(--bg-chip-green);
+      color: var(--text-chip-green);
     }
   }
 
@@ -31,35 +63,37 @@
       min-width: 200px;
     }
   }
+}
 
-  .loading {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 300px;
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
   }
 
-  .table-container {
-    overflow-x: auto;
-    border-radius: 4px;
-    border: 1px solid var(--border-color);
-  }
-
-  .users-table {
-    width: 100%;
-
-    th {
-      background-color: var(--bg-secondary);
-      font-weight: 600;
-    }
-
-    tr:hover {
-      background-color: var(--bg-hover);
+  &.is-active {
+    background: var(--bg-chip-green);
+    color: var(--text-chip-green);
+    .status-dot {
+      background: #4caf50;
     }
   }
 
-  mat-paginator {
-    border-top: 1px solid var(--border-color);
+  &.is-inactive {
+    background: var(--bg-chip-grey);
+    color: var(--text-hint);
+    .status-dot {
+      background: var(--text-disabled);
+    }
   }
 }
 

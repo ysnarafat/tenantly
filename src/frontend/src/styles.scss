@@ -28,7 +28,10 @@ body {
   --color-primary-dark: #1565c0;
 
   // Backgrounds
-  --bg-primary: #ffffff;
+  // bg-primary is the page canvas (body, .main-content) — kept a soft gray rather
+  // than pure white so it reads as a backdrop, not another surface; bg-surface/
+  // card-bg stay white so cards pop against it instead of the whole app being flat.
+  --bg-primary: #eef1f5;
   --bg-secondary: #fafafa;
   --bg-surface: #ffffff;
   --bg-hover: #f9f9f9;
@@ -69,24 +72,27 @@ body {
   --shadow-card: rgba(0, 0, 0, 0.08);
   --shadow-toolbar: rgba(0, 0, 0, 0.15);
 
+  // Table zebra stripe — shared by every list/table across the app (data-table,
+  // due-list, lease-list, payment tables) so striping reads identically everywhere.
+  --bg-table-stripe: rgba(0, 0, 0, 0.022);
+
   // Due-list specific
   --card-bg: #ffffff;
   --card-bg-secondary: #f9f9f9;
-  --table-header-bg: #fafafa;
-  --table-row-hover: #f9f9f9;
   --color-success: #4caf50;
   --color-primary-dark: #1565c0;
 
-  // Sidenav
+  // Sidenav + toolbar — a soft tint close to bg-primary rather than a hard white or
+  // a dark frame, so the shell reads as part of the same canvas as the page.
+  --sidenav-bg: #e6eaf0;
   --nav-item-color: rgba(0, 0, 0, 0.7);
   --nav-icon-color: rgba(0, 0, 0, 0.45);
   --nav-hover-bg: rgba(0, 0, 0, 0.05);
-  --nav-active-bg: rgba(25, 118, 210, 0.1);
+  --nav-active-bg: rgba(25, 118, 210, 0.12);
   --nav-active-color: #1565c0;
   --nav-section-label-color: rgba(0, 0, 0, 0.35);
-  --nav-section-line-color: rgba(0, 0, 0, 0.07);
+  --nav-section-line-color: rgba(0, 0, 0, 0.08);
   --nav-border-color: rgba(0, 0, 0, 0.08);
-  --sidenav-bg: #ffffff;
 }
 
 [data-theme='dark'] {
@@ -130,10 +136,11 @@ body {
   // Due-list specific
   --card-bg: #1e1e1e;
   --card-bg-secondary: #252525;
-  --table-header-bg: #2a2a2a;
-  --table-row-hover: #2a2a2a;
   --color-success: #66bb6a;
   --color-primary-dark: #42a5f5;
+
+  // Table zebra stripe (see light theme for context)
+  --bg-table-stripe: rgba(255, 255, 255, 0.03);
 
   // Borders
   --border-color: #333333;
@@ -145,7 +152,9 @@ body {
   --shadow-card: rgba(0, 0, 0, 0.4);
   --shadow-toolbar: rgba(0, 0, 0, 0.4);
 
-  // Sidenav
+  // Sidenav + toolbar — a touch lighter than bg-primary so the shell still reads
+  // as a distinct frame against the dark canvas, without a hard color jump.
+  --sidenav-bg: #1a1f2b;
   --nav-item-color: rgba(255, 255, 255, 0.7);
   --nav-icon-color: rgba(255, 255, 255, 0.45);
   --nav-hover-bg: rgba(255, 255, 255, 0.06);
@@ -154,7 +163,6 @@ body {
   --nav-section-label-color: rgba(255, 255, 255, 0.35);
   --nav-section-line-color: rgba(255, 255, 255, 0.1);
   --nav-border-color: rgba(255, 255, 255, 0.08);
-  --sidenav-bg: #1e1e1e;
 }
 
 // ── Angular Material Dark Mode Token Overrides ────────────────────────────────
@@ -301,6 +309,57 @@ body {
     background-color: var(--bg-surface);
     z-index: 1;
     box-shadow: 0 -1px 4px rgba(0, 0, 0, 0.08);
+  }
+}
+
+// ── Toast notifications ───────────────────────────────────────────────────────
+// Baseline look for every snackBar.open(...) call (applied app-wide via
+// MAT_SNACK_BAR_DEFAULT_OPTIONS in app.config.ts — top-right, rounded,
+// shadowed, rather than Material's plain bottom-center bar). Call sites can
+// additionally pass 'toast-success'/'toast-error'/'toast-info' alongside
+// 'app-toast' for a color-coded surface; uncolored toasts keep the neutral
+// theme surface.
+.app-toast {
+  .mdc-snackbar__surface {
+    border-radius: 10px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18) !important;
+  }
+
+  .mdc-snackbar__label {
+    font-size: 0.9375rem;
+  }
+
+  &.toast-success .mdc-snackbar__surface {
+    background-color: var(--success-color) !important;
+  }
+
+  &.toast-error .mdc-snackbar__surface {
+    background-color: var(--warn-color) !important;
+  }
+
+  &.toast-info .mdc-snackbar__surface {
+    background-color: var(--color-primary) !important;
+  }
+
+  &.toast-success .mdc-snackbar__label,
+  &.toast-error .mdc-snackbar__label,
+  &.toast-info .mdc-snackbar__label {
+    color: #fff;
+  }
+
+  &.toast-success .mat-mdc-snack-bar-action,
+  &.toast-error .mat-mdc-snack-bar-action,
+  &.toast-info .mat-mdc-snack-bar-action {
+    --mat-snack-bar-button-color: #fff;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-toast {
+    // Full-width at the top on mobile instead of a narrow top-right pill —
+    // top keeps it clear of the bottom nav/keyboard, unlike the desktop
+    // corner position.
+    margin: 8px !important;
   }
 }
 
@@ -452,6 +511,40 @@ mat-dialog-content {
 }
 .h-100 {
   height: 100%;
+}
+
+/* Filter-bar "Reset" button — shared so every filters bar (tenant/property/
+   lease/payment lists, etc.) looks and behaves the same. Pair with
+   `mat-stroked-button`, the `filter_alt_off` icon, and `COMMON.BUTTONS.RESET`,
+   and gate visibility on a `hasActiveFilters` getter/signal. */
+.reset-filters-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  height: 36px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+}
+
+@media (max-width: 480px) {
+  .reset-filters-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 /* Status indicators */

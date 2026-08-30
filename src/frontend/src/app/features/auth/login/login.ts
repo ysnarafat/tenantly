@@ -19,6 +19,8 @@ import { filter } from 'rxjs';
 import { TranslateModule } from '@ngx-translate/core';
 import { AuthService, LoginRequest } from '../../../core/services/auth.service';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { setRememberMe } from '../../../shared/utils/auth-storage.utils';
+import { notifyError } from '../../../shared/utils/notify.utils';
 
 @Component({
   selector: 'app-login',
@@ -46,7 +48,10 @@ export class Login implements OnInit {
   loading = signal(false);
   error = signal<unknown>(null);
   showPassword = false;
-  rememberMe = false;
+  // Defaults checked: previously every login persisted via localStorage
+  // regardless of this checkbox (it was never wired up), so defaulting to
+  // checked keeps that behavior for anyone who doesn't touch it.
+  rememberMe = true;
 
   constructor() {
     this.loginForm = this.fb.group({
@@ -61,16 +66,6 @@ export class Login implements OnInit {
 
     this.authService.error$.pipe(takeUntilDestroyed()).subscribe((error) => this.error.set(error));
 
-    // Listen for authentication success — navigation is handled by auth effects
-    this.authService.isAuthenticated$
-      .pipe(
-        takeUntilDestroyed(),
-        filter((isAuth) => isAuth)
-      )
-      .subscribe(() => {
-        this.snackBar.open('Login successful!', 'Close', { duration: 3000 });
-      });
-
     // Listen for errors
     this.authService.error$
       .pipe(
@@ -82,7 +77,7 @@ export class Login implements OnInit {
         const errorMessage =
           (error as { message?: string })?.message ||
           'Login failed. Please check your credentials.';
-        this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
+        notifyError(this.snackBar, errorMessage);
       });
   }
 
@@ -97,6 +92,11 @@ export class Login implements OnInit {
         username: this.loginForm.value.username,
         password: this.loginForm.value.password,
       };
+
+      // Set before dispatching: the login effect writes tokens synchronously
+      // once the HTTP response arrives, so the flag must already be in
+      // place by then to land in the right storage.
+      setRememberMe(this.rememberMe);
 
       // Dispatch login action through AuthService (which uses NgRx)
       this.authService.login(loginRequest);

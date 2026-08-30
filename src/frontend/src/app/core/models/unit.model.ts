@@ -89,3 +89,22 @@ export interface UpdateUnitRequest {
   metadata?: UnitMetadata;
   active?: boolean;
 }
+
+export interface BulkCreateUnitItem {
+  unit_number: string;
+  unit_name?: string;
+  floor?: number;
+  section?: string;
+  unit_type: UnitType;
+}
+
+export interface BulkCreateUnitsRequest {
+  units: BulkCreateUnitItem[];
+}
+
+export interface BulkCreateUnitsResponse {
+  message: string;
+  building_id: number;
+  units: Unit[];
+  summary: { units_created: number };
+}

@@ -1,0 +1,16 @@
+<div class="dialog-icon" [class.tone-warn]="data.tone === 'warn'">
+  <mat-icon>{{ data.tone === 'warn' ? 'warning' : 'help_outline' }}</mat-icon>
+</div>
+
+<h2 mat-dialog-title class="dialog-title">{{ data.title }}</h2>
+
+<mat-dialog-content>
+  <p class="message-text">{{ data.message }}</p>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">{{ data.cancelLabel || 'Cancel' }}</button>
+  <button mat-flat-button [color]="data.tone === 'warn' ? 'warn' : 'primary'" (click)="onConfirm()">
+    {{ data.confirmLabel || 'Confirm' }}
+  </button>
+</mat-dialog-actions>

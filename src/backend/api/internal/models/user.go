@@ -68,6 +68,15 @@ type ResetPasswordRequest struct {
 	Email string `json:"email" binding:"required,email"`
 }
 
+// AdminResetPasswordRequest is used by an admin to set a new password for
+// another user directly (e.g. the user forgot theirs and can't self-serve
+// via email reset). Unlike ChangePasswordRequest, it has no current-password
+// field — the caller's own admin role is the authorization, checked by the
+// handler/service, not proof of knowing the old password.
+type AdminResetPasswordRequest struct {
+	NewPassword string `json:"new_password" binding:"required,min=8"`
+}
+
 type ResetPasswordToken struct {
 	ID        int       `json:"id" db:"id"`
 	UserID    int       `json:"user_id" db:"user_id"`

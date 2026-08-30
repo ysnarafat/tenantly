@@ -4,13 +4,7 @@
   }
 
   <div class="dt-table-container" [class.dt-hidden]="isEmpty || loading">
-    <table
-      mat-table
-      [dataSource]="internalDataSource"
-      matSort
-      (matSortChange)="sortChange.emit($event)"
-      class="dt-table"
-    >
+    <table mat-table [dataSource]="internalDataSource" class="dt-table">
       <ng-content></ng-content>
       <tr mat-header-row *matHeaderRowDef="renderedColumns; sticky: stickyHeader"></tr>
       <tr mat-row *matRowDef="let row; columns: renderedColumns" class="dt-row"></tr>

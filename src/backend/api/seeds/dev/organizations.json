@@ -1,0 +1,12 @@
+[
+  {
+    "name": "Default Organization",
+    "slug": "default",
+    "subscription_tier": "professional"
+  },
+  {
+    "name": "Acme Properties",
+    "slug": "acme-properties",
+    "subscription_tier": "professional"
+  }
+]

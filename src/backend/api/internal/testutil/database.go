@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"os"
 	"sync/atomic"
 	"testing"
 
@@ -9,7 +10,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 )
 
 // TestDBConfig holds test database configuration
@@ -32,6 +33,23 @@ func DefaultTestDBConfig() *TestDBConfig {
 	}
 }
 
+// URL renders the config as a libpq connection string.
+func (c *TestDBConfig) URL() string {
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		c.User, c.Password, c.Host, c.Port, c.DBName)
+}
+
+// DefaultTestDatabaseURL returns the connection string every DB-backed test
+// should use. TEST_DATABASE_URL overrides it; DATABASE_URL deliberately does
+// not, because these suites run migrations and truncate tables — falling back
+// to the app's own connection string would point them at the dev database.
+func DefaultTestDatabaseURL() string {
+	if url := os.Getenv("TEST_DATABASE_URL"); url != "" {
+		return url
+	}
+	return DefaultTestDBConfig().URL()
+}
+
 // SetupTestDB creates a test database connection and runs migrations
 // Returns the database connection and a cleanup function
 func SetupTestDB(t *testing.T) (*sqlx.DB, func()) {
@@ -39,10 +57,106 @@ func SetupTestDB(t *testing.T) (*sqlx.DB, func()) {
 	return SetupTestDBWithConfig(t, config)
 }
 
+// SetupTestDBNamed is SetupTestDB against a database of its own, created on
+// first use. `go test ./internal/...` runs packages in parallel, and cleanup
+// here drops every table — so two packages sharing one database will tear down
+// each other's schema mid-run. Each package that needs a live database should
+// therefore claim its own name.
+func SetupTestDBNamed(t *testing.T, dbName string) (*sqlx.DB, func()) {
+	if _, err := EnsureTestDatabase(dbName); err != nil {
+		t.Skipf("Skipping test: Cannot reach test database %q: %v", dbName, err)
+		return nil, nil
+	}
+	config := DefaultTestDBConfig()
+	config.DBName = dbName
+
+	// Reset first: a suite sharing this database may have left rows behind
+	// (soft deletes in particular survive their own teardown), and those
+	// collide with fixture codes here.
+	if err := ResetSchema(config.URL()); err != nil {
+		t.Skipf("Skipping test: Cannot reset test database %q: %v", dbName, err)
+		return nil, nil
+	}
+
+	return SetupTestDBWithConfig(t, config)
+}
+
+// EnsureTestDatabase creates dbName if it does not exist yet and returns its
+// DSN. TEST_DATABASE_URL overrides both — it names a specific database, so the
+// caller's name is ignored and nothing is created.
+func EnsureTestDatabase(dbName string) (string, error) {
+	if url := os.Getenv("TEST_DATABASE_URL"); url != "" {
+		return url, nil
+	}
+
+	config := DefaultTestDBConfig()
+	config.DBName = dbName
+	if err := ensureDatabase(config); err != nil {
+		return "", err
+	}
+	return config.URL(), nil
+}
+
+// ensureDatabase creates config.DBName if it does not exist yet, connecting to
+// the server's default maintenance database to do so. CREATE DATABASE cannot
+// run inside a transaction or be written as IF NOT EXISTS, hence the explicit
+// catalog check.
+func ensureDatabase(config *TestDBConfig) error {
+	maintenance := *config
+	maintenance.DBName = "postgres"
+
+	db, err := sqlx.Connect("postgres", maintenance.URL())
+	if err != nil {
+		return err
+	}
+	defer func() { _ = db.Close() }()
+
+	var exists bool
+	if err := db.Get(&exists, "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = $1)", config.DBName); err != nil {
+		return err
+	}
+	if exists {
+		return nil
+	}
+
+	// pq has no placeholder support for identifiers; the name is ours, not
+	// user input, but quote it so an unusual name still parses.
+	if _, err := db.Exec(fmt.Sprintf("CREATE DATABASE %s", pq.QuoteIdentifier(config.DBName))); err != nil {
+		// A parallel test binary may have won the race between the check and
+		// the create; that is not an error for our purposes.
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "42P04" {
+			return nil
+		}
+		return err
+	}
+
+	return nil
+}
+
+// RunMigrations applies every migration to the database behind connStr. It
+// exists so tests outside this package can migrate a database they opened
+// themselves: database.RunMigrations resolves "file://migrations" against the
+// process working directory, which is the package directory under `go test`,
+// not the module root.
+func RunMigrations(connStr string) error {
+	return runMigrations(connStr)
+}
+
+// ResetSchema drops every table and re-applies the migrations, so a suite
+// starts from a known-empty schema. Suites that seed fixed data (a fixed
+// organization slug, username, or property code) otherwise fail on the second
+// run against the same database — including after a run that aborted before
+// its teardown.
+func ResetSchema(connStr string) error {
+	if err := dropAllTables(connStr); err != nil {
+		return fmt.Errorf("failed to drop tables: %w", err)
+	}
+	return runMigrations(connStr)
+}
+
 // SetupTestDBWithConfig allows custom configuration
 func SetupTestDBWithConfig(t *testing.T, config *TestDBConfig) (*sqlx.DB, func()) {
-	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		config.User, config.Password, config.Host, config.Port, config.DBName)
+	connStr := config.URL()
 
 	db, err := sqlx.Connect("postgres", connStr)
 	if err != nil {
@@ -74,7 +188,7 @@ func SetupTestDBWithConfig(t *testing.T, config *TestDBConfig) (*sqlx.DB, func()
 // was given, which killed the connection every test needed for the rest of
 // its body immediately after setup ("sql: database is closed").
 func runMigrations(connStr string) error {
-	m, err := migrate.New("file://../../migrations", connStr)
+	m, err := newMigrate(connStr)
 	if err != nil {
 		return fmt.Errorf("failed to create migrate instance: %w", err)
 	}
@@ -88,7 +202,7 @@ func runMigrations(connStr string) error {
 }
 
 func dropAllTables(connStr string) error {
-	m, err := migrate.New("file://../../migrations", connStr)
+	m, err := newMigrate(connStr)
 	if err != nil {
 		return err
 	}
@@ -99,6 +213,35 @@ func dropAllTables(connStr string) error {
 	}
 
 	return nil
+}
+
+// newMigrate opens a migrate instance and clears any dirty flag first.
+//
+// A migration that fails partway leaves the version marked dirty, and every
+// later run then refuses to do anything until someone forces the version by
+// hand — one bad run poisons the database for the rest of the day. That is
+// intolerable for a disposable test database, where the schema is rebuilt from
+// scratch constantly, so recover automatically instead. Only ever call this
+// against a test database.
+func newMigrate(connStr string) (*migrate.Migrate, error) {
+	m, err := migrate.New("file://../../migrations", connStr)
+	if err != nil {
+		return nil, err
+	}
+
+	version, dirty, err := m.Version()
+	if err != nil && err != migrate.ErrNilVersion {
+		_, _ = m.Close()
+		return nil, err
+	}
+	if dirty {
+		if err := m.Force(int(version)); err != nil {
+			_, _ = m.Close()
+			return nil, fmt.Errorf("failed to clear dirty version %d: %w", version, err)
+		}
+	}
+
+	return m, nil
 }
 
 // CreateTestProperty is a helper to create a test property for repository tests

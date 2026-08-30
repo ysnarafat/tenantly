@@ -28,19 +28,21 @@
 .quick-metrics-section {
   margin-bottom: 32px;
 
-  mat-grid-list {
-    margin-bottom: 16px;
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
   }
 
   @media (max-width: 1200px) {
-    mat-grid-list {
-      cols: 2 !important;
+    .metrics-grid {
+      grid-template-columns: repeat(2, 1fr);
     }
   }
 
   @media (max-width: 768px) {
-    mat-grid-list {
-      cols: 1 !important;
+    .metrics-grid {
+      grid-template-columns: 1fr;
     }
   }
 }
@@ -60,6 +62,7 @@
     gap: 16px;
     padding: 16px !important;
     height: 100%;
+    box-sizing: border-box;
   }
 }
 
@@ -637,10 +640,80 @@ mat-chip-set {
   }
 }
 
+// Legacy flex-based Material Table API (`<mat-table>`/`<mat-header-cell>`/
+// `<mat-cell>`, not the `<table mat-table>` MDC element used elsewhere) — styled
+// to match the same header/row/cell spec as <app-data-table> and every other
+// list page, so this report doesn't read as a visually different, unstyled table.
 .ledger-table {
   width: 100%;
   border-radius: 8px;
   overflow: hidden;
+  border: 1px solid var(--border-light);
+
+  mat-header-row {
+    background-color: var(--bg-secondary);
+    min-height: unset;
+  }
+
+  mat-header-cell {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-hint);
+    border-bottom: 2px solid var(--border-light);
+    padding: 8px 16px;
+  }
+
+  // Row/cell density, zebra stripe, and hover are desktop-only — below 768px
+  // the media query above turns each mat-row into its own bordered card with
+  // its own density/border rules, which these would otherwise fight.
+  @media (min-width: 769px) {
+    mat-row {
+      min-height: unset;
+      transition: background 0.1s;
+
+      &:nth-child(even) {
+        background: var(--bg-table-stripe);
+      }
+
+      &:hover {
+        background: var(--bg-hover);
+      }
+    }
+
+    mat-cell {
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border-table);
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    mat-row:last-child mat-cell {
+      border-bottom: none;
+    }
+  }
+
+  // Money columns render in the app's numeric monospace, same convention as
+  // the amount columns in payment-list/tenant-list/lease-list. Right-alignment
+  // is desktop-only (@media below) — on the mobile stacked-card layout each
+  // cell is a flex row of label-then-value, and flex-end there would push both
+  // apart instead of just the value.
+  mat-cell[data-label='Due'],
+  mat-cell[data-label='Paid'],
+  mat-cell[data-label='Monthly Rent'],
+  mat-cell[data-label='Balance Due'] {
+    font-family: 'IBM Plex Mono', 'Roboto Mono', monospace;
+  }
+
+  @media (min-width: 769px) {
+    mat-cell[data-label='Due'],
+    mat-cell[data-label='Paid'],
+    mat-cell[data-label='Monthly Rent'],
+    mat-cell[data-label='Balance Due'] {
+      justify-content: flex-end;
+    }
+  }
 
   .status-paid {
     background-color: var(--bg-chip-green);

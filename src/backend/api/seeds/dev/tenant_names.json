@@ -1,0 +1,16 @@
+{
+  "first_names": [
+    "Mohammad Karim", "Fatema", "Abdul Rahim", "Nasrin", "Md Hasan",
+    "Shahnaz", "Zahirul Islam", "Nargis", "Abul Kashem", "Roksana",
+    "Anwar Hossain", "Sultana", "Mizanur Rahman", "Laila", "Nurul Islam",
+    "Jharna", "Tofazzal", "Halima", "Mahbubur Rahman", "Shirin",
+    "Sirajul Islam", "Maksuda", "Jahangir Alam", "Kohinoor", "Golam Mostafa",
+    "Hasina", "Aminul Islam", "Bilkis", "Khurshid", "Tahmina",
+    "Selim Reza", "Rabeya", "Joynal Abedin", "Sumaiya", "Motiur Rahman",
+    "Ferdousi", "Ashraful Haque", "Morzina", "Badrul Alam", "Champa",
+    "Shahidul Islam", "Rupali", "Moniruzzaman", "Sabina", "Enayet Hossain",
+    "Morjina", "Sohrab Ali", "Zinnat Ara", "Rafiqul Islam", "Dilruba"
+  ],
+  "last_names": ["Ahmed", "Khan", "Hossain", "Chowdhury", "Bhuiyan"],
+  "phone_prefixes": ["017", "018", "019", "016", "015"]
+}

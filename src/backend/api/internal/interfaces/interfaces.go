@@ -112,6 +112,8 @@ type UserServiceInterface interface {
 	DeleteUser(id int) error
 	UpdateUserInOrganization(id int, req *models.UpdateUserRequest, orgID int) error
 	DeleteUserInOrganization(id int, orgID int) error
+	AdminResetPassword(id int, newPassword string) error
+	AdminResetPasswordInOrganization(id int, newPassword string, orgID int) error
 	SetOrganization(userID int, req *models.SetOrganizationRequest) (*models.SetOrganizationResponse, error)
 }
 
@@ -196,6 +198,7 @@ type BuildingServiceInterface interface {
 // UnitRepositoryInterface defines the interface for unit repository operations
 type UnitRepositoryInterface interface {
 	Create(req *models.CreateUnitRequest, organizationID int) (*models.Unit, error)
+	BulkCreate(units []*models.Unit) error
 	GetByID(id int) (*models.Unit, error)
 	GetByIDWithDetails(id int) (*models.UnitWithDetails, error)
 	Update(id int, req *models.UpdateUnitRequest) (*models.Unit, error)
@@ -213,6 +216,7 @@ type UnitRepositoryInterface interface {
 // UnitServiceInterface defines the interface for unit service operations
 type UnitServiceInterface interface {
 	CreateUnit(req *models.CreateUnitRequest, userID, orgID int) (*models.Unit, error)
+	BulkCreateUnits(req *models.BulkCreateUnitsRequest, userID, orgID int) ([]*models.Unit, error)
 	GetUnit(id, orgID int) (*models.UnitWithDetails, error)
 	UpdateUnit(id int, req *models.UpdateUnitRequest, userID, orgID int) (*models.Unit, error)
 	DeleteUnit(id, userID, orgID int) error
@@ -246,6 +250,37 @@ type PaymentRepositoryInterface interface {
 	GetActiveLeasesForPeriod(orgID, month, year int, buildingID *int) ([]*models.LeaseSearchResult, error)
 	CheckPaymentExists(unitID, month, year int) (bool, error)
 	GetBatchPropertyPaymentStats(propertyIDs []int, startDate, endDate time.Time) (map[int]any, error)
+	NextReceiptNumber(orgID int, yearMonth string) (string, error)
+}
+
+// PaymentTransactionRepositoryInterface defines the interface for payment transaction repository operations
+type PaymentTransactionRepositoryInterface interface {
+	Create(paymentID int, amount float64, paymentMethod, receiptNumber, notes string, paymentDate time.Time) (*models.PaymentTransaction, error)
+	GetByID(id int) (*models.PaymentTransaction, error)
+	GetByPaymentID(paymentID int) ([]*models.PaymentTransaction, error)
+	Delete(id int) error
+	SumByPaymentID(paymentID int) (float64, error)
+}
+
+// PaymentTransactionAttachmentRepositoryInterface defines the interface for payment transaction attachment repository operations
+type PaymentTransactionAttachmentRepositoryInterface interface {
+	Create(transactionID int, fileName, contentType string, fileSize int, data []byte, uploadedBy *int) (*models.PaymentTransactionAttachment, error)
+	GetByID(id int) (*models.PaymentTransactionAttachment, error)
+	GetByTransactionID(transactionID int) ([]*models.PaymentTransactionAttachment, error)
+	GetFileData(id int) ([]byte, string, string, error)
+	Delete(id int) error
+}
+
+// ReceiptAccessTokenRepositoryInterface defines the interface for receipt access token repository operations
+type ReceiptAccessTokenRepositoryInterface interface {
+	Create(paymentID int, token string, expiresAt time.Time) (*models.ReceiptAccessToken, error)
+	GetValidByPaymentID(paymentID int) (*models.ReceiptAccessToken, error)
+	GetByToken(token string) (*models.ReceiptAccessToken, error)
+}
+
+// NotificationRepositoryInterface defines the interface for queuing notifications for the notification-service to deliver
+type NotificationRepositoryInterface interface {
+	Create(req *models.CreateNotificationRequest) (*models.NotificationQueue, error)
 }
 
 // PaymentServiceInterface defines the interface for payment service operations
@@ -253,6 +288,13 @@ type PaymentServiceInterface interface {
 	CreatePayment(req *models.CreatePaymentRequest, userID int) (*models.Payment, error)
 	GetPayment(id, orgID int) (*models.PaymentWithDetails, error)
 	UpdatePayment(id int, req *models.UpdatePaymentRequest, userID, orgID int) (*models.Payment, error)
+	RecordPaymentTransaction(paymentID int, req *models.CreatePaymentTransactionRequest, userID, orgID int) (*models.Payment, error)
+	GetPaymentTransactions(paymentID, orgID int) ([]*models.PaymentTransaction, error)
+	DeletePaymentTransaction(paymentID, transactionID, userID, orgID int) (*models.Payment, error)
+	UploadPaymentTransactionAttachment(paymentID, transactionID int, fileName string, data []byte, userID, orgID int) (*models.PaymentTransactionAttachment, error)
+	GetPaymentTransactionAttachments(paymentID, transactionID, orgID int) ([]*models.PaymentTransactionAttachment, error)
+	GetPaymentTransactionAttachmentFile(paymentID, transactionID, attachmentID, orgID int) ([]byte, string, string, error)
+	DeletePaymentTransactionAttachment(paymentID, transactionID, attachmentID, userID, orgID int) error
 	GetPayments(page, pageSize int, filters map[string]any) ([]*models.PaymentWithDetails, int, error)
 	GetPaymentsByBuilding(buildingID int, page, pageSize int, filters map[string]any) ([]*models.PaymentWithDetails, int, error)
 	GetPaymentsByProperty(propertyID int, page, pageSize int, filters map[string]any) ([]*models.PaymentWithDetails, int, error)
@@ -265,6 +307,8 @@ type PaymentServiceInterface interface {
 	LogPaymentAccess(userID int, action string, paymentID int, allowed bool)
 	SearchLeases(orgID int, query string) (*models.LeaseSearchResponse, error)
 	GenerateMonthlyPayments(req *models.GenerateMonthlyPaymentsRequest, orgID, userID int) (*models.GenerateMonthlyPaymentsResult, error)
+	GenerateReceiptPDF(paymentID, orgID int) ([]byte, error)
+	DownloadReceiptByToken(token string) ([]byte, string, error)
 }
 
 // TenantRepositoryInterface defines the interface for tenant repository operations
@@ -273,6 +317,7 @@ type TenantRepositoryInterface interface {
 	CheckEmailExists(email string, excludeID int) (bool, error)
 	CheckNIDExists(nid string, excludeID int) (bool, error)
 	GetByID(id int) (*models.Tenant, error)
+	GetByIDIncludingInactive(id int) (*models.Tenant, error)
 	GetDecryptedNID(id int) (string, int, error)
 	GetByUnitID(unitID int) (*models.Tenant, error)
 	GetAll(page, pageSize, orgID int) ([]*models.Tenant, int, error)
@@ -313,11 +358,23 @@ type LeaseRepositoryInterface interface {
 	GetByTenantID(tenantID int, page, pageSize, orgID int) ([]*models.LeaseWithDetails, int, error)
 	Update(id int, req *models.UpdateLeaseRequest) (*models.Lease, error)
 	Delete(id int) error
-	SoftDelete(id int) error
+	SoftDelete(id int, endDate time.Time, reason models.LeaseEndReason) error
+	RenewLease(oldLeaseID int, req *models.RenewLeaseRequest) (*models.Lease, error)
 	HasActiveLeaseOnUnit(unitID int, excludeLeaseID *int) (bool, error)
 	HasActiveLeaseForTenant(tenantID int) (bool, error)
+	HasPayableLeaseForUnitAndTenant(unitID, tenantID int) (bool, error)
 	GetLeasesDueForMonth(orgID int) ([]models.LeaseDue, error)
 	GetDueSummary(orgID int) (*models.DueSummary, error)
+}
+
+// LeaseChargeRepositoryInterface defines the interface for lease charge repository operations
+type LeaseChargeRepositoryInterface interface {
+	Create(leaseID int, req *models.CreateLeaseChargeRequest) (*models.LeaseCharge, error)
+	GetByID(id int) (*models.LeaseCharge, error)
+	GetByLeaseID(leaseID int) ([]*models.LeaseCharge, error)
+	Update(id int, req *models.UpdateLeaseChargeRequest) (*models.LeaseCharge, error)
+	Delete(id int) error
+	SumActiveChargesByLeaseID(leaseID int) (float64, error)
 }
 
 // LeaseServiceInterface defines the interface for lease service operations
@@ -328,6 +385,10 @@ type LeaseServiceInterface interface {
 	UpdateLease(id int, req *models.UpdateLeaseRequest, userID, orgID int) (*models.LeaseWithDetails, error)
 	DeleteLease(id int, userID, orgID int) error
 	TerminateLease(id int, userID, orgID int, terminationDate string) error
+	RenewLease(id int, req *models.RenewLeaseRequest, userID, orgID int) (*models.LeaseWithDetails, error)
+	AddLeaseCharge(leaseID int, req *models.CreateLeaseChargeRequest, userID, orgID int) (*models.LeaseCharge, error)
+	UpdateLeaseCharge(leaseID, chargeID int, req *models.UpdateLeaseChargeRequest, userID, orgID int) (*models.LeaseCharge, error)
+	RemoveLeaseCharge(leaseID, chargeID int, userID, orgID int) error
 	GetLeasesByUnit(unitID int, page, pageSize, orgID int) (*models.LeaseListResponse, error)
 	GetLeasesByTenant(tenantID int, page, pageSize, orgID int) (*models.LeaseListResponse, error)
 	GetLeasesDue(orgID int) ([]models.LeaseDue, error)

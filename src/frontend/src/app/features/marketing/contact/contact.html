@@ -1,0 +1,76 @@
+<div class="ct-page">
+  <header class="ct-nav">
+    <a class="ct-brand" routerLink="/home">
+      <mat-icon class="ct-brand-icon" aria-hidden="true">apartment</mat-icon>
+      <span class="ct-brand-name">TENANTLY</span>
+    </a>
+
+    <nav class="ct-nav-actions">
+      <a class="ct-nav-link" routerLink="/home">{{ 'CONTACT_PAGE.NAV.HOME' | translate }}</a>
+
+      @if (themeService.darkModeEnabled) {
+      <button
+        mat-icon-button
+        (click)="themeService.toggle()"
+        [attr.aria-label]="themeService.isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
+      >
+        <mat-icon>{{ themeService.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
+      </button>
+      }
+
+      <button
+        mat-icon-button
+        (click)="languageService.toggle()"
+        [attr.aria-label]="languageService.currentLang() === 'en' ? 'বাংলায় দেখুন' : 'View in English'"
+      >
+        <mat-icon>language</mat-icon>
+      </button>
+
+      <a mat-flat-button class="ct-nav-cta" routerLink="/login"
+        >{{ 'CONTACT_PAGE.NAV.LOGIN' | translate }}</a
+      >
+    </nav>
+  </header>
+
+  <main>
+    <section class="ct-hero">
+      <span class="ct-eyebrow">{{ 'CONTACT_PAGE.HERO.EYEBROW' | translate }}</span>
+      <h1 class="ct-hero-title">{{ 'CONTACT_PAGE.HERO.TITLE' | translate }}</h1>
+      <p class="ct-hero-subtitle">{{ 'CONTACT_PAGE.HERO.SUBTITLE' | translate }}</p>
+    </section>
+
+    <section class="ct-body">
+      <div class="ct-email-card">
+        <div class="ct-email-icon">
+          <mat-icon aria-hidden="true">mail</mat-icon>
+        </div>
+        <p class="ct-email-label">{{ 'CONTACT_PAGE.EMAIL.LABEL' | translate }}</p>
+        <a class="ct-email-address" href="mailto:{{ contactEmail }}">{{ contactEmail }}</a>
+        <div class="ct-email-actions">
+          <button mat-stroked-button class="ct-copy-btn" (click)="copyEmail()">
+            <mat-icon>{{ emailCopied() ? 'check' : 'content_copy' }}</mat-icon>
+            {{ (emailCopied() ? 'CONTACT_PAGE.EMAIL.COPIED' : 'CONTACT_PAGE.EMAIL.COPY') | translate
+            }}
+          </button>
+          <a mat-flat-button class="ct-open-btn" href="mailto:{{ contactEmail }}">
+            <mat-icon>open_in_new</mat-icon>
+            {{ 'CONTACT_PAGE.EMAIL.OPEN' | translate }}
+          </a>
+        </div>
+        <p class="ct-response-note">
+          <mat-icon aria-hidden="true">schedule</mat-icon>
+          {{ 'CONTACT_PAGE.EMAIL.RESPONSE' | translate }}
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="ct-footer">
+    <div class="ct-footer-brand">
+      <mat-icon aria-hidden="true">apartment</mat-icon>
+      <span>TENANTLY</span>
+    </div>
+    <p>{{ 'CONTACT_PAGE.FOOTER.TAGLINE' | translate }}</p>
+    <p>{{ 'CONTACT_PAGE.FOOTER.RIGHTS' | translate: { year: currentYear } }}</p>
+  </footer>
+</div>

@@ -1,7 +1,11 @@
 package services
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/ysnarafat/tenantly/internal/interfaces"
@@ -9,29 +13,49 @@ import (
 )
 
 type PaymentService struct {
-	paymentRepo  interfaces.PaymentRepositoryInterface
-	unitRepo     interfaces.UnitRepositoryInterface
-	buildingRepo interfaces.BuildingRepositoryInterface
-	propertyRepo interfaces.PropertyRepositoryInterface
-	auditService interfaces.AuditServiceInterface
-	userRepo     interfaces.UserRepositoryInterface
+	paymentRepo                      interfaces.PaymentRepositoryInterface
+	paymentTransactionRepo           interfaces.PaymentTransactionRepositoryInterface
+	paymentTransactionAttachmentRepo interfaces.PaymentTransactionAttachmentRepositoryInterface
+	receiptTokenRepo                 interfaces.ReceiptAccessTokenRepositoryInterface
+	notificationRepo                 interfaces.NotificationRepositoryInterface
+	leaseRepo                        interfaces.LeaseRepositoryInterface
+	unitRepo                         interfaces.UnitRepositoryInterface
+	buildingRepo                     interfaces.BuildingRepositoryInterface
+	propertyRepo                     interfaces.PropertyRepositoryInterface
+	auditService                     interfaces.AuditServiceInterface
+	userRepo                         interfaces.UserRepositoryInterface
+	// publicBaseURL is prepended to receipt tokens to build the link sent in
+	// the "payment recorded" SMS (see queueReceiptSms) — e.g. https://app.example.com.
+	publicBaseURL string
 }
 
 func NewPaymentService(
 	paymentRepo interfaces.PaymentRepositoryInterface,
+	paymentTransactionRepo interfaces.PaymentTransactionRepositoryInterface,
+	paymentTransactionAttachmentRepo interfaces.PaymentTransactionAttachmentRepositoryInterface,
+	receiptTokenRepo interfaces.ReceiptAccessTokenRepositoryInterface,
+	notificationRepo interfaces.NotificationRepositoryInterface,
+	leaseRepo interfaces.LeaseRepositoryInterface,
 	unitRepo interfaces.UnitRepositoryInterface,
 	buildingRepo interfaces.BuildingRepositoryInterface,
 	propertyRepo interfaces.PropertyRepositoryInterface,
 	auditService interfaces.AuditServiceInterface,
 	userRepo interfaces.UserRepositoryInterface,
+	publicBaseURL string,
 ) *PaymentService {
 	return &PaymentService{
-		paymentRepo:  paymentRepo,
-		unitRepo:     unitRepo,
-		buildingRepo: buildingRepo,
-		propertyRepo: propertyRepo,
-		auditService: auditService,
-		userRepo:     userRepo,
+		paymentRepo:                      paymentRepo,
+		paymentTransactionRepo:           paymentTransactionRepo,
+		paymentTransactionAttachmentRepo: paymentTransactionAttachmentRepo,
+		receiptTokenRepo:                 receiptTokenRepo,
+		notificationRepo:                 notificationRepo,
+		leaseRepo:                        leaseRepo,
+		unitRepo:                         unitRepo,
+		buildingRepo:                     buildingRepo,
+		propertyRepo:                     propertyRepo,
+		auditService:                     auditService,
+		publicBaseURL:                    publicBaseURL,
+		userRepo:                         userRepo,
 	}
 }
 
@@ -68,6 +92,38 @@ func (s *PaymentService) CreatePayment(req *models.CreatePaymentRequest, userID 
 	if err != nil {
 		return nil, fmt.Errorf("property not found: %w", err)
 	}
+
+	// A payment may only be recorded against a lease that is still active AND
+	// has not yet passed its end_date. "active" alone is not enough — active
+	// only flips via explicit staff action (terminate/renew), so a lease can
+	// sit active=true long after its end_date has passed. A lease that is
+	// merely "expiring soon" (active, end_date still in the future) remains
+	// payable — only a truly expired/inactive lease is rejected here.
+	payable, err := s.leaseRepo.HasPayableLeaseForUnitAndTenant(req.UnitID, req.TenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify lease status: %w", err)
+	}
+	if !payable {
+		return nil, fmt.Errorf("no active, non-expired lease found for this tenant and unit")
+	}
+
+	// Reject a second payment for the same unit/month/year up front so the
+	// user sees a clear error instead of a raw DB unique-constraint failure.
+	exists, err := s.paymentRepo.CheckPaymentExists(req.UnitID, req.Month, req.Year)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check existing payment: %w", err)
+	}
+	if exists {
+		return nil, fmt.Errorf("a payment already exists for this unit for the selected month/year")
+	}
+
+	// Receipt numbers are always server-generated — a client-supplied value is
+	// discarded so numbering stays sequential and collision-free per org/period.
+	receiptNumber, err := s.paymentRepo.NextReceiptNumber(req.OrganizationID, fmt.Sprintf("%04d%02d", req.Year, req.Month))
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate receipt number: %w", err)
+	}
+	req.ReceiptNumber = &receiptNumber
 
 	// Create payment with building context
 	payment, err := s.paymentRepo.Create(req)
@@ -116,6 +172,18 @@ func (s *PaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequest,
 		return nil, fmt.Errorf("payment not found")
 	}
 
+	// Status is never accepted from the client — PaymentRepository.Update
+	// always (re)derives it from amount_paid vs amount_due.
+	req.Status = nil
+
+	// AmountPaid and ReceiptNumber are never accepted from the client either
+	// — recording money received must go through RecordPaymentTransaction
+	// so partial/installment payments accumulate correctly instead of
+	// overwriting each other, and every payment received gets its own
+	// server-generated receipt.
+	req.AmountPaid = nil
+	req.ReceiptNumber = nil
+
 	// Update payment
 	updatedPayment, err := s.paymentRepo.Update(id, req)
 	if err != nil {
@@ -140,6 +208,380 @@ func (s *PaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequest,
 	})
 
 	return updatedPayment, nil
+}
+
+// RecordPaymentTransaction records a new amount received against a payment.
+// This is the only way amount_paid ever changes — it adds to the existing
+// total rather than replacing it, so a second (or third) installment against
+// the same month's due amount accumulates correctly instead of overwriting
+// the first, and each amount received gets its own receipt number.
+func (s *PaymentService) RecordPaymentTransaction(paymentID int, req *models.CreatePaymentTransactionRequest, userID, orgID int) (*models.Payment, error) {
+	existingPayment, err := s.paymentRepo.GetByIDWithDetails(paymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get existing payment: %w", err)
+	}
+	if existingPayment.OrganizationID != orgID {
+		return nil, fmt.Errorf("payment not found")
+	}
+
+	// An installment can never push the total paid past what's actually
+	// due — a landlord recording a genuine advance/next-month payment
+	// should create that as its own payment period instead. The 0.005
+	// epsilon absorbs float rounding on 2-decimal currency amounts.
+	remainingDue := existingPayment.AmountDue - existingPayment.AmountPaid
+	if req.Amount > remainingDue+0.005 {
+		return nil, fmt.Errorf("payment amount %.2f exceeds the remaining due balance of %.2f", req.Amount, remainingDue)
+	}
+
+	paymentDateStr := time.Now().UTC().Format("2006-01-02")
+	if req.PaymentDate != nil && *req.PaymentDate != "" {
+		paymentDateStr = *req.PaymentDate
+	}
+	paymentDate, err := time.Parse("2006-01-02", paymentDateStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid payment_date format (expected YYYY-MM-DD): %w", err)
+	}
+
+	// Receipt numbers are always server-generated — every amount received
+	// gets its own, matching how a landlord would actually hand out receipts
+	// for separate installments.
+	yearMonth := fmt.Sprintf("%04d%02d", existingPayment.Year, existingPayment.Month)
+	receiptNumber, err := s.paymentRepo.NextReceiptNumber(existingPayment.OrganizationID, yearMonth)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate receipt number: %w", err)
+	}
+
+	method := ""
+	if req.PaymentMethod != nil {
+		method = *req.PaymentMethod
+	}
+	notes := ""
+	if req.Notes != nil {
+		notes = *req.Notes
+	}
+
+	if _, err := s.paymentTransactionRepo.Create(paymentID, req.Amount, method, receiptNumber, notes, paymentDate); err != nil {
+		return nil, fmt.Errorf("failed to record payment transaction: %w", err)
+	}
+
+	updatedPayment, err := s.refreshPaymentFromTransactions(paymentID)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = s.auditService.LogUserAction(userID, "RECORD_PAYMENT", "payments", &paymentID, map[string]interface{}{
+		"payment_id":      existingPayment.ID,
+		"old_amount_paid": existingPayment.AmountPaid,
+	}, map[string]interface{}{
+		"payment_id":          paymentID,
+		"transaction_amount":  req.Amount,
+		"new_amount_paid":     updatedPayment.AmountPaid,
+		"new_status":          updatedPayment.Status,
+		"transaction_receipt": receiptNumber,
+	})
+
+	// Best-effort: a tenant should hear about a recorded payment, but a
+	// failure here (e.g. no phone on file) must never fail the payment
+	// itself, which is why every error along this path is swallowed.
+	s.queueReceiptSms(existingPayment, req.Amount)
+
+	return updatedPayment, nil
+}
+
+// queueReceiptSms queues an SMS telling the tenant a payment was recorded,
+// with a link to download the receipt — the link works without any login
+// since tenants have none; see ReceiptAccessToken.
+func (s *PaymentService) queueReceiptSms(payment *models.PaymentWithDetails, installmentAmount float64) {
+	if payment.TenantPhone == "" {
+		return
+	}
+
+	token, err := s.getOrCreateReceiptToken(payment.ID)
+	if err != nil {
+		return
+	}
+
+	link := fmt.Sprintf("%s/api/v1/receipts/%s", strings.TrimRight(s.publicBaseURL, "/"), token)
+	message := fmt.Sprintf(
+		"Dear %s, we've received your payment of BDT %.2f for %s (%02d/%d). Download your receipt: %s",
+		payment.TenantName, installmentAmount, payment.UnitNumber, payment.Month, payment.Year, link,
+	)
+
+	propertyID := payment.PropertyID
+	buildingID := payment.BuildingID
+	_, _ = s.notificationRepo.Create(&models.CreateNotificationRequest{
+		TenantID:         payment.TenantID,
+		UnitID:           payment.UnitID,
+		PropertyID:       &propertyID,
+		BuildingID:       &buildingID,
+		Message:          message,
+		NotificationType: models.NotificationTypeSMS,
+		Recipient:        payment.TenantPhone,
+	})
+}
+
+// getOrCreateReceiptToken reuses a still-valid token for the payment if one
+// exists, so the same SMS link keeps working across installments, rather
+// than issuing (and having to resend) a new one every time.
+func (s *PaymentService) getOrCreateReceiptToken(paymentID int) (string, error) {
+	if existing, err := s.receiptTokenRepo.GetValidByPaymentID(paymentID); err == nil {
+		return existing.Token, nil
+	}
+
+	token, err := generateReceiptToken()
+	if err != nil {
+		return "", fmt.Errorf("failed to generate receipt token: %w", err)
+	}
+	created, err := s.receiptTokenRepo.Create(paymentID, token, time.Now().UTC().Add(models.ReceiptTokenValidity))
+	if err != nil {
+		return "", fmt.Errorf("failed to store receipt token: %w", err)
+	}
+	return created.Token, nil
+}
+
+func generateReceiptToken() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(b), nil
+}
+
+// DownloadReceiptByToken serves a receipt PDF with no staff authentication —
+// the unguessable, expiring token itself is the authorization, since tenants
+// (the intended audience for a receipt-link SMS) have no login at all.
+func (s *PaymentService) DownloadReceiptByToken(token string) ([]byte, string, error) {
+	accessToken, err := s.receiptTokenRepo.GetByToken(token)
+	if err != nil {
+		return nil, "", fmt.Errorf("receipt link not found")
+	}
+	if time.Now().UTC().After(accessToken.ExpiresAt) {
+		return nil, "", fmt.Errorf("receipt link has expired")
+	}
+
+	payment, err := s.paymentRepo.GetByIDWithDetails(accessToken.PaymentID)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to get payment: %w", err)
+	}
+
+	pdfBytes, err := renderReceiptPDF(payment)
+	if err != nil {
+		return nil, "", err
+	}
+
+	filename := fmt.Sprintf("receipt-%s.pdf", payment.ReceiptNumber)
+	return pdfBytes, filename, nil
+}
+
+// GetPaymentTransactions returns the ledger of amounts received against a
+// payment, earliest first.
+func (s *PaymentService) GetPaymentTransactions(paymentID, orgID int) ([]*models.PaymentTransaction, error) {
+	payment, err := s.paymentRepo.GetByIDWithDetails(paymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get payment: %w", err)
+	}
+	if payment.OrganizationID != orgID {
+		return nil, fmt.Errorf("payment not found")
+	}
+
+	txns, err := s.paymentTransactionRepo.GetByPaymentID(paymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get payment transactions: %w", err)
+	}
+	return txns, nil
+}
+
+// DeletePaymentTransaction removes a mistakenly-recorded transaction and
+// recomputes the payment's cached amount_paid/status/etc. from what remains.
+func (s *PaymentService) DeletePaymentTransaction(paymentID, transactionID, userID, orgID int) (*models.Payment, error) {
+	payment, err := s.paymentRepo.GetByIDWithDetails(paymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get payment: %w", err)
+	}
+	if payment.OrganizationID != orgID {
+		return nil, fmt.Errorf("payment not found")
+	}
+
+	txn, err := s.paymentTransactionRepo.GetByID(transactionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get payment transaction: %w", err)
+	}
+	if txn.PaymentID != paymentID {
+		return nil, fmt.Errorf("payment transaction not found")
+	}
+
+	if err := s.paymentTransactionRepo.Delete(transactionID); err != nil {
+		return nil, fmt.Errorf("failed to delete payment transaction: %w", err)
+	}
+
+	updatedPayment, err := s.refreshPaymentFromTransactions(paymentID)
+	if err != nil {
+		return nil, err
+	}
+
+	_ = s.auditService.LogUserAction(userID, "DELETE_PAYMENT_TRANSACTION", "payments", &paymentID, txn, map[string]interface{}{
+		"payment_id":      paymentID,
+		"new_amount_paid": updatedPayment.AmountPaid,
+		"new_status":      updatedPayment.Status,
+	})
+
+	return updatedPayment, nil
+}
+
+// getOwnedTransaction loads a transaction and verifies it belongs both to
+// the given payment and, transitively, to the caller's organization —
+// mirroring the same parent-chain ownership check used throughout
+// DeletePaymentTransaction/GetPaymentTransactions.
+func (s *PaymentService) getOwnedTransaction(paymentID, transactionID, orgID int) (*models.PaymentTransaction, error) {
+	payment, err := s.paymentRepo.GetByIDWithDetails(paymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get payment: %w", err)
+	}
+	if payment.OrganizationID != orgID {
+		return nil, fmt.Errorf("payment not found")
+	}
+
+	txn, err := s.paymentTransactionRepo.GetByID(transactionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get payment transaction: %w", err)
+	}
+	if txn.PaymentID != paymentID {
+		return nil, fmt.Errorf("payment transaction not found")
+	}
+	return txn, nil
+}
+
+// UploadPaymentTransactionAttachment stores a file (receipt photo, mobile
+// banking screenshot, etc.) as evidence of one installment. The content type
+// is derived from the actual file bytes (never trusted from the client) and
+// restricted to images and PDF; size is capped at MaxAttachmentFileSize.
+func (s *PaymentService) UploadPaymentTransactionAttachment(paymentID, transactionID int, fileName string, data []byte, userID, orgID int) (*models.PaymentTransactionAttachment, error) {
+	if _, err := s.getOwnedTransaction(paymentID, transactionID, orgID); err != nil {
+		return nil, err
+	}
+
+	if len(data) == 0 {
+		return nil, fmt.Errorf("uploaded file is empty")
+	}
+	if len(data) > models.MaxAttachmentFileSize {
+		return nil, fmt.Errorf("file exceeds the maximum allowed size of %dMB", models.MaxAttachmentFileSize/(1024*1024))
+	}
+
+	detectedType := http.DetectContentType(data)
+	if !models.AllowedAttachmentContentTypes[detectedType] {
+		return nil, fmt.Errorf("unsupported file type %q — only images and PDF files are allowed", detectedType)
+	}
+
+	if fileName == "" {
+		fileName = "attachment"
+	}
+
+	attachment, err := s.paymentTransactionAttachmentRepo.Create(transactionID, fileName, detectedType, len(data), data, &userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to store attachment: %w", err)
+	}
+
+	_ = s.auditService.LogUserAction(userID, "UPLOAD_PAYMENT_ATTACHMENT", "payment_transaction_attachments", &attachment.ID, nil, map[string]interface{}{
+		"payment_id":     paymentID,
+		"transaction_id": transactionID,
+		"file_name":      fileName,
+		"file_size":      len(data),
+	})
+
+	return attachment, nil
+}
+
+// GetPaymentTransactionAttachments lists the attachments recorded against one transaction.
+func (s *PaymentService) GetPaymentTransactionAttachments(paymentID, transactionID, orgID int) ([]*models.PaymentTransactionAttachment, error) {
+	if _, err := s.getOwnedTransaction(paymentID, transactionID, orgID); err != nil {
+		return nil, err
+	}
+	atts, err := s.paymentTransactionAttachmentRepo.GetByTransactionID(transactionID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get payment transaction attachments: %w", err)
+	}
+	return atts, nil
+}
+
+// GetPaymentTransactionAttachmentFile returns an attachment's raw bytes for download.
+func (s *PaymentService) GetPaymentTransactionAttachmentFile(paymentID, transactionID, attachmentID, orgID int) ([]byte, string, string, error) {
+	if _, err := s.getOwnedTransaction(paymentID, transactionID, orgID); err != nil {
+		return nil, "", "", err
+	}
+
+	attachment, err := s.paymentTransactionAttachmentRepo.GetByID(attachmentID)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to get attachment: %w", err)
+	}
+	if attachment.PaymentTransactionID != transactionID {
+		return nil, "", "", fmt.Errorf("attachment not found")
+	}
+
+	data, fileName, contentType, err := s.paymentTransactionAttachmentRepo.GetFileData(attachmentID)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to get attachment file: %w", err)
+	}
+	return data, fileName, contentType, nil
+}
+
+// DeletePaymentTransactionAttachment removes a mistakenly-uploaded attachment.
+func (s *PaymentService) DeletePaymentTransactionAttachment(paymentID, transactionID, attachmentID, userID, orgID int) error {
+	if _, err := s.getOwnedTransaction(paymentID, transactionID, orgID); err != nil {
+		return err
+	}
+
+	attachment, err := s.paymentTransactionAttachmentRepo.GetByID(attachmentID)
+	if err != nil {
+		return fmt.Errorf("failed to get attachment: %w", err)
+	}
+	if attachment.PaymentTransactionID != transactionID {
+		return fmt.Errorf("attachment not found")
+	}
+
+	if err := s.paymentTransactionAttachmentRepo.Delete(attachmentID); err != nil {
+		return fmt.Errorf("failed to delete attachment: %w", err)
+	}
+
+	_ = s.auditService.LogUserAction(userID, "DELETE_PAYMENT_ATTACHMENT", "payment_transaction_attachments", &attachmentID, attachment, nil)
+
+	return nil
+}
+
+// refreshPaymentFromTransactions recomputes a payment's cached amount_paid/
+// status/payment_method/payment_date/receipt_number from its transaction
+// ledger. After RecordPaymentTransaction/DeletePaymentTransaction, this is
+// the only place those fields are ever written, so payments.* always mirrors
+// "the sum of what's actually been paid, plus the most recent payment
+// event's details" — or a cleared/Due state once no transactions remain.
+func (s *PaymentService) refreshPaymentFromTransactions(paymentID int) (*models.Payment, error) {
+	total, err := s.paymentTransactionRepo.SumByPaymentID(paymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to total payment transactions: %w", err)
+	}
+
+	txns, err := s.paymentTransactionRepo.GetByPaymentID(paymentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load payment transactions: %w", err)
+	}
+
+	method, receipt, dateStr := "", "", ""
+	if len(txns) > 0 {
+		latest := txns[len(txns)-1] // GetByPaymentID orders by payment_date, id ascending
+		method = latest.PaymentMethod
+		receipt = latest.ReceiptNumber
+		dateStr = latest.PaymentDate.Format("2006-01-02")
+	}
+
+	updated, err := s.paymentRepo.Update(paymentID, &models.UpdatePaymentRequest{
+		AmountPaid:    &total,
+		PaymentMethod: &method,
+		ReceiptNumber: &receipt,
+		PaymentDate:   &dateStr,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update payment: %w", err)
+	}
+	return updated, nil
 }
 
 // GetPayments retrieves payments scoped only by the provided filters (no entity validation)
@@ -488,6 +930,16 @@ func (s *PaymentService) GenerateMonthlyPayments(req *models.GenerateMonthlyPaym
 			continue
 		}
 
+		// Assign a receipt number up front, matching CreatePayment, so every
+		// payment record has one from the moment it exists rather than only
+		// when created through the single-entry flow.
+		receiptNumber, err := s.paymentRepo.NextReceiptNumber(orgID, fmt.Sprintf("%04d%02d", req.Year, req.Month))
+		if err != nil {
+			result.Failed++
+			result.Errors = append(result.Errors, fmt.Sprintf("unit %d: failed to generate receipt number: %v", lease.UnitID, err))
+			continue
+		}
+
 		createReq := &models.CreatePaymentRequest{
 			UnitID:         lease.UnitID,
 			TenantID:       lease.TenantID,
@@ -496,8 +948,11 @@ func (s *PaymentService) GenerateMonthlyPayments(req *models.GenerateMonthlyPaym
 			OrganizationID: orgID,
 			Month:          req.Month,
 			Year:           req.Year,
-			AmountDue:      lease.MonthlyRent,
-			DueDate:        dueDateStr,
+			// AmountDue includes the lease's recurring charges (utility, service
+			// charge, etc.) on top of the base rent — see GetActiveLeasesForPeriod.
+			AmountDue:     lease.MonthlyRent + lease.ChargesTotal,
+			DueDate:       dueDateStr,
+			ReceiptNumber: &receiptNumber,
 		}
 
 		if _, err := s.paymentRepo.Create(createReq); err != nil {

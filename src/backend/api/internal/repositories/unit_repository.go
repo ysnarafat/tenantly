@@ -67,6 +67,56 @@ func (r *UnitRepository) Create(req *models.CreateUnitRequest, organizationID in
 	return unit, nil
 }
 
+// BulkCreate creates multiple units in a single building within one transaction.
+// All-or-nothing: the first insert error rolls back the entire batch.
+func (r *UnitRepository) BulkCreate(units []*models.Unit) error {
+	if len(units) == 0 {
+		return nil
+	}
+
+	tx, err := r.db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	query := fmt.Sprintf(`
+		INSERT INTO %s (
+			%s, %s, %s, %s,
+			%s, %s, %s, %s, %s, %s
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
+		RETURNING %s, %s, %s`,
+		columns.UnitTable,
+		columns.UnitBuildingID, columns.UnitPropertyID, columns.UnitNumber, columns.UnitName,
+		columns.UnitFloor, columns.UnitSection, columns.UnitType, columns.UnitMetadata, columns.UnitOrganizationID, columns.UnitActive,
+		columns.UnitID, columns.UnitCreatedAt, columns.UnitUpdatedAt)
+
+	for _, unit := range units {
+		err := tx.QueryRow(
+			query,
+			unit.BuildingID,
+			unit.PropertyID,
+			unit.UnitNumber,
+			unit.UnitName,
+			unit.Floor,
+			unit.Section,
+			unit.UnitType,
+			unit.Metadata,
+			unit.OrganizationID,
+		).Scan(&unit.ID, &unit.CreatedAt, &unit.UpdatedAt)
+
+		if err != nil {
+			return fmt.Errorf("failed to create unit %s: %w", unit.UnitNumber, err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
 // GetByID retrieves a unit by ID
 func (r *UnitRepository) GetByID(id int) (*models.Unit, error) {
 	query := fmt.Sprintf(`
@@ -117,7 +167,7 @@ func (r *UnitRepository) GetByIDWithDetails(id int) (*models.UnitWithDetails, er
 		FROM units u
 		JOIN properties p ON u.property_id = p.id
 		JOIN buildings b ON u.building_id = b.id
-		LEFT JOIN leases l ON u.id = l.unit_id AND l.active = true
+		LEFT JOIN leases l ON u.id = l.unit_id AND l.active = true AND l.end_date >= CURRENT_DATE
 		LEFT JOIN tenants t ON l.tenant_id = t.id
 		WHERE u.id = $1 AND u.active = true`
 
@@ -265,8 +315,8 @@ func (r *UnitRepository) CheckUnitNumberExists(buildingID int, unitNumber string
 func (r *UnitRepository) HasActiveLeases(unitID int) (bool, error) {
 	query := `
 		SELECT EXISTS(
-			SELECT 1 FROM leases 
-			WHERE unit_id = $1 AND status = 'Active'
+			SELECT 1 FROM leases
+			WHERE unit_id = $1 AND active = true
 		)`
 
 	var exists bool
@@ -306,7 +356,7 @@ func (r *UnitRepository) GetByBuildingWithDetails(buildingID int, limit, offset,
 		FROM units u
 		JOIN properties p ON u.property_id = p.id
 		JOIN buildings b ON u.building_id = b.id
-		LEFT JOIN leases l ON u.id = l.unit_id AND l.active = true
+		LEFT JOIN leases l ON u.id = l.unit_id AND l.active = true AND l.end_date >= CURRENT_DATE
 		LEFT JOIN tenants t ON l.tenant_id = t.id
 		WHERE u.building_id = $1 AND u.active = true%s
 		ORDER BY u.floor, u.unit_number
@@ -318,7 +368,9 @@ func (r *UnitRepository) GetByBuildingWithDetails(buildingID int, limit, offset,
 	}
 	defer func() { _ = rows.Close() }()
 
-	var units []*models.UnitWithDetails
+	// make(..., 0) rather than a nil-defaulted var — a nil slice serializes to
+	// JSON null (not []), which crashes frontend code that assumes an array.
+	units := make([]*models.UnitWithDetails, 0)
 	for rows.Next() {
 		unit := &models.UnitWithDetails{}
 		err := rows.Scan(
@@ -371,7 +423,7 @@ func (r *UnitRepository) GetByPropertyWithDetails(propertyID int, limit, offset,
 		FROM units u
 		JOIN properties p ON u.property_id = p.id
 		JOIN buildings b ON u.building_id = b.id
-		LEFT JOIN leases l ON u.id = l.unit_id AND l.active = true
+		LEFT JOIN leases l ON u.id = l.unit_id AND l.active = true AND l.end_date >= CURRENT_DATE
 		LEFT JOIN tenants t ON l.tenant_id = t.id
 		WHERE u.property_id = $1 AND u.active = true AND p.organization_id = $2
 		ORDER BY b.building_name, u.floor, u.unit_number
@@ -383,7 +435,9 @@ func (r *UnitRepository) GetByPropertyWithDetails(propertyID int, limit, offset,
 	}
 	defer func() { _ = rows.Close() }()
 
-	var units []*models.UnitWithDetails
+	// make(..., 0) rather than a nil-defaulted var — a nil slice serializes to
+	// JSON null (not []), which crashes frontend code that assumes an array.
+	units := make([]*models.UnitWithDetails, 0)
 	for rows.Next() {
 		unit := &models.UnitWithDetails{}
 		err := rows.Scan(

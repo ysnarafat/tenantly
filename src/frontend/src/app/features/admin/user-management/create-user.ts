@@ -18,6 +18,7 @@ import { OrganizationService } from '../../../core/services/organization.service
 import { Organization } from '../../../core/models';
 import { AppState } from '../../../store';
 import * as AuthSelectors from '../../../store/auth/auth.selectors';
+import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
 
 @Component({
   selector: 'app-create-user',
@@ -234,8 +235,7 @@ export class CreateUserComponent implements OnInit {
       if (isSA) {
         this.organizationService.getOrganizations().subscribe({
           next: (res) => this.organizations.set(res.organizations),
-          error: () =>
-            this.snackBar.open('Failed to load organizations', 'Close', { duration: 3000 }),
+          error: () => notifyError(this.snackBar, 'Failed to load organizations'),
         });
       } else {
         // GET /organizations/:id is SUPER_ADMIN-only too — look the caller's
@@ -266,13 +266,11 @@ export class CreateUserComponent implements OnInit {
     this.submitting.set(true);
     this.userService.createUser(this.form.value).subscribe({
       next: () => {
-        this.snackBar.open('User created successfully', 'Close', { duration: 3000 });
+        notifySuccess(this.snackBar, 'User created successfully');
         this.router.navigate(['/admin/users']);
       },
       error: (err) => {
-        this.snackBar.open(err.error?.error || 'Failed to create user', 'Close', {
-          duration: 5000,
-        });
+        notifyError(this.snackBar, err.error?.error || 'Failed to create user');
         this.submitting.set(false);
       },
     });

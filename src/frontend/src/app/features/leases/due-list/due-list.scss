@@ -37,7 +37,7 @@
         align-items: center;
         gap: 8px;
         background-color: var(--color-primary);
-        color: var(--bg-primary);
+        color: #ffffff;
         border-radius: 8px;
         padding: 8px 16px;
         transition: all 0.3s ease;
@@ -121,7 +121,7 @@
           align-items: center;
           justify-content: center;
           background-color: var(--color-primary);
-          color: var(--bg-primary);
+          color: #ffffff;
 
           mat-icon {
             font-size: 32px;
@@ -170,103 +170,68 @@
         mat-card-content {
           padding: 0;
 
-          .due-table {
-            width: 100%;
+          .amount-column,
+          .amount-cell {
+            text-align: right;
+          }
 
-            mat-header-row {
-              background-color: var(--table-header-bg);
-              height: 56px;
+          .amount-cell {
+            font-weight: 600;
+            color: var(--color-primary);
+          }
 
-              mat-header-cell {
-                color: var(--text-secondary);
-                font-weight: 600;
-                font-size: 14px;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                padding: 0 16px;
-                border-bottom: 2px solid var(--border-color);
+          .building-info,
+          .unit-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
 
-                &.amount-column {
-                  text-align: right;
-                }
-              }
+            small {
+              font-size: 12px;
+              color: var(--text-secondary);
+            }
+          }
+
+          // Overdue Chip Styles
+          .overdue-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 500;
+
+            .chip-icon {
+              font-size: 16px;
+              width: 16px;
+              height: 16px;
             }
 
-            mat-row {
-              height: 64px;
-              border-bottom: 1px solid var(--border-color);
-              transition: all 0.2s ease;
-
-              &:hover {
-                background-color: var(--table-row-hover);
-              }
-
-              mat-cell {
-                padding: 0 16px;
-                color: var(--text-primary);
-                font-size: 15px;
-
-                &.amount-cell {
-                  text-align: right;
-                  font-weight: 600;
-                  color: var(--color-primary);
-                }
-
-                .building-info,
-                .unit-info {
-                  display: flex;
-                  flex-direction: column;
-                  gap: 2px;
-
-                  small {
-                    font-size: 12px;
-                    color: var(--text-secondary);
-                  }
-                }
-              }
-            }
-
-            // Overdue Chip Styles
-            .overdue-chip {
-              display: inline-flex;
-              align-items: center;
-              gap: 4px;
-              padding: 4px 12px;
-              border-radius: 16px;
-              font-size: 13px;
-              font-weight: 500;
+            &.overdue-low {
+              background-color: rgba(255, 193, 7, 0.1);
+              color: #ffc107;
 
               .chip-icon {
-                font-size: 16px;
-                width: 16px;
-                height: 16px;
-              }
-
-              &.overdue-low {
-                background-color: rgba(255, 193, 7, 0.1);
                 color: #ffc107;
-
-                .chip-icon {
-                  color: #ffc107;
-                }
               }
+            }
 
-              &.overdue-medium {
-                background-color: rgba(255, 152, 0, 0.1);
+            &.overdue-medium {
+              background-color: rgba(255, 152, 0, 0.1);
+              color: #ff9800;
+
+              .chip-icon {
                 color: #ff9800;
-
-                .chip-icon {
-                  color: #ff9800;
-                }
               }
+            }
 
-              &.overdue-high {
-                background-color: rgba(244, 67, 54, 0.1);
+            &.overdue-high {
+              background-color: rgba(244, 67, 54, 0.1);
+              color: #f44336;
+
+              .chip-icon {
                 color: #f44336;
-
-                .chip-icon {
-                  color: #f44336;
-                }
               }
             }
           }
@@ -376,13 +341,11 @@
               }
 
               mat-row {
-                height: auto;
-                min-height: 64px;
-                padding: 12px 0;
+                min-height: unset;
 
                 mat-cell {
-                  padding: 0 12px;
-                  font-size: 14px;
+                  padding: 8px 12px;
+                  font-size: 13px;
                   line-height: 1.4;
                 }
               }
