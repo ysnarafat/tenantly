@@ -315,8 +315,8 @@ func (r *UnitRepository) CheckUnitNumberExists(buildingID int, unitNumber string
 func (r *UnitRepository) HasActiveLeases(unitID int) (bool, error) {
 	query := `
 		SELECT EXISTS(
-			SELECT 1 FROM leases 
-			WHERE unit_id = $1 AND status = 'Active'
+			SELECT 1 FROM leases
+			WHERE unit_id = $1 AND active = true
 		)`
 
 	var exists bool
