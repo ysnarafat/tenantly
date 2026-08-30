@@ -51,6 +51,9 @@
       "LABEL": "Type \"{{entityName}}\" to confirm",
       "PLACEHOLDER": "{{entityName}}",
       "CONFIRM_BUTTON": "Delete {{entityLabel}}"
+    },
+    "LABELS": {
+      "NONE": "None"
     }
   },
   "DUE_LIST": {
@@ -122,6 +125,9 @@
       "NO_MATCHING": "No matching leases",
       "NO_LEASES": "No leases yet",
       "CREATE_FIRST": "Create your first lease agreement to get started."
+    },
+    "ACTIONS": {
+      "REPLACE_TENANT": "Replace tenant"
     }
   },
   "TENANT_LIST": {
@@ -248,6 +254,9 @@
     },
     "SUCCESS": {
       "CREATED": "Lease created successfully"
+    },
+    "HINTS": {
+      "PREFILLED_FROM_UNIT": "Terms pre-filled from this unit's defaults — edit as needed."
     }
   },
   "EDIT_LEASE_DIALOG": {
@@ -405,16 +414,40 @@
     "BUTTONS": {
       "CREATE": "Create Unit",
       "UPDATE": "Update Unit"
+    },
+    "LEASE_DEFAULTS": {
+      "TITLE": "Lease defaults",
+      "HINT": "Optional. These terms pre-fill the lease form for this unit — they do not create a lease or assign a tenant.",
+      "MONTHLY_RENT": "Default monthly rent",
+      "SECURITY_DEPOSIT": "Default security deposit",
+      "LEASE_TYPE": "Default lease type",
+      "DURATION_MONTHS": "Default duration (months)"
     }
   },
   "BULK_UNIT_FORM_DIALOG": {
     "TITLE": "Bulk Add Units",
-    "COMMON_FIELDS_LABEL": "Common to all units",
+    "GENERATOR": {
+      "TITLE": "Generate unit numbers",
+      "HINT": "Put {n} where the number goes — e.g. A-{n} or Flat {n}. Leading zeros in the start value are kept.",
+      "PATTERN": "Pattern",
+      "START": "Start at",
+      "COUNT": "How many",
+      "GENERATE": "Generate",
+      "PREVIEW": "Preview",
+      "CAPPED": "Capped at {{max}} units per batch"
+    },
+    "SHARED": {
+      "TITLE": "Shared details",
+      "HINT": "Applied to every unit in this batch"
+    },
     "FIELDS": {
       "UNIT_TYPE": "Unit Type",
       "FLOOR": "Floor",
-      "SECTION": "Section",
-      "ROW_COUNT": "Number of units"
+      "SECTION": "Section"
+    },
+    "UNITS": {
+      "TITLE": "Units",
+      "PASTE_HINT": "Edit any row, or paste a column from a spreadsheet to fill several at once"
     },
     "TABLE": {
       "ROW_NUMBER": "#",
@@ -422,16 +455,31 @@
       "UNIT_NAME": "Unit Name (Optional)"
     },
     "BUTTONS": {
-      "ADD_ROW": "Add Row",
+      "ADD_ROW": "Add unit",
       "REMOVE_ROW": "Remove",
+      "CLEAR_ALL": "Clear all",
       "CREATE": "Create {{count}} Units",
       "CANCEL": "Cancel"
     },
     "ERRORS": {
       "DUPLICATE_UNIT_NUMBER": "Duplicate unit number in this batch",
-      "REQUIRED_UNIT_NUMBER": "Unit number is required"
+      "ALREADY_EXISTS": "This unit number already exists in the building"
     },
-    "SUMMARY": "{{count}} unit(s) will be created"
+    "STATUS": {
+      "READY": "{{count}} unit(s) ready to create",
+      "NONE": "Add at least one unit number",
+      "DUPLICATES": "{{count}} duplicate unit number(s) in this batch",
+      "CONFLICTS": "{{count}} unit number(s) already exist in this building",
+      "SKIPPED": "· {{count}} empty row(s) skipped"
+    },
+    "LEASE_DEFAULTS": {
+      "TITLE": "Lease defaults",
+      "HINT": "Applied to every unit in this batch. They pre-fill the lease form later — no lease is created now.",
+      "MONTHLY_RENT": "Default monthly rent",
+      "SECURITY_DEPOSIT": "Default security deposit",
+      "LEASE_TYPE": "Default lease type",
+      "DURATION_MONTHS": "Default duration (months)"
+    }
   },
   "PROPERTY_LIST": {
     "PAGE_TITLE": "Properties",
@@ -950,5 +998,58 @@
   },
   "LEASE_CUSTOM_FIELDS": {
     "SECTION_TITLE": "Custom Fields"
+  },
+  "ERROR_PAGES": {
+    "ACTIONS": {
+      "BACK_TO_DASHBOARD": "Back to dashboard",
+      "GO_BACK": "Go back"
+    },
+    "UNAUTHORIZED": {
+      "STATUS": "Forbidden",
+      "TITLE": "You don't have a key to this area",
+      "MESSAGE": "Your role doesn't include access to this page. If you need it, ask an organization admin to update your permissions."
+    },
+    "NOT_FOUND": {
+      "STATUS": "Not found",
+      "TITLE": "We can't find that page",
+      "MESSAGE": "The address you entered doesn't lead anywhere. It may have been moved, or the link might be mistyped."
+    }
+  },
+  "REPLACE_TENANT_DIALOG": {
+    "TITLE": "Replace tenant",
+    "TERMS_NOTE": "Terms carried over from the current lease. Adjust them if they have changed.",
+    "SUCCESS": "{{tenant}} now holds unit {{unit}}",
+    "LABELS": {
+      "UNIT": "Unit",
+      "OUTGOING_TENANT": "Current tenant"
+    },
+    "FIELDS": {
+      "NEW_TENANT": "New tenant",
+      "HANDOVER_DATE": "Handover date",
+      "MONTHLY_RENT": "Monthly rent",
+      "SECURITY_DEPOSIT": "Security deposit",
+      "LEASE_TYPE": "Lease type",
+      "DURATION_MONTHS": "Duration (months)"
+    },
+    "HINTS": {
+      "HANDOVER_DATE": "The current lease ends and the new one begins on this date.",
+      "NO_TENANTS": "No other active tenants available. Add a tenant first."
+    },
+    "OUTCOME": {
+      "CLOSES": "{{tenant}}'s lease closes on",
+      "OPENS": "The new lease runs"
+    },
+    "BUTTONS": {
+      "REPLACE": "Replace tenant",
+      "REPLACING": "Replacing…"
+    },
+    "ERRORS": {
+      "TENANT_REQUIRED": "Select the incoming tenant",
+      "HANDOVER_REQUIRED": "Pick a handover date",
+      "RENT_INVALID": "Enter a monthly rent greater than 0",
+      "DURATION_INVALID": "Enter a duration between 1 and 60 months",
+      "LOAD_TENANTS": "Could not load tenants",
+      "FAILED": "Failed to replace tenant"
+    }
   }
 }

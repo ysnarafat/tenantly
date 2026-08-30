@@ -100,6 +100,9 @@ export class CreateLeaseDialog implements OnInit {
   propertiesLoadFailed = false;
   tenantsLoadFailed = false;
 
+  /** Drives the hint telling the user where the prefilled terms came from. */
+  prefilledFromUnitDefaults = false;
+
   minDate: Date = new Date();
 
   // The lease doesn't exist yet, so charges/custom fields are held here as a
@@ -224,6 +227,7 @@ export class CreateLeaseDialog implements OnInit {
           this.snackBar,
           this.translate.instant('CREATE_LEASE_DIALOG.ERRORS.LOAD_BUILDINGS')
         );
+        this.leaseForm.get('building_id')?.disable();
       },
     });
   }
@@ -236,8 +240,36 @@ export class CreateLeaseDialog implements OnInit {
     return this.units.length > 0 && this.units.every((u) => u.lease_active);
   }
 
+  /**
+   * Applies the unit's lease defaults to the terms fields. Defaults are the
+   * terms captured when the unit was set up, so the common case needs only a
+   * tenant and a start date. Anything the unit has no default for keeps
+   * whatever is already in the form, and every field stays editable.
+   */
+  onUnitChange(unitId: number) {
+    const unit = this.units.find((u) => u.id === unitId);
+    if (!unit) {
+      this.prefilledFromUnitDefaults = false;
+      return;
+    }
+
+    const prefill: Record<string, unknown> = {};
+    if (unit.default_lease_type) prefill['lease_type'] = unit.default_lease_type;
+    if (unit.default_duration_months != null)
+      prefill['duration_months'] = unit.default_duration_months;
+    if (unit.default_monthly_rent != null) prefill['monthly_rent'] = unit.default_monthly_rent;
+    if (unit.default_security_deposit != null)
+      prefill['security_deposit'] = unit.default_security_deposit;
+
+    this.prefilledFromUnitDefaults = Object.keys(prefill).length > 0;
+    if (this.prefilledFromUnitDefaults) {
+      this.leaseForm.patchValue(prefill);
+    }
+  }
+
   onBuildingChange(buildingId: number) {
     this.leaseForm.patchValue({ unit_id: null });
+    this.prefilledFromUnitDefaults = false;
     this.units = [];
     this.leaseForm.get('unit_id')?.disable();
 
@@ -258,6 +290,7 @@ export class CreateLeaseDialog implements OnInit {
         console.error('Error loading units:', safeErrorMessage(error));
         this.unitsLoading = false;
         notifyError(this.snackBar, this.translate.instant('CREATE_LEASE_DIALOG.ERRORS.LOAD_UNITS'));
+        this.leaseForm.get('unit_id')?.disable();
       },
     });
   }

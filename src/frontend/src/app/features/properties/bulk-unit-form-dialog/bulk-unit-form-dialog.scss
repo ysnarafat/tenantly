@@ -1,75 +1,144 @@
+// Theme tokens used here: --bg-surface, --bg-secondary, --bg-hover, --border-color,
+// --text-primary/secondary/hint, --color-primary, --bg-chip-*/--text-chip-*.
+
 :host {
   display: block;
 }
 
-h2[mat-dialog-title] {
+// ── Title ─────────────────────────────────────────────────────────────────────
+
+.dialog-title {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   margin: 0;
-  padding: 24px 24px 16px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border-color);
 
-  mat-icon {
-    color: var(--primary-color, #1976d2);
+  .title-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    border-radius: 10px;
+    background: var(--bg-chip-blue);
+
+    mat-icon {
+      color: var(--text-chip-blue);
+    }
+  }
+
+  .title-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .title-main {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text-primary);
+  }
+
+  .title-context {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-hint);
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
   }
 }
 
+// ── Content shell ─────────────────────────────────────────────────────────────
+
 mat-dialog-content {
-  padding: 0 24px 24px;
-  min-width: 800px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px;
+  min-width: 780px;
   max-width: 900px;
-  max-height: 70vh;
+  max-height: 68vh;
 }
 
-.context-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background-color: var(--bg-secondary);
-  border-radius: 4px;
-  margin-bottom: 16px;
+.panel {
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-surface);
+}
 
-  mat-icon {
-    color: var(--text-hint);
+.panel-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+
+  .panel-icon {
+    color: var(--color-primary);
     font-size: 20px;
     width: 20px;
     height: 20px;
+    margin-top: 2px;
   }
 
-  span {
-    font-weight: 500;
-    color: var(--text-primary);
-    font-size: 14px;
-  }
-}
-
-.common-fields-label {
-  margin: 0 0 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.form-row {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-
-  .unit-type-field {
-    flex: 2;
-    min-width: 180px;
-  }
-
-  .floor-field,
-  .section-field,
-  .row-count-field {
+  .panel-heading {
     flex: 1;
-    min-width: 120px;
+    min-width: 0;
+
+    h3 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    p {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: var(--text-hint);
+    }
+  }
+
+  .panel-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
   }
 }
 
+.count-badge {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 11px;
+  background: var(--bg-chip-blue);
+  color: var(--text-chip-blue);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+// Form fields carry no inline errors in this dialog, so the reserved subscript
+// space is dead height — reclaim it to keep the three panels visible at once.
 mat-form-field {
+  ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+  }
+
   mat-icon[matPrefix] {
     margin-right: 8px;
     color: var(--text-hint);
@@ -86,114 +155,324 @@ mat-option {
   }
 }
 
-.rows-table-wrapper {
-  margin-top: 16px;
-  max-height: 320px;
-  overflow-y: auto;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+// ── Generator ─────────────────────────────────────────────────────────────────
+
+.generator-row,
+.shared-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.rows-table {
-  width: 100%;
-  border-collapse: collapse;
-
-  th,
-  td {
-    padding: 8px 12px;
-    text-align: left;
-    vertical-align: top;
+.generator-row {
+  .pattern-field {
+    flex: 2;
+    min-width: 160px;
   }
 
-  thead th {
-    position: sticky;
-    top: 0;
-    background: var(--bg-secondary);
+  .start-field,
+  .count-field {
+    flex: 1;
+    min-width: 110px;
+  }
+
+  .generate-button {
+    height: 56px;
+    flex-shrink: 0;
+    background: var(--bg-chip-blue);
+    color: var(--text-chip-blue);
+
+    mat-icon {
+      margin-right: 4px;
+    }
+  }
+}
+
+.preview {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+
+  .preview-label {
     font-size: 12px;
-    font-weight: 600;
+    color: var(--text-hint);
+    margin-right: 2px;
+  }
+
+  .preview-chip {
+    padding: 3px 9px;
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    font-family: 'Roboto Mono', ui-monospace, monospace;
+    font-size: 12px;
     color: var(--text-secondary);
-    border-bottom: 1px solid var(--border-color);
   }
 
-  tbody tr {
-    border-bottom: 1px solid var(--border-color);
-
-    &:last-child {
-      border-bottom: none;
-    }
-
-    &.has-error {
-      background-color: var(--bg-chip-red, rgba(211, 47, 47, 0.06));
-    }
-  }
-
-  .row-number-column {
-    width: 40px;
+  .preview-ellipsis {
     color: var(--text-hint);
     font-size: 13px;
   }
+}
 
-  .remove-column {
-    width: 48px;
+// ── Shared fields ─────────────────────────────────────────────────────────────
+
+.shared-row {
+  .unit-type-field {
+    flex: 2;
+    min-width: 180px;
+  }
+
+  .floor-field,
+  .section-field {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .rent-field,
+  .deposit-field,
+  .lease-type-field,
+  .duration-field {
+    flex: 1;
+    min-width: 150px;
+  }
+
+  // Forces a line break inside the wrapping flex row so the lease-default
+  // fields always start on their own line under this heading.
+  .shared-subhead {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    margin: 4px 0 -4px;
+
+    mat-icon {
+      color: var(--color-primary);
+      flex-shrink: 0;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    h4 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    p {
+      margin: 2px 0 0;
+      font-size: 12px;
+      line-height: 1.4;
+      color: var(--text-hint);
+    }
   }
 }
 
-.row-input {
-  width: 100%;
-  padding: 6px 8px;
+// ── Unit rows ─────────────────────────────────────────────────────────────────
+
+.units-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.unit-rows {
+  max-height: 260px;
+  overflow-y: auto;
   border: 1px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--bg-primary);
+  border-radius: 8px;
+}
+
+.unit-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) minmax(0, 1.3fr) 40px;
+  align-items: center;
+  gap: 4px 10px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-light);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover:not(.unit-row--head) {
+    background: var(--bg-hover);
+  }
+
+  &.unit-row--head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 8px 10px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-hint);
+  }
+
+  &.is-invalid {
+    background: var(--bg-chip-red);
+  }
+
+  // Untouched rows stay visibly optional rather than reading as errors — they
+  // are skipped on submit, not rejected.
+  &.is-blank .cell-index {
+    color: var(--text-disabled);
+  }
+}
+
+.cell-index {
+  font-size: 12px;
+  color: var(--text-hint);
+  text-align: center;
+}
+
+.cell-input {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
   color: var(--text-primary);
   font: inherit;
+  font-size: 13px;
+
+  &::placeholder {
+    color: var(--text-disabled);
+  }
+
+  &:hover {
+    border-color: var(--border-color);
+  }
 
   &:focus {
     outline: none;
-    border-color: var(--color-primary, #1976d2);
+    border-color: var(--color-primary);
+    background: var(--bg-surface);
   }
 
-  &.invalid {
-    border-color: #d32f2f;
-  }
-}
-
-.row-error {
-  margin-top: 4px;
-  font-size: 11px;
-  color: #d32f2f;
-}
-
-.table-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 12px;
-  gap: 12px;
-}
-
-.summary {
-  font-size: 13px;
-  color: var(--text-secondary);
-
-  &.has-error {
-    color: #d32f2f;
+  &--number {
+    font-family: 'Roboto Mono', ui-monospace, monospace;
     font-weight: 500;
   }
 }
 
-mat-dialog-actions {
-  padding: 16px 24px;
-  border-top: 1px solid var(--border-color);
+.is-invalid .cell-input--number {
+  border-color: var(--warn-color, #f44336);
+}
 
-  button {
-    mat-icon {
-      margin-right: 4px;
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
+.cell-remove {
+  justify-self: center;
+  opacity: 0.35;
+  transition: opacity 0.2s;
+
+  .unit-row:hover &,
+  &:focus-visible {
+    opacity: 1;
+  }
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
   }
 }
+
+.row-error {
+  grid-column: 2 / -1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 2px;
+  font-size: 11px;
+  color: var(--text-chip-red);
+
+  mat-icon {
+    font-size: 13px;
+    width: 13px;
+    height: 13px;
+  }
+}
+
+.capped-notice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--text-chip-orange);
+
+  mat-icon {
+    font-size: 15px;
+    width: 15px;
+    height: 15px;
+  }
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+
+mat-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 24px;
+  border-top: 1px solid var(--border-color);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text-hint);
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+
+  &.is-ready {
+    color: var(--color-success);
+    font-weight: 500;
+  }
+
+  &.is-error {
+    color: var(--text-chip-red);
+    font-weight: 500;
+  }
+
+  .status-note {
+    color: var(--text-hint);
+    font-weight: 400;
+  }
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+
+  button mat-icon {
+    margin-right: 4px;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+// ── Responsive ────────────────────────────────────────────────────────────────
 
 @media (max-width: 900px) {
   mat-dialog-content {
@@ -201,14 +480,62 @@ mat-dialog-actions {
     width: 100%;
   }
 
-  .form-row {
+  .generator-row,
+  .shared-row {
     flex-direction: column;
 
-    .unit-type-field,
-    .floor-field,
-    .section-field,
-    .row-count-field {
+    mat-form-field {
       width: 100%;
+    }
+
+    .generate-button {
+      width: 100%;
+      height: 44px;
+    }
+  }
+
+  .panel-header {
+    flex-wrap: wrap;
+
+    .panel-actions {
+      width: 100%;
+
+      button {
+        flex: 1;
+      }
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .dialog-title {
+    padding: 16px 16px 12px;
+  }
+
+  mat-dialog-content {
+    padding: 16px;
+  }
+
+  .unit-row {
+    grid-template-columns: 28px minmax(0, 1fr) 36px;
+
+    // The optional name drops to its own line on narrow screens.
+    .cell-input:not(.cell-input--number) {
+      grid-column: 2 / -1;
+    }
+  }
+
+  .unit-row--head span:nth-child(3) {
+    display: none;
+  }
+
+  mat-dialog-actions {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 12px 16px;
+
+    .action-buttons {
+      justify-content: flex-end;
     }
   }
 }

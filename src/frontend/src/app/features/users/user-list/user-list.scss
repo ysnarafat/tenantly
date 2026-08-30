@@ -97,6 +97,38 @@
   }
 }
 
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  &.is-active {
+    background: var(--bg-chip-green);
+    color: var(--text-chip-green);
+    .status-dot {
+      background: #4caf50;
+    }
+  }
+
+  &.is-inactive {
+    background: var(--bg-chip-grey);
+    color: var(--text-hint);
+    .status-dot {
+      background: var(--text-disabled);
+    }
+  }
+}
+
 // ── Responsive ───────────────────────────────────────────────────────────────
 @media (max-width: 768px) {
   .user-list-container {

@@ -26,12 +26,14 @@ func (r *UnitRepository) Create(req *models.CreateUnitRequest, organizationID in
 	query := fmt.Sprintf(`
 		INSERT INTO %s (
 			%s, %s, %s, %s,
-			%s, %s, %s, %s, %s, %s
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
+			%s, %s, %s, %s, %s, %s,
+			%s, %s, %s, %s
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, $10, $11, $12, $13)
 		RETURNING %s, %s, %s`,
 		columns.UnitTable,
 		columns.UnitBuildingID, columns.UnitPropertyID, columns.UnitNumber, columns.UnitName,
 		columns.UnitFloor, columns.UnitSection, columns.UnitType, columns.UnitMetadata, columns.UnitOrganizationID, columns.UnitActive,
+		columns.UnitDefaultLeaseType, columns.UnitDefaultMonthlyRent, columns.UnitDefaultSecurityDeposit, columns.UnitDefaultDurationMonths,
 		columns.UnitID, columns.UnitCreatedAt, columns.UnitUpdatedAt)
 
 	unit := &models.Unit{
@@ -45,6 +47,11 @@ func (r *UnitRepository) Create(req *models.CreateUnitRequest, organizationID in
 		Metadata:       req.Metadata,
 		OrganizationID: organizationID,
 		Active:         true,
+
+		DefaultLeaseType:       req.DefaultLeaseType,
+		DefaultMonthlyRent:     req.DefaultMonthlyRent,
+		DefaultSecurityDeposit: req.DefaultSecurityDeposit,
+		DefaultDurationMonths:  req.DefaultDurationMonths,
 	}
 
 	err := r.db.QueryRow(
@@ -58,6 +65,10 @@ func (r *UnitRepository) Create(req *models.CreateUnitRequest, organizationID in
 		unit.UnitType,
 		unit.Metadata,
 		unit.OrganizationID,
+		unit.DefaultLeaseType,
+		unit.DefaultMonthlyRent,
+		unit.DefaultSecurityDeposit,
+		unit.DefaultDurationMonths,
 	).Scan(&unit.ID, &unit.CreatedAt, &unit.UpdatedAt)
 
 	if err != nil {
@@ -83,12 +94,14 @@ func (r *UnitRepository) BulkCreate(units []*models.Unit) error {
 	query := fmt.Sprintf(`
 		INSERT INTO %s (
 			%s, %s, %s, %s,
-			%s, %s, %s, %s, %s, %s
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
+			%s, %s, %s, %s, %s, %s,
+			%s, %s, %s, %s
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true, $10, $11, $12, $13)
 		RETURNING %s, %s, %s`,
 		columns.UnitTable,
 		columns.UnitBuildingID, columns.UnitPropertyID, columns.UnitNumber, columns.UnitName,
 		columns.UnitFloor, columns.UnitSection, columns.UnitType, columns.UnitMetadata, columns.UnitOrganizationID, columns.UnitActive,
+		columns.UnitDefaultLeaseType, columns.UnitDefaultMonthlyRent, columns.UnitDefaultSecurityDeposit, columns.UnitDefaultDurationMonths,
 		columns.UnitID, columns.UnitCreatedAt, columns.UnitUpdatedAt)
 
 	for _, unit := range units {
@@ -103,6 +116,10 @@ func (r *UnitRepository) BulkCreate(units []*models.Unit) error {
 			unit.UnitType,
 			unit.Metadata,
 			unit.OrganizationID,
+			unit.DefaultLeaseType,
+			unit.DefaultMonthlyRent,
+			unit.DefaultSecurityDeposit,
+			unit.DefaultDurationMonths,
 		).Scan(&unit.ID, &unit.CreatedAt, &unit.UpdatedAt)
 
 		if err != nil {
@@ -140,6 +157,10 @@ func (r *UnitRepository) GetByID(id int) (*models.Unit, error) {
 		&unit.UnitType,
 		&unit.Metadata,
 		&unit.Active,
+		&unit.DefaultLeaseType,
+		&unit.DefaultMonthlyRent,
+		&unit.DefaultSecurityDeposit,
+		&unit.DefaultDurationMonths,
 		&unit.CreatedAt,
 		&unit.UpdatedAt,
 	)
@@ -159,6 +180,8 @@ func (r *UnitRepository) GetByIDWithDetails(id int) (*models.UnitWithDetails, er
 	query := `
 		SELECT u.id, u.building_id, u.property_id, u.unit_number, u.unit_name,
 			   u.floor, u.section, u.unit_type, u.metadata, u.active,
+			   u.default_lease_type, u.default_monthly_rent,
+			   u.default_security_deposit, u.default_duration_months,
 			   u.created_at, u.updated_at,
 			   p.property_name as property_name,
 			   b.building_name, b.building_code,
@@ -183,6 +206,10 @@ func (r *UnitRepository) GetByIDWithDetails(id int) (*models.UnitWithDetails, er
 		&unit.UnitType,
 		&unit.Metadata,
 		&unit.Active,
+		&unit.DefaultLeaseType,
+		&unit.DefaultMonthlyRent,
+		&unit.DefaultSecurityDeposit,
+		&unit.DefaultDurationMonths,
 		&unit.CreatedAt,
 		&unit.UpdatedAt,
 		&unit.PropertyName,
@@ -243,8 +270,28 @@ func (r *UnitRepository) Update(id int, req *models.UpdateUnitRequest) (*models.
 		args = append(args, *req.Active)
 		argIdx++
 	}
+	if req.DefaultLeaseType != nil {
+		query += fmt.Sprintf(", default_lease_type = $%d", argIdx)
+		args = append(args, *req.DefaultLeaseType)
+		argIdx++
+	}
+	if req.DefaultMonthlyRent != nil {
+		query += fmt.Sprintf(", default_monthly_rent = $%d", argIdx)
+		args = append(args, *req.DefaultMonthlyRent)
+		argIdx++
+	}
+	if req.DefaultSecurityDeposit != nil {
+		query += fmt.Sprintf(", default_security_deposit = $%d", argIdx)
+		args = append(args, *req.DefaultSecurityDeposit)
+		argIdx++
+	}
+	if req.DefaultDurationMonths != nil {
+		query += fmt.Sprintf(", default_duration_months = $%d", argIdx)
+		args = append(args, *req.DefaultDurationMonths)
+		argIdx++
+	}
 
-	query += fmt.Sprintf(" WHERE id = $%d RETURNING id, building_id, property_id, unit_number, unit_name, floor, section, unit_type, metadata, active, created_at, updated_at", argIdx)
+	query += fmt.Sprintf(" WHERE id = $%d RETURNING id, building_id, property_id, unit_number, unit_name, floor, section, unit_type, metadata, active, default_lease_type, default_monthly_rent, default_security_deposit, default_duration_months, created_at, updated_at", argIdx)
 	args = append(args, id)
 
 	unit := &models.Unit{}
@@ -259,6 +306,10 @@ func (r *UnitRepository) Update(id int, req *models.UpdateUnitRequest) (*models.
 		&unit.UnitType,
 		&unit.Metadata,
 		&unit.Active,
+		&unit.DefaultLeaseType,
+		&unit.DefaultMonthlyRent,
+		&unit.DefaultSecurityDeposit,
+		&unit.DefaultDurationMonths,
 		&unit.CreatedAt,
 		&unit.UpdatedAt,
 	)
@@ -348,6 +399,8 @@ func (r *UnitRepository) GetByBuildingWithDetails(buildingID int, limit, offset,
 	query := fmt.Sprintf(`
 		SELECT u.id, u.building_id, u.property_id, u.unit_number, u.unit_name,
 			   u.floor, u.section, u.unit_type, u.metadata, u.active,
+			   u.default_lease_type, u.default_monthly_rent,
+			   u.default_security_deposit, u.default_duration_months,
 			   u.created_at, u.updated_at,
 			   p.property_name as property_name,
 			   b.building_name, b.building_code,
@@ -384,6 +437,10 @@ func (r *UnitRepository) GetByBuildingWithDetails(buildingID int, limit, offset,
 			&unit.UnitType,
 			&unit.Metadata,
 			&unit.Active,
+			&unit.DefaultLeaseType,
+			&unit.DefaultMonthlyRent,
+			&unit.DefaultSecurityDeposit,
+			&unit.DefaultDurationMonths,
 			&unit.CreatedAt,
 			&unit.UpdatedAt,
 			&unit.PropertyName,
@@ -415,6 +472,8 @@ func (r *UnitRepository) GetByPropertyWithDetails(propertyID int, limit, offset,
 	query := `
 		SELECT u.id, u.building_id, u.property_id, u.unit_number, u.unit_name,
 			   u.floor, u.section, u.unit_type, u.metadata, u.active,
+			   u.default_lease_type, u.default_monthly_rent,
+			   u.default_security_deposit, u.default_duration_months,
 			   u.created_at, u.updated_at,
 			   p.property_name as property_name,
 			   b.building_name, b.building_code,
@@ -451,6 +510,10 @@ func (r *UnitRepository) GetByPropertyWithDetails(propertyID int, limit, offset,
 			&unit.UnitType,
 			&unit.Metadata,
 			&unit.Active,
+			&unit.DefaultLeaseType,
+			&unit.DefaultMonthlyRent,
+			&unit.DefaultSecurityDeposit,
+			&unit.DefaultDurationMonths,
 			&unit.CreatedAt,
 			&unit.UpdatedAt,
 			&unit.PropertyName,

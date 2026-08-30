@@ -22,6 +22,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { CreateLeaseDialog } from '../create-lease-dialog/create-lease-dialog';
 import { EditLeaseDialog } from '../edit-lease-dialog/edit-lease-dialog';
 import { RenewLeaseDialog } from '../renew-lease-dialog/renew-lease-dialog';
+import { ReplaceTenantDialog } from '../replace-tenant-dialog/replace-tenant-dialog';
 import { LoadingSpinner } from '../../../shared/components/loading-spinner/loading-spinner';
 import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm-delete-dialog/confirm-delete-dialog';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
@@ -262,6 +263,26 @@ export class LeaseList implements OnInit {
       data: { lease },
     });
     dialogRef.afterClosed().subscribe((result) => {
+      if (result) this.loadLeases();
+    });
+  }
+
+  /**
+   * Only an active lease can be handed over — a closed one has no current
+   * tenant to replace, and the API rejects it.
+   */
+  canReplaceTenant(lease: LeaseWithDetails): boolean {
+    return this.canEdit() && lease.active;
+  }
+
+  replaceTenant(lease: LeaseWithDetails): void {
+    const dialogRef = this.dialog.open(ReplaceTenantDialog, {
+      width: '560px',
+      data: { lease },
+    });
+    dialogRef.afterClosed().subscribe((result) => {
+      // The turnover creates a second lease row, so reload rather than patching
+      // the one row in place.
       if (result) this.loadLeases();
     });
   }

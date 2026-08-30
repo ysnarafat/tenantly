@@ -1,4 +1,18 @@
+import { LeaseType } from './lease.model';
+
 export type UnitType = 'Shop' | 'Apartment' | 'Office' | 'Parking' | 'Storage' | 'Other';
+
+/**
+ * Proposed commercial terms for a unit, used to pre-fill the lease-creation
+ * form. These are not a tenancy: nothing is owed and no tenant is implied
+ * until a real lease exists. Every field is optional.
+ */
+export interface UnitLeaseDefaults {
+  default_lease_type?: LeaseType;
+  default_monthly_rent?: number;
+  default_security_deposit?: number;
+  default_duration_months?: number;
+}
 
 // Type-specific metadata interfaces
 export interface ShopMetadata {
@@ -47,7 +61,7 @@ export type UnitMetadata =
   | StorageMetadata
   | Record<string, unknown>;
 
-export interface Unit {
+export interface Unit extends UnitLeaseDefaults {
   id: number;
   building_id: number;
   property_id: number;
@@ -70,7 +84,7 @@ export interface UnitWithDetails extends Unit {
   lease_active: boolean;
 }
 
-export interface CreateUnitRequest {
+export interface CreateUnitRequest extends UnitLeaseDefaults {
   building_id: number;
   property_id: number;
   unit_number: string;
@@ -81,7 +95,7 @@ export interface CreateUnitRequest {
   metadata?: UnitMetadata;
 }
 
-export interface UpdateUnitRequest {
+export interface UpdateUnitRequest extends UnitLeaseDefaults {
   unit_name?: string;
   floor?: number;
   section?: string;
@@ -90,7 +104,7 @@ export interface UpdateUnitRequest {
   active?: boolean;
 }
 
-export interface BulkCreateUnitItem {
+export interface BulkCreateUnitItem extends UnitLeaseDefaults {
   unit_number: string;
   unit_name?: string;
   floor?: number;

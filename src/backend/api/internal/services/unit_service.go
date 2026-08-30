@@ -140,6 +140,11 @@ func (s *UnitService) BulkCreateUnits(req *models.BulkCreateUnitsRequest, userID
 			UnitType:       item.UnitType,
 			Metadata:       item.Metadata,
 			Active:         true,
+
+			DefaultLeaseType:       item.DefaultLeaseType,
+			DefaultMonthlyRent:     item.DefaultMonthlyRent,
+			DefaultSecurityDeposit: item.DefaultSecurityDeposit,
+			DefaultDurationMonths:  item.DefaultDurationMonths,
 		})
 	}
 
