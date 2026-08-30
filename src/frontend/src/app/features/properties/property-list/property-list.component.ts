@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
 
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -97,11 +97,27 @@ export class PropertyListComponent implements OnInit {
   expandedProperties = signal<Set<number>>(new Set());
   loadedBuildings = signal<Map<number, BuildingWithUnits[]>>(new Map());
   searchQuery = signal('');
+  private buildingsLoadInFlight = new Set<number>();
+  private unitsLoadInFlight = new Set<number>();
   propertyTypeFilter = signal<PropertyType | null>(null);
   statusFilter = signal<'active' | 'inactive' | null>(null);
   cityFilter = signal<string | null>(null);
 
   propertyTypes: PropertyType[] = ['Residential', 'Commercial', 'Mixed'];
+
+  constructor() {
+    // matchesSearch() can only match a building/unit once its data has been
+    // fetched, but buildings/units otherwise load lazily on manual expand —
+    // so searching by unit number/name would silently return nothing unless
+    // the user had already drilled down to that exact unit. Eagerly load the
+    // full hierarchy for every property once a search is active so matches
+    // against not-yet-expanded buildings/units are found too.
+    effect(() => {
+      const query = this.searchQuery().trim();
+      if (!query) return;
+      this.ensureSearchDataLoaded();
+    });
+  }
 
   activeCount = computed(() => this.properties().filter((p) => p.active).length);
 
@@ -255,9 +271,73 @@ export class PropertyListComponent implements OnInit {
     this.unitService.getUnitsByBuilding(building.id).subscribe({
       next: (response) => {
         building.units = response.units;
+        // Force a fresh Map reference so displayedProperties() (and its
+        // in-progress search filter) recomputes with the newly loaded units.
+        this.loadedBuildings.update((map) => new Map(map));
       },
       error: (err: unknown) => {
         console.error('Error loading units:', safeErrorMessage(err));
+      },
+    });
+  }
+
+  private ensureSearchDataLoaded() {
+    for (const property of this.properties()) {
+      const buildings = this.loadedBuildings().get(property.id);
+      if (!buildings) {
+        this.ensureBuildingsLoadedForSearch(property.id);
+      } else {
+        for (const building of buildings) {
+          this.ensureUnitsLoadedForSearch(building);
+        }
+      }
+    }
+  }
+
+  private ensureBuildingsLoadedForSearch(propertyId: number) {
+    if (this.loadedBuildings().has(propertyId) || this.buildingsLoadInFlight.has(propertyId))
+      return;
+    this.buildingsLoadInFlight.add(propertyId);
+
+    this.buildingService.getBuildingsByProperty(propertyId).subscribe({
+      next: (response: BuildingListResponse) => {
+        const buildings = (response.buildings ?? []).map((b: Building) => ({
+          ...b,
+          expanded: false,
+        }));
+        this.loadedBuildings.update((map) => {
+          const newMap = new Map(map);
+          newMap.set(propertyId, buildings);
+          return newMap;
+        });
+        this.buildingsLoadInFlight.delete(propertyId);
+        buildings.forEach((building) => this.ensureUnitsLoadedForSearch(building));
+      },
+      error: (err: unknown) => {
+        console.error('Error loading buildings:', safeErrorMessage(err));
+        this.loadedBuildings.update((map) => {
+          const newMap = new Map(map);
+          newMap.set(propertyId, []);
+          return newMap;
+        });
+        this.buildingsLoadInFlight.delete(propertyId);
+      },
+    });
+  }
+
+  private ensureUnitsLoadedForSearch(building: BuildingWithUnits) {
+    if (building.units || this.unitsLoadInFlight.has(building.id)) return;
+    this.unitsLoadInFlight.add(building.id);
+
+    this.unitService.getUnitsByBuilding(building.id).subscribe({
+      next: (response) => {
+        building.units = response.units;
+        this.unitsLoadInFlight.delete(building.id);
+        this.loadedBuildings.update((map) => new Map(map));
+      },
+      error: (err: unknown) => {
+        console.error('Error loading units:', safeErrorMessage(err));
+        this.unitsLoadInFlight.delete(building.id);
       },
     });
   }
