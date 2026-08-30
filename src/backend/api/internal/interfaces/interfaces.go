@@ -317,6 +317,7 @@ type TenantRepositoryInterface interface {
 	CheckEmailExists(email string, excludeID int) (bool, error)
 	CheckNIDExists(nid string, excludeID int) (bool, error)
 	GetByID(id int) (*models.Tenant, error)
+	GetByIDIncludingInactive(id int) (*models.Tenant, error)
 	GetDecryptedNID(id int) (string, int, error)
 	GetByUnitID(unitID int) (*models.Tenant, error)
 	GetAll(page, pageSize, orgID int) ([]*models.Tenant, int, error)
