@@ -103,10 +103,6 @@ func (s *UnitIntegrationTestSuite) TearDownSuite() {
 	}
 }
 
-func (s *UnitIntegrationTestSuite) SetupTest() {
-	s.unitSeq = 0
-}
-
 func (s *UnitIntegrationTestSuite) setupRoutes(userHandler *UserHandler, auditSvc *database.AuditService) {
 	v1 := s.router.Group("/api/v1")
 	v1.POST("/auth/login", userHandler.Login)
@@ -175,9 +171,12 @@ func (s *UnitIntegrationTestSuite) seedFixtures() {
 		OrganizationID: s.testOrg.ID,
 		BuildingName:   "Unit Test Building",
 		BuildingCode:   "UTB001",
-		BuildingType:   models.BuildingTypeResidential,
-		TotalFloors:    6,
-		ActiveStatus:   true,
+		// Mixed allows every unit type — this suite exercises all of them
+		// (Shop, Office, Apartment, Parking, Storage, Other) against this
+		// one shared building.
+		BuildingType: models.BuildingTypeMixed,
+		TotalFloors:  6,
+		ActiveStatus: true,
 	}
 	require.NoError(s.T(), s.buildingRepo.Create(s.testBuilding))
 }

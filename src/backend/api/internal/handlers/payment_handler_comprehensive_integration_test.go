@@ -43,6 +43,8 @@ type PaymentIntegrationTestSuite struct {
 	unitRepo       *repositories.UnitRepository
 	tenantRepo     *repositories.TenantRepository
 	paymentRepo    *repositories.PaymentRepository
+	leaseRepo      *repositories.LeaseRepository
+	paymentTxnRepo *repositories.PaymentTransactionRepository
 	testOrg        *models.Organization
 	testUser       *models.User
 	testProperty   *models.Property
@@ -90,16 +92,27 @@ func (s *PaymentIntegrationTestSuite) SetupSuite() {
 	s.unitRepo = repositories.NewUnitRepository(s.db)
 	s.tenantRepo = repositories.NewTenantRepository(s.db, s.cfg.NIDProtector)
 	s.paymentRepo = repositories.NewPaymentRepository(s.db)
+	s.leaseRepo = repositories.NewLeaseRepository(s.db)
+	s.paymentTxnRepo = repositories.NewPaymentTransactionRepository(s.db)
+	paymentTransactionAttachmentRepo := repositories.NewPaymentTransactionAttachmentRepository(s.db)
+	receiptAccessTokenRepo := repositories.NewReceiptAccessTokenRepository(s.db)
+	notificationRepo := repositories.NewNotificationRepository(s.db)
 
 	auditSvc := database.NewAuditService(s.db)
 	userSvc := services.NewUserService(s.userRepo, auditSvc, s.cfg.JWTSecret, s.cfg.JWTExpiration)
 	paymentSvc := services.NewPaymentService(
 		s.paymentRepo,
+		s.paymentTxnRepo,
+		paymentTransactionAttachmentRepo,
+		receiptAccessTokenRepo,
+		notificationRepo,
+		s.leaseRepo,
 		s.unitRepo,
 		s.buildingRepo,
 		s.propertyRepo,
 		auditSvc,
 		s.userRepo,
+		"http://localhost:8080",
 	)
 
 	userHandler := NewUserHandler(userSvc, "", false)
@@ -110,8 +123,9 @@ func (s *PaymentIntegrationTestSuite) SetupSuite() {
 	s.setupRoutes(userHandler, auditSvc)
 	s.seedFixtures()
 
-	// Use a year far in the past so tests don't collide with real calendar data
-	s.baseYear = 2018
+	// Use a year far in the past (but still >= the CreatePaymentRequest.Year
+	// "min=2020" validation floor) so tests don't collide with real calendar data
+	s.baseYear = 2020
 }
 
 func (s *PaymentIntegrationTestSuite) TearDownSuite() {
@@ -139,6 +153,7 @@ func (s *PaymentIntegrationTestSuite) setupRoutes(userHandler *UserHandler, audi
 		payments.POST("/bulk", s.paymentHandler.BulkCreatePayments)
 		payments.GET("/:id", s.paymentHandler.GetPayment)
 		payments.PUT("/:id", s.paymentHandler.UpdatePayment)
+		payments.POST("/:id/transactions", s.paymentHandler.RecordPaymentTransaction)
 		payments.GET("", s.paymentHandler.GetPayments)
 		payments.GET("/building/:building_id/report", s.paymentHandler.GetBuildingPaymentReport)
 		payments.GET("/property/:property_id/report", s.paymentHandler.GetPropertyPaymentReport)
@@ -214,6 +229,29 @@ func (s *PaymentIntegrationTestSuite) seedFixtures() {
 		OrganizationID: s.testOrg.ID,
 	})
 	require.NoError(s.T(), err)
+
+	// CreatePayment requires an active, non-expired lease for the tenant/unit
+	// pair, so every payment test needs one already in place.
+	s.createLease(s.testUnit.ID, s.testTenant.ID)
+}
+
+// createLease creates an active lease, far from expiry, for the given
+// unit/tenant pair — the precondition CreatePayment enforces before
+// recording a payment.
+func (s *PaymentIntegrationTestSuite) createLease(unitID, tenantID int) *models.Lease {
+	endDate := time.Now().AddDate(5, 0, 0).Format("2006-01-02")
+	lease, err := s.leaseRepo.Create(&models.CreateLeaseRequest{
+		UnitID:         unitID,
+		TenantID:       tenantID,
+		LeaseType:      models.LeaseTypeResidential,
+		StartDate:      time.Now().AddDate(-1, 0, 0).Format("2006-01-02"),
+		EndDate:        &endDate,
+		DurationMonths: 12,
+		MonthlyRent:    15000,
+		OrganizationID: s.testOrg.ID,
+	})
+	require.NoError(s.T(), err)
+	return lease
 }
 
 func (s *PaymentIntegrationTestSuite) login() string {
@@ -261,6 +299,10 @@ func (s *PaymentIntegrationTestSuite) basePayload(month, year int) map[string]in
 
 // seedPayment inserts a payment directly through the repository (bypasses HTTP),
 // suitable for setting up preconditions without consuming a month/year slot via the API.
+// When amountPaid is set, it also records a matching ledger transaction —
+// RecordPaymentTransaction derives the running total from the transaction
+// ledger, not the payments row, so a seeded amount_paid with no backing
+// transaction would be silently dropped by the next recorded installment.
 func (s *PaymentIntegrationTestSuite) seedPayment(month, year int, amountDue float64, amountPaid *float64) *models.Payment {
 	p, err := s.paymentRepo.Create(&models.CreatePaymentRequest{
 		UnitID:         s.testUnit.ID,
@@ -274,6 +316,12 @@ func (s *PaymentIntegrationTestSuite) seedPayment(month, year int, amountDue flo
 		AmountPaid:     amountPaid,
 	})
 	require.NoError(s.T(), err)
+
+	if amountPaid != nil && *amountPaid > 0 {
+		_, err := s.paymentTxnRepo.Create(p.ID, *amountPaid, "", p.ReceiptNumber, "", time.Now().UTC())
+		require.NoError(s.T(), err)
+	}
+
 	return p
 }
 
@@ -406,14 +454,15 @@ func (s *PaymentIntegrationTestSuite) TestUpdatePayment_DueBecomespaid() {
 	created := s.seedPayment(7, s.baseYear, 20000, nil)
 	assert.Equal(s.T(), models.PaymentStatusDue, created.Status)
 
-	// Record full payment — status must flip to Paid, server-side
-	w := s.req(http.MethodPut, fmt.Sprintf("/api/v1/payments/%d", created.ID), map[string]interface{}{
-		"amount_paid":    20000.0,
+	// Recording money received goes through the transaction ledger, not a
+	// direct PUT of amount_paid — status must flip to Paid, server-side.
+	w := s.req(http.MethodPost, fmt.Sprintf("/api/v1/payments/%d/transactions", created.ID), map[string]interface{}{
+		"amount":         20000.0,
 		"payment_method": "Cash",
 		"payment_date":   time.Now().Format("2006-01-02"),
 	})
 
-	assert.Equal(s.T(), http.StatusOK, w.Code)
+	assert.Equal(s.T(), http.StatusCreated, w.Code)
 
 	var payment models.Payment
 	require.NoError(s.T(), json.Unmarshal(w.Body.Bytes(), &payment))
@@ -428,12 +477,13 @@ func (s *PaymentIntegrationTestSuite) TestUpdatePayment_PartialToFull() {
 	created := s.seedPayment(8, s.baseYear, 20000, &partial)
 	assert.Equal(s.T(), models.PaymentStatusPartial, created.Status)
 
-	// Pay the remaining balance — status must become Paid
-	w := s.req(http.MethodPut, fmt.Sprintf("/api/v1/payments/%d", created.ID), map[string]interface{}{
-		"amount_paid": 20000.0,
+	// Pay the remaining balance via the transaction ledger — status must
+	// become Paid.
+	w := s.req(http.MethodPost, fmt.Sprintf("/api/v1/payments/%d/transactions", created.ID), map[string]interface{}{
+		"amount": 10000.0,
 	})
 
-	assert.Equal(s.T(), http.StatusOK, w.Code)
+	assert.Equal(s.T(), http.StatusCreated, w.Code)
 	var payment models.Payment
 	require.NoError(s.T(), json.Unmarshal(w.Body.Bytes(), &payment))
 	assert.Equal(s.T(), models.PaymentStatusPaid, payment.Status)
@@ -623,6 +673,7 @@ func (s *PaymentIntegrationTestSuite) TestBulkCreatePayments_Success() {
 		Floor:      2,
 	}, s.testOrg.ID)
 	require.NoError(s.T(), err)
+	s.createLease(unit2.ID, s.testTenant.ID)
 
 	bulkYear := s.baseYear + 9
 
