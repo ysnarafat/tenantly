@@ -1,11 +1,14 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslateModule } from '@ngx-translate/core';
@@ -36,12 +39,15 @@ import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     RouterModule,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
     MatTooltipModule,
+    MatFormFieldModule,
+    MatInputModule,
     TranslateModule,
     LoadingSpinner,
   ],
@@ -63,9 +69,27 @@ export class BuildingDetail implements OnInit {
   loading = signal(true);
   unitsLoading = signal(false);
   notFound = signal(false);
+  searchQuery = signal('');
+
+  filteredUnits = computed(() => {
+    const query = this.searchQuery().trim().toLowerCase();
+    const units = this.units();
+    if (!query) return units;
+
+    return units.filter(
+      (u) =>
+        u.unit_number?.toLowerCase().includes(query) ||
+        u.unit_name?.toLowerCase().includes(query) ||
+        u.unit_type?.toLowerCase().includes(query)
+    );
+  });
 
   ngOnInit(): void {
     this.load();
+  }
+
+  clearSearch(): void {
+    this.searchQuery.set('');
   }
 
   load(): void {

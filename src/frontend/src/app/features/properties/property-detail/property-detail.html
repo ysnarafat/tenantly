@@ -101,7 +101,28 @@
       {{ 'PROPERTY_DETAIL.ADD_BUILDING' | translate }}
     </button>
   </div>
-  @if (buildingsLoading()) {
+  @if (buildings().length > 0) {
+  <mat-form-field appearance="outline" class="search-field">
+    <mat-label>{{ 'PROPERTY_DETAIL.SEARCH_LABEL' | translate }}</mat-label>
+    <mat-icon matPrefix>search</mat-icon>
+    <input
+      matInput
+      [ngModel]="searchQuery()"
+      (ngModelChange)="searchQuery.set($event)"
+      [placeholder]="'PROPERTY_DETAIL.SEARCH_PLACEHOLDER' | translate"
+    />
+    @if (searchQuery()) {
+    <button
+      matSuffix
+      mat-icon-button
+      (click)="clearSearch()"
+      [matTooltip]="'COMMON.ACTIONS.CLEAR' | translate"
+    >
+      <mat-icon>close</mat-icon>
+    </button>
+    }
+  </mat-form-field>
+  } @if (buildingsLoading()) {
   <app-loading-spinner
     [message]="'PROPERTY_DETAIL.LOADING_BUILDINGS' | translate"
   ></app-loading-spinner>
@@ -110,9 +131,15 @@
     <mat-icon>apartment</mat-icon>
     <p>{{ 'PROPERTY_DETAIL.NO_BUILDINGS' | translate }}</p>
   </div>
+  } @else if (filteredBuildings().length === 0) {
+  <div class="empty-tab">
+    <mat-icon>search_off</mat-icon>
+    <p>{{ 'PROPERTY_DETAIL.NO_MATCHING_BUILDINGS' | translate }}</p>
+    <p>{{ 'COMMON.EMPTY_STATE.TRY_ADJUST' | translate }}</p>
+  </div>
   } @else {
   <div class="buildings-list">
-    @for (building of buildings(); track building.id) {
+    @for (building of filteredBuildings(); track building.id) {
     <mat-card class="building-card">
       <div
         class="building-card-header"

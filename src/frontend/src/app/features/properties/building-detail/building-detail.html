@@ -107,7 +107,28 @@
       </button>
     </div>
   </div>
-  @if (unitsLoading()) {
+  @if (units().length > 0) {
+  <mat-form-field appearance="outline" class="search-field">
+    <mat-label>{{ 'BUILDING_DETAIL.SEARCH_LABEL' | translate }}</mat-label>
+    <mat-icon matPrefix>search</mat-icon>
+    <input
+      matInput
+      [ngModel]="searchQuery()"
+      (ngModelChange)="searchQuery.set($event)"
+      [placeholder]="'BUILDING_DETAIL.SEARCH_PLACEHOLDER' | translate"
+    />
+    @if (searchQuery()) {
+    <button
+      matSuffix
+      mat-icon-button
+      (click)="clearSearch()"
+      [matTooltip]="'COMMON.ACTIONS.CLEAR' | translate"
+    >
+      <mat-icon>close</mat-icon>
+    </button>
+    }
+  </mat-form-field>
+  } @if (unitsLoading()) {
   <app-loading-spinner
     [message]="'BUILDING_DETAIL.LOADING_UNITS' | translate"
   ></app-loading-spinner>
@@ -116,9 +137,15 @@
     <mat-icon>meeting_room</mat-icon>
     <p>{{ 'BUILDING_DETAIL.NO_UNITS' | translate }}</p>
   </div>
+  } @else if (filteredUnits().length === 0) {
+  <div class="empty-tab">
+    <mat-icon>search_off</mat-icon>
+    <p>{{ 'BUILDING_DETAIL.NO_MATCHING_UNITS' | translate }}</p>
+    <p>{{ 'COMMON.EMPTY_STATE.TRY_ADJUST' | translate }}</p>
+  </div>
   } @else {
   <div class="units-grid">
-    @for (unit of units(); track unit.id) {
+    @for (unit of filteredUnits(); track unit.id) {
     <mat-card class="unit-card" (click)="viewUnitDetails(unit)">
       <mat-card-content>
         <div class="unit-card-header">

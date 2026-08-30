@@ -471,6 +471,9 @@
     "VIEW_FULL_REPORT": "View full financial report",
     "VIEW_FULL_DETAILS": "View full details",
     "ADD_BUILDING": "Add Building",
+    "SEARCH_LABEL": "Search buildings",
+    "SEARCH_PLACEHOLDER": "Building name, code or type…",
+    "NO_MATCHING_BUILDINGS": "No matching buildings",
     "NOT_FOUND": {
       "TITLE": "Property not found",
       "DESCRIPTION": "This property may have been deleted, or you may not have access to it."
@@ -493,6 +496,9 @@
     "VIEW_FULL_REPORT": "View full financial report",
     "ADD_UNIT": "Add Unit",
     "BULK_ADD_UNITS": "Bulk Add Units",
+    "SEARCH_LABEL": "Search units",
+    "SEARCH_PLACEHOLDER": "Unit number, name or type…",
+    "NO_MATCHING_UNITS": "No matching units",
     "NOT_FOUND": {
       "TITLE": "Building not found",
       "DESCRIPTION": "This building may have been deleted, or you may not have access to it."

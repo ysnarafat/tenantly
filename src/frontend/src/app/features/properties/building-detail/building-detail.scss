@@ -235,6 +235,17 @@
   gap: 8px;
 }
 
+.search-field {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 0 12px;
+
+  mat-icon[matPrefix] {
+    color: var(--text-muted);
+    margin-right: 4px;
+  }
+}
+
 .units-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
