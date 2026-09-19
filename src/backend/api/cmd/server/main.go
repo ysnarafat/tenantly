@@ -29,6 +29,17 @@ func main() {
 		log.Fatal("Failed to load configs:", err)
 	}
 
+	// Auto-create the database on first run in local development so
+	// contributors don't need a manual `createdb` step. Skipped in
+	// production: the app shouldn't hold CREATEDB there, and a missing
+	// database should fail loudly rather than silently spin up an empty one
+	// (e.g. from a typo'd DATABASE_URL).
+	if cfg.Environment != "production" {
+		if err := database.EnsureDatabaseExists(cfg.DatabaseURL); err != nil {
+			log.Fatal("Failed to ensure database exists: ", err)
+		}
+	}
+
 	// Initialize database
 	db, err := database.Connect(cfg.DatabaseURL)
 	if err != nil {

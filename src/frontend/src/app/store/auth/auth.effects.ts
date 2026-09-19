@@ -7,6 +7,7 @@ import { map, exhaustMap, catchError, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import * as AuthActions from './auth.actions';
 import { SetOrganizationResponse } from '../../core/models/organization.model';
+import { authStorage } from '../../shared/utils/auth-storage.utils';
 
 function toSerializableError(error: HttpErrorResponse): { status: number; message: string } {
   return {
@@ -47,9 +48,9 @@ export class AuthEffects {
           // Store auth data in localStorage. The refresh token is NOT stored
           // here — the backend sets it as an httpOnly cookie the browser
           // manages on its own; it's never present in this JSON response.
-          localStorage.setItem('tenantly_token', response.token);
-          localStorage.setItem('tenantly_user', JSON.stringify(response.user));
-          localStorage.setItem(
+          authStorage.setItem('tenantly_token', response.token);
+          authStorage.setItem('tenantly_user', JSON.stringify(response.user));
+          authStorage.setItem(
             'tenantly_expires_at',
             typeof response.expires_at === 'string'
               ? response.expires_at
@@ -59,7 +60,7 @@ export class AuthEffects {
           // Persist organizations array for post-refresh restoration
           const orgs = response.organizations || [];
           if (orgs.length > 0) {
-            localStorage.setItem('tenantly_organizations', JSON.stringify(orgs));
+            authStorage.setItem('tenantly_organizations', JSON.stringify(orgs));
           }
 
           // If user belongs to multiple organizations without a default, show org picker
@@ -69,9 +70,9 @@ export class AuthEffects {
           } else {
             // Store current org context using organization_id (actual org ID)
             if (orgs.length === 1) {
-              localStorage.setItem('tenantly_current_org_id', orgs[0].organization_id.toString());
+              authStorage.setItem('tenantly_current_org_id', orgs[0].organization_id.toString());
             } else if (hasDefault) {
-              localStorage.setItem(
+              authStorage.setItem(
                 'tenantly_current_org_id',
                 response.default_organization_id!.toString()
               );
@@ -109,18 +110,18 @@ export class AuthEffects {
         ofType(AuthActions.switchOrganizationSuccess),
         tap(({ response }) => {
           // Update tokens in localStorage (refresh token: see loginSuccess$ note above)
-          localStorage.setItem('tenantly_token', response.token);
-          localStorage.setItem(
+          authStorage.setItem('tenantly_token', response.token);
+          authStorage.setItem(
             'tenantly_expires_at',
             typeof response.expires_at === 'string'
               ? response.expires_at
               : new Date(response.expires_at).toISOString()
           );
-          localStorage.setItem(
+          authStorage.setItem(
             'tenantly_current_org_id',
             response.organization.organization_id.toString()
           );
-          localStorage.setItem('tenantly_current_org', JSON.stringify(response.organization));
+          authStorage.setItem('tenantly_current_org', JSON.stringify(response.organization));
 
           // Navigate to dashboard after org switch
           this.router.navigate(['/dashboard']);
@@ -151,12 +152,12 @@ export class AuthEffects {
         tap(() => {
           // Clear auth data from localStorage (the backend clears the
           // httpOnly refresh cookie itself as part of the logout response)
-          localStorage.removeItem('tenantly_token');
-          localStorage.removeItem('tenantly_user');
-          localStorage.removeItem('tenantly_expires_at');
-          localStorage.removeItem('tenantly_organizations');
-          localStorage.removeItem('tenantly_current_org_id');
-          localStorage.removeItem('tenantly_current_org');
+          authStorage.removeItem('tenantly_token');
+          authStorage.removeItem('tenantly_user');
+          authStorage.removeItem('tenantly_expires_at');
+          authStorage.removeItem('tenantly_organizations');
+          authStorage.removeItem('tenantly_current_org_id');
+          authStorage.removeItem('tenantly_current_org');
 
           // Navigate to login
           this.router.navigate(['/login']);
@@ -190,9 +191,9 @@ export class AuthEffects {
         ofType(AuthActions.refreshTokenSuccess),
         tap(({ response }) => {
           // Update auth data in localStorage (refresh token: see loginSuccess$ note above)
-          localStorage.setItem('tenantly_token', response.token);
-          localStorage.setItem('tenantly_user', JSON.stringify(response.user));
-          localStorage.setItem(
+          authStorage.setItem('tenantly_token', response.token);
+          authStorage.setItem('tenantly_user', JSON.stringify(response.user));
+          authStorage.setItem(
             'tenantly_expires_at',
             typeof response.expires_at === 'string'
               ? response.expires_at
@@ -209,9 +210,9 @@ export class AuthEffects {
         ofType(AuthActions.refreshTokenFailure),
         tap(() => {
           // Clear auth data and redirect to login
-          localStorage.removeItem('tenantly_token');
-          localStorage.removeItem('tenantly_user');
-          localStorage.removeItem('tenantly_expires_at');
+          authStorage.removeItem('tenantly_token');
+          authStorage.removeItem('tenantly_user');
+          authStorage.removeItem('tenantly_expires_at');
 
           this.router.navigate(['/login']);
         })

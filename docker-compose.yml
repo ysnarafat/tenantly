@@ -95,8 +95,17 @@ services:
         BUILDKIT_INLINE_CACHE: 1
     container_name: tenantly-notification-service
     environment:
-      Database__ConnectionString: Host=postgres;Database=tenantly;Username=postgres;Password=${POSTGRES_PASSWORD:-change-this-in-production}
+      ConnectionStrings__DefaultConnection: Host=postgres;Database=tenantly;Username=postgres;Password=${POSTGRES_PASSWORD:-change-this-in-production}
       Notifications__ProcessingIntervalSeconds: 30
+      Notifications__Sms__Provider: ${SMS_PROVIDER:-ssl_wireless}
+      Notifications__Sms__ApiKey: ${SMS_API_KEY:-}
+      Notifications__Sms__ApiUrl: ${SMS_API_URL:-https://smsplus.sslwireless.com/api/v3/send-sms}
+      Notifications__Sms__SenderId: ${SMS_SENDER_ID:-TENANTLY}
+      Notifications__Email__SmtpHost: ${SMTP_HOST:-smtp.gmail.com}
+      Notifications__Email__SmtpPort: ${SMTP_PORT:-587}
+      Notifications__Email__Username: ${SMTP_USERNAME:-}
+      Notifications__Email__Password: ${SMTP_PASSWORD:-}
+      Notifications__Email__FromEmail: ${FROM_EMAIL:-noreply@tenantly.com}
     depends_on:
       - postgres
     networks:

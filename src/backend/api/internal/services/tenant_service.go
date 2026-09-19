@@ -201,8 +201,11 @@ func (s *TenantService) UpdateTenant(id int, req *models.UpdateTenantRequest, us
 		return nil, fmt.Errorf("failed to update tenant: %w", err)
 	}
 
-	// Get updated tenant
-	updatedTenant, err := s.tenantRepo.GetByID(id)
+	// Get updated tenant. GetByID filters on active=true, which would report
+	// a legitimate deactivation (active: false) as "not found" — read back
+	// via GetByIDIncludingInactive instead so this reflects whatever active
+	// status the update just applied.
+	updatedTenant, err := s.tenantRepo.GetByIDIncludingInactive(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get updated tenant: %w", err)
 	}

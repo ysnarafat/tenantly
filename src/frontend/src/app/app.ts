@@ -1,7 +1,17 @@
 import { Component, inject, OnInit, ViewChild, signal, computed, effect } from '@angular/core';
 
-import { RouterOutlet, RouterModule, Router, NavigationEnd } from '@angular/router';
-import { filter } from 'rxjs/operators';
+import {
+  RouterOutlet,
+  RouterModule,
+  Router,
+  NavigationEnd,
+  NavigationStart,
+  NavigationCancel,
+  NavigationError,
+  NavigationSkipped,
+} from '@angular/router';
+import { filter, switchMap, map } from 'rxjs/operators';
+import { timer, of, EMPTY } from 'rxjs';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -10,7 +20,9 @@ import { MatListModule } from '@angular/material/list';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
+import { TranslateModule } from '@ngx-translate/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthFacade } from './store/auth/auth.facade';
 import { PermissionService } from './core/services/permission.service';
@@ -22,6 +34,17 @@ import { OrganizationSelector } from './shared/organization-selector/organizatio
 import { avatarColorFor, avatarInitials } from './shared/utils/avatar.utils';
 
 const AUTH_ROUTE_PREFIXES = ['/home', '/login', '/select-organization', '/401', '/404'];
+
+const SIDENAV_COLLAPSED_KEY = 'tenantly-sidenav-collapsed';
+
+function getStoredSidenavCollapsed(): boolean {
+  return localStorage.getItem(SIDENAV_COLLAPSED_KEY) === 'true';
+}
+
+// Only surface the bar once a navigation has been pending this long — most
+// route changes resolve near-instantly (chunk already cached), and flashing
+// a loader for those reads as jank rather than feedback.
+const NAVIGATION_LOADER_DELAY_MS = 150;
 
 @Component({
   selector: 'app-root',
@@ -37,6 +60,8 @@ const AUTH_ROUTE_PREFIXES = ['/home', '/login', '/select-organization', '/401', 
     MatTooltipModule,
     MatMenuModule,
     MatDividerModule,
+    MatProgressBarModule,
+    TranslateModule,
     OrganizationSelector,
   ],
   templateUrl: './app.html',
@@ -58,21 +83,25 @@ export class App implements OnInit {
   userRole = signal('');
   user = signal<User | null>(null);
   isMobile = signal(false);
-  sidenavCollapsed = signal(false);
+  sidenavCollapsed = signal(getStoredSidenavCollapsed());
+  navigating = signal(false);
 
   // Computed permission signals
   isSuperAdmin = computed(() => this.permissions.isSuperAdmin());
   isOrgAdmin = computed(() => this.permissions.isOrgAdmin());
-  canManageProperties = computed(() =>
-    this.permissions.hasPermission(Permission.MANAGE_PROPERTIES)
-  );
-  canManageTenants = computed(() => this.permissions.hasPermission(Permission.MANAGE_TENANTS));
-  canManageDocuments = computed(() => this.permissions.hasPermission(Permission.MANAGE_DOCUMENTS));
+  // Workspace nav is gated on view access, so read-only roles (e.g. Accountant)
+  // still see the sections they're allowed to open.
+  canViewProperties = computed(() => this.permissions.hasPermission(Permission.VIEW_PROPERTIES));
+  canViewTenants = computed(() => this.permissions.hasPermission(Permission.VIEW_TENANTS));
+  canViewLeases = computed(() => this.permissions.hasPermission(Permission.VIEW_LEASES));
+  canViewPayments = computed(() => this.permissions.hasPermission(Permission.VIEW_PAYMENTS));
+  canViewReports = computed(() => this.permissions.hasPermission(Permission.VIEW_REPORTS));
+  canViewDocuments = computed(() => this.permissions.hasPermission(Permission.VIEW_DOCUMENTS));
+
+  // Admin nav is gated on management capability, matching the route guards.
   canManageUsers = computed(() => this.permissions.hasPermission(Permission.MANAGE_USERS));
   canManageOrganizations = computed(() => this.permissions.canManageOrganizations());
   canInviteUsers = computed(() => this.permissions.canInviteUsers());
-  canViewPayments = computed(() => this.permissions.hasPermission(Permission.VIEW_PAYMENTS));
-  canViewReports = computed(() => this.permissions.hasPermission(Permission.VIEW_REPORTS));
 
   // Computed derived state
   sidenavMode = computed(() => (this.isMobile() ? ('over' as const) : ('side' as const)));
@@ -95,11 +124,12 @@ export class App implements OnInit {
 
   hasWorkspaceNav = computed(
     () =>
-      this.canManageProperties() ||
-      this.canManageTenants() ||
+      this.canViewProperties() ||
+      this.canViewTenants() ||
+      this.canViewLeases() ||
       this.canViewPayments() ||
       this.canViewReports() ||
-      this.canManageDocuments()
+      this.canViewDocuments()
   );
 
   isOnAuthRoute = computed(() =>
@@ -119,6 +149,29 @@ export class App implements OnInit {
         takeUntilDestroyed()
       )
       .subscribe((event) => this.currentUrl.set(event.urlAfterRedirects));
+
+    // switchMap cancels the pending delay timer as soon as a NavigationEnd/
+    // Cancel/Error/Skipped event arrives, so a fast navigation never flashes
+    // the loader — only one that outlives NAVIGATION_LOADER_DELAY_MS does.
+    this.router.events
+      .pipe(
+        switchMap((event) => {
+          if (event instanceof NavigationStart) {
+            return timer(NAVIGATION_LOADER_DELAY_MS).pipe(map(() => true));
+          }
+          if (
+            event instanceof NavigationEnd ||
+            event instanceof NavigationCancel ||
+            event instanceof NavigationError ||
+            event instanceof NavigationSkipped
+          ) {
+            return of(false);
+          }
+          return EMPTY;
+        }),
+        takeUntilDestroyed()
+      )
+      .subscribe((navigating) => this.navigating.set(navigating));
 
     this.authFacade.userRole$
       .pipe(takeUntilDestroyed())
@@ -158,7 +211,11 @@ export class App implements OnInit {
     if (this.isMobile()) {
       this.sidenav?.toggle();
     } else {
-      this.sidenavCollapsed.update((v) => !v);
+      this.sidenavCollapsed.update((v) => {
+        const next = !v;
+        localStorage.setItem(SIDENAV_COLLAPSED_KEY, String(next));
+        return next;
+      });
       // MatSidenavContainer only recalculates the content margin on drawer
       // open/close or viewport resize — a pure CSS width change (our
       // .collapsed class) isn't one of its triggers, so the reserved space

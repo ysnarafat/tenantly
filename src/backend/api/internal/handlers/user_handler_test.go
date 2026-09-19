@@ -99,6 +99,16 @@ func (m *MockUserService) DeleteUserInOrganization(id int, orgID int) error {
 	return args.Error(0)
 }
 
+func (m *MockUserService) AdminResetPassword(id int, newPassword string) error {
+	args := m.Called(id, newPassword)
+	return args.Error(0)
+}
+
+func (m *MockUserService) AdminResetPasswordInOrganization(id int, newPassword string, orgID int) error {
+	args := m.Called(id, newPassword, orgID)
+	return args.Error(0)
+}
+
 func (m *MockUserService) GetUserByIDInOrganization(userID int, orgID int) (*models.User, error) {
 	args := m.Called(userID, orgID)
 	if args.Get(0) == nil {

@@ -6,7 +6,10 @@
     </div>
 
     <nav class="hp-nav-actions">
-      <a class="hp-nav-link" href="#faq">{{ 'HOMEPAGE.NAV.FAQ' | translate }}</a>
+      <a class="hp-nav-link" href="#faq" (click)="scrollTo('faq', $event)"
+        >{{ 'HOMEPAGE.NAV.FAQ' | translate }}</a
+      >
+      <a class="hp-nav-link" routerLink="/contact">{{ 'HOMEPAGE.NAV.CONTACT' | translate }}</a>
 
       @if (themeService.darkModeEnabled) {
       <button
@@ -147,6 +150,8 @@
       <span>TENANTLY</span>
     </div>
     <p class="hp-footer-tagline">{{ 'HOMEPAGE.FOOTER.TAGLINE' | translate }}</p>
-    <p class="hp-footer-rights">{{ 'HOMEPAGE.FOOTER.RIGHTS' | translate }}</p>
+    <p class="hp-footer-rights">
+      {{ 'HOMEPAGE.FOOTER.RIGHTS' | translate: { year: currentYear } }}
+    </p>
   </footer>
 </div>

@@ -12,31 +12,26 @@ public class Property : IAuditableEntity
     public int Id { get; set; }
 
     [Required]
-    [MaxLength(100)]
-    [Column("name")]
-    public string Name { get; set; } = string.Empty;
-
     [MaxLength(200)]
-    [Column("address")]
-    public string? Address { get; set; }
+    [Column("property_name")]
+    public string PropertyName { get; set; } = string.Empty;
 
+    [Required]
     [MaxLength(50)]
+    [Column("property_code")]
+    public string PropertyCode { get; set; } = string.Empty;
+
+    [Required]
+    [Column("address")]
+    public string Address { get; set; } = string.Empty;
+
+    [MaxLength(100)]
     [Column("city")]
     public string? City { get; set; }
 
     [MaxLength(20)]
     [Column("postal_code")]
     public string? PostalCode { get; set; }
-
-    [MaxLength(50)]
-    [Column("country")]
-    public string? Country { get; set; } = "Bangladesh";
-
-    [Column("total_floors")]
-    public int? TotalFloors { get; set; }
-
-    [Column("total_shops")]
-    public int? TotalShops { get; set; }
 
     [Column("active")]
     public bool Active { get; set; } = true;
@@ -48,6 +43,5 @@ public class Property : IAuditableEntity
     public DateTime UpdatedAt { get; set; }
 
     // Navigation properties
-    public virtual ICollection<Shop> Shops { get; set; } = new List<Shop>();
-    public virtual ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
+    public virtual ICollection<Unit> Units { get; set; } = new List<Unit>();
 }

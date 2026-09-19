@@ -15,9 +15,13 @@ export async function injectAuthToken(page: Page, token: string, user: object) {
   );
 }
 
-export async function loginViaUI(page: Page, email: string, password: string) {
+export async function loginViaUI(page: Page, username: string, password: string) {
   await page.goto('/login');
-  await page.getByLabel(/email/i).fill(email);
+  // The login field asks for a username (LOGIN.FIELDS.USERNAME), and the
+  // backend looks the account up by username (UserService.Login →
+  // GetByUsername) — not by email, even though some seed accounts also have
+  // an email address that looks like a login.
+  await page.getByLabel(/username/i).fill(username);
   await page.getByLabel(/password/i).fill(password);
   await page.getByRole('button', { name: /login|sign in/i }).click();
   await page.waitForURL('**/dashboard', { timeout: 10_000 });

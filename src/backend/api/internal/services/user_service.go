@@ -478,6 +478,60 @@ func (s *UserService) DeleteUserInOrganization(id int, orgID int) error {
 	return s.DeleteUser(id)
 }
 
+// AdminResetPassword lets an admin set a new password for another user
+// directly — unlike ChangePassword, it has no current-password check; the
+// caller's admin role (verified by the handler before this is reached) is
+// the authorization, covering cases like the user forgetting their password
+// with no working self-service email reset.
+func (s *UserService) AdminResetPassword(id int, newPassword string) error {
+	user, err := s.userRepo.GetByID(id)
+	if err != nil {
+		return fmt.Errorf("user not found")
+	}
+
+	if err := s.ValidatePassword(newPassword); err != nil {
+		return fmt.Errorf("new password validation failed: %w", err)
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), 12)
+	if err != nil {
+		return fmt.Errorf("failed to hash new password: %w", err)
+	}
+
+	updates := map[string]interface{}{
+		"password_hash": string(hashedPassword),
+		"updated_at":    time.Now(),
+	}
+	if err := s.userRepo.Update(id, updates); err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	if s.auditService != nil {
+		_ = s.auditService.LogUserAction(
+			id,
+			"ADMIN_PASSWORD_RESET",
+			models.TableUsers,
+			&id,
+			nil,
+			map[string]interface{}{
+				"username": user.Username,
+			},
+		)
+	}
+
+	return nil
+}
+
+// AdminResetPasswordInOrganization resets a user's password only if they
+// belong to orgID, preventing cross-organization mutation (IDOR) by
+// non-SUPER_ADMIN callers — mirrors UpdateUserInOrganization.
+func (s *UserService) AdminResetPasswordInOrganization(id int, newPassword string, orgID int) error {
+	if _, err := s.GetUserByIDInOrganization(id, orgID); err != nil {
+		return fmt.Errorf("user not found")
+	}
+	return s.AdminResetPassword(id, newPassword)
+}
+
 func (s *UserService) DeleteUser(id int) error {
 	// Check if user exists
 	existingUser, err := s.userRepo.GetByID(id)

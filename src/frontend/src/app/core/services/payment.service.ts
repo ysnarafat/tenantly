@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, forkJoin, of } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
 import {
   CreatePaymentRequest,
   DashboardSummary,
@@ -8,6 +9,9 @@ import {
   PaymentListResponse,
   UpdatePaymentRequest,
   PaymentWithDetails,
+  PaymentTransaction,
+  CreatePaymentTransactionRequest,
+  PaymentTransactionAttachment,
   LeaseSearchResponse,
   GenerateMonthlyPaymentsRequest,
   GenerateMonthlyPaymentsResult,
@@ -23,6 +27,16 @@ export interface PaymentFilters {
   page?: number;
   page_size?: number;
 }
+
+// Statuses the repository groups together as "outstanding" (see the shared
+// `status IN ('Due', 'Partial', 'Overdue')` clauses on the backend) — the set a
+// bulk-collection screen needs to show, since money is still owed on all three.
+const OUTSTANDING_PAYMENT_STATUSES = ['Due', 'Partial', 'Overdue'] as const;
+
+// Backend clamps page_size to 100 (see PaymentService.GetPayments), so any
+// organization with more than 100 outstanding payments for a period needs more
+// than one page per status.
+const MAX_PAGE_SIZE = 100;
 
 @Injectable({ providedIn: 'root' })
 export class PaymentService {
@@ -51,8 +65,78 @@ export class PaymentService {
     return this.http.put<Payment>(`${this.apiUrl}/${id}`, req);
   }
 
+  /**
+   * Records a new amount received against a payment — adds to whatever's
+   * already been paid rather than replacing it, so a second installment
+   * against the same month's due amount doesn't overwrite the first. This is
+   * the only way to record money received; UpdatePaymentRequest no longer
+   * accepts amount_paid.
+   */
+  recordPaymentTransaction(id: number, req: CreatePaymentTransactionRequest): Observable<Payment> {
+    return this.http.post<Payment>(`${this.apiUrl}/${id}/transactions`, req);
+  }
+
+  getPaymentTransactions(id: number): Observable<PaymentTransaction[]> {
+    return this.http
+      .get<{ transactions: PaymentTransaction[] }>(`${this.apiUrl}/${id}/transactions`)
+      .pipe(map((res) => res.transactions ?? []));
+  }
+
+  deletePaymentTransaction(id: number, transactionId: number): Observable<Payment> {
+    return this.http.delete<Payment>(`${this.apiUrl}/${id}/transactions/${transactionId}`);
+  }
+
+  uploadPaymentTransactionAttachment(
+    id: number,
+    transactionId: number,
+    file: File
+  ): Observable<PaymentTransactionAttachment> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<PaymentTransactionAttachment>(
+      `${this.apiUrl}/${id}/transactions/${transactionId}/attachments`,
+      formData
+    );
+  }
+
+  getPaymentTransactionAttachments(
+    id: number,
+    transactionId: number
+  ): Observable<PaymentTransactionAttachment[]> {
+    return this.http
+      .get<{
+        attachments: PaymentTransactionAttachment[];
+      }>(`${this.apiUrl}/${id}/transactions/${transactionId}/attachments`)
+      .pipe(map((res) => res.attachments ?? []));
+  }
+
+  downloadPaymentTransactionAttachment(
+    id: number,
+    transactionId: number,
+    attachmentId: number
+  ): Observable<Blob> {
+    return this.http.get(
+      `${this.apiUrl}/${id}/transactions/${transactionId}/attachments/${attachmentId}`,
+      { responseType: 'blob' }
+    );
+  }
+
+  deletePaymentTransactionAttachment(
+    id: number,
+    transactionId: number,
+    attachmentId: number
+  ): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(
+      `${this.apiUrl}/${id}/transactions/${transactionId}/attachments/${attachmentId}`
+    );
+  }
+
   bulkCreatePayments(requests: CreatePaymentRequest[]): Observable<unknown> {
     return this.http.post(`${this.apiUrl}/bulk`, requests);
+  }
+
+  downloadReceipt(id: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/${id}/receipt`, { responseType: 'blob' });
   }
 
   getDashboardSummary(): Observable<DashboardSummary> {
@@ -78,5 +162,33 @@ export class PaymentService {
     req: GenerateMonthlyPaymentsRequest
   ): Observable<GenerateMonthlyPaymentsResult> {
     return this.http.post<GenerateMonthlyPaymentsResult>(`${this.apiUrl}/generate-monthly`, req);
+  }
+
+  /**
+   * Every outstanding (Due/Partial/Overdue) payment for a month/year, across as
+   * many pages as needed — for a bulk-collection screen that needs the full set
+   * up front rather than one paginated page at a time.
+   */
+  getAllDuePayments(month: number, year: number): Observable<PaymentWithDetails[]> {
+    const requests = OUTSTANDING_PAYMENT_STATUSES.map((status) =>
+      this.fetchAllPages({ month, year, status })
+    );
+    return forkJoin(requests).pipe(map((pages) => pages.flat()));
+  }
+
+  private fetchAllPages(
+    filters: PaymentFilters,
+    page = 1,
+    accumulated: PaymentWithDetails[] = []
+  ): Observable<PaymentWithDetails[]> {
+    return this.getPayments({ ...filters, page, page_size: MAX_PAGE_SIZE }).pipe(
+      switchMap((response) => {
+        const combined = [...accumulated, ...response.payments];
+        if (response.payments.length === 0 || combined.length >= response.total) {
+          return of(combined);
+        }
+        return this.fetchAllPages(filters, page + 1, combined);
+      })
+    );
   }
 }

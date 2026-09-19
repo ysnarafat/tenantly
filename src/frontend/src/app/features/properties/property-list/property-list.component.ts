@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, effect, inject, signal } from '@angular/core';
 
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -9,8 +9,10 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslateModule } from '@ngx-translate/core';
 import { Store } from '@ngrx/store';
 import { PropertyActions } from '../store/property.actions';
@@ -25,11 +27,11 @@ import { BuildingService } from '../../../core/services/building.service';
 import { UnitService } from '../../../core/services/unit.service';
 import {
   Property,
+  PropertyType,
   Building,
   Unit,
   UnitWithDetails,
   BuildingListResponse,
-  UnitListResponse,
 } from '../../../core/models';
 import { DisplayedProperty, PropertyCardComponent } from '../property-card/property-card';
 import { PropertyFormDialogComponent } from '../property-form-dialog/property-form-dialog';
@@ -44,6 +46,7 @@ import {
   DetailRow,
 } from '../../../shared/components/entity-detail-dialog/entity-detail-dialog';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
 
 interface PropertyWithHierarchy extends Property {
   buildings?: BuildingWithUnits[];
@@ -68,6 +71,7 @@ interface BuildingWithUnits extends Building {
     MatExpansionModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
     MatTooltipModule,
     PropertyCardComponent,
     TranslateModule,
@@ -82,6 +86,7 @@ export class PropertyListComponent implements OnInit {
   private unitService = inject(UnitService);
   private dialog = inject(MatDialog);
   private paymentService = inject(PaymentService);
+  private snackBar = inject(MatSnackBar);
 
   // Store selectors
   properties = this.store.selectSignal(selectAllProperties);
@@ -92,8 +97,47 @@ export class PropertyListComponent implements OnInit {
   expandedProperties = signal<Set<number>>(new Set());
   loadedBuildings = signal<Map<number, BuildingWithUnits[]>>(new Map());
   searchQuery = signal('');
+  private buildingsLoadInFlight = new Set<number>();
+  private unitsLoadInFlight = new Set<number>();
+  propertyTypeFilter = signal<PropertyType | null>(null);
+  statusFilter = signal<'active' | 'inactive' | null>(null);
+  cityFilter = signal<string | null>(null);
+
+  propertyTypes: PropertyType[] = ['Residential', 'Commercial', 'Mixed'];
+
+  constructor() {
+    // matchesSearch() can only match a building/unit once its data has been
+    // fetched, but buildings/units otherwise load lazily on manual expand —
+    // so searching by unit number/name would silently return nothing unless
+    // the user had already drilled down to that exact unit. Eagerly load the
+    // full hierarchy for every property once a search is active so matches
+    // against not-yet-expanded buildings/units are found too.
+    effect(() => {
+      const query = this.searchQuery().trim();
+      if (!query) return;
+      this.ensureSearchDataLoaded();
+    });
+  }
 
   activeCount = computed(() => this.properties().filter((p) => p.active).length);
+
+  availableCities = computed(() => {
+    const cities = new Set<string>();
+    for (const p of this.properties()) {
+      if (p.city) cities.add(p.city);
+    }
+    return [...cities].sort();
+  });
+
+  hasActiveFilters = computed(
+    () =>
+      !!(
+        this.searchQuery() ||
+        this.propertyTypeFilter() ||
+        this.statusFilter() ||
+        this.cityFilter()
+      )
+  );
 
   // Combined state for template
   displayedProperties = computed(() => {
@@ -101,13 +145,25 @@ export class PropertyListComponent implements OnInit {
     const expandedProps = this.expandedProperties();
     const buildingsMap = this.loadedBuildings();
     const query = this.searchQuery().trim().toLowerCase();
+    const type = this.propertyTypeFilter();
+    const status = this.statusFilter();
+    const city = this.cityFilter();
 
-    const withHierarchy = props.map((p) => ({
+    let withHierarchy = props.map((p) => ({
       ...p,
       expanded: expandedProps.has(p.id),
       buildings: buildingsMap.get(p.id),
     })) as DisplayedProperty[];
 
+    if (type) {
+      withHierarchy = withHierarchy.filter((p) => p.property_type === type);
+    }
+    if (status) {
+      withHierarchy = withHierarchy.filter((p) => (status === 'active' ? p.active : !p.active));
+    }
+    if (city) {
+      withHierarchy = withHierarchy.filter((p) => p.city === city);
+    }
     if (!query) return withHierarchy;
 
     return withHierarchy.filter((property) => this.matchesSearch(property, query));
@@ -140,8 +196,27 @@ export class PropertyListComponent implements OnInit {
     this.searchQuery.set('');
   }
 
+  onTypeFilterChange(type: PropertyType | null) {
+    this.propertyTypeFilter.set(type);
+  }
+
+  onStatusFilterChange(status: 'active' | 'inactive' | null) {
+    this.statusFilter.set(status);
+  }
+
+  onCityFilterChange(city: string | null) {
+    this.cityFilter.set(city);
+  }
+
+  resetFilters() {
+    this.searchQuery.set('');
+    this.propertyTypeFilter.set(null);
+    this.statusFilter.set(null);
+    this.cityFilter.set(null);
+  }
+
   ngOnInit() {
-    this.store.dispatch(PropertyActions.loadProperties({ active: true }));
+    this.store.dispatch(PropertyActions.loadProperties({}));
   }
 
   toggleProperty(property: PropertyWithHierarchy) {
@@ -194,11 +269,75 @@ export class PropertyListComponent implements OnInit {
 
   loadUnits(building: BuildingWithUnits) {
     this.unitService.getUnitsByBuilding(building.id).subscribe({
-      next: (response: UnitListResponse) => {
-        building.units = response.units as UnitWithDetails[];
+      next: (response) => {
+        building.units = response.units;
+        // Force a fresh Map reference so displayedProperties() (and its
+        // in-progress search filter) recomputes with the newly loaded units.
+        this.loadedBuildings.update((map) => new Map(map));
       },
       error: (err: unknown) => {
         console.error('Error loading units:', safeErrorMessage(err));
+      },
+    });
+  }
+
+  private ensureSearchDataLoaded() {
+    for (const property of this.properties()) {
+      const buildings = this.loadedBuildings().get(property.id);
+      if (!buildings) {
+        this.ensureBuildingsLoadedForSearch(property.id);
+      } else {
+        for (const building of buildings) {
+          this.ensureUnitsLoadedForSearch(building);
+        }
+      }
+    }
+  }
+
+  private ensureBuildingsLoadedForSearch(propertyId: number) {
+    if (this.loadedBuildings().has(propertyId) || this.buildingsLoadInFlight.has(propertyId))
+      return;
+    this.buildingsLoadInFlight.add(propertyId);
+
+    this.buildingService.getBuildingsByProperty(propertyId).subscribe({
+      next: (response: BuildingListResponse) => {
+        const buildings = (response.buildings ?? []).map((b: Building) => ({
+          ...b,
+          expanded: false,
+        }));
+        this.loadedBuildings.update((map) => {
+          const newMap = new Map(map);
+          newMap.set(propertyId, buildings);
+          return newMap;
+        });
+        this.buildingsLoadInFlight.delete(propertyId);
+        buildings.forEach((building) => this.ensureUnitsLoadedForSearch(building));
+      },
+      error: (err: unknown) => {
+        console.error('Error loading buildings:', safeErrorMessage(err));
+        this.loadedBuildings.update((map) => {
+          const newMap = new Map(map);
+          newMap.set(propertyId, []);
+          return newMap;
+        });
+        this.buildingsLoadInFlight.delete(propertyId);
+      },
+    });
+  }
+
+  private ensureUnitsLoadedForSearch(building: BuildingWithUnits) {
+    if (building.units || this.unitsLoadInFlight.has(building.id)) return;
+    this.unitsLoadInFlight.add(building.id);
+
+    this.unitService.getUnitsByBuilding(building.id).subscribe({
+      next: (response) => {
+        building.units = response.units;
+        this.unitsLoadInFlight.delete(building.id);
+        this.loadedBuildings.update((map) => new Map(map));
+      },
+      error: (err: unknown) => {
+        console.error('Error loading units:', safeErrorMessage(err));
+        this.unitsLoadInFlight.delete(building.id);
       },
     });
   }
@@ -378,30 +517,6 @@ export class PropertyListComponent implements OnInit {
     });
   }
 
-  viewBuildingDetails(building: BuildingWithUnits) {
-    const rows: DetailRow[] = [
-      { label: 'Building Name', value: building.building_name },
-      { label: 'Building Code', value: building.building_code },
-      { label: 'Building Type', value: building.building_type },
-      { label: 'Total Floors', value: building.total_floors?.toString() ?? '—' },
-      { label: 'Elevator', value: building.has_elevator ? 'Yes' : 'No' },
-      { label: 'Construction Year', value: building.construction_year?.toString() ?? '—' },
-      { label: 'Status', value: building.active_status ? 'Active' : 'Inactive' },
-      { label: 'Created', value: this.formatDate(building.created_at) },
-      { label: 'Last Updated', value: this.formatDate(building.updated_at) },
-    ];
-
-    this.dialog.open(EntityDetailDialogComponent, {
-      width: '420px',
-      data: {
-        title: building.building_name,
-        subtitle: building.building_code,
-        icon: 'apartment',
-        rows,
-      },
-    });
-  }
-
   viewUnitDetails(unit: UnitWithDetails, building: BuildingWithUnits) {
     const rows: DetailRow[] = [
       { label: 'Unit Number', value: unit.unit_number },
@@ -459,9 +574,13 @@ export class PropertyListComponent implements OnInit {
         ref.afterClosed().subscribe((req) => {
           if (req) {
             this.paymentService.createPayment(req).subscribe({
-              next: () => {},
-              error: (err: unknown) =>
-                console.error('Failed to create payment', safeErrorMessage(err)),
+              next: () => {
+                notifySuccess(this.snackBar, 'Payment recorded successfully');
+              },
+              error: (err: unknown) => {
+                console.error('Failed to create payment', safeErrorMessage(err));
+                notifyError(this.snackBar, 'Failed to record payment');
+              },
             });
           }
         });

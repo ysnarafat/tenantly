@@ -20,12 +20,13 @@
   </div>
 
   <app-data-table
+    matSort
     [dataSource]="filteredData()"
     [displayedColumns]="displayedColumns"
     [loading]="loading()"
-    loadingMessage="Loading organizations..."
+    [loadingMessage]="'ORG_LIST.LOADING' | translate"
     emptyIcon="domain_disabled"
-    emptyMessage="No organizations found"
+    [emptyMessage]="'ORG_LIST.EMPTY_STATE' | translate"
   >
     <ng-container matColumnDef="name">
       <th mat-header-cell *matHeaderCellDef mat-sort-header>

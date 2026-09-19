@@ -44,8 +44,12 @@ func scanPaymentWithDetails(row interface {
 	return p, nil
 }
 
-// Update applies a partial update to a payment and auto-calculates status when amount_paid changes
-// This is kept as raw SQL because it builds a dynamic SET clause and auto-derives status from amount_paid
+// Update applies a partial update to a payment. Status is never accepted from
+// the caller — it is always (re)derived from amount_paid vs amount_due (and
+// due_date, for Overdue) whenever amount_paid changes, so payment state can't
+// be misreported via a client-supplied value.
+// This is kept as raw SQL because it builds a dynamic SET clause and derives
+// status from amount_due/due_date, both only available inside the UPDATE.
 func (r *PaymentRepository) Update(id int, req *models.UpdatePaymentRequest) (*models.Payment, error) {
 	setClauses := []string{"updated_at = NOW() AT TIME ZONE 'UTC'"}
 	args := []interface{}{}
@@ -56,29 +60,43 @@ func (r *PaymentRepository) Update(id int, req *models.UpdatePaymentRequest) (*m
 		args = append(args, *req.AmountPaid)
 		argIdx++
 
-		// Auto-derive status from amount when caller does not override it
-		if req.Status == nil {
-			setClauses = append(setClauses, fmt.Sprintf(
-				"status = CASE WHEN $%d >= amount_due THEN 'Paid' WHEN $%d > 0 THEN 'Partial' ELSE status END",
-				argIdx, argIdx))
-			args = append(args, *req.AmountPaid)
-			argIdx++
-		}
-	}
-	if req.Status != nil {
-		setClauses = append(setClauses, fmt.Sprintf("status = $%d", argIdx))
-		args = append(args, string(*req.Status))
+		setClauses = append(setClauses, fmt.Sprintf(
+			`status = CASE
+				WHEN $%d >= amount_due THEN 'Paid'
+				WHEN $%d > 0 THEN 'Partial'
+				WHEN due_date IS NOT NULL AND due_date < CURRENT_DATE THEN 'Overdue'
+				ELSE 'Due'
+			END`, argIdx, argIdx))
+		args = append(args, *req.AmountPaid)
 		argIdx++
 	}
 	if req.PaymentMethod != nil {
-		setClauses = append(setClauses, fmt.Sprintf("payment_method = $%d", argIdx))
-		args = append(args, *req.PaymentMethod)
-		argIdx++
+		if *req.PaymentMethod == "" {
+			// Empty string is a "clear it" sentinel (used when a payment's
+			// last remaining transaction is removed) rather than a literal
+			// value to store.
+			setClauses = append(setClauses, "payment_method = NULL")
+		} else {
+			setClauses = append(setClauses, fmt.Sprintf("payment_method = $%d", argIdx))
+			args = append(args, *req.PaymentMethod)
+			argIdx++
+		}
 	}
 	if req.PaymentDate != nil {
-		setClauses = append(setClauses, fmt.Sprintf("payment_date = $%d", argIdx))
-		args = append(args, *req.PaymentDate)
-		argIdx++
+		if *req.PaymentDate == "" {
+			// payment_date is a DATE column — binding an empty string as its
+			// value errors at the driver level, so clearing it needs its own
+			// branch rather than falling through to the parameterized SET.
+			setClauses = append(setClauses, "payment_date = NULL")
+		} else {
+			setClauses = append(setClauses, fmt.Sprintf("payment_date = $%d", argIdx))
+			args = append(args, *req.PaymentDate)
+			argIdx++
+		}
+	} else if req.AmountPaid != nil && *req.AmountPaid > 0 {
+		// A payment is being recorded but no explicit date was given —
+		// default to today rather than leaving payment_date null/stale.
+		setClauses = append(setClauses, "payment_date = CURRENT_DATE")
 	}
 	if req.Notes != nil {
 		setClauses = append(setClauses, fmt.Sprintf("notes = $%d", argIdx))
@@ -86,9 +104,13 @@ func (r *PaymentRepository) Update(id int, req *models.UpdatePaymentRequest) (*m
 		argIdx++
 	}
 	if req.ReceiptNumber != nil {
-		setClauses = append(setClauses, fmt.Sprintf("receipt_number = $%d", argIdx))
-		args = append(args, *req.ReceiptNumber)
-		argIdx++
+		if *req.ReceiptNumber == "" {
+			setClauses = append(setClauses, "receipt_number = NULL")
+		} else {
+			setClauses = append(setClauses, fmt.Sprintf("receipt_number = $%d", argIdx))
+			args = append(args, *req.ReceiptNumber)
+			argIdx++
+		}
 	}
 
 	args = append(args, id)
@@ -220,7 +242,8 @@ func (r *PaymentRepository) GetActiveLeasesForPeriod(orgID, month, year int, bui
 			l.start_date AS lease_start_date,
 			l.end_date AS lease_end_date,
 			l.monthly_rent,
-			l.active
+			l.active,
+			COALESCE((SELECT SUM(amount) FROM lease_charges WHERE lease_id = l.id AND active = true), 0) AS charges_total
 		FROM leases l
 		LEFT JOIN tenants t ON l.tenant_id = t.id
 		LEFT JOIN units u ON l.unit_id = u.id
@@ -245,7 +268,7 @@ func (r *PaymentRepository) GetActiveLeasesForPeriod(orgID, month, year int, bui
 			&lr.BuildingID, &lr.BuildingName, &lr.BuildingCode,
 			&lr.UnitID, &lr.UnitNumber, &lr.UnitType,
 			&lr.LeaseStartDate, &endDate,
-			&lr.MonthlyRent, &lr.Active,
+			&lr.MonthlyRent, &lr.Active, &lr.ChargesTotal,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan lease row: %w", err)

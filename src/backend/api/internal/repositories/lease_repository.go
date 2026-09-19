@@ -2,13 +2,28 @@ package repositories
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/ysnarafat/tenantly/internal/models"
 )
+
+// isUniqueViolation reports whether err is a Postgres unique-constraint
+// violation (SQLSTATE 23505) — used to translate the idx_leases_unit_active_unique
+// index's rejection into the same friendly error LeaseService.CreateLease's
+// own (non-atomic, TOCTOU-able) HasActiveLeaseOnUnit check normally produces,
+// for the rare case where a concurrent request wins that race.
+func isUniqueViolation(err error) bool {
+	var pqErr *pq.Error
+	if errors.As(err, &pqErr) {
+		return pqErr.Code == "23505"
+	}
+	return false
+}
 
 // LeaseRepository handles lease data operations
 type LeaseRepository struct {
@@ -75,6 +90,9 @@ func (r *LeaseRepository) Create(req *models.CreateLeaseRequest) (*models.Lease,
 	).Scan(&lease.ID, &lease.CreatedAt, &lease.UpdatedAt)
 
 	if err != nil {
+		if isUniqueViolation(err) {
+			return nil, fmt.Errorf("unit already has an active lease")
+		}
 		return nil, fmt.Errorf("failed to create lease: %w", err)
 	}
 
@@ -84,12 +102,14 @@ func (r *LeaseRepository) Create(req *models.CreateLeaseRequest) (*models.Lease,
 // GetByID retrieves a lease by ID
 func (r *LeaseRepository) GetByID(id int) (*models.Lease, error) {
 	query := `
-		SELECT id, unit_id, tenant_id, lease_type, start_date, end_date, duration_months, monthly_rent, security_deposit, active, organization_id, created_at, updated_at
+		SELECT id, unit_id, tenant_id, lease_type, start_date, end_date, duration_months, monthly_rent, security_deposit, active, organization_id, end_reason, renewed_from_lease_id, created_at, updated_at
 		FROM leases
 		WHERE id = $1
 	`
 
 	lease := &models.Lease{}
+	var endReason sql.NullString
+	var renewedFromLeaseID sql.NullInt64
 	err := r.db.QueryRow(query, id).Scan(
 		&lease.ID,
 		&lease.UnitID,
@@ -102,6 +122,8 @@ func (r *LeaseRepository) GetByID(id int) (*models.Lease, error) {
 		&lease.SecurityDeposit,
 		&lease.Active,
 		&lease.OrganizationID,
+		&endReason,
+		&renewedFromLeaseID,
 		&lease.CreatedAt,
 		&lease.UpdatedAt,
 	)
@@ -112,8 +134,22 @@ func (r *LeaseRepository) GetByID(id int) (*models.Lease, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get lease: %w", err)
 	}
+	applyLeaseEndMetadata(lease, endReason, renewedFromLeaseID)
 
 	return lease, nil
+}
+
+// applyLeaseEndMetadata assigns the nullable end_reason/renewed_from_lease_id
+// columns onto a Lease, leaving the fields nil when the column was NULL.
+func applyLeaseEndMetadata(lease *models.Lease, endReason sql.NullString, renewedFromLeaseID sql.NullInt64) {
+	if endReason.Valid {
+		reason := models.LeaseEndReason(endReason.String)
+		lease.EndReason = &reason
+	}
+	if renewedFromLeaseID.Valid {
+		id := int(renewedFromLeaseID.Int64)
+		lease.RenewedFromLeaseID = &id
+	}
 }
 
 // GetByIDWithDetails retrieves a lease with full details
@@ -122,7 +158,7 @@ func (r *LeaseRepository) GetByIDWithDetails(id int) (*models.LeaseWithDetails, 
 		SELECT
 			l.id, l.unit_id, l.tenant_id, l.lease_type, l.start_date, l.end_date,
 			l.duration_months, l.monthly_rent, l.security_deposit, l.active,
-			l.organization_id, l.created_at, l.updated_at,
+			l.organization_id, l.end_reason, l.renewed_from_lease_id, l.created_at, l.updated_at,
 			p.property_name, b.building_name, b.building_code,
 			u.unit_number, u.unit_type,
 			t.name as tenant_name, t.phone_number as tenant_phone
@@ -135,6 +171,8 @@ func (r *LeaseRepository) GetByIDWithDetails(id int) (*models.LeaseWithDetails, 
 	`
 
 	lease := &models.LeaseWithDetails{}
+	var endReason sql.NullString
+	var renewedFromLeaseID sql.NullInt64
 	err := r.db.QueryRow(query, id).Scan(
 		&lease.ID,
 		&lease.UnitID,
@@ -147,6 +185,8 @@ func (r *LeaseRepository) GetByIDWithDetails(id int) (*models.LeaseWithDetails, 
 		&lease.SecurityDeposit,
 		&lease.Active,
 		&lease.OrganizationID,
+		&endReason,
+		&renewedFromLeaseID,
 		&lease.CreatedAt,
 		&lease.UpdatedAt,
 		&lease.PropertyName,
@@ -164,6 +204,7 @@ func (r *LeaseRepository) GetByIDWithDetails(id int) (*models.LeaseWithDetails, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get lease details: %w", err)
 	}
+	applyLeaseEndMetadata(&lease.Lease, endReason, renewedFromLeaseID)
 
 	// Calculate expiration status
 	lease.IsExpired = time.Now().After(lease.EndDate)
@@ -424,16 +465,53 @@ func (r *LeaseRepository) Update(id int, req *models.UpdateLeaseRequest) (*model
 		argPos++
 	}
 
-	if req.StartDate != nil {
+	startDateChanged := req.StartDate != nil
+	if startDateChanged {
 		updates = append(updates, fmt.Sprintf("start_date = $%d", argPos))
 		args = append(args, *req.StartDate)
 		argPos++
 	}
 
-	if req.DurationMonths != nil {
+	durationChanged := req.DurationMonths != nil
+	if durationChanged {
 		updates = append(updates, fmt.Sprintf("duration_months = $%d", argPos))
 		args = append(args, *req.DurationMonths)
 		argPos++
+	}
+
+	if req.EndDate != nil {
+		// An explicit end_date always wins — it's the one way to correct a
+		// lease onto a date that isn't a whole-month offset from start_date,
+		// which duration_months (an integer column) can never exactly express.
+		updates = append(updates, fmt.Sprintf("end_date = $%d::date", argPos))
+		args = append(args, *req.EndDate)
+		argPos++
+	} else if startDateChanged || durationChanged {
+		// Otherwise end_date must be recalculated whenever EITHER start_date
+		// or duration_months changes — not just when both change together.
+		// Previously this only fired inside the DurationMonths branch, so
+		// correcting just the start_date (e.g. fixing a data-entry mistake)
+		// silently left end_date stale/inconsistent with the new start_date.
+		//
+		// Each value gets its own fresh placeholder here rather than reusing
+		// the one bound above (even though it's the same value) — Postgres
+		// infers a single type per placeholder across the whole query, and
+		// reusing $N for both an `integer` column assignment and an
+		// `integer * INTERVAL` expression trips "inconsistent types deduced"
+		// (42P08).
+		startExpr := "start_date"
+		if startDateChanged {
+			startExpr = fmt.Sprintf("$%d::date", argPos)
+			args = append(args, *req.StartDate)
+			argPos++
+		}
+		durationExpr := "duration_months"
+		if durationChanged {
+			durationExpr = fmt.Sprintf("$%d", argPos)
+			args = append(args, *req.DurationMonths)
+			argPos++
+		}
+		updates = append(updates, fmt.Sprintf("end_date = %s + (%s * INTERVAL '1 month')", startExpr, durationExpr))
 	}
 
 	if req.MonthlyRent != nil {
@@ -505,14 +583,130 @@ func (r *LeaseRepository) Delete(id int) error {
 	return nil
 }
 
-// SoftDelete soft deletes a lease (sets active to false)
-func (r *LeaseRepository) SoftDelete(id int) error {
-	query := `UPDATE leases SET active = false, updated_at = $1 WHERE id = $2`
-	_, err := r.db.Exec(query, time.Now(), id)
+// SoftDelete ends a lease early (tenant moved out before the natural end
+// date) — sets active to false and records the real move-out date and reason,
+// so the lease stays an accurate historical record instead of silently
+// keeping its original, now-inaccurate end_date.
+func (r *LeaseRepository) SoftDelete(id int, endDate time.Time, reason models.LeaseEndReason) error {
+	query := `UPDATE leases SET active = false, end_date = $1, end_reason = $2, updated_at = $3 WHERE id = $4`
+	_, err := r.db.Exec(query, endDate, reason, time.Now(), id)
 	if err != nil {
 		return fmt.Errorf("failed to soft delete lease: %w", err)
 	}
 	return nil
+}
+
+// RenewLease starts a new lease term for the same unit/tenant and closes out
+// the lease being renewed, atomically, so a renewal never leaves the unit
+// with zero or two active leases if either half fails.
+func (r *LeaseRepository) RenewLease(oldLeaseID int, req *models.RenewLeaseRequest) (*models.Lease, error) {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin lease renewal transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var old models.Lease
+	err = tx.QueryRow(
+		`SELECT id, unit_id, tenant_id, lease_type, start_date, end_date, duration_months, monthly_rent, security_deposit, active, organization_id
+		 FROM leases WHERE id = $1 FOR UPDATE`,
+		oldLeaseID,
+	).Scan(
+		&old.ID, &old.UnitID, &old.TenantID, &old.LeaseType, &old.StartDate, &old.EndDate,
+		&old.DurationMonths, &old.MonthlyRent, &old.SecurityDeposit, &old.Active, &old.OrganizationID,
+	)
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("lease not found")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to load lease to renew: %w", err)
+	}
+	if !old.Active {
+		return nil, fmt.Errorf("only an active lease can be renewed")
+	}
+
+	// New term starts where the old one's coverage ends, unless the caller
+	// gives an explicit (early/late) renewal date.
+	newStart := old.EndDate
+	if req.StartDate != nil {
+		newStart, err = time.Parse("2006-01-02", *req.StartDate)
+		if err != nil {
+			return nil, fmt.Errorf("invalid start date format: %w", err)
+		}
+	}
+	if newStart.Before(old.StartDate) {
+		return nil, fmt.Errorf("renewal start date cannot be before the original lease's start date")
+	}
+	newEnd := newStart.AddDate(0, req.DurationMonths, 0)
+
+	monthlyRent := old.MonthlyRent
+	if req.MonthlyRent != nil {
+		monthlyRent = *req.MonthlyRent
+	}
+	securityDeposit := old.SecurityDeposit
+	if req.SecurityDeposit != nil {
+		securityDeposit = *req.SecurityDeposit
+	}
+	leaseType := old.LeaseType
+	if req.LeaseType != nil {
+		leaseType = *req.LeaseType
+	}
+
+	// Close out the lease being renewed — its coverage now accurately ends
+	// where the new term begins, whether that's on-time, early, or late.
+	if _, err := tx.Exec(
+		`UPDATE leases SET active = false, end_date = $1, end_reason = $2, updated_at = $3 WHERE id = $4`,
+		newStart, models.LeaseEndReasonRenewed, time.Now(), oldLeaseID,
+	); err != nil {
+		return nil, fmt.Errorf("failed to close out renewed lease: %w", err)
+	}
+
+	newLease := &models.Lease{
+		UnitID:             old.UnitID,
+		TenantID:           old.TenantID,
+		LeaseType:          leaseType,
+		StartDate:          newStart,
+		EndDate:            newEnd,
+		DurationMonths:     req.DurationMonths,
+		MonthlyRent:        monthlyRent,
+		SecurityDeposit:    securityDeposit,
+		Active:             true,
+		OrganizationID:     old.OrganizationID,
+		RenewedFromLeaseID: &oldLeaseID,
+	}
+
+	err = tx.QueryRow(
+		`INSERT INTO leases (unit_id, tenant_id, lease_type, start_date, end_date, duration_months, monthly_rent, security_deposit, active, organization_id, renewed_from_lease_id, created_at, updated_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		 RETURNING id, created_at, updated_at`,
+		newLease.UnitID, newLease.TenantID, newLease.LeaseType, newLease.StartDate, newLease.EndDate,
+		newLease.DurationMonths, newLease.MonthlyRent, newLease.SecurityDeposit, newLease.Active,
+		newLease.OrganizationID, oldLeaseID, time.Now(), time.Now(),
+	).Scan(&newLease.ID, &newLease.CreatedAt, &newLease.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create renewed lease: %w", err)
+	}
+
+	// Carry the old lease's active recurring charges forward by default —
+	// a landlord renewing a lease almost always keeps the same utility/
+	// service charges unless they explicitly change them.
+	carryForwardCharges := req.CarryForwardCharges == nil || *req.CarryForwardCharges
+	if carryForwardCharges {
+		if _, err := tx.Exec(
+			`INSERT INTO lease_charges (lease_id, charge_type, label, amount, active, created_at, updated_at)
+			 SELECT $1, charge_type, label, amount, active, $2, $2
+			 FROM lease_charges WHERE lease_id = $3 AND active = true`,
+			newLease.ID, time.Now(), oldLeaseID,
+		); err != nil {
+			return nil, fmt.Errorf("failed to carry forward lease charges: %w", err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit lease renewal: %w", err)
+	}
+
+	return newLease, nil
 }
 
 // HasActiveLeaseOnUnit checks if a unit has an active lease
@@ -557,6 +751,29 @@ func (r *LeaseRepository) HasActiveLeaseForTenant(tenantID int) (bool, error) {
 	err := r.db.QueryRow(query, tenantID).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("failed to check active lease for tenant: %w", err)
+	}
+
+	return exists, nil
+}
+
+// HasPayableLeaseForUnitAndTenant reports whether the given tenant currently
+// holds an active lease on the given unit whose end_date has not yet passed.
+// A lease that is active=true but past its end_date (i.e. staff has not yet
+// terminated/renewed it) does NOT count — such a lease is expired for
+// payment purposes even though the active flag hasn't been flipped. A lease
+// that is merely "expiring soon" (active, end_date in the future) DOES count.
+func (r *LeaseRepository) HasPayableLeaseForUnitAndTenant(unitID, tenantID int) (bool, error) {
+	query := `
+		SELECT EXISTS(
+			SELECT 1 FROM leases
+			WHERE unit_id = $1 AND tenant_id = $2 AND active = true AND end_date >= CURRENT_DATE
+		)
+	`
+
+	var exists bool
+	err := r.db.QueryRow(query, unitID, tenantID).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check payable lease for unit and tenant: %w", err)
 	}
 
 	return exists, nil

@@ -1,5 +1,6 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import {
   FormsModule,
@@ -37,6 +38,11 @@ import { LeaseWithDetails } from '../../../core/models/lease.model';
 import {
   PaymentWithDetails,
   UpdatePaymentRequest,
+  CreatePaymentTransactionRequest,
+  PaymentTransaction,
+  PaymentTransactionAttachment,
+  MAX_ATTACHMENT_FILE_SIZE,
+  ALLOWED_ATTACHMENT_CONTENT_TYPES,
   PaymentStatus,
   DashboardSummary,
   CreatePaymentRequest,
@@ -48,6 +54,7 @@ import { debounceTime, switchMap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { DataTable } from '../../../shared/components/data-table/data-table';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
 
 interface BuildingNode {
   building_id: number;
@@ -77,6 +84,7 @@ interface PropertyNode {
   standalone: true,
   imports: [
     CommonModule,
+    RouterModule,
     FormsModule,
     ReactiveFormsModule,
     TranslateModule,
@@ -117,6 +125,14 @@ export class PaymentList implements OnInit {
   filterStatus = '';
   filterMonth = '';
   filterYear = new Date().getFullYear();
+
+  get hasActiveFilters(): boolean {
+    return !!(
+      this.filterStatus ||
+      this.filterMonth ||
+      this.filterYear !== new Date().getFullYear()
+    );
+  }
 
   treePayments = signal<PaymentWithDetails[]>([]);
   treeLoading = signal(false);
@@ -226,7 +242,7 @@ export class PaymentList implements OnInit {
       },
       error: (err) => {
         this.loading.set(false);
-        this.showError('Failed to load payments');
+        notifyError(this.snackBar, 'Failed to load payments');
         console.error(safeErrorMessage(err));
       },
     });
@@ -244,7 +260,7 @@ export class PaymentList implements OnInit {
       },
       error: () => {
         this.treeLoading.set(false);
-        this.showError('Failed to load tree view');
+        notifyError(this.snackBar, 'Failed to load tree view');
       },
     });
   }
@@ -283,9 +299,9 @@ export class PaymentList implements OnInit {
             this.loading.set(false);
             const msg = `Generated ${result.generated} · Skipped ${result.skipped} · Failed ${result.failed}`;
             if (result.failed > 0) {
-              this.showError(msg);
+              notifyError(this.snackBar, msg);
             } else {
-              this.showSuccess(msg);
+              notifySuccess(this.snackBar, msg);
             }
             this.loadPayments();
             this.loadSummary();
@@ -293,7 +309,7 @@ export class PaymentList implements OnInit {
           },
           error: (err) => {
             this.loading.set(false);
-            this.showError(err?.error?.error ?? 'Failed to generate payments');
+            notifyError(this.snackBar, err?.error?.error ?? 'Failed to generate payments');
           },
         });
       }
@@ -305,13 +321,14 @@ export class PaymentList implements OnInit {
     ref.afterClosed().subscribe((req: CreatePaymentRequest | undefined) => {
       if (req) {
         this.paymentService.createPayment(req).subscribe({
-          next: () => {
-            this.showSuccess('Payment created');
+          next: (payment) => {
+            notifySuccess(this.snackBar, `Payment created — Receipt ${payment.receipt_number}`);
             this.loadPayments();
             this.loadSummary();
             if (this.activeTab() === 1) this.loadTreePayments();
           },
-          error: (err) => this.showError(err?.error?.error ?? 'Failed to create payment'),
+          error: (err) =>
+            notifyError(this.snackBar, err?.error?.error ?? 'Failed to create payment'),
         });
       }
     });
@@ -323,18 +340,38 @@ export class PaymentList implements OnInit {
       maxWidth: '95vw',
       data: payment,
     });
-    ref.afterClosed().subscribe((req: UpdatePaymentRequest | undefined) => {
-      if (req) {
-        this.paymentService.updatePayment(payment.id, req).subscribe({
-          next: () => {
-            this.showSuccess('Payment updated');
-            this.loadPayments();
-            this.loadSummary();
-            if (this.activeTab() === 1) this.loadTreePayments();
-          },
-          error: (err) => this.showError(err?.error?.error ?? 'Failed to update payment'),
-        });
-      }
+    ref.afterClosed().subscribe((result: PaymentUpdateResult | undefined) => {
+      if (!result) return;
+      // A positive amount records a new installment (accumulates on top of
+      // whatever's already paid); otherwise it's a metadata-only correction
+      // (payment method/date/notes) with no money involved.
+      const obs =
+        result.kind === 'transaction'
+          ? this.paymentService.recordPaymentTransaction(payment.id, result.req)
+          : this.paymentService.updatePayment(payment.id, result.req);
+      obs.subscribe({
+        next: () => {
+          notifySuccess(this.snackBar, 'Payment updated');
+          this.loadPayments();
+          this.loadSummary();
+          if (this.activeTab() === 1) this.loadTreePayments();
+        },
+        error: (err) => notifyError(this.snackBar, err?.error?.error ?? 'Failed to update payment'),
+      });
+    });
+  }
+
+  downloadReceipt(payment: PaymentWithDetails): void {
+    this.paymentService.downloadReceipt(payment.id).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `receipt-${payment.receipt_number || payment.id}.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => notifyError(this.snackBar, 'Failed to download receipt'),
     });
   }
 
@@ -356,14 +393,6 @@ export class PaymentList implements OnInit {
     if (rate >= 90) return '#4caf50';
     if (rate >= 70) return '#ff9800';
     return '#f44336';
-  }
-
-  private showSuccess(msg: string): void {
-    this.snackBar.open(msg, 'Close', { duration: 3000, panelClass: 'snack-success' });
-  }
-
-  private showError(msg: string): void {
-    this.snackBar.open(msg, 'Close', { duration: 5000, panelClass: 'snack-error' });
   }
 }
 
@@ -449,6 +478,16 @@ export interface PaymentCreatePrefill {
             <span class="sep">›</span>
             <span class="rent">৳{{ selectedLease()!.monthly_rent | number: '1.0-0' }}/mo</span>
           </div>
+          @if (selectedLease()!.outstanding_balance > 0) {
+            <div class="balance-hint balance-hint--due">
+              Carrying forward outstanding balance of ৳{{
+                selectedLease()!.outstanding_balance | number: '1.0-0'
+              }}
+              from prior periods
+            </div>
+          } @else {
+            <div class="balance-hint balance-hint--clear">New month — full rent due</div>
+          }
         }
 
         <!-- Search loading indicator -->
@@ -512,10 +551,7 @@ export interface PaymentCreatePrefill {
           </mat-form-field>
         </div>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Receipt Number</mat-label>
-          <input matInput formControlName="receipt_number" />
-        </mat-form-field>
+        <p class="receipt-note">A receipt number will be generated automatically on save.</p>
 
         <mat-form-field appearance="outline">
           <mat-label>Notes</mat-label>
@@ -568,6 +604,11 @@ export interface PaymentCreatePrefill {
         grid-template-columns: 1fr 1fr;
         gap: 12px;
       }
+      @media (max-width: 480px) {
+        .row-2 {
+          grid-template-columns: 1fr;
+        }
+      }
       .lease-option-main {
         display: block;
         font-weight: 500;
@@ -593,6 +634,17 @@ export interface PaymentCreatePrefill {
         font-weight: 600;
         color: #2196f3;
       }
+      .balance-hint {
+        font-size: 12px;
+        margin-top: -6px;
+        padding: 4px 10px;
+      }
+      .balance-hint--due {
+        color: #e65100;
+      }
+      .balance-hint--clear {
+        color: #888;
+      }
       .sep {
         color: #aaa;
       }
@@ -604,6 +656,11 @@ export interface PaymentCreatePrefill {
         color: #999;
         padding: 6px 10px;
         margin-top: -4px;
+      }
+      .receipt-note {
+        font-size: 12px;
+        color: #888;
+        margin: -8px 0 0;
       }
     `,
   ],
@@ -646,8 +703,7 @@ export class PaymentCreateDialog implements OnInit {
     due_date: [''],
     payment_method: [''],
     amount_paid: [null, [Validators.min(0)]],
-    payment_date: [''],
-    receipt_number: [''],
+    payment_date: [new Date().toISOString().slice(0, 10)],
     notes: [''],
   });
 
@@ -704,12 +760,14 @@ export class PaymentCreateDialog implements OnInit {
 
   onLeaseSelected(lease: LeaseSearchResult): void {
     this.selectedLease.set(lease);
+    const amountDue =
+      lease.outstanding_balance > 0 ? lease.outstanding_balance : lease.monthly_rent;
     this.form.patchValue({
       unit_id: lease.unit_id,
       tenant_id: lease.tenant_id,
       building_id: lease.building_id,
       property_id: lease.property_id,
-      amount_due: lease.monthly_rent,
+      amount_due: amountDue,
     });
   }
 
@@ -727,8 +785,10 @@ export class PaymentCreateDialog implements OnInit {
         due_date: val.due_date || undefined,
         payment_method: val.payment_method || undefined,
         amount_paid: val.amount_paid != null ? val.amount_paid : undefined,
-        payment_date: val.payment_date || undefined,
-        receipt_number: val.receipt_number || undefined,
+        // Only meaningful once money has actually been recorded — sending
+        // today's date alongside a $0/unset amount_paid would misleadingly
+        // mark a still-unpaid Due record as "paid today".
+        payment_date: val.amount_paid > 0 ? val.payment_date || undefined : undefined,
         notes: val.notes || undefined,
       };
       this.dialogRef.close(req);
@@ -809,6 +869,11 @@ export class PaymentCreateDialog implements OnInit {
         grid-template-columns: 1fr 1fr;
         gap: 12px;
       }
+      @media (max-width: 480px) {
+        .row-2 {
+          grid-template-columns: 1fr;
+        }
+      }
     `,
   ],
 })
@@ -848,6 +913,13 @@ export class GeneratePaymentsDialog {
 }
 
 // ── Update Dialog ──────────────────────────────────────────────────────────────
+// Recording money received always creates a new transaction (accumulates on
+// top of prior installments); everything else (payment method/date/notes
+// with no amount) is a metadata-only correction with no money involved.
+export type PaymentUpdateResult =
+  | { kind: 'transaction'; req: CreatePaymentTransactionRequest }
+  | { kind: 'metadata'; req: UpdatePaymentRequest };
+
 @Component({
   selector: 'app-payment-update-dialog',
   standalone: true,
@@ -859,6 +931,9 @@ export class GeneratePaymentsDialog {
     MatSelectModule,
     MatButtonModule,
     MatDialogModule,
+    MatIconModule,
+    MatTooltipModule,
+    MatProgressSpinnerModule,
   ],
   template: `
     <h2 mat-dialog-title>Update Payment</h2>
@@ -878,20 +953,34 @@ export class GeneratePaymentsDialog {
         <span
           >Paid: <strong>৳{{ data.amount_paid | number: '1.2-2' }}</strong></span
         >
+        &nbsp;&nbsp;
+        <span
+          >Status:
+          <span class="inline-badge" [class]="'status-' + computedStatus().toLowerCase()">{{
+            computedStatus()
+          }}</span></span
+        >
       </div>
+      <p class="status-note">
+        Status is calculated automatically from the amount paid — it can't be set directly.
+      </p>
       <form [formGroup]="form" class="dialog-form">
         <mat-form-field appearance="outline">
-          <mat-label>Amount Paid (BDT)</mat-label>
-          <input matInput type="number" formControlName="amount_paid" step="0.01" />
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Status</mat-label>
-          <mat-select formControlName="status">
-            <mat-option value="Due">Due</mat-option>
-            <mat-option value="Partial">Partial</mat-option>
-            <mat-option value="Paid">Paid</mat-option>
-            <mat-option value="Overdue">Overdue</mat-option>
-          </mat-select>
+          <mat-label>Amount to Record (BDT)</mat-label>
+          <input
+            matInput
+            type="number"
+            formControlName="amount_to_add"
+            step="0.01"
+            [max]="remainingDue"
+          />
+          @if (form.get('amount_to_add')?.hasError('max')) {
+            <mat-error
+              >Cannot exceed the remaining due of ৳{{ remainingDue | number: '1.2-2' }}</mat-error
+            >
+          } @else {
+            <mat-hint>Adds a new installment on top of the amount already paid</mat-hint>
+          }
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Payment Method</mat-label>
@@ -908,14 +997,103 @@ export class GeneratePaymentsDialog {
           <input matInput type="date" formControlName="payment_date" />
         </mat-form-field>
         <mat-form-field appearance="outline">
-          <mat-label>Receipt Number</mat-label>
-          <input matInput formControlName="receipt_number" />
-        </mat-form-field>
-        <mat-form-field appearance="outline">
           <mat-label>Notes</mat-label>
           <textarea matInput formControlName="notes" rows="3"></textarea>
         </mat-form-field>
+        <p class="receipt-note">
+          @if (data.receipt_number) {
+            Receipt No: <strong>{{ data.receipt_number }}</strong>
+          } @else {
+            A receipt number will be generated automatically once this payment is paid.
+          }
+        </p>
       </form>
+
+      <div class="history-section">
+        <h3 class="history-title">Payment History</h3>
+        @if (loadingTransactions()) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else if (transactions().length === 0) {
+          <p class="history-empty">No installments recorded yet.</p>
+        } @else {
+          @for (txn of transactions(); track txn.id) {
+            <div class="txn-row">
+              <div class="txn-summary">
+                <span class="txn-amount">৳{{ txn.amount | number: '1.2-2' }}</span>
+                <span class="txn-meta"
+                  >{{ txn.payment_date }}
+                  @if (txn.payment_method) {
+                    · {{ txn.payment_method }}
+                  }
+                  @if (txn.receipt_number) {
+                    · {{ txn.receipt_number }}
+                  }
+                </span>
+              </div>
+              <div class="txn-actions">
+                <button
+                  mat-icon-button
+                  type="button"
+                  matTooltip="Attachments"
+                  (click)="toggleAttachments(txn.id)"
+                >
+                  <mat-icon>attach_file</mat-icon>
+                  @if (attachmentCount(txn.id) > 0) {
+                    <span class="attachment-count">{{ attachmentCount(txn.id) }}</span>
+                  }
+                </button>
+                <button
+                  mat-icon-button
+                  type="button"
+                  matTooltip="Attach a file"
+                  [disabled]="uploadingTxnId() === txn.id"
+                  (click)="fileInput.click()"
+                >
+                  <mat-icon>upload_file</mat-icon>
+                </button>
+                <input
+                  #fileInput
+                  type="file"
+                  hidden
+                  accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
+                  (change)="onFileSelected(txn.id, $event, fileInput)"
+                />
+              </div>
+            </div>
+            @if (expandedTxnId() === txn.id) {
+              <div class="attachment-list">
+                @for (att of attachmentsFor(txn.id); track att.id) {
+                  <div class="attachment-row">
+                    <mat-icon class="attachment-icon">{{
+                      att.content_type === 'application/pdf' ? 'picture_as_pdf' : 'image'
+                    }}</mat-icon>
+                    <span class="attachment-name">{{ att.file_name }}</span>
+                    <span class="attachment-size">{{ formatFileSize(att.file_size) }}</span>
+                    <button
+                      mat-icon-button
+                      type="button"
+                      matTooltip="Download"
+                      (click)="downloadAttachment(txn.id, att)"
+                    >
+                      <mat-icon>download</mat-icon>
+                    </button>
+                    <button
+                      mat-icon-button
+                      type="button"
+                      matTooltip="Delete"
+                      (click)="deleteAttachment(txn.id, att)"
+                    >
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                } @empty {
+                  <p class="history-empty">No attachments for this installment yet.</p>
+                }
+              </div>
+            }
+          }
+        }
+      </div>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-button mat-dialog-close>Cancel</button>
@@ -941,9 +1119,127 @@ export class GeneratePaymentsDialog {
       .amount-info {
         font-size: 14px;
         margin-bottom: 12px;
+        display: flex;
+        align-items: center;
       }
       .info-label {
         font-weight: 500;
+      }
+      .status-note {
+        font-size: 12px;
+        color: var(--text-secondary, #666);
+        margin: 0 0 12px;
+      }
+      .receipt-note {
+        font-size: 12px;
+        color: var(--text-secondary, #666);
+        margin: 4px 0 0;
+      }
+      .inline-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+        margin-left: 4px;
+
+        &.status-paid {
+          background: rgba(76, 175, 80, 0.12);
+          color: var(--color-paid, #4caf50);
+        }
+        &.status-due {
+          background: rgba(144, 164, 174, 0.12);
+          color: var(--color-due, #90a4ae);
+        }
+        &.status-partial {
+          background: rgba(255, 152, 0, 0.12);
+          color: var(--color-pending, #ff9800);
+        }
+        &.status-overdue {
+          background: rgba(244, 67, 54, 0.12);
+          color: var(--color-overdue, #f44336);
+        }
+      }
+      .history-section {
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border-color, #e0e0e0);
+      }
+      .history-title {
+        font-size: 13px;
+        font-weight: 600;
+        margin: 0 0 8px;
+        color: var(--text-secondary, #666);
+      }
+      .history-empty {
+        font-size: 12px;
+        color: var(--text-secondary, #666);
+        margin: 4px 0;
+      }
+      .txn-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 4px 0;
+        border-bottom: 1px solid var(--border-color, #f0f0f0);
+      }
+      .txn-summary {
+        display: flex;
+        flex-direction: column;
+        font-size: 13px;
+      }
+      .txn-amount {
+        font-weight: 600;
+      }
+      .txn-meta {
+        font-size: 11px;
+        color: var(--text-secondary, #666);
+      }
+      .txn-actions {
+        display: flex;
+        align-items: center;
+        position: relative;
+      }
+      .attachment-count {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: var(--color-primary, #1e88e5);
+        color: #fff;
+        font-size: 9px;
+        line-height: 1;
+        border-radius: 8px;
+        padding: 2px 4px;
+        min-width: 12px;
+        text-align: center;
+      }
+      .attachment-list {
+        padding: 4px 0 8px 8px;
+      }
+      .attachment-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        padding: 2px 0;
+      }
+      .attachment-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        color: var(--text-secondary, #666);
+      }
+      .attachment-name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .attachment-size {
+        color: var(--text-secondary, #666);
+        font-size: 11px;
       }
     `,
   ],
@@ -951,26 +1247,187 @@ export class GeneratePaymentsDialog {
 export class PaymentUpdateDialog {
   private fb = inject(FormBuilder);
   private dialogRef = inject(MatDialogRef<PaymentUpdateDialog>);
+  private paymentService = inject(PaymentService);
+  private snackBar = inject(MatSnackBar);
   readonly data: PaymentWithDetails = inject(MAT_DIALOG_DATA);
 
+  transactions = signal<PaymentTransaction[]>([]);
+  loadingTransactions = signal(false);
+  attachmentsByTxn = signal<Record<number, PaymentTransactionAttachment[]>>({});
+  expandedTxnId = signal<number | null>(null);
+  uploadingTxnId = signal<number | null>(null);
+
+  constructor() {
+    this.loadTransactions();
+  }
+
+  // The backend rejects an installment that would push amount_paid past
+  // amount_due — recording a genuine advance/next-month payment belongs on
+  // its own payment period instead.
+  readonly remainingDue = Math.max(this.data.amount_due - this.data.amount_paid, 0);
+
   form: FormGroup = this.fb.group({
-    amount_paid: [this.data.amount_paid, [Validators.min(0)]],
-    status: [this.data.status],
+    // Defaults to the remaining balance, not the amount already paid — this
+    // field is money to add now, via a new transaction, not the new total.
+    amount_to_add: [this.remainingDue, [Validators.min(0), Validators.max(this.remainingDue)]],
     payment_method: [this.data.payment_method ?? ''],
-    payment_date: [this.data.payment_date ? this.data.payment_date.slice(0, 10) : ''],
-    receipt_number: [this.data.receipt_number ?? ''],
+    payment_date: [
+      this.data.payment_date
+        ? this.data.payment_date.slice(0, 10)
+        : new Date().toISOString().slice(0, 10),
+    ],
     notes: [this.data.notes ?? ''],
   });
 
+  // Mirrors the backend's derivation (PaymentRepository.Update/Create) so the
+  // dialog previews the status the server will actually compute, instead of
+  // letting the user pick one that might not match.
+  computedStatus(): PaymentStatus {
+    const amountToAdd = Number(this.form.get('amount_to_add')?.value) || 0;
+    const amountPaid = this.data.amount_paid + amountToAdd;
+    const amountDue = this.data.amount_due;
+    if (amountDue > 0 && amountPaid >= amountDue) return 'Paid';
+    if (amountPaid > 0) return 'Partial';
+    if (this.data.due_date && new Date(this.data.due_date) < this.todayMidnight()) return 'Overdue';
+    return 'Due';
+  }
+
+  private todayMidnight(): Date {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
   submit(): void {
     const raw = this.form.value;
+    const amount = raw.amount_to_add !== null && raw.amount_to_add !== '' ? +raw.amount_to_add : 0;
+
+    if (amount > 0) {
+      const req: CreatePaymentTransactionRequest = { amount };
+      if (raw.payment_method) req.payment_method = raw.payment_method;
+      if (raw.payment_date) req.payment_date = raw.payment_date;
+      if (raw.notes) req.notes = raw.notes;
+      this.dialogRef.close({ kind: 'transaction', req } as PaymentUpdateResult);
+      return;
+    }
+
+    // No money recorded — treat any filled fields as a metadata-only
+    // correction (e.g. fixing a typo'd payment method or note).
     const req: UpdatePaymentRequest = {};
-    if (raw.amount_paid !== null && raw.amount_paid !== '') req.amount_paid = +raw.amount_paid;
-    if (raw.status) req.status = raw.status;
     if (raw.payment_method) req.payment_method = raw.payment_method;
     if (raw.payment_date) req.payment_date = raw.payment_date;
-    if (raw.receipt_number) req.receipt_number = raw.receipt_number;
     if (raw.notes) req.notes = raw.notes;
-    this.dialogRef.close(req);
+    if (Object.keys(req).length === 0) {
+      this.dialogRef.close();
+      return;
+    }
+    this.dialogRef.close({ kind: 'metadata', req } as PaymentUpdateResult);
+  }
+
+  private loadTransactions(): void {
+    this.loadingTransactions.set(true);
+    this.paymentService.getPaymentTransactions(this.data.id).subscribe({
+      next: (txns) => {
+        this.transactions.set(txns);
+        this.loadingTransactions.set(false);
+        // Loaded eagerly (rather than only on expand) so the attachment
+        // count badge is accurate before the user opens any row.
+        txns.forEach((txn) => this.loadAttachments(txn.id));
+      },
+      error: () => {
+        this.loadingTransactions.set(false);
+      },
+    });
+  }
+
+  private loadAttachments(transactionId: number): void {
+    this.paymentService.getPaymentTransactionAttachments(this.data.id, transactionId).subscribe({
+      next: (atts) => {
+        this.attachmentsByTxn.update((map) => ({ ...map, [transactionId]: atts }));
+      },
+    });
+  }
+
+  attachmentsFor(transactionId: number): PaymentTransactionAttachment[] {
+    return this.attachmentsByTxn()[transactionId] ?? [];
+  }
+
+  attachmentCount(transactionId: number): number {
+    return this.attachmentsFor(transactionId).length;
+  }
+
+  toggleAttachments(transactionId: number): void {
+    this.expandedTxnId.set(this.expandedTxnId() === transactionId ? null : transactionId);
+  }
+
+  onFileSelected(transactionId: number, event: Event, fileInput: HTMLInputElement): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    fileInput.value = ''; // allow re-selecting the same file later
+    if (!file) return;
+
+    if (file.size > MAX_ATTACHMENT_FILE_SIZE) {
+      notifyError(this.snackBar, 'File exceeds the maximum allowed size of 10MB');
+      return;
+    }
+    if (!ALLOWED_ATTACHMENT_CONTENT_TYPES.includes(file.type)) {
+      notifyError(this.snackBar, 'Only images and PDF files are allowed');
+      return;
+    }
+
+    this.uploadingTxnId.set(transactionId);
+    this.paymentService
+      .uploadPaymentTransactionAttachment(this.data.id, transactionId, file)
+      .subscribe({
+        next: (attachment) => {
+          this.attachmentsByTxn.update((map) => ({
+            ...map,
+            [transactionId]: [...(map[transactionId] ?? []), attachment],
+          }));
+          this.expandedTxnId.set(transactionId);
+          this.uploadingTxnId.set(null);
+          notifySuccess(this.snackBar, 'Attachment uploaded');
+        },
+        error: (err) => {
+          this.uploadingTxnId.set(null);
+          notifyError(this.snackBar, err?.error?.error ?? 'Failed to upload attachment');
+        },
+      });
+  }
+
+  downloadAttachment(transactionId: number, attachment: PaymentTransactionAttachment): void {
+    this.paymentService
+      .downloadPaymentTransactionAttachment(this.data.id, transactionId, attachment.id)
+      .subscribe({
+        next: (blob) => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = attachment.file_name;
+          a.click();
+          URL.revokeObjectURL(url);
+        },
+        error: () => notifyError(this.snackBar, 'Failed to download attachment'),
+      });
+  }
+
+  deleteAttachment(transactionId: number, attachment: PaymentTransactionAttachment): void {
+    this.paymentService
+      .deletePaymentTransactionAttachment(this.data.id, transactionId, attachment.id)
+      .subscribe({
+        next: () => {
+          this.attachmentsByTxn.update((map) => ({
+            ...map,
+            [transactionId]: (map[transactionId] ?? []).filter((a) => a.id !== attachment.id),
+          }));
+          notifySuccess(this.snackBar, 'Attachment deleted');
+        },
+        error: () => notifyError(this.snackBar, 'Failed to delete attachment'),
+      });
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 }

@@ -7,31 +7,25 @@
 
   <!-- Quick Metrics -->
   <section class="quick-metrics-section">
-    <mat-grid-list cols="4" rowHeight="120px" gutterSize="16">
-      <mat-grid-tile *ngFor="let metric of quickMetrics">
-        <mat-card class="metric-card">
-          <mat-card-content>
-            <div class="metric-icon">
-              <mat-icon>{{ metric.icon }}</mat-icon>
+    <div class="metrics-grid">
+      <mat-card class="metric-card" *ngFor="let metric of quickMetrics">
+        <mat-card-content>
+          <div class="metric-icon">
+            <mat-icon>{{ metric.icon }}</mat-icon>
+          </div>
+          <div class="metric-data">
+            <span class="metric-value">{{ metric.value }}</span>
+            <span class="metric-label">{{ metric.label }}</span>
+            <div class="metric-trend" *ngIf="metric.trend" [ngClass]="getTrendClass(metric.trend)">
+              <mat-icon [class.trend-up]="metric.trend > 0" [class.trend-down]="metric.trend < 0">
+                {{ getTrendIcon(metric.trend) }}
+              </mat-icon>
+              <span>{{ metric.trend > 0 ? '+' : '' }}{{ metric.trend }}%</span>
             </div>
-            <div class="metric-data">
-              <span class="metric-value">{{ metric.value }}</span>
-              <span class="metric-label">{{ metric.label }}</span>
-              <div
-                class="metric-trend"
-                *ngIf="metric.trend"
-                [ngClass]="getTrendClass(metric.trend)"
-              >
-                <mat-icon [class.trend-up]="metric.trend > 0" [class.trend-down]="metric.trend < 0">
-                  {{ getTrendIcon(metric.trend) }}
-                </mat-icon>
-                <span>{{ metric.trend > 0 ? '+' : '' }}{{ metric.trend }}%</span>
-              </div>
-            </div>
-          </mat-card-content>
-        </mat-card>
-      </mat-grid-tile>
-    </mat-grid-list>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
   </section>
 
   <!-- Main Content Tabs -->

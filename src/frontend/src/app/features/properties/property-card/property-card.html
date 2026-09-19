@@ -65,7 +65,8 @@
           <button
             mat-icon-button
             matTooltip="Building Details"
-            (click)="onViewBuildingDetails(building, $event)"
+            [routerLink]="['/properties', property.id, 'buildings', building.id]"
+            (click)="$event.stopPropagation()"
             class="building-info-btn"
           >
             <mat-icon>info_outline</mat-icon>
@@ -164,6 +165,10 @@
     <button mat-button (click)="onToggleProperty()">
       <mat-icon>{{ property.expanded ? 'expand_less' : 'expand_more' }}</mat-icon>
       {{ property.expanded ? 'Hide' : 'Show' }} Buildings
+    </button>
+    <button mat-button [routerLink]="['/properties', property.id]">
+      <mat-icon>open_in_new</mat-icon>
+      View Details
     </button>
     <button mat-button (click)="onEditProperty()">
       <mat-icon>edit</mat-icon>

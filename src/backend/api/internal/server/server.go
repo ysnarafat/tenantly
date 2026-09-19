@@ -83,7 +83,12 @@ func (s *Server) setupRoutes() {
 	tenantRepo := repositories.NewTenantRepository(s.db, s.config.NIDProtector)
 	mfaRepo := repositories.NewMFARepository(s.db)
 	paymentRepo := repositories.NewPaymentRepository(s.db)
+	paymentTransactionRepo := repositories.NewPaymentTransactionRepository(s.db)
+	paymentTransactionAttachmentRepo := repositories.NewPaymentTransactionAttachmentRepository(s.db)
+	receiptAccessTokenRepo := repositories.NewReceiptAccessTokenRepository(s.db)
+	notificationRepo := repositories.NewNotificationRepository(s.db)
 	leaseRepo := repositories.NewLeaseRepository(s.db)
+	leaseChargeRepo := repositories.NewLeaseChargeRepository(s.db)
 	organizationRepo := repositories.NewOrganizationRepository(s.db)
 	userInvitationRepo := repositories.NewUserInvitationRepository(s.db)
 	userOrgRoleRepo := repositories.NewUserOrganizationRoleRepository(s.db)
@@ -99,8 +104,8 @@ func (s *Server) setupRoutes() {
 	unitService := services.NewUnitService(unitRepo, buildingRepo, propertyRepo, auditService)
 	tenantService := services.NewTenantService(tenantRepo, leaseRepo, auditService)
 	mfaService := services.NewMFAService(mfaRepo, s.config.NIDProtector, s.config.JWTSecret)
-	leaseService := services.NewLeaseService(leaseRepo, tenantRepo, unitRepo, auditService)
-	paymentService := services.NewPaymentService(paymentRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
+	leaseService := services.NewLeaseService(leaseRepo, tenantRepo, unitRepo, leaseChargeRepo, auditService)
+	paymentService := services.NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, leaseRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, s.config.PublicAppURL)
 	reportService := services.NewReportService(paymentRepo, propertyRepo)
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService, s.config.CookieDomain, s.config.CookieSecure)
@@ -142,6 +147,13 @@ func (s *Server) setupRoutes() {
 			invitations.GET("/validate", organizationHandler.ValidateInvitationToken)
 		}
 
+		// Public receipt download route — no auth, reached via the "payment
+		// recorded" SMS link (tenants have no login to authenticate with).
+		receipts := v1.Group("/receipts")
+		{
+			receipts.GET("/:token", paymentHandler.DownloadReceiptByToken)
+		}
+
 		// Protected routes
 		auditService := database.NewAuditService(s.db)
 		protected := v1.Group("/")
@@ -175,6 +187,7 @@ func (s *Server) setupRoutes() {
 				users.POST("", middleware.RequireSuperAdminOrAdmin(), userHandler.CreateUser)
 				users.GET("/:id", middleware.RequireAnyRole(), userHandler.GetUser)
 				users.PUT("/:id", middleware.RequireSuperAdminOrAdmin(), userHandler.UpdateUser)
+				users.PUT("/:id/reset-password", middleware.RequireSuperAdminOrAdmin(), userHandler.AdminResetPassword)
 				users.DELETE("/:id", middleware.RequireSuperAdminOrAdmin(), userHandler.DeleteUser)
 			}
 
@@ -236,6 +249,7 @@ func (s *Server) setupRoutes() {
 
 				// Building-unit relationship endpoints
 				buildings.GET("/:id/units/list", middleware.RequireAnyRole(), unitHandler.GetUnitsByBuilding)
+				buildings.POST("/:id/units/bulk", middleware.RequireAdminOrPropertyManager(), unitHandler.BulkCreateUnits)
 			}
 
 			// Unit management routes
@@ -282,6 +296,10 @@ func (s *Server) setupRoutes() {
 				leases.PUT("/:id", middleware.RequireAdminOrPropertyManager(), leaseHandler.UpdateLease)
 				leases.DELETE("/:id", middleware.RequireAdmin(), leaseHandler.DeleteLease)
 				leases.POST("/:id/terminate", middleware.RequireAdminOrPropertyManager(), leaseHandler.TerminateLease)
+				leases.POST("/:id/renew", middleware.RequireAdminOrPropertyManager(), leaseHandler.RenewLease)
+				leases.POST("/:id/charges", middleware.RequireAdminOrPropertyManager(), leaseHandler.AddLeaseCharge)
+				leases.PUT("/:id/charges/:chargeId", middleware.RequireAdminOrPropertyManager(), leaseHandler.UpdateLeaseCharge)
+				leases.DELETE("/:id/charges/:chargeId", middleware.RequireAdminOrPropertyManager(), leaseHandler.DeleteLeaseCharge)
 
 				// Lease relationships
 				leases.GET("/unit/:unit_id", middleware.RequireAnyRole(), leaseHandler.GetLeasesByUnit)
@@ -301,7 +319,15 @@ func (s *Server) setupRoutes() {
 				payments.POST("/generate-monthly", middleware.RequireAdminOrPropertyManager(), paymentHandler.GenerateMonthlyPayments)
 				payments.GET("/search", middleware.RequireAnyRole(), paymentHandler.SearchLeases)
 				payments.GET("/:id", middleware.RequireAnyRole(), paymentHandler.GetPayment)
+				payments.GET("/:id/receipt", middleware.RequireAnyRole(), paymentHandler.DownloadReceipt)
 				payments.PUT("/:id", middleware.RequireAdminOrPropertyManager(), paymentHandler.UpdatePayment)
+				payments.POST("/:id/transactions", middleware.RequireAdminOrPropertyManager(), paymentHandler.RecordPaymentTransaction)
+				payments.GET("/:id/transactions", middleware.RequireAnyRole(), paymentHandler.GetPaymentTransactions)
+				payments.DELETE("/:id/transactions/:transactionId", middleware.RequireAdminOrPropertyManager(), paymentHandler.DeletePaymentTransaction)
+				payments.POST("/:id/transactions/:transactionId/attachments", middleware.RequireAdminOrPropertyManager(), paymentHandler.UploadPaymentTransactionAttachment)
+				payments.GET("/:id/transactions/:transactionId/attachments", middleware.RequireAnyRole(), paymentHandler.GetPaymentTransactionAttachments)
+				payments.GET("/:id/transactions/:transactionId/attachments/:attachmentId", middleware.RequireAnyRole(), paymentHandler.DownloadPaymentTransactionAttachment)
+				payments.DELETE("/:id/transactions/:transactionId/attachments/:attachmentId", middleware.RequireAdminOrPropertyManager(), paymentHandler.DeletePaymentTransactionAttachment)
 				payments.GET("/building/:building_id/report", middleware.RequireAnyRole(), paymentHandler.GetBuildingPaymentReport)
 				payments.GET("/property/:property_id/report", middleware.RequireAnyRole(), paymentHandler.GetPropertyPaymentReport)
 			}

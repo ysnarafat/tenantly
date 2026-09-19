@@ -592,7 +592,7 @@ func (suite *BuildingAPIIntegrationTestSuite) TestGetBuildingMetadataSchema() {
 func (suite *BuildingAPIIntegrationTestSuite) TestUpdateBuildingStatus() {
 	// Test activation (using true to avoid validation issues with false)
 	statusReq := &models.BuildingStatusRequest{
-		ActiveStatus: true,
+		ActiveStatus: boolPtr(true),
 		Reason:       "Maintenance completed",
 	}
 

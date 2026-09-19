@@ -1,6 +1,7 @@
 import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
+import { MatSortModule } from '@angular/material/sort';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
@@ -13,6 +14,7 @@ import { LeaseService, LeaseDue, DueSummary } from '../../../core/services/lease
 import { AuthService } from '../../../core/services/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { notifyError } from '../../../shared/utils/notify.utils';
 import { LoadingSpinner } from '../../../shared/components/loading-spinner/loading-spinner';
 
 @Component({
@@ -21,6 +23,7 @@ import { LoadingSpinner } from '../../../shared/components/loading-spinner/loadi
   imports: [
     CommonModule,
     MatTableModule,
+    MatSortModule,
     MatButtonModule,
     MatIconModule,
     MatCardModule,
@@ -74,9 +77,7 @@ export class DueList {
       })
       .catch((error) => {
         console.error('Error loading due list:', safeErrorMessage(error));
-        this.snackBar.open(this.translateService.instant('DUE_LIST.ERROR_LOADING'), 'Close', {
-          duration: 3000,
-        });
+        notifyError(this.snackBar, this.translateService.instant('DUE_LIST.ERROR_LOADING'));
         this.loading.set(false);
       });
   }

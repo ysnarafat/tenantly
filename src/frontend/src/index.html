@@ -3,18 +3,34 @@
   <head>
     <meta charset="utf-8" />
     <title>Tenantly - Property & Rent Management for Bangladesh</title>
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!--
+      SEO & social metadata. These are the defaults crawlers and link-preview
+      bots see in the initial HTML; SeoService keeps the title, description,
+      and canonical tag current per route at runtime for everything else (the
+      app is client-rendered), but og/twitter stay static here since preview
+      bots generally don't execute JS.
+    -->
     <meta
       name="description"
       content="Tenantly is property and rent management built for Bangladesh — track units, tenants, and every cash, bank transfer, bKash, or Nagad payment, in English or বাংলা."
     />
+    <meta
+      name="keywords"
+      content="property management, rental management, Bangladesh, tenants, leases, rent collection, real estate"
+    />
+    <meta name="author" content="Tenantly" />
+    <meta name="application-name" content="Tenantly" />
     <meta name="robots" content="index, follow" />
-    <base href="/" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- Open Graph / Twitter card: read by link-preview bots, which generally
-         don't execute JS, so these stay static rather than Angular-managed. -->
-    <meta property="og:site_name" content="Tenantly" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#1976d2" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121212" />
+
+    <!-- Open Graph -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tenantly" />
     <meta property="og:title" content="Tenantly - Property & Rent Management for Bangladesh" />
     <meta
       property="og:description"
@@ -22,12 +38,20 @@
     />
     <meta property="og:locale" content="en_US" />
     <meta property="og:locale:alternate" content="bn_BD" />
+
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Tenantly - Property & Rent Management for Bangladesh" />
     <meta
       name="twitter:description"
       content="Track units, tenants, and every cash, bank transfer, bKash, or Nagad payment — bilingual, one login for your whole team."
     />
+
+    <!-- iOS / mobile web app -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Tenantly" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <!--
       Content-Security-Policy: defense-in-depth against XSS. Angular Material
       injects component styles via inline <style> tags at runtime, hence
@@ -46,6 +70,7 @@
       content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://localhost:8080; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
     />
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
+    <link rel="manifest" href="site.webmanifest" />
     <link rel="preconnect" href="https://fonts.gstatic.com" />
     <link
       href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&family=Noto+Sans+Bengali:wght@400;500;700&family=Alfa+Slab+One&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Caveat:wght@600&display=swap"

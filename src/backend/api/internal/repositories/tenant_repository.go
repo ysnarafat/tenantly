@@ -162,6 +162,46 @@ func (r *TenantRepository) GetByID(id int) (*models.Tenant, error) {
 	return tenant, nil
 }
 
+// GetByIDIncludingInactive fetches a tenant by ID without filtering on active
+// status — used to read back a tenant immediately after an update that may
+// have just deactivated it, where GetByID's active-only filter would
+// otherwise report a legitimately-updated tenant as "not found".
+func (r *TenantRepository) GetByIDIncludingInactive(id int) (*models.Tenant, error) {
+	query := fmt.Sprintf(`
+		SELECT %s
+		FROM %s
+		WHERE %s = $1`,
+		columns.TenantAllColumns(),
+		columns.TenantTable,
+		columns.TenantID)
+
+	tenant := &models.Tenant{}
+	var lastFour sql.NullString
+	err := r.db.QueryRow(query, id).Scan(
+		&tenant.ID,
+		&tenant.Name,
+		&tenant.TenantType,
+		&tenant.PhoneNumber,
+		&tenant.Email,
+		&lastFour,
+		&tenant.Address,
+		&tenant.Active,
+		&tenant.OrganizationID,
+		&tenant.CreatedAt,
+		&tenant.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("tenant not found")
+		}
+		return nil, fmt.Errorf("failed to get tenant: %w", err)
+	}
+	tenant.NIDLastFour = lastFour.String
+
+	return tenant, nil
+}
+
 // GetDecryptedNID returns the full, decrypted NID for a tenant along with its
 // organization ID (for ownership verification). This is the only read path that
 // materializes the plaintext NID and must be gated by the caller.

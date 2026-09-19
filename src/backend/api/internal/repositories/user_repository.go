@@ -25,11 +25,15 @@ func (r *UserRepository) Create(user *models.User) error {
 		Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
 }
 
+// GetByID looks up a user by primary key regardless of active status — unlike
+// GetAll/GetByOrganizationID, this is a direct lookup by an ID the caller
+// already has, so it must still find deactivated users (e.g. to reactivate
+// or delete them). Login enforces the active check explicitly instead.
 func (r *UserRepository) GetByID(id int) (*models.User, error) {
 	user := &models.User{}
 	query := `
 		SELECT id, username, email, password_hash, role, active, first_name, last_name, organization_id, status, created_at, updated_at
-		FROM users WHERE id = $1 AND active = true`
+		FROM users WHERE id = $1`
 
 	err := r.db.QueryRow(query, id).Scan(
 		&user.ID, &user.Username, &user.Email, &user.PasswordHash,

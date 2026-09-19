@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { UnitFormDialogComponent, UnitFormDialogData } from './unit-form-dialog';
 import { Building, Property, Unit } from '../../../core/models';
+import { getUnitTypesForBuilding } from '../unit-type.utils';
 import { ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -375,17 +376,17 @@ describe('UnitFormDialogComponent - Unit Type Validation', () => {
     });
 
     it('should return correct types for Residential', () => {
-      const types = component.getUnitTypesForBuilding('Residential');
+      const types = getUnitTypesForBuilding('Residential');
       expect(types).toEqual(['Apartment', 'Parking', 'Storage']);
     });
 
     it('should return correct types for Commercial', () => {
-      const types = component.getUnitTypesForBuilding('Commercial');
+      const types = getUnitTypesForBuilding('Commercial');
       expect(types).toEqual(['Shop', 'Office', 'Parking', 'Storage']);
     });
 
     it('should return correct types for Mixed', () => {
-      const types = component.getUnitTypesForBuilding('Mixed');
+      const types = getUnitTypesForBuilding('Mixed');
       expect(types).toEqual(['Shop', 'Apartment', 'Office', 'Parking', 'Storage', 'Other']);
     });
   });

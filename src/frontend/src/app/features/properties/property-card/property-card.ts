@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -23,6 +24,7 @@ export interface BuildingWithUnits extends Building {
   standalone: true,
   imports: [
     CommonModule,
+    RouterModule,
     MatCardModule,
     MatIconModule,
     MatButtonModule,
@@ -60,7 +62,6 @@ export class PropertyCardComponent {
     building: BuildingWithUnits;
     property: DisplayedProperty;
   }>();
-  @Output() viewBuildingDetails = new EventEmitter<BuildingWithUnits>();
   @Output() viewUnitDetails = new EventEmitter<{
     unit: UnitWithDetails;
     building: BuildingWithUnits;
@@ -105,11 +106,6 @@ export class PropertyCardComponent {
 
   onAddPayment(unit: UnitWithDetails, building: BuildingWithUnits) {
     this.addPayment.emit({ unit, building, property: this.property });
-  }
-
-  onViewBuildingDetails(building: BuildingWithUnits, event: Event) {
-    event.stopPropagation();
-    this.viewBuildingDetails.emit(building);
   }
 
   onViewUnitDetails(unit: UnitWithDetails, building: BuildingWithUnits) {

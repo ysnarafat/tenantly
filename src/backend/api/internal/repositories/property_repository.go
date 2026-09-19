@@ -106,7 +106,7 @@ func (r *PropertyRepository) GetByIDWithStats(id int) (*models.PropertyWithStats
 			COALESCE(COUNT(DISTINCT CASE WHEN l.active = true THEN u.id END), 0) as occupied_units,
 			COALESCE(SUM(CASE WHEN pay.status = 'Paid' THEN pay.amount_paid ELSE 0 END), 0) as total_revenue
 		FROM properties p
-		LEFT JOIN buildings b ON p.id = b.property_id AND b.active = true
+		LEFT JOIN buildings b ON p.id = b.property_id AND b.active_status = true
 		LEFT JOIN units u ON p.id = u.property_id AND u.active = true
 		LEFT JOIN leases l ON u.id = l.unit_id AND l.active = true
 		LEFT JOIN payments pay ON u.id = pay.unit_id
@@ -372,7 +372,9 @@ func (r *PropertyRepository) CheckPropertyCodeExists(code string, excludeID int)
 
 // HasActiveBuildings checks if property has active buildings
 func (r *PropertyRepository) HasActiveBuildings(id int) (bool, error) {
-	query := `SELECT EXISTS(SELECT 1 FROM buildings WHERE property_id = $1 AND active = true)`
+	// buildings names the flag active_status, not active — the latter made
+	// every property deletion fail with "column active does not exist".
+	query := `SELECT EXISTS(SELECT 1 FROM buildings WHERE property_id = $1 AND active_status = true)`
 	var exists bool
 	err := r.db.QueryRow(query, id).Scan(&exists)
 	if err != nil {

@@ -27,6 +27,14 @@ export interface DueSummary {
   total_tenants_due: number;
 }
 
+export type LeaseEndReason = 'Expired' | 'Terminated' | 'Renewed';
+
+// Custom fields are arbitrary org-defined key/value data not covered by
+// structured lease fields (e.g. "Parking Slot": "B-12") — same JSONB pattern
+// as the recurring-charges list below. Kept as strings on the frontend for a
+// simple text-based editor; the backend stores them as a raw JSONB map.
+export type LeaseCustomFields = Record<string, string>;
+
 export interface Lease {
   id: number;
   unit_id: number;
@@ -39,6 +47,11 @@ export interface Lease {
   security_deposit: number;
   active: boolean;
   organization_id: number;
+  // Present once a lease has stopped being active — see LeaseEndReason.
+  end_reason?: LeaseEndReason;
+  // Present when this lease was created by renewing an earlier one.
+  renewed_from_lease_id?: number;
+  custom_fields?: LeaseCustomFields;
   created_at: string;
   updated_at: string;
 }
@@ -55,6 +68,39 @@ export interface LeaseWithDetails extends Lease {
   tenant_phone?: string;
   is_expired: boolean;
   days_remaining: number;
+  // Only populated by getLeaseById — the list endpoint omits it to avoid an
+  // N+1 query per row.
+  charges?: LeaseCharge[];
+}
+
+// The controlled set of recurring charges a lease can carry on top of its
+// monthly_rent (utility, service charge, etc.) — charge_type stays an enum
+// so charges remain reportable across leases, while label is free text (so
+// e.g. "Gas" is charge_type: Utility, label: "Gas").
+export type ChargeType = 'Utility' | 'ServiceCharge' | 'Maintenance' | 'Parking' | 'Other';
+
+export interface LeaseCharge {
+  id: number;
+  lease_id: number;
+  charge_type: ChargeType;
+  label: string;
+  amount: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateLeaseChargeRequest {
+  charge_type: ChargeType;
+  label: string;
+  amount: number;
+}
+
+export interface UpdateLeaseChargeRequest {
+  charge_type?: ChargeType;
+  label?: string;
+  amount?: number;
+  active?: boolean;
 }
 
 export interface Payment {
@@ -98,19 +144,41 @@ export interface CreateLeaseRequest {
   duration_months: number;
   monthly_rent: number;
   security_deposit?: number;
+  custom_fields?: LeaseCustomFields;
 }
 
 export interface UpdateLeaseRequest {
   lease_type?: LeaseType;
   start_date?: string;
   duration_months?: number;
+  // Sets the lease's end date directly, independent of duration_months — the
+  // only way to correct it onto a date that isn't a whole-month offset from
+  // start_date (an integer duration_months can never express that exactly).
+  // When provided without duration_months, the backend derives the latter
+  // from the date range for display purposes only.
+  end_date?: string;
   monthly_rent?: number;
   security_deposit?: number;
   active?: boolean;
+  custom_fields?: LeaseCustomFields;
 }
 
 export interface TerminateLeaseRequest {
   termination_date?: string;
+}
+
+// Starts a new lease term for the same unit/tenant instead of mutating the
+// current lease — fields left unset carry the corresponding value forward
+// from the lease being renewed. See LeaseService.renewLease.
+export interface RenewLeaseRequest {
+  start_date?: string;
+  duration_months: number;
+  monthly_rent?: number;
+  security_deposit?: number;
+  lease_type?: LeaseType;
+  // Defaults to true server-side (nil) — the new lease inherits the old
+  // lease's active recurring charges unless explicitly opted out.
+  carry_forward_charges?: boolean;
 }
 
 @Injectable({
@@ -136,6 +204,22 @@ export class LeaseService {
     return this.http.post<LeaseWithDetails>(this.apiUrl, request);
   }
 
+  addLeaseCharge(leaseId: number, request: CreateLeaseChargeRequest): Observable<LeaseCharge> {
+    return this.http.post<LeaseCharge>(`${this.apiUrl}/${leaseId}/charges`, request);
+  }
+
+  updateLeaseCharge(
+    leaseId: number,
+    chargeId: number,
+    request: UpdateLeaseChargeRequest
+  ): Observable<LeaseCharge> {
+    return this.http.put<LeaseCharge>(`${this.apiUrl}/${leaseId}/charges/${chargeId}`, request);
+  }
+
+  deleteLeaseCharge(leaseId: number, chargeId: number): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(`${this.apiUrl}/${leaseId}/charges/${chargeId}`);
+  }
+
   updateLease(id: number, request: UpdateLeaseRequest): Observable<LeaseWithDetails> {
     return this.http.put<LeaseWithDetails>(`${this.apiUrl}/${id}`, request);
   }
@@ -146,6 +230,10 @@ export class LeaseService {
 
   terminateLease(id: number, request: TerminateLeaseRequest = {}): Observable<{ message: string }> {
     return this.http.post<{ message: string }>(`${this.apiUrl}/${id}/terminate`, request);
+  }
+
+  renewLease(id: number, request: RenewLeaseRequest): Observable<LeaseWithDetails> {
+    return this.http.post<LeaseWithDetails>(`${this.apiUrl}/${id}/renew`, request);
   }
 
   getLeasesByUnit(

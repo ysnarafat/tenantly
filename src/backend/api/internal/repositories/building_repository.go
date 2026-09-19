@@ -110,7 +110,9 @@ func (r *BuildingRepository) GetByPropertyID(propertyID int) ([]*models.Building
 	}
 	defer func() { _ = rows.Close() }()
 
-	var buildings []*models.Building
+	// make(..., 0) rather than a nil-defaulted var — a nil slice serializes to
+	// JSON null (not []), which crashes frontend code that assumes an array.
+	buildings := make([]*models.Building, 0)
 	for rows.Next() {
 		var building models.Building
 		err := rows.Scan(
@@ -383,7 +385,9 @@ func (r *BuildingRepository) Search(filters *models.BuildingSearchFilters) ([]*m
 	}
 	defer func() { _ = rows.Close() }()
 
-	var buildings []*models.Building
+	// make(..., 0) rather than a nil-defaulted var — a nil slice serializes to
+	// JSON null (not []), which crashes frontend code that assumes an array.
+	buildings := make([]*models.Building, 0)
 	for rows.Next() {
 		var building models.Building
 		err := rows.Scan(
@@ -556,7 +560,9 @@ func (r *BuildingRepository) GetByPropertyWithSorting(propertyID int, filters *m
 	}
 	defer func() { _ = rows.Close() }()
 
-	var buildings []*models.Building
+	// make(..., 0) rather than a nil-defaulted var — a nil slice serializes to
+	// JSON null (not []), which crashes frontend code that assumes an array.
+	buildings := make([]*models.Building, 0)
 	for rows.Next() {
 		var building models.Building
 		err := rows.Scan(
@@ -725,7 +731,9 @@ func (r *BuildingRepository) AdvancedSearch(req *models.BuildingSearchRequest) (
 	}
 	defer func() { _ = rows.Close() }()
 
-	var buildings []*models.Building
+	// make(..., 0) rather than a nil-defaulted var — a nil slice serializes to
+	// JSON null (not []), which crashes frontend code that assumes an array.
+	buildings := make([]*models.Building, 0)
 	for rows.Next() {
 		var building models.Building
 		err := rows.Scan(
@@ -769,7 +777,7 @@ func (r *BuildingRepository) GetBuildingUnits(buildingID int, offset, limit int)
 			COALESCE(t.name, '') as tenant_name,
 			COALESCE(l.active, false) as lease_active
 		FROM %s u
-		LEFT JOIN leases l ON u.%s = l.unit_id AND l.active = true
+		LEFT JOIN leases l ON u.%s = l.unit_id AND l.active = true AND l.end_date >= CURRENT_DATE
 		LEFT JOIN tenants t ON l.tenant_id = t.id
 		WHERE u.%s = $1
 		ORDER BY u.%s, u.%s, u.%s
@@ -825,7 +833,9 @@ func (r *BuildingRepository) GetByOrganizationID(orgID int) ([]*models.Building,
 	}
 	defer func() { _ = rows.Close() }()
 
-	var buildings []*models.Building
+	// make(..., 0) rather than a nil-defaulted var — a nil slice serializes to
+	// JSON null (not []), which crashes frontend code that assumes an array.
+	buildings := make([]*models.Building, 0)
 	for rows.Next() {
 		var building models.Building
 		var metadata sql.NullString

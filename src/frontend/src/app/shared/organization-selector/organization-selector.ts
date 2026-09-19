@@ -18,6 +18,7 @@ import * as AuthActions from '../../store/auth/auth.actions';
 import { OrganizationService } from '../../core/services/organization.service';
 import { UserOrganization } from '../../core/models/organization.model';
 import { avatarColorFor, avatarInitials } from '../utils/avatar.utils';
+import { notifyError } from '../utils/notify.utils';
 
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
@@ -152,10 +153,10 @@ const ROLE_LABELS: Record<string, string> = {
         padding: 4px 12px 4px 4px !important;
         border-radius: 20px;
         transition: background-color 0.2s ease;
-        background-color: rgba(255, 255, 255, 0.1);
+        background-color: var(--nav-hover-bg);
 
         &:hover:not(:disabled) {
-          background-color: rgba(255, 255, 255, 0.2);
+          background-color: var(--nav-active-bg);
         }
 
         &:disabled {
@@ -362,9 +363,7 @@ export class OrganizationSelector implements OnInit, OnDestroy {
       .pipe(ofType(AuthActions.switchOrganizationFailure), takeUntil(this.destroy$))
       .subscribe(() => {
         this.isLoading.set(false);
-        this.snackBar.open('Could not switch organization. Please try again.', 'Close', {
-          duration: 4000,
-        });
+        notifyError(this.snackBar, 'Could not switch organization. Please try again.', 4000);
       });
 
     this.orgService.restoreOrganizationContext();

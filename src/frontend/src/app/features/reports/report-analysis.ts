@@ -24,7 +24,6 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatGridListModule } from '@angular/material/grid-list';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -45,6 +44,7 @@ import { BuildingService } from '../../core/services/building.service';
 import { PropertyService } from '../../core/services/property.service';
 import { Building, Property } from '../../core/models';
 import { safeErrorMessage } from '../../shared/utils/error.utils';
+import { notifySuccess, notifyError, notifyInfo } from '../../shared/utils/notify.utils';
 
 export interface ReportTemplate {
   id: string;
@@ -92,7 +92,6 @@ function dateRangeValidator(fg: AbstractControl): ValidationErrors | null {
     MatTableModule,
     MatProgressBarModule,
     MatChipsModule,
-    MatGridListModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
     TranslateModule,
@@ -266,7 +265,7 @@ export class ReportAnalysis implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Error loading dashboard metrics:', safeErrorMessage(error));
-        this.snackBar.open('Error loading report data', 'Close', { duration: 3000 });
+        notifyError(this.snackBar, 'Error loading report data');
         this.loadingMetrics = false;
       },
     });
@@ -288,11 +287,11 @@ export class ReportAnalysis implements OnInit, OnDestroy {
         next: (report) => {
           this.ledgerReport = report;
           this.generatingReport = false;
-          this.snackBar.open('Ledger report generated', 'Close', { duration: 2000 });
+          notifySuccess(this.snackBar, 'Ledger report generated');
         },
         error: (error) => {
           console.error('Error generating ledger report:', safeErrorMessage(error));
-          this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+          notifyError(this.snackBar, 'Error generating report');
           this.generatingReport = false;
         },
       });
@@ -307,11 +306,11 @@ export class ReportAnalysis implements OnInit, OnDestroy {
         next: (report) => {
           this.tenantReport = report;
           this.generatingReport = false;
-          this.snackBar.open('Tenant report generated', 'Close', { duration: 2000 });
+          notifySuccess(this.snackBar, 'Tenant report generated');
         },
         error: (error) => {
           console.error('Error generating tenant report:', safeErrorMessage(error));
-          this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+          notifyError(this.snackBar, 'Error generating report');
           this.generatingReport = false;
         },
       });
@@ -331,11 +330,11 @@ export class ReportAnalysis implements OnInit, OnDestroy {
         next: (report) => {
           this.propertyAnalyticsReport = report;
           this.generatingReport = false;
-          this.snackBar.open('Property analytics generated', 'Close', { duration: 2000 });
+          notifySuccess(this.snackBar, 'Property analytics generated');
         },
         error: (error) => {
           console.error('Error generating property analytics:', safeErrorMessage(error));
-          this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+          notifyError(this.snackBar, 'Error generating report');
           this.generatingReport = false;
         },
       });
@@ -345,7 +344,7 @@ export class ReportAnalysis implements OnInit, OnDestroy {
     const buildingIdStr = this.reportForm.get('buildingFilter')?.value;
     const buildingId = parseInt(buildingIdStr, 10);
     if (!buildingId) {
-      this.snackBar.open('Please select a building first', 'Close', { duration: 3000 });
+      notifyError(this.snackBar, 'Please select a building first');
       return;
     }
 
@@ -366,11 +365,11 @@ export class ReportAnalysis implements OnInit, OnDestroy {
         next: (report) => {
           this.buildingReport = report;
           this.generatingReport = false;
-          this.snackBar.open('Building performance report generated', 'Close', { duration: 2000 });
+          notifySuccess(this.snackBar, 'Building performance report generated');
         },
         error: (error) => {
           console.error('Error generating building report:', safeErrorMessage(error));
-          this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+          notifyError(this.snackBar, 'Error generating report');
           this.generatingReport = false;
         },
       });
@@ -391,11 +390,11 @@ export class ReportAnalysis implements OnInit, OnDestroy {
         next: (report) => {
           this.collectionReport = report;
           this.generatingReport = false;
-          this.snackBar.open('Report generated', 'Close', { duration: 2000 });
+          notifySuccess(this.snackBar, 'Report generated');
         },
         error: (error) => {
           console.error('Error generating report:', safeErrorMessage(error));
-          this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+          notifyError(this.snackBar, 'Error generating report');
           this.generatingReport = false;
         },
       });
@@ -416,11 +415,11 @@ export class ReportAnalysis implements OnInit, OnDestroy {
         next: (report) => {
           this.paymentReport = report;
           this.generatingReport = false;
-          this.snackBar.open('Report generated', 'Close', { duration: 2000 });
+          notifySuccess(this.snackBar, 'Report generated');
         },
         error: (error) => {
           console.error('Error generating report:', safeErrorMessage(error));
-          this.snackBar.open('Error generating report', 'Close', { duration: 3000 });
+          notifyError(this.snackBar, 'Error generating report');
           this.generatingReport = false;
         },
       });
@@ -433,11 +432,11 @@ export class ReportAnalysis implements OnInit, OnDestroy {
 
   generateReport() {
     if (this.reportForm.hasError('endBeforeStart')) {
-      this.snackBar.open('End date must be after start date', 'Close', { duration: 3000 });
+      notifyError(this.snackBar, 'End date must be after start date');
       return;
     }
     if (!this.reportForm.valid) {
-      this.snackBar.open('Please fill required fields', 'Close', { duration: 3000 });
+      notifyError(this.snackBar, 'Please fill required fields');
       return;
     }
 
@@ -464,13 +463,13 @@ export class ReportAnalysis implements OnInit, OnDestroy {
         this.loadBuildingPerformance();
         break;
       default:
-        this.snackBar.open('Report type not yet implemented', 'Close', { duration: 3000 });
+        notifyInfo(this.snackBar, 'Report type not yet implemented');
     }
   }
 
   exportReport(format: 'pdf' | 'csv' | 'xlsx') {
     if (format !== 'csv') {
-      this.snackBar.open(`${format.toUpperCase()} export coming soon`, 'Close', { duration: 2000 });
+      notifyInfo(this.snackBar, `${format.toUpperCase()} export coming soon`, 2000);
       return;
     }
 
@@ -563,12 +562,12 @@ export class ReportAnalysis implements OnInit, OnDestroy {
         ])
       );
     } else {
-      this.snackBar.open('Generate a report first before exporting', 'Close', { duration: 3000 });
+      notifyError(this.snackBar, 'Generate a report first before exporting');
       return;
     }
 
     this.downloadCsv(csv, filename);
-    this.snackBar.open('CSV downloaded', 'Close', { duration: 2000 });
+    notifySuccess(this.snackBar, 'CSV downloaded');
   }
 
   private toCsv(headers: string[], rows: any[][]): string {

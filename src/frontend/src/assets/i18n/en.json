@@ -70,7 +70,8 @@
       "DAYS_OVERDUE": "Days Overdue"
     },
     "DAYS": "days",
-    "ERROR_LOADING": "Failed to load due list"
+    "ERROR_LOADING": "Failed to load due list",
+    "TABLE_EMPTY": "No overdue payments"
   },
   "LEASE_LIST": {
     "PAGE_TITLE": "Lease Management",
@@ -212,17 +213,41 @@
       "START_DATE": "Start Date",
       "DURATION_MONTHS": "Duration (Months)",
       "MONTHLY_RENT": "Monthly Rent (BDT)",
-      "SECURITY_DEPOSIT": "Security Deposit (BDT) - Optional"
+      "SECURITY_DEPOSIT": "Security Deposit (BDT) - Optional",
+      "TENANT_SEARCH_PLACEHOLDER": "Search by name, phone, or email"
     },
     "ERRORS": {
-      "NO_PHONE": "No phone"
+      "NO_PHONE": "No phone",
+      "REQUIRED": "This field is required",
+      "MIN_VALUE": "Value must be positive",
+      "MAX_VALUE": "Value is too large",
+      "NOT_INTEGER": "Must be a whole number",
+      "FORM_INVALID": "Please fill all required fields",
+      "LOAD_PROPERTIES": "Error loading properties",
+      "LOAD_TENANTS": "Error loading tenants",
+      "LOAD_BUILDINGS": "Error loading buildings",
+      "LOAD_UNITS": "Error loading units",
+      "CREATE_FAILED": "Failed to create lease",
+      "NO_TENANTS_FOUND": "No matching tenants found",
+      "NO_PROPERTIES": "No active properties found",
+      "NO_BUILDINGS": "No buildings found for this property",
+      "NO_UNITS": "No available units in this building"
     },
     "INFO": {
-      "END_DATE": "End Date:"
+      "END_DATE": "End Date:",
+      "LOADING_BUILDINGS": "Loading buildings...",
+      "LOADING_UNITS": "Loading units..."
     },
     "BUTTONS": {
       "CREATE": "Create Lease",
       "CREATING": "Creating..."
+    },
+    "LEASE_TYPES": {
+      "RESIDENTIAL": "Residential",
+      "COMMERCIAL": "Commercial"
+    },
+    "SUCCESS": {
+      "CREATED": "Lease created successfully"
     }
   },
   "EDIT_LEASE_DIALOG": {
@@ -299,10 +324,15 @@
   },
   "LOGIN": {
     "TITLE": "Tenantly Login",
+    "EYEBROW": "Your account",
+    "WELCOME": "Welcome back",
+    "SUBTITLE": "Sign in to continue to Tenantly",
+    "FORGOT_PASSWORD": "Forgot password?",
     "FIELDS": {
       "USERNAME": "Username",
       "PASSWORD": "Password"
     },
+    "REMEMBER_ME": "Remember me",
     "BUTTONS": {
       "LOGIN": "Login"
     },
@@ -377,6 +407,32 @@
       "UPDATE": "Update Unit"
     }
   },
+  "BULK_UNIT_FORM_DIALOG": {
+    "TITLE": "Bulk Add Units",
+    "COMMON_FIELDS_LABEL": "Common to all units",
+    "FIELDS": {
+      "UNIT_TYPE": "Unit Type",
+      "FLOOR": "Floor",
+      "SECTION": "Section",
+      "ROW_COUNT": "Number of units"
+    },
+    "TABLE": {
+      "ROW_NUMBER": "#",
+      "UNIT_NUMBER": "Unit Number",
+      "UNIT_NAME": "Unit Name (Optional)"
+    },
+    "BUTTONS": {
+      "ADD_ROW": "Add Row",
+      "REMOVE_ROW": "Remove",
+      "CREATE": "Create {{count}} Units",
+      "CANCEL": "Cancel"
+    },
+    "ERRORS": {
+      "DUPLICATE_UNIT_NUMBER": "Duplicate unit number in this batch",
+      "REQUIRED_UNIT_NUMBER": "Unit number is required"
+    },
+    "SUMMARY": "{{count}} unit(s) will be created"
+  },
   "PROPERTY_LIST": {
     "PAGE_TITLE": "Properties",
     "STATS": {
@@ -388,7 +444,10 @@
     },
     "FILTERS": {
       "SEARCH_LABEL": "Search properties",
-      "SEARCH_PLACEHOLDER": "Property, building or unit…"
+      "SEARCH_PLACEHOLDER": "Property, building or unit…",
+      "TYPE_LABEL": "Property type",
+      "STATUS_LABEL": "Status",
+      "CITY_LABEL": "City"
     },
     "LOADING": "Loading properties...",
     "EMPTY_STATE": {
@@ -400,6 +459,62 @@
       "DELETE_PROPERTY": "Are you sure you want to delete",
       "DELETE_BUILDING": "Are you sure you want to delete",
       "DELETE_UNIT": "Are you sure you want to delete unit"
+    }
+  },
+  "PROPERTY_DETAIL": {
+    "BACK_TO_LIST": "Back to properties",
+    "LOADING": "Loading property...",
+    "LOADING_BUILDINGS": "Loading buildings...",
+    "LOADING_UNITS": "Loading units...",
+    "NO_BUILDINGS": "No buildings yet",
+    "NO_UNITS": "No units yet",
+    "VIEW_FULL_REPORT": "View full financial report",
+    "VIEW_FULL_DETAILS": "View full details",
+    "ADD_BUILDING": "Add Building",
+    "SEARCH_LABEL": "Search buildings",
+    "SEARCH_PLACEHOLDER": "Building name, code or type…",
+    "NO_MATCHING_BUILDINGS": "No matching buildings",
+    "NOT_FOUND": {
+      "TITLE": "Property not found",
+      "DESCRIPTION": "This property may have been deleted, or you may not have access to it."
+    },
+    "STATS": {
+      "BUILDINGS": "Buildings",
+      "UNITS": "Units",
+      "OCCUPANCY": "Occupancy",
+      "REVENUE": "Total Revenue"
+    },
+    "TABS": {
+      "BUILDINGS": "Buildings"
+    }
+  },
+  "BUILDING_DETAIL": {
+    "BACK_TO_PROPERTY": "Back to property",
+    "LOADING": "Loading building...",
+    "LOADING_UNITS": "Loading units...",
+    "NO_UNITS": "No units yet",
+    "VIEW_FULL_REPORT": "View full financial report",
+    "ADD_UNIT": "Add Unit",
+    "BULK_ADD_UNITS": "Bulk Add Units",
+    "SEARCH_LABEL": "Search units",
+    "SEARCH_PLACEHOLDER": "Unit number, name or type…",
+    "NO_MATCHING_UNITS": "No matching units",
+    "NOT_FOUND": {
+      "TITLE": "Building not found",
+      "DESCRIPTION": "This building may have been deleted, or you may not have access to it."
+    },
+    "STATS": {
+      "UNITS": "Units",
+      "OCCUPANCY": "Occupancy",
+      "REVENUE": "Total Revenue",
+      "COLLECTION_RATE": "Collection Rate"
+    },
+    "TABS": {
+      "UNITS": "Units"
+    },
+    "UNIT_STATUS": {
+      "OCCUPIED": "Occupied",
+      "VACANT": "Vacant"
     }
   },
   "PAYMENT_LIST": {
@@ -422,7 +537,8 @@
       "CLEAR": "Clear",
       "UPDATE": "Update",
       "LOAD": "Load",
-      "GENERATE_MONTHLY": "Generate Monthly"
+      "GENERATE_MONTHLY": "Generate Monthly",
+      "COLLECT_PAYMENTS": "Collect Payments"
     },
     "FILTERS": {
       "STATUS": "Status",
@@ -467,6 +583,57 @@
     },
     "EMPTY_STATE": "No payments found",
     "LOADING": "Loading payments..."
+  },
+  "PAYMENT_COLLECT": {
+    "PAGE_TITLE": "Collect Payments",
+    "SUBTITLE": "Record payments for every outstanding tenant in one pass",
+    "MONTH_LABEL": "Month",
+    "YEAR_LABEL": "Year",
+    "GENERATE_BUTTON": "Generate Monthly Payments",
+    "SAVE_ALL_BUTTON": "Save all",
+    "LOADING": "Loading outstanding payments...",
+    "METHOD_NONE": "— None —",
+    "STATS": {
+      "PENDING": "pending",
+      "SAVED": "saved",
+      "FAILED": "failed",
+      "OUTSTANDING": "outstanding"
+    },
+    "EMPTY_STATE": {
+      "TITLE": "All caught up",
+      "DESCRIPTION": "No outstanding payments for this period — everyone has paid, or payments haven't been generated yet."
+    },
+    "TABLE": {
+      "TENANT": "Tenant",
+      "UNIT": "Unit",
+      "AMOUNT_DUE": "Amount due",
+      "AMOUNT_PAID": "Amount paid",
+      "METHOD": "Method",
+      "DATE": "Date",
+      "STATUS": "Status",
+      "SKIP": "Skip"
+    },
+    "STATUS": {
+      "SAVING": "Saving…",
+      "SAVED": "Saved"
+    },
+    "TOOLTIPS": {
+      "SKIP": "Skip this tenant for now"
+    },
+    "MONTHS": {
+      "JAN": "January",
+      "FEB": "February",
+      "MAR": "March",
+      "APR": "April",
+      "MAY": "May",
+      "JUN": "June",
+      "JUL": "July",
+      "AUG": "August",
+      "SEP": "September",
+      "OCT": "October",
+      "NOV": "November",
+      "DEC": "December"
+    }
   },
   "CREATE_PAYMENT_DIALOG": {
     "TITLE": "Create New Payment",
@@ -535,6 +702,10 @@
   },
   "USER_LIST": {
     "PAGE_TITLE": "User Management",
+    "STATS": {
+      "TOTAL": "Total",
+      "ACTIVE": "Active"
+    },
     "BUTTONS": {
       "CREATE_USER": "Create User",
       "INVITE_USER": "Invite User"
@@ -554,6 +725,8 @@
       "CREATED": "Created",
       "ACTIONS": "Actions"
     },
+    "LOADING": "Loading users...",
+    "EMPTY_STATE": "No users found",
     "STATUS": {
       "ACTIVE": "Active",
       "INACTIVE": "Inactive"
@@ -562,6 +735,7 @@
       "PROMOTE": "Promote/Demote",
       "DEACTIVATE": "Deactivate",
       "ACTIVATE": "Activate",
+      "RESET_PASSWORD": "Reset password",
       "DELETE": "Delete"
     }
   },
@@ -582,6 +756,8 @@
       "ACTIVE": "Active",
       "ACTIONS": "Actions"
     },
+    "LOADING": "Loading organizations...",
+    "EMPTY_STATE": "No organizations found",
     "TOOLTIPS": {
       "VIEW": "View",
       "EDIT": "Edit",
@@ -648,6 +824,58 @@
     "LOADING": "Loading attachments...",
     "NO_DESCRIPTION": "No description"
   },
+  "NAV": {
+    "SUBTITLE": "Property Management",
+    "SECTIONS": {
+      "WORKSPACE": "Workspace",
+      "ADMIN": "Admin"
+    },
+    "ITEMS": {
+      "DASHBOARD": "Dashboard",
+      "PROPERTIES": "Properties",
+      "TENANTS": "Tenants",
+      "LEASES": "Leases",
+      "PAYMENTS": "Payments",
+      "REPORTS": "Reports",
+      "DOCUMENTS": "Documents",
+      "ORGANIZATIONS": "Organizations",
+      "INVITATIONS": "Invitations",
+      "USERS": "Users"
+    },
+    "USER_MENU": {
+      "LOGOUT": "Logout"
+    },
+    "TOOLTIPS": {
+      "LIGHT_MODE": "Switch to light mode",
+      "DARK_MODE": "Switch to dark mode"
+    }
+  },
+  "CONTACT_PAGE": {
+    "SEO": {
+      "TITLE": "Contact — Tenantly",
+      "DESCRIPTION": "Get in touch with the Tenantly team for setup help, account questions, or pricing."
+    },
+    "NAV": {
+      "HOME": "Home",
+      "LOGIN": "Log in"
+    },
+    "HERO": {
+      "EYEBROW": "Get in touch",
+      "TITLE": "We'd love to hear from you",
+      "SUBTITLE": "Setting up for the first time, have a question about your account, or want to talk pricing? Drop us a line — we reply within one business day."
+    },
+    "EMAIL": {
+      "LABEL": "Email us",
+      "COPY": "Copy email",
+      "COPIED": "Copied!",
+      "OPEN": "Open email client",
+      "RESPONSE": "We typically reply within one business day."
+    },
+    "FOOTER": {
+      "TAGLINE": "Property and rent management for Bangladesh.",
+      "RIGHTS": "© {{ year }} Tenantly. All rights reserved."
+    }
+  },
   "HOMEPAGE": {
     "SEO": {
       "TITLE": "Tenantly - Property & Rent Management for Bangladesh",
@@ -655,6 +883,7 @@
     },
     "NAV": {
       "FAQ": "FAQ",
+      "CONTACT": "Contact",
       "LOGIN": "Log in"
     },
     "HERO": {
@@ -713,7 +942,13 @@
     },
     "FOOTER": {
       "TAGLINE": "Property and rent management for Bangladesh.",
-      "RIGHTS": "© 2026 Tenantly. All rights reserved."
+      "RIGHTS": "© {{ year }} Tenantly. All rights reserved."
     }
+  },
+  "LEASE_CHARGES": {
+    "SECTION_TITLE": "Recurring Charges"
+  },
+  "LEASE_CUSTOM_FIELDS": {
+    "SECTION_TITLE": "Custom Fields"
   }
 }

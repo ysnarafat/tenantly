@@ -57,6 +57,11 @@ type Config struct {
 	CookieDomain   string
 	CookieSecure   bool
 	NIDProtector   *appcrypto.NIDProtector
+	// PublicAppURL is the externally-reachable base URL (e.g.
+	// https://app.example.com) used to build links embedded in SMS/email —
+	// currently the "download your receipt" link. It must be reachable by
+	// the recipient's phone, not just internal services.
+	PublicAppURL string
 }
 
 type SMSConfig struct {
@@ -184,6 +189,7 @@ func Load() (*Config, error) {
 		CookieDomain:   getEnv("COOKIE_DOMAIN", ""),
 		CookieSecure:   cookieSecure,
 		NIDProtector:   nidProtector,
+		PublicAppURL:   strings.TrimRight(getEnv("PUBLIC_APP_URL", "http://localhost:8080"), "/"),
 	}
 	return config, nil
 }

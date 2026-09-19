@@ -23,36 +23,6 @@
       max-width: 400px;
     }
   }
-
-  .loading {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 300px;
-  }
-
-  .table-container {
-    overflow-x: auto;
-    border-radius: 4px;
-    border: 1px solid var(--border-color);
-  }
-
-  .organization-table {
-    width: 100%;
-
-    th {
-      background-color: var(--bg-secondary);
-      font-weight: 600;
-    }
-
-    tr:hover {
-      background-color: var(--bg-hover);
-    }
-  }
-
-  mat-paginator {
-    border-top: 1px solid var(--border-color);
-  }
 }
 
 // ── Responsive ───────────────────────────────────────────────────────────────

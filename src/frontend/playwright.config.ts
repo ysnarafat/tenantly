@@ -13,6 +13,14 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'setup', testMatch: /auth\.setup\.ts/ },
+    {
+      // No default storageState here — error-pages.spec.ts relies on starting
+      // logged-out. Specs that need a real session opt in via
+      // `test.use({ storageState: 'e2e/.auth/user.json' })`.
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+      dependencies: ['setup'],
+    },
   ],
 });

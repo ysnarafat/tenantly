@@ -1,13 +1,13 @@
-import { test, expect, Page } from '@playwright/test';
-import { loginViaUI } from './helpers/auth';
+import { test, expect } from '@playwright/test';
 
-// Credentials — override via env vars for CI
-const EMAIL = process.env['E2E_EMAIL'] ?? 'admin@tenantly.com';
-const PASSWORD = process.env['E2E_PASSWORD'] ?? 'password';
+// Reuses the session from the "setup" project (see auth.setup.ts) instead of
+// logging in per-test — the backend throttles login to 5 attempts per
+// account per 15 minutes (accountLoginLimiter in user_handler.go), which a
+// per-test login would exceed well before this file's tests finish.
+test.use({ storageState: 'e2e/.auth/user.json' });
 
 test.describe('Payments page', () => {
   test.beforeEach(async ({ page }) => {
-    await loginViaUI(page, EMAIL, PASSWORD);
     await page.goto('/payments');
     await page.waitForSelector('.payment-container', { timeout: 10_000 });
   });
@@ -76,7 +76,9 @@ test.describe('Payments page', () => {
 
       const options = page.locator('mat-option');
       await expect(options.filter({ hasText: 'Paid' })).toBeVisible();
-      await expect(options.filter({ hasText: 'Due' })).toBeVisible();
+      // Exact match — "Due" is a substring of "Overdue", which would
+      // otherwise resolve two elements and violate strict mode.
+      await expect(page.getByRole('option', { name: 'Due', exact: true })).toBeVisible();
       await expect(options.filter({ hasText: 'Partial' })).toBeVisible();
       await expect(options.filter({ hasText: 'Overdue' })).toBeVisible();
 
@@ -99,16 +101,18 @@ test.describe('Payments page', () => {
     });
 
     test('table renders column headers', async ({ page }) => {
-      const headers = page.locator('th.mat-header-cell');
+      // Angular Material's MDC-based table renders "mat-mdc-header-cell",
+      // not the pre-MDC "mat-header-cell".
+      const headers = page.locator('th.mat-mdc-header-cell');
       await expect(headers).not.toHaveCount(0);
       // At least one of the expected headers is present
       const headerTexts = await headers.allTextContents();
-      const flat = headerTexts.map(t => t.trim().toLowerCase()).join(' ');
+      const flat = headerTexts.map((t) => t.trim().toLowerCase()).join(' ');
       expect(flat).toMatch(/period|unit|status/);
     });
 
     test('pagination controls visible when data exists', async ({ page }) => {
-      const rowCount = await page.locator('tr.mat-row').count();
+      const rowCount = await page.locator('tr.mat-mdc-row').count();
       if (rowCount > 0) {
         await expect(page.locator('mat-paginator, .pagination-bar')).toBeVisible();
       }
@@ -152,13 +156,13 @@ test.describe('Payments page', () => {
 
       // Either data cards or empty state should appear — not a spinner indefinitely
       await expect(
-        page.locator('.property-node, .tree-empty, [class*="property-card"]')
+        page.locator('.empty-card, [class*="property-card"]')
       ).toBeVisible({ timeout: 15_000 });
     });
 
     test('changing month filter and reloading updates tree', async ({ page }) => {
       await page.locator('.tree-filters-row button').last().click();
-      await page.waitForSelector('.property-node, .tree-empty', { timeout: 15_000 });
+      await page.waitForSelector('.empty-card, [class*="property-card"]', { timeout: 15_000 });
 
       // Switch to a specific month
       const monthSelect = page.locator('.tree-filters-row mat-select').first();
@@ -166,7 +170,7 @@ test.describe('Payments page', () => {
       await page.locator('mat-option').filter({ hasText: 'January' }).click();
 
       await page.locator('.tree-filters-row button').last().click();
-      await page.waitForSelector('.property-node, .tree-empty', { timeout: 15_000 });
+      await page.waitForSelector('.empty-card, [class*="property-card"]', { timeout: 15_000 });
     });
   });
 

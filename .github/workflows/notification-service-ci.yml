@@ -1,0 +1,66 @@
+name: Notification Service CI
+
+on:
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - 'src/backend/notification-service/**'
+      - '.github/workflows/notification-service-ci.yml'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    # Backs the LISTEN/NOTIFY integration tests (Category=Integration), which
+    # run alongside the Sqlite-backed unit tests in the same `dotnet test`
+    # invocation below. Credentials match the Go integration-test convention
+    # (see backend-api-ci.yml) so both suites can share one service container.
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: p@ssw0rd
+          POSTGRES_DB: tenantly_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        working-directory: src/backend/notification-service
+        run: dotnet restore TenantlyNotificationService.sln
+
+      - name: Run format check
+        working-directory: src/backend/notification-service
+        run: dotnet format TenantlyNotificationService.sln --no-restore --verify-no-changes --verbosity normal
+
+      - name: Build
+        working-directory: src/backend/notification-service
+        run: dotnet build TenantlyNotificationService.sln --no-restore
+
+      - name: Check for vulnerable NuGet packages
+        working-directory: src/backend/notification-service
+        run: |
+          dotnet list TenantlyNotificationService.sln package --vulnerable --include-transitive 2>&1 | tee vuln-output.txt
+          if grep -q "has the following vulnerable packages" vuln-output.txt; then
+            echo "Vulnerable NuGet packages found."
+            exit 1
+          fi
+
+      - name: Run tests
+        working-directory: src/backend/notification-service
+        run: dotnet test TenantlyNotificationService.sln --no-build --verbosity normal

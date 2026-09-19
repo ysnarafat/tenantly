@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
@@ -74,6 +75,102 @@ func TestPaymentRepository_Create(t *testing.T) {
 			}
 		})
 	}
+}
+
+// ---------------------------------------------------------------------------
+// TestPaymentRepository_Create_StatusIsServerDerived
+// ---------------------------------------------------------------------------
+
+func TestPaymentRepository_Create_StatusIsServerDerived(t *testing.T) {
+	db, cleanup := testutil.SetupTestDB(t)
+	defer cleanup()
+
+	orgID := testutil.CreateTestOrganization(t, db)
+	propID := testutil.CreateTestProperty(t, db)
+	bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
+	unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+	tenantID := testutil.CreateTestTenant(t, db, orgID)
+
+	repo := NewPaymentRepository(db)
+
+	// A client claiming Status=Paid with AmountPaid=0 must not be trusted —
+	// status is always derived from amount_paid vs amount_due.
+	claimedPaid := models.PaymentStatusPaid
+	payment, err := repo.Create(&models.CreatePaymentRequest{
+		UnitID:         unitID,
+		TenantID:       tenantID,
+		BuildingID:     bldgID,
+		PropertyID:     propID,
+		OrganizationID: orgID,
+		Month:          6,
+		Year:           2026,
+		AmountDue:      5000.0,
+		AmountPaid:     nil,
+		Status:         &claimedPaid,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if payment.Status != models.PaymentStatusDue {
+		t.Errorf("expected server-derived status %q, got %q", models.PaymentStatusDue, payment.Status)
+	}
+}
+
+func TestPaymentRepository_Create_PaymentDateDefaultsToToday(t *testing.T) {
+	db, cleanup := testutil.SetupTestDB(t)
+	defer cleanup()
+
+	orgID := testutil.CreateTestOrganization(t, db)
+	propID := testutil.CreateTestProperty(t, db)
+	bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
+	unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+	tenantID := testutil.CreateTestTenant(t, db, orgID)
+
+	repo := NewPaymentRepository(db)
+	today := time.Now().UTC().Format("2006-01-02")
+
+	t.Run("amount_paid > 0 and no payment_date given defaults to today", func(t *testing.T) {
+		amountPaid := 5000.0
+		payment, err := repo.Create(&models.CreatePaymentRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			BuildingID:     bldgID,
+			PropertyID:     propID,
+			OrganizationID: orgID,
+			Month:          9,
+			Year:           2026,
+			AmountDue:      5000.0,
+			AmountPaid:     &amountPaid,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if payment.PaymentDate == nil {
+			t.Fatal("expected payment_date to default to today, got nil")
+		}
+		if got := payment.PaymentDate.Format("2006-01-02"); got != today {
+			t.Errorf("payment_date: got %q, want %q", got, today)
+		}
+	})
+
+	t.Run("amount_paid unset leaves payment_date nil", func(t *testing.T) {
+		payment, err := repo.Create(&models.CreatePaymentRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			BuildingID:     bldgID,
+			PropertyID:     propID,
+			OrganizationID: orgID,
+			Month:          10,
+			Year:           2026,
+			AmountDue:      5000.0,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if payment.PaymentDate != nil {
+			t.Errorf("expected nil payment_date for an unpaid Due record, got %v", payment.PaymentDate)
+		}
+	})
 }
 
 // ---------------------------------------------------------------------------
@@ -257,6 +354,168 @@ func TestPaymentRepository_Update(t *testing.T) {
 
 		if err == nil {
 			t.Errorf("expected error for non-existent payment, got nil")
+		}
+	})
+
+	t.Run("client-supplied status is ignored — always derived from amount_paid", func(t *testing.T) {
+		db, cleanup := testutil.SetupTestDB(t)
+		defer cleanup()
+
+		orgID := testutil.CreateTestOrganization(t, db)
+		propID := testutil.CreateTestProperty(t, db)
+		bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
+		unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+		tenantID := testutil.CreateTestTenant(t, db, orgID)
+
+		repo := NewPaymentRepository(db)
+		created, err := repo.Create(&models.CreatePaymentRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			BuildingID:     bldgID,
+			PropertyID:     propID,
+			OrganizationID: orgID,
+			Month:          8,
+			Year:           2026,
+			AmountDue:      6000.0,
+		})
+		if err != nil {
+			t.Fatalf("failed to create payment: %v", err)
+		}
+
+		// Claim Due while actually paying the full amount — the claimed value
+		// must be ignored and the server-derived one (Paid) must win.
+		claimedDue := models.PaymentStatusDue
+		fullAmount := 6000.0
+		updated, err := repo.Update(created.ID, &models.UpdatePaymentRequest{
+			Status:     &claimedDue,
+			AmountPaid: &fullAmount,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if updated.Status != models.PaymentStatusPaid {
+			t.Errorf("expected server-derived status %q (ignoring claimed %q), got %q",
+				models.PaymentStatusPaid, claimedDue, updated.Status)
+		}
+	})
+
+	t.Run("derives Overdue when amount_paid stays zero past due_date", func(t *testing.T) {
+		db, cleanup := testutil.SetupTestDB(t)
+		defer cleanup()
+
+		orgID := testutil.CreateTestOrganization(t, db)
+		propID := testutil.CreateTestProperty(t, db)
+		bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
+		unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+		tenantID := testutil.CreateTestTenant(t, db, orgID)
+
+		repo := NewPaymentRepository(db)
+		pastDueDate := time.Now().AddDate(0, 0, -10).Format("2006-01-02")
+		created, err := repo.Create(&models.CreatePaymentRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			BuildingID:     bldgID,
+			PropertyID:     propID,
+			OrganizationID: orgID,
+			Month:          8,
+			Year:           2026,
+			AmountDue:      6000.0,
+			DueDate:        pastDueDate,
+		})
+		if err != nil {
+			t.Fatalf("failed to create payment: %v", err)
+		}
+		if created.Status != models.PaymentStatusOverdue {
+			t.Fatalf("expected newly-created payment past its due_date to be Overdue, got %q", created.Status)
+		}
+
+		// Re-saving amount_paid=0 (e.g. correcting an unrelated field) must
+		// keep deriving Overdue, not silently reset to Due.
+		zero := 0.0
+		updated, err := repo.Update(created.ID, &models.UpdatePaymentRequest{AmountPaid: &zero})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if updated.Status != models.PaymentStatusOverdue {
+			t.Errorf("expected status to stay %q, got %q", models.PaymentStatusOverdue, updated.Status)
+		}
+	})
+
+	t.Run("amount_paid > 0 and no payment_date given defaults to today", func(t *testing.T) {
+		db, cleanup := testutil.SetupTestDB(t)
+		defer cleanup()
+
+		orgID := testutil.CreateTestOrganization(t, db)
+		propID := testutil.CreateTestProperty(t, db)
+		bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
+		unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+		tenantID := testutil.CreateTestTenant(t, db, orgID)
+
+		repo := NewPaymentRepository(db)
+		created, err := repo.Create(&models.CreatePaymentRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			BuildingID:     bldgID,
+			PropertyID:     propID,
+			OrganizationID: orgID,
+			Month:          11,
+			Year:           2026,
+			AmountDue:      5000.0,
+		})
+		if err != nil {
+			t.Fatalf("failed to create payment: %v", err)
+		}
+
+		amountPaid := 5000.0
+		updated, err := repo.Update(created.ID, &models.UpdatePaymentRequest{AmountPaid: &amountPaid})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if updated.PaymentDate == nil {
+			t.Fatal("expected payment_date to default to today, got nil")
+		}
+		today := time.Now().UTC().Format("2006-01-02")
+		if got := updated.PaymentDate.Format("2006-01-02"); got != today {
+			t.Errorf("payment_date: got %q, want %q", got, today)
+		}
+	})
+
+	t.Run("explicit payment_date is honored over the today default", func(t *testing.T) {
+		db, cleanup := testutil.SetupTestDB(t)
+		defer cleanup()
+
+		orgID := testutil.CreateTestOrganization(t, db)
+		propID := testutil.CreateTestProperty(t, db)
+		bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
+		unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+		tenantID := testutil.CreateTestTenant(t, db, orgID)
+
+		repo := NewPaymentRepository(db)
+		created, err := repo.Create(&models.CreatePaymentRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			BuildingID:     bldgID,
+			PropertyID:     propID,
+			OrganizationID: orgID,
+			Month:          12,
+			Year:           2026,
+			AmountDue:      5000.0,
+		})
+		if err != nil {
+			t.Fatalf("failed to create payment: %v", err)
+		}
+
+		amountPaid := 5000.0
+		backdated := "2026-01-15"
+		updated, err := repo.Update(created.ID, &models.UpdatePaymentRequest{
+			AmountPaid:  &amountPaid,
+			PaymentDate: &backdated,
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if updated.PaymentDate == nil || updated.PaymentDate.Format("2006-01-02") != backdated {
+			t.Errorf("payment_date: got %v, want %q (explicit date must win over today default)", updated.PaymentDate, backdated)
 		}
 	})
 }
@@ -1031,6 +1290,309 @@ func TestPaymentRepository_GetPaymentAnalyticsByPeriod(t *testing.T) {
 			t.Errorf("expected empty DailyTrend for empty org, got %v", result.DailyTrend)
 		}
 	})
+}
+
+// ---------------------------------------------------------------------------
+// TestPaymentRepository_GetActiveLeasesForPeriod
+// ---------------------------------------------------------------------------
+
+func TestPaymentRepository_GetActiveLeasesForPeriod(t *testing.T) {
+	t.Run("ChargesTotal sums only active lease charges", func(t *testing.T) {
+		db, cleanup := testutil.SetupTestDB(t)
+		defer cleanup()
+
+		orgID := testutil.CreateTestOrganization(t, db)
+		propID := testutil.CreateTestProperty(t, db)
+		bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
+		unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+		tenantID := testutil.CreateTestTenant(t, db, orgID)
+
+		leaseRepo := NewLeaseRepository(db)
+		chargeRepo := NewLeaseChargeRepository(db)
+
+		lease, err := leaseRepo.Create(&models.CreateLeaseRequest{
+			UnitID:          unitID,
+			TenantID:        tenantID,
+			LeaseType:       models.LeaseTypeResidential,
+			StartDate:       "2026-01-01",
+			DurationMonths:  12,
+			MonthlyRent:     5000,
+			SecurityDeposit: 10000,
+			OrganizationID:  orgID,
+		})
+		if err != nil {
+			t.Fatalf("failed to create lease: %v", err)
+		}
+
+		if _, err := chargeRepo.Create(lease.ID, &models.CreateLeaseChargeRequest{
+			ChargeType: models.ChargeTypeUtility,
+			Label:      "Electricity",
+			Amount:     500,
+		}); err != nil {
+			t.Fatalf("failed to add active charge: %v", err)
+		}
+		discontinued, err := chargeRepo.Create(lease.ID, &models.CreateLeaseChargeRequest{
+			ChargeType: models.ChargeTypeParking,
+			Label:      "Parking (discontinued)",
+			Amount:     300,
+		})
+		if err != nil {
+			t.Fatalf("failed to add charge to deactivate: %v", err)
+		}
+		inactive := false
+		if _, err := chargeRepo.Update(discontinued.ID, &models.UpdateLeaseChargeRequest{Active: &inactive}); err != nil {
+			t.Fatalf("failed to deactivate charge: %v", err)
+		}
+
+		repo := NewPaymentRepository(db)
+		results, err := repo.GetActiveLeasesForPeriod(orgID, 6, 2026, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		var found *models.LeaseSearchResult
+		for _, r := range results {
+			if r.LeaseID == lease.ID {
+				found = r
+			}
+		}
+		if found == nil {
+			t.Fatalf("expected lease %d to be among active leases for the period", lease.ID)
+		}
+		// Only the active $500 charge should count — the deactivated $300
+		// parking charge must be excluded from the total billed to the tenant.
+		if found.ChargesTotal != 500.0 {
+			t.Errorf("ChargesTotal: got %.2f, want 500.00", found.ChargesTotal)
+		}
+	})
+
+	t.Run("ChargesTotal is zero for a lease with no charges", func(t *testing.T) {
+		db, cleanup := testutil.SetupTestDB(t)
+		defer cleanup()
+
+		orgID := testutil.CreateTestOrganization(t, db)
+		propID := testutil.CreateTestProperty(t, db)
+		bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
+		unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+		tenantID := testutil.CreateTestTenant(t, db, orgID)
+
+		leaseRepo := NewLeaseRepository(db)
+		lease, err := leaseRepo.Create(&models.CreateLeaseRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			LeaseType:      models.LeaseTypeResidential,
+			StartDate:      "2026-01-01",
+			DurationMonths: 12,
+			MonthlyRent:    5000,
+			OrganizationID: orgID,
+		})
+		if err != nil {
+			t.Fatalf("failed to create lease: %v", err)
+		}
+
+		repo := NewPaymentRepository(db)
+		results, err := repo.GetActiveLeasesForPeriod(orgID, 6, 2026, nil)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		var found *models.LeaseSearchResult
+		for _, r := range results {
+			if r.LeaseID == lease.ID {
+				found = r
+			}
+		}
+		if found == nil {
+			t.Fatalf("expected lease %d to be among active leases for the period", lease.ID)
+		}
+		if found.ChargesTotal != 0.0 {
+			t.Errorf("ChargesTotal: got %.2f, want 0.00", found.ChargesTotal)
+		}
+	})
+}
+
+// ---------------------------------------------------------------------------
+// TestPaymentRepository_SearchLeases
+//
+// SearchLeases backs the lease-picker used by the manual "add payment"
+// dialog (and the property-menu quick-add flow) — it must not surface a
+// lease that is past its end_date, even if active hasn't been flipped to
+// false yet, so a user can't pick an expired lease to bill against.
+// ---------------------------------------------------------------------------
+
+func TestPaymentRepository_SearchLeases(t *testing.T) {
+	db, cleanup := testutil.SetupTestDB(t)
+	defer cleanup()
+
+	orgID := testutil.CreateTestOrganization(t, db)
+	propID := testutil.CreateTestProperty(t, db)
+	bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
+	leaseRepo := NewLeaseRepository(db)
+	repo := NewPaymentRepository(db)
+
+	t.Run("active lease far from expiry is returned", func(t *testing.T) {
+		unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+		tenantID := testutil.CreateTestTenant(t, db, orgID)
+		endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
+		lease, err := leaseRepo.Create(&models.CreateLeaseRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			LeaseType:      models.LeaseTypeResidential,
+			StartDate:      time.Now().AddDate(-1, 0, 0).Format("2006-01-02"),
+			EndDate:        &endDate,
+			DurationMonths: 12,
+			MonthlyRent:    5000,
+			OrganizationID: orgID,
+		})
+		if err != nil {
+			t.Fatalf("failed to create lease: %v", err)
+		}
+
+		results, err := repo.SearchLeases(orgID, strconv.Itoa(lease.ID))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !leaseSearchContains(results, lease.ID) {
+			t.Errorf("expected lease %d (active, far from expiry) to be returned", lease.ID)
+		}
+	})
+
+	t.Run("active lease whose end_date has already passed is excluded", func(t *testing.T) {
+		unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+		tenantID := testutil.CreateTestTenant(t, db, orgID)
+		endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
+		lease, err := leaseRepo.Create(&models.CreateLeaseRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			LeaseType:      models.LeaseTypeResidential,
+			StartDate:      time.Now().AddDate(-1, 0, 0).Format("2006-01-02"),
+			EndDate:        &endDate,
+			DurationMonths: 12,
+			MonthlyRent:    5000,
+			OrganizationID: orgID,
+		})
+		if err != nil {
+			t.Fatalf("failed to create lease: %v", err)
+		}
+		if _, err := db.Exec(`UPDATE leases SET end_date = $1 WHERE id = $2`, time.Now().AddDate(0, 0, -1), lease.ID); err != nil {
+			t.Fatalf("failed to force end_date into the past: %v", err)
+		}
+
+		results, err := repo.SearchLeases(orgID, strconv.Itoa(lease.ID))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if leaseSearchContains(results, lease.ID) {
+			t.Errorf("expected expired lease %d to be excluded from search results", lease.ID)
+		}
+	})
+
+	t.Run("terminated (active=false) lease is excluded", func(t *testing.T) {
+		unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+		tenantID := testutil.CreateTestTenant(t, db, orgID)
+		endDate := time.Now().AddDate(1, 0, 0).Format("2006-01-02")
+		lease, err := leaseRepo.Create(&models.CreateLeaseRequest{
+			UnitID:         unitID,
+			TenantID:       tenantID,
+			LeaseType:      models.LeaseTypeResidential,
+			StartDate:      time.Now().AddDate(-1, 0, 0).Format("2006-01-02"),
+			EndDate:        &endDate,
+			DurationMonths: 12,
+			MonthlyRent:    5000,
+			OrganizationID: orgID,
+		})
+		if err != nil {
+			t.Fatalf("failed to create lease: %v", err)
+		}
+		if err := leaseRepo.SoftDelete(lease.ID, time.Now(), models.LeaseEndReasonTerminated); err != nil {
+			t.Fatalf("failed to terminate lease: %v", err)
+		}
+
+		results, err := repo.SearchLeases(orgID, strconv.Itoa(lease.ID))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if leaseSearchContains(results, lease.ID) {
+			t.Errorf("expected terminated lease %d to be excluded from search results", lease.ID)
+		}
+	})
+}
+
+func leaseSearchContains(results []*models.LeaseSearchResult, leaseID int) bool {
+	for _, r := range results {
+		if r.LeaseID == leaseID {
+			return true
+		}
+	}
+	return false
+}
+
+// ---------------------------------------------------------------------------
+// TestPaymentRepository_Update_ClearsFieldsToNull
+// ---------------------------------------------------------------------------
+
+func TestPaymentRepository_Update_ClearsFieldsToNull(t *testing.T) {
+	// PaymentService.refreshPaymentFromTransactions passes an empty string
+	// (rather than nil) for payment_method/payment_date/receipt_number when
+	// a payment's last remaining transaction is deleted, to explicitly clear
+	// them instead of leaving stale values from the deleted transaction.
+	// payment_date is a real DATE column, so binding "" as its value would
+	// error at the driver level unless Update special-cases it — this test
+	// exists specifically to catch a regression there.
+	db, cleanup := testutil.SetupTestDB(t)
+	defer cleanup()
+
+	orgID := testutil.CreateTestOrganization(t, db)
+	propID := testutil.CreateTestProperty(t, db)
+	bldgID := testutil.CreateTestBuilding(t, db, propID, orgID)
+	unitID := testutil.CreateTestUnit(t, db, bldgID, orgID)
+	tenantID := testutil.CreateTestTenant(t, db, orgID)
+
+	repo := NewPaymentRepository(db)
+	amountPaid := 5000.0
+	created, err := repo.Create(&models.CreatePaymentRequest{
+		UnitID:         unitID,
+		TenantID:       tenantID,
+		BuildingID:     bldgID,
+		PropertyID:     propID,
+		OrganizationID: orgID,
+		Month:          9,
+		Year:           2026,
+		AmountDue:      5000.0,
+		AmountPaid:     &amountPaid,
+		PaymentMethod:  ptrString("Cash"),
+		ReceiptNumber:  ptrString("RCP-CLEAR-TEST-1"),
+	})
+	if err != nil {
+		t.Fatalf("failed to create payment: %v", err)
+	}
+	if created.PaymentDate == nil || created.PaymentMethod == "" || created.ReceiptNumber == "" {
+		t.Fatalf("expected payment to start with method/date/receipt populated, got %+v", created)
+	}
+
+	empty := ""
+	zero := 0.0
+	updated, err := repo.Update(created.ID, &models.UpdatePaymentRequest{
+		AmountPaid:    &zero,
+		PaymentMethod: &empty,
+		PaymentDate:   &empty,
+		ReceiptNumber: &empty,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error clearing fields: %v", err)
+	}
+	if updated.PaymentDate != nil {
+		t.Errorf("expected payment_date to be cleared to nil, got %v", updated.PaymentDate)
+	}
+	if updated.PaymentMethod != "" {
+		t.Errorf("expected payment_method to be cleared, got %q", updated.PaymentMethod)
+	}
+	if updated.ReceiptNumber != "" {
+		t.Errorf("expected receipt_number to be cleared, got %q", updated.ReceiptNumber)
+	}
+	if updated.Status != models.PaymentStatusDue {
+		t.Errorf("expected status to revert to Due, got %q", updated.Status)
+	}
 }
 
 // ---------------------------------------------------------------------------

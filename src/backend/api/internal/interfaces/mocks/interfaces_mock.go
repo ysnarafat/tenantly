@@ -36,6 +36,14 @@ func (m *TenantRepositoryInterface) GetByID(id int) (*models.Tenant, error) {
 	return args.Get(0).(*models.Tenant), args.Error(1)
 }
 
+func (m *TenantRepositoryInterface) GetByIDIncludingInactive(id int) (*models.Tenant, error) {
+	args := m.Called(id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.Tenant), args.Error(1)
+}
+
 func (m *TenantRepositoryInterface) GetDecryptedNID(id int) (string, int, error) {
 	args := m.Called(id)
 	return args.String(0), args.Int(1), args.Error(2)

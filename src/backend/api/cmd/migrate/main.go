@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -12,6 +13,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/ysnarafat/tenantly/internal/config"
 	"github.com/ysnarafat/tenantly/internal/database"
+	"github.com/ysnarafat/tenantly/internal/seed"
 )
 
 func main() {
@@ -27,7 +29,7 @@ func main() {
 	}
 
 	if len(os.Args) < 2 {
-		log.Fatal("Usage: go run cmd/migrate/main.go [up|down|force|version] [version_number]")
+		log.Fatal("Usage: go run cmd/migrate/main.go [up|down|force|version|seed] [args]")
 	}
 
 	command := os.Args[1]
@@ -38,6 +40,24 @@ func main() {
 		log.Fatal("Failed to connect to database:", err)
 	}
 	defer func() { _ = db.Close() }()
+
+	// seed subcommand runs before the migrate driver is needed
+	if command == "seed" {
+		if cfg.Environment == "production" {
+			log.Fatal("Seed is not allowed in production. Set ENVIRONMENT to something other than 'production' to run seeds.")
+		}
+		env := "dev"
+		if len(os.Args) >= 3 {
+			env = os.Args[2]
+		}
+		seedDir := filepath.Join("seeds", env)
+		runner := seed.New(db, cfg.NIDProtector)
+		if err := runner.Run(seedDir); err != nil {
+			log.Fatalf("Seed failed: %v", err)
+		}
+		fmt.Printf("Seed complete (env=%s)\n", env)
+		return
+	}
 
 	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
 	if err != nil {
@@ -85,6 +105,6 @@ func main() {
 		fmt.Printf("Current version: %d, Dirty: %t\n", version, dirty)
 
 	default:
-		log.Fatal("Unknown command. Use: up, down, force, or version")
+		log.Fatal("Unknown command. Use: up, down, force, version, or seed [env]")
 	}
 }

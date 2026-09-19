@@ -10,10 +10,11 @@ import (
 
 // LeaseService implements the LeaseServiceInterface
 type LeaseService struct {
-	leaseRepo    interfaces.LeaseRepositoryInterface
-	tenantRepo   interfaces.TenantRepositoryInterface
-	unitRepo     interfaces.UnitRepositoryInterface
-	auditService interfaces.AuditServiceInterface
+	leaseRepo       interfaces.LeaseRepositoryInterface
+	tenantRepo      interfaces.TenantRepositoryInterface
+	unitRepo        interfaces.UnitRepositoryInterface
+	leaseChargeRepo interfaces.LeaseChargeRepositoryInterface
+	auditService    interfaces.AuditServiceInterface
 }
 
 // NewLeaseService creates a new lease service
@@ -21,13 +22,15 @@ func NewLeaseService(
 	leaseRepo interfaces.LeaseRepositoryInterface,
 	tenantRepo interfaces.TenantRepositoryInterface,
 	unitRepo interfaces.UnitRepositoryInterface,
+	leaseChargeRepo interfaces.LeaseChargeRepositoryInterface,
 	auditService interfaces.AuditServiceInterface,
 ) *LeaseService {
 	return &LeaseService{
-		leaseRepo:    leaseRepo,
-		tenantRepo:   tenantRepo,
-		unitRepo:     unitRepo,
-		auditService: auditService,
+		leaseRepo:       leaseRepo,
+		tenantRepo:      tenantRepo,
+		unitRepo:        unitRepo,
+		leaseChargeRepo: leaseChargeRepo,
+		auditService:    auditService,
 	}
 }
 
@@ -80,7 +83,7 @@ func (s *LeaseService) CreateLease(req *models.CreateLeaseRequest, userID int) (
 	return leaseDetails, nil
 }
 
-// GetLeaseByID retrieves a lease by ID
+// GetLeaseByID retrieves a lease by ID, including its recurring charges
 func (s *LeaseService) GetLeaseByID(id int, orgID int) (*models.LeaseWithDetails, error) {
 	lease, err := s.leaseRepo.GetByIDWithDetails(id)
 	if err != nil {
@@ -92,7 +95,94 @@ func (s *LeaseService) GetLeaseByID(id int, orgID int) (*models.LeaseWithDetails
 		return nil, fmt.Errorf("lease not found")
 	}
 
+	charges, err := s.leaseChargeRepo.GetByLeaseID(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get lease charges: %w", err)
+	}
+	lease.Charges = charges
+
 	return lease, nil
+}
+
+// AddLeaseCharge adds a recurring charge (utility, service charge, etc.) to a lease
+func (s *LeaseService) AddLeaseCharge(leaseID int, req *models.CreateLeaseChargeRequest, userID, orgID int) (*models.LeaseCharge, error) {
+	lease, err := s.leaseRepo.GetByID(leaseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get lease: %w", err)
+	}
+	if lease.OrganizationID != orgID {
+		return nil, fmt.Errorf("lease not found")
+	}
+
+	charge, err := s.leaseChargeRepo.Create(leaseID, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to add lease charge: %w", err)
+	}
+
+	if s.auditService != nil {
+		_ = s.auditService.LogUserAction(userID, "create", "lease_charges", &charge.ID, nil, charge)
+	}
+
+	return charge, nil
+}
+
+// UpdateLeaseCharge applies a partial update to one of a lease's recurring charges
+func (s *LeaseService) UpdateLeaseCharge(leaseID, chargeID int, req *models.UpdateLeaseChargeRequest, userID, orgID int) (*models.LeaseCharge, error) {
+	lease, err := s.leaseRepo.GetByID(leaseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get lease: %w", err)
+	}
+	if lease.OrganizationID != orgID {
+		return nil, fmt.Errorf("lease not found")
+	}
+
+	existing, err := s.leaseChargeRepo.GetByID(chargeID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get lease charge: %w", err)
+	}
+	if existing.LeaseID != leaseID {
+		return nil, fmt.Errorf("lease charge not found")
+	}
+
+	updated, err := s.leaseChargeRepo.Update(chargeID, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update lease charge: %w", err)
+	}
+
+	if s.auditService != nil {
+		_ = s.auditService.LogUserAction(userID, "update", "lease_charges", &chargeID, existing, updated)
+	}
+
+	return updated, nil
+}
+
+// RemoveLeaseCharge deletes one of a lease's recurring charges
+func (s *LeaseService) RemoveLeaseCharge(leaseID, chargeID int, userID, orgID int) error {
+	lease, err := s.leaseRepo.GetByID(leaseID)
+	if err != nil {
+		return fmt.Errorf("failed to get lease: %w", err)
+	}
+	if lease.OrganizationID != orgID {
+		return fmt.Errorf("lease not found")
+	}
+
+	existing, err := s.leaseChargeRepo.GetByID(chargeID)
+	if err != nil {
+		return fmt.Errorf("failed to get lease charge: %w", err)
+	}
+	if existing.LeaseID != leaseID {
+		return fmt.Errorf("lease charge not found")
+	}
+
+	if err := s.leaseChargeRepo.Delete(chargeID); err != nil {
+		return fmt.Errorf("failed to remove lease charge: %w", err)
+	}
+
+	if s.auditService != nil {
+		_ = s.auditService.LogUserAction(userID, "delete", "lease_charges", &chargeID, existing, nil)
+	}
+
+	return nil
 }
 
 // GetAllLeases retrieves all leases with pagination
@@ -136,6 +226,46 @@ func (s *LeaseService) UpdateLease(id int, req *models.UpdateLeaseRequest, userI
 
 	// Store old values for audit
 	oldLease := *existingLease
+
+	if req.EndDate != nil {
+		effectiveStart := existingLease.StartDate
+		if req.StartDate != nil {
+			parsed, err := time.Parse("2006-01-02", *req.StartDate)
+			if err != nil {
+				return nil, fmt.Errorf("invalid start_date format (expected YYYY-MM-DD): %w", err)
+			}
+			effectiveStart = parsed
+		}
+		endDate, err := time.Parse("2006-01-02", *req.EndDate)
+		if err != nil {
+			return nil, fmt.Errorf("invalid end_date format (expected YYYY-MM-DD): %w", err)
+		}
+		if !endDate.After(effectiveStart) {
+			return nil, fmt.Errorf("end date must be after start date")
+		}
+
+		// duration_months isn't billing-relevant (nothing derives payment
+		// periods from it) — it's purely a display/renewal-default value, so
+		// deriving it here keeps it roughly in sync with the real date range
+		// without forcing that range onto a whole-month boundary the way
+		// setting duration_months directly would. Calendar-month arithmetic
+		// (not a fixed day-length average) matters here: a submit that
+		// round-trips the lease's existing start/end unchanged — e.g. saving
+		// an edit to some other field — must reproduce the exact existing
+		// duration_months, not silently drift it down by one from averaging
+		// error (a 30.44-day average undercounts an exact 6-month span by a
+		// full month).
+		if req.DurationMonths == nil {
+			months := (endDate.Year()-effectiveStart.Year())*12 + int(endDate.Month()) - int(effectiveStart.Month())
+			if endDate.Day() < effectiveStart.Day() {
+				months--
+			}
+			if months < 1 {
+				months = 1
+			}
+			req.DurationMonths = &months
+		}
+	}
 
 	// Update lease
 	updatedLease, err := s.leaseRepo.Update(id, req)
@@ -225,8 +355,9 @@ func (s *LeaseService) TerminateLease(id int, userID, orgID int, terminationDate
 		return fmt.Errorf("termination date cannot be before lease start date")
 	}
 
-	// Soft delete lease
-	if err := s.leaseRepo.SoftDelete(id); err != nil {
+	// Soft delete lease — actually persists the move-out date and reason so
+	// the lease record accurately reflects when the tenancy really ended.
+	if err := s.leaseRepo.SoftDelete(id, *terminationDate, models.LeaseEndReasonTerminated); err != nil {
 		return fmt.Errorf("failed to terminate lease: %w", err)
 	}
 
@@ -236,10 +367,45 @@ func (s *LeaseService) TerminateLease(id int, userID, orgID int, terminationDate
 		newLease := *existingLease
 		newLease.Active = false
 		newLease.EndDate = *terminationDate
+		reason := models.LeaseEndReasonTerminated
+		newLease.EndReason = &reason
 		_ = s.auditService.LogUserAction(userID, "terminate", "leases", &id, oldLease, newLease)
 	}
 
 	return nil
+}
+
+// RenewLease starts a new lease term for the same unit/tenant, closing out
+// the current one instead of mutating it — so historical rent/duration/dates
+// stay accurate for audit purposes even after a renewal.
+func (s *LeaseService) RenewLease(id int, req *models.RenewLeaseRequest, userID, orgID int) (*models.LeaseWithDetails, error) {
+	existingLease, err := s.leaseRepo.GetByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get lease: %w", err)
+	}
+	if existingLease.OrganizationID != orgID {
+		return nil, fmt.Errorf("lease not found")
+	}
+	if !existingLease.Active {
+		return nil, fmt.Errorf("only an active lease can be renewed")
+	}
+
+	newLease, err := s.leaseRepo.RenewLease(id, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to renew lease: %w", err)
+	}
+
+	leaseDetails, err := s.leaseRepo.GetByIDWithDetails(newLease.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get renewed lease details: %w", err)
+	}
+
+	// Log audit
+	if s.auditService != nil {
+		_ = s.auditService.LogUserAction(userID, "renew", "leases", &newLease.ID, existingLease, leaseDetails)
+	}
+
+	return leaseDetails, nil
 }
 
 // GetLeasesByUnit retrieves leases for a specific unit

@@ -1,6 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { Store } from '@ngrx/store';
@@ -12,25 +11,20 @@ describe('Login Component', () => {
   let component: Login;
   let fixture: ComponentFixture<Login>;
   let authService: AuthService;
-  let router: jasmine.SpyObj<Router>;
   let snackBar: jasmine.SpyObj<MatSnackBar>;
 
   let loadingSubject: BehaviorSubject<boolean>;
   let errorSubject: BehaviorSubject<string | null>;
-  let isAuthenticatedSubject: BehaviorSubject<boolean>;
 
   beforeEach(async () => {
     loadingSubject = new BehaviorSubject<boolean>(false);
     errorSubject = new BehaviorSubject<string | null>(null);
-    isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
 
     const authServiceSpy = jasmine.createSpyObj('AuthService', ['login', 'clearError']);
     authServiceSpy.loading$ = loadingSubject.asObservable();
     authServiceSpy.error$ = errorSubject.asObservable();
-    authServiceSpy.isAuthenticated$ = isAuthenticatedSubject.asObservable();
 
     const storeSpy = jasmine.createSpyObj('Store', ['select', 'dispatch']);
-    const routerSpy = jasmine.createSpyObj('Router', ['navigate']);
     const snackBarSpy = jasmine.createSpyObj('MatSnackBar', ['open']);
 
     await TestBed.configureTestingModule({
@@ -38,7 +32,6 @@ describe('Login Component', () => {
       providers: [
         { provide: AuthService, useValue: authServiceSpy },
         { provide: Store, useValue: storeSpy },
-        { provide: Router, useValue: routerSpy },
         { provide: MatSnackBar, useValue: snackBarSpy },
       ],
     }).compileComponents();
@@ -46,7 +39,6 @@ describe('Login Component', () => {
     fixture = TestBed.createComponent(Login);
     component = fixture.componentInstance;
     authService = TestBed.inject(AuthService);
-    router = TestBed.inject(Router) as jasmine.SpyObj<Router>;
     snackBar = TestBed.inject(MatSnackBar) as jasmine.SpyObj<MatSnackBar>;
 
     fixture.detectChanges();
@@ -90,13 +82,6 @@ describe('Login Component', () => {
     expect(authService.login).not.toHaveBeenCalled();
   });
 
-  it('should navigate to dashboard and show success message on successful authentication', () => {
-    isAuthenticatedSubject.next(true);
-
-    expect(snackBar.open).toHaveBeenCalledWith('Login successful!', 'Close', { duration: 3000 });
-    expect(router.navigate).toHaveBeenCalledWith(['/dashboard']);
-  });
-
   it('should show error message when authentication fails', () => {
     const errorSubject = new Subject<unknown>();
     authService.error$ = errorSubject.asObservable();
@@ -106,7 +91,11 @@ describe('Login Component', () => {
     const error = { message: 'Invalid credentials' };
     errorSubject.next(error);
 
-    expect(snackBar.open).toHaveBeenCalledWith('Invalid credentials', 'Close', { duration: 5000 });
+    expect(snackBar.open).toHaveBeenCalledWith(
+      'Invalid credentials',
+      'Close',
+      jasmine.objectContaining({ duration: 5000 })
+    );
   });
 
   it('should show default error message when error has no specific message', () => {
@@ -121,7 +110,7 @@ describe('Login Component', () => {
     expect(snackBar.open).toHaveBeenCalledWith(
       'Login failed. Please check your credentials.',
       'Close',
-      { duration: 5000 }
+      jasmine.objectContaining({ duration: 5000 })
     );
   });
 

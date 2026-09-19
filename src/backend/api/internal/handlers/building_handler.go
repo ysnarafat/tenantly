@@ -41,7 +41,10 @@ func (h *BuildingHandler) CreateBuilding(c *gin.Context) {
 		case err.Error() == fmt.Sprintf("building code '%s' already exists in this property", req.BuildingCode):
 			respondError(c, http.StatusConflict, "BUILDING_CODE_EXISTS", "Building code already exists in this property", err)
 			return
-		case err.Error() == "metadata validation failed":
+		// Substring, not equality: the service wraps the validator's reason
+		// into the message ("metadata validation failed: <reason>"), so an
+		// equality check turned every invalid payload into a 500.
+		case strings.Contains(err.Error(), "metadata validation failed"):
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid metadata for building type"})
 			return
 		default:
@@ -201,7 +204,8 @@ func (h *BuildingHandler) UpdateBuilding(c *gin.Context) {
 			err.Error() == "building not found":
 			c.JSON(http.StatusNotFound, gin.H{"error": "Building not found"})
 			return
-		case err.Error() == "metadata validation failed":
+		// See CreateBuilding: the reason is wrapped into the message.
+		case strings.Contains(err.Error(), "metadata validation failed"):
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid metadata for building type"})
 			return
 		default:
@@ -340,9 +344,12 @@ func (h *BuildingHandler) BulkCreateBuildings(c *gin.Context) {
 
 	buildings, err := h.buildingService.BulkCreateBuildings(&req)
 	if err != nil {
-		// Handle specific error types
+		// Handle specific error types. Matched by substring because the service
+		// interpolates the offending code into the message ("duplicate building
+		// code 'X' in request"), which an equality check never matched — every
+		// duplicate came back as a 500 instead of a 400.
 		switch {
-		case err.Error() == "duplicate building code in request":
+		case strings.Contains(err.Error(), "duplicate building code"):
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Duplicate building codes in request"})
 			return
 		default:
@@ -617,7 +624,7 @@ func (h *BuildingHandler) UpdateBuildingStatus(c *gin.Context) {
 	}
 
 	action := "activated"
-	if !req.ActiveStatus {
+	if !*req.ActiveStatus {
 		action = "deactivated"
 	}
 

@@ -27,83 +27,48 @@
     }
   }
 
-  .table-container {
-    .attachment-table {
-      width: 100%;
+  .file-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 
-      .file-info {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-
-        .file-icon {
-          color: var(--text-muted);
-        }
-
-        .file-details {
-          .file-name {
-            font-weight: 500;
-            margin-bottom: 4px;
-          }
-
-          .content-type {
-            font-size: 0.875rem;
-            color: var(--text-muted);
-          }
-        }
-      }
-
-      .description {
-        margin-bottom: 8px;
-        max-width: 300px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .tags {
-        mat-chip-listbox {
-          mat-chip {
-            font-size: 0.75rem;
-            height: 24px;
-            margin: 2px;
-          }
-        }
-      }
-
-      .delete-action {
-        color: #f44336 !important;
-      }
+    .file-icon {
+      color: var(--text-muted);
     }
 
-    .loading-container {
-      text-align: center;
-      padding: 48px;
-      color: #666;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 48px;
-      color: #666;
-
-      mat-icon {
-        font-size: 48px;
-        width: 48px;
-        height: 48px;
-        margin-bottom: 16px;
-        color: var(--border-color);
+    .file-details {
+      .file-name {
+        font-weight: 500;
+        margin-bottom: 4px;
       }
 
-      h3 {
-        margin: 16px 0 8px 0;
-        color: var(--text-primary);
-      }
-
-      p {
-        margin-bottom: 24px;
+      .content-type {
+        font-size: 0.875rem;
+        color: var(--text-muted);
       }
     }
+  }
+
+  .description {
+    margin-bottom: 8px;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tags {
+    mat-chip-listbox {
+      mat-chip {
+        font-size: 0.75rem;
+        height: 24px;
+        margin: 2px;
+      }
+    }
+  }
+
+  .delete-action {
+    color: #f44336 !important;
   }
 }
 
@@ -129,14 +94,8 @@
       }
     }
 
-    .table-container {
-      overflow-x: auto;
-
-      .attachment-table {
-        .description {
-          max-width: 200px;
-        }
-      }
+    .description {
+      max-width: 200px;
     }
   }
 }

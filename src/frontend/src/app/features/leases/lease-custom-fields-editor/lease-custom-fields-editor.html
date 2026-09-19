@@ -1,0 +1,43 @@
+<div class="fields-editor">
+  @if (entries.length) {
+  <div class="fields-list">
+    @for (entry of entries; track entry[0]) {
+    <div class="field-row">
+      <span class="field-key">{{ entry[0] }}</span>
+      <input
+        class="field-value-input"
+        [ngModel]="entry[1]"
+        (ngModelChange)="updateValue(entry[0], $event)"
+        placeholder="Value"
+      />
+      <button mat-icon-button type="button" matTooltip="Remove" (click)="remove(entry[0])">
+        <mat-icon>delete</mat-icon>
+      </button>
+    </div>
+    }
+  </div>
+  } @else {
+  <p class="no-fields">No custom fields yet.</p>
+  }
+
+  <div class="add-field-row">
+    <mat-form-field appearance="outline" class="key-field">
+      <mat-label>Field name</mat-label>
+      <input matInput [(ngModel)]="newKey" placeholder="e.g. Parking Slot" />
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="value-field">
+      <mat-label>Value</mat-label>
+      <input matInput [(ngModel)]="newValue" placeholder="e.g. B-12" (keydown.enter)="add()" />
+    </mat-form-field>
+    <button
+      mat-stroked-button
+      type="button"
+      color="primary"
+      [disabled]="!newKey.trim() || !newValue.trim()"
+      (click)="add()"
+    >
+      <mat-icon>add</mat-icon>
+      Add
+    </button>
+  </div>
+</div>

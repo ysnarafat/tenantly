@@ -33,6 +33,7 @@ type mockPaymentService struct {
 	canAccessPaymentFn       func(userID int, userRole string, payment *models.PaymentWithDetails, userOrgID int) bool
 	logAccessFn              func(userID int, action string, paymentID int, allowed bool)
 	searchLeasesFn           func(orgID int, query string) (*models.LeaseSearchResponse, error)
+	generateReceiptPDFFn     func(paymentID, orgID int) ([]byte, error)
 }
 
 func (m *mockPaymentService) CreatePayment(req *models.CreatePaymentRequest, userID int) (*models.Payment, error) {
@@ -58,6 +59,34 @@ func (m *mockPaymentService) UpdatePayment(id int, req *models.UpdatePaymentRequ
 		return nil, errors.New("update payment not mocked")
 	}
 	return m.updatePaymentFn(id, req, userID, orgID)
+}
+
+func (m *mockPaymentService) RecordPaymentTransaction(paymentID int, req *models.CreatePaymentTransactionRequest, userID, orgID int) (*models.Payment, error) {
+	return nil, errors.New("record payment transaction not mocked")
+}
+
+func (m *mockPaymentService) GetPaymentTransactions(paymentID, orgID int) ([]*models.PaymentTransaction, error) {
+	return nil, errors.New("get payment transactions not mocked")
+}
+
+func (m *mockPaymentService) DeletePaymentTransaction(paymentID, transactionID, userID, orgID int) (*models.Payment, error) {
+	return nil, errors.New("delete payment transaction not mocked")
+}
+
+func (m *mockPaymentService) UploadPaymentTransactionAttachment(paymentID, transactionID int, fileName string, data []byte, userID, orgID int) (*models.PaymentTransactionAttachment, error) {
+	return nil, errors.New("upload payment transaction attachment not mocked")
+}
+
+func (m *mockPaymentService) GetPaymentTransactionAttachments(paymentID, transactionID, orgID int) ([]*models.PaymentTransactionAttachment, error) {
+	return nil, errors.New("get payment transaction attachments not mocked")
+}
+
+func (m *mockPaymentService) GetPaymentTransactionAttachmentFile(paymentID, transactionID, attachmentID, orgID int) ([]byte, string, string, error) {
+	return nil, "", "", errors.New("get payment transaction attachment file not mocked")
+}
+
+func (m *mockPaymentService) DeletePaymentTransactionAttachment(paymentID, transactionID, attachmentID, userID, orgID int) error {
+	return errors.New("delete payment transaction attachment not mocked")
 }
 
 func (m *mockPaymentService) GetPayments(page, pageSize int, filters map[string]interface{}) ([]*models.PaymentWithDetails, int, error) {
@@ -138,6 +167,17 @@ func (m *mockPaymentService) SearchLeases(orgID int, query string) (*models.Leas
 
 func (m *mockPaymentService) GenerateMonthlyPayments(req *models.GenerateMonthlyPaymentsRequest, orgID, userID int) (*models.GenerateMonthlyPaymentsResult, error) {
 	return &models.GenerateMonthlyPaymentsResult{}, nil
+}
+
+func (m *mockPaymentService) GenerateReceiptPDF(paymentID, orgID int) ([]byte, error) {
+	if m.generateReceiptPDFFn == nil {
+		return []byte("%PDF-fake"), nil
+	}
+	return m.generateReceiptPDFFn(paymentID, orgID)
+}
+
+func (m *mockPaymentService) DownloadReceiptByToken(token string) ([]byte, string, error) {
+	return nil, "", errors.New("download receipt by token not mocked")
 }
 
 // Ensure the mock satisfies the interface at compile time.
@@ -312,6 +352,28 @@ func TestPaymentHandler_CreatePayment(t *testing.T) {
 		router.ServeHTTP(w, req)
 
 		checkStatus(t, w.Code, http.StatusBadRequest)
+	})
+
+	t.Run("no payable lease returns 409 with PAYMENT_LEASE_NOT_PAYABLE", func(t *testing.T) {
+		svc := &mockPaymentService{
+			createPaymentFn: func(req *models.CreatePaymentRequest, userID int) (*models.Payment, error) {
+				return nil, errors.New("no active, non-expired lease found for this tenant and unit")
+			},
+		}
+		router := setupPaymentTestRouter(svc)
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodPost, "/payments", toJSON(t, sampleCreatePaymentRequest()))
+		req.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, req)
+
+		checkStatus(t, w.Code, http.StatusConflict)
+
+		var body map[string]interface{}
+		decodeBody(t, w, &body)
+		if code, _ := body["code"].(string); code != "PAYMENT_LEASE_NOT_PAYABLE" {
+			t.Errorf("error code: got %v, want PAYMENT_LEASE_NOT_PAYABLE", body["code"])
+		}
 	})
 
 	t.Run("org_id is set from context not from request body", func(t *testing.T) {
