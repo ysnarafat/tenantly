@@ -4,14 +4,15 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/models"
 )
 
 type UserOrganizationRoleRepository struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
-func NewUserOrganizationRoleRepository(db *sql.DB) *UserOrganizationRoleRepository {
+func NewUserOrganizationRoleRepository(db *sqlx.DB) *UserOrganizationRoleRepository {
 	return &UserOrganizationRoleRepository{db: db}
 }
 
@@ -31,7 +32,7 @@ func (r *UserOrganizationRoleRepository) GetByUserID(userID int) ([]models.UserO
 	if err != nil {
 		return nil, fmt.Errorf("failed to query user organizations: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var roles []models.UserOrganizationRole
 	for rows.Next() {

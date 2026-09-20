@@ -24,10 +24,6 @@ public class Tenant : IAuditableEntity
     [Column("email")]
     public string? Email { get; set; }
 
-    [MaxLength(20)]
-    [Column("nid_number")]
-    public string? NidNumber { get; set; }
-
     [Column("address")]
     public string? Address { get; set; }
 
@@ -44,5 +40,4 @@ public class Tenant : IAuditableEntity
     public virtual ICollection<Lease> Leases { get; set; } = new List<Lease>();
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
     public virtual ICollection<NotificationQueue> Notifications { get; set; } = new List<NotificationQueue>();
-    public virtual ICollection<Attachment> Attachments { get; set; } = new List<Attachment>();
 }

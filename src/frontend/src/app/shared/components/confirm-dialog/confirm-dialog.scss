@@ -1,0 +1,49 @@
+:host {
+  display: block;
+  text-align: center;
+  padding: 8px 8px 0;
+}
+
+.dialog-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-chip-blue, rgba(33, 150, 243, 0.12));
+  color: var(--color-primary, #1e88e5);
+
+  mat-icon {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+  }
+
+  &.tone-warn {
+    background: var(--bg-chip-amber, rgba(255, 152, 0, 0.12));
+    color: #f57c00;
+  }
+}
+
+.dialog-title {
+  text-align: center;
+  margin: 0 0 4px;
+}
+
+.message-text {
+  color: var(--text-secondary);
+  text-align: center;
+  margin: 0;
+  line-height: 1.5;
+}
+
+mat-dialog-actions {
+  justify-content: center !important;
+  margin-top: 8px;
+
+  button {
+    min-width: 100px;
+  }
+}

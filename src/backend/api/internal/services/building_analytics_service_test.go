@@ -104,7 +104,7 @@ func (m *MockAnalyticsBuildingRepository) GetWithStats(id int) (*models.Building
 
 func (m *MockAnalyticsBuildingRepository) BulkCreate(buildings []*models.Building) error {
 	for _, building := range buildings {
-		m.Create(building)
+		_ = m.Create(building)
 	}
 	return nil
 }
@@ -212,7 +212,7 @@ func TestBuildingAnalyticsService_GetBuildingMetrics(t *testing.T) {
 		HasElevator:  true,
 		ActiveStatus: true,
 	}
-	mockRepo.Create(building)
+	_ = mockRepo.Create(building)
 
 	// Set test analytics
 	analytics := &models.BuildingAnalytics{
@@ -265,7 +265,7 @@ func TestBuildingAnalyticsService_GetOccupancyAnalytics(t *testing.T) {
 		BuildingType: models.BuildingTypeResidential,
 		ActiveStatus: true,
 	}
-	mockRepo.Create(building)
+	_ = mockRepo.Create(building)
 
 	// Test GetOccupancyAnalytics
 	occupancyAnalytics, err := service.GetOccupancyAnalytics(building.ID)
@@ -305,7 +305,7 @@ func TestBuildingAnalyticsService_GetRevenueAnalytics(t *testing.T) {
 		BuildingType: models.BuildingTypeCommercial,
 		ActiveStatus: true,
 	}
-	mockRepo.Create(building)
+	_ = mockRepo.Create(building)
 
 	// Test GetRevenueAnalytics for different periods
 	periods := []string{"month", "quarter", "year"}
@@ -377,7 +377,7 @@ func TestBuildingAnalyticsService_CompareBuildingPerformance(t *testing.T) {
 	}
 
 	for _, building := range buildings {
-		mockRepo.Create(building)
+		_ = mockRepo.Create(building)
 	}
 
 	// Test CompareBuildingPerformance
@@ -428,7 +428,7 @@ func TestBuildingAnalyticsService_CalculatePerformanceScore(t *testing.T) {
 		BuildingType: models.BuildingTypeCommercial,
 		ActiveStatus: true,
 	}
-	mockRepo.Create(building)
+	_ = mockRepo.Create(building)
 
 	// Set test analytics with known values
 	analytics := &models.BuildingAnalytics{
@@ -470,7 +470,7 @@ func TestBuildingAnalyticsService_GenerateTrendAnalysis(t *testing.T) {
 		BuildingType: models.BuildingTypeCommercial,
 		ActiveStatus: true,
 	}
-	mockRepo.Create(building)
+	_ = mockRepo.Create(building)
 
 	// Test GenerateTrendAnalysis
 	trends, err := service.GenerateTrendAnalysis(building.ID, "month")
@@ -516,7 +516,7 @@ func TestBuildingAnalyticsService_GenerateOccupancyForecast(t *testing.T) {
 		BuildingType: models.BuildingTypeResidential,
 		ActiveStatus: true,
 	}
-	mockRepo.Create(building)
+	_ = mockRepo.Create(building)
 
 	// Test GenerateOccupancyForecast
 	forecast, err := service.GenerateOccupancyForecast(building.ID)
@@ -565,7 +565,7 @@ func TestBuildingAnalyticsService_GenerateRevenueProjections(t *testing.T) {
 		BuildingType: models.BuildingTypeCommercial,
 		ActiveStatus: true,
 	}
-	mockRepo.Create(building)
+	_ = mockRepo.Create(building)
 
 	// Test GenerateRevenueProjections
 	projections, err := service.GenerateRevenueProjections(building.ID)
@@ -634,7 +634,7 @@ func TestBuildingAnalyticsService_GetPropertyBuildingRankings(t *testing.T) {
 	}
 
 	for _, building := range buildings {
-		mockRepo.Create(building)
+		_ = mockRepo.Create(building)
 	}
 
 	// Test GetPropertyBuildingRankings
@@ -689,7 +689,7 @@ func TestBuildingAnalyticsService_CacheOperations(t *testing.T) {
 		BuildingType: models.BuildingTypeCommercial,
 		ActiveStatus: true,
 	}
-	mockRepo.Create(building)
+	_ = mockRepo.Create(building)
 
 	// Test cache miss
 	_, found := service.GetCachedMetrics(building.ID)
@@ -780,7 +780,7 @@ func TestBuildingAnalyticsService_CompareWithPropertyAverage(t *testing.T) {
 		BuildingType: models.BuildingTypeCommercial,
 		ActiveStatus: true,
 	}
-	mockRepo.Create(building)
+	_ = mockRepo.Create(building)
 
 	// Create additional buildings for property average calculation
 	building2 := &models.Building{
@@ -790,7 +790,7 @@ func TestBuildingAnalyticsService_CompareWithPropertyAverage(t *testing.T) {
 		BuildingType: models.BuildingTypeResidential,
 		ActiveStatus: true,
 	}
-	mockRepo.Create(building2)
+	_ = mockRepo.Create(building2)
 
 	// Test CompareWithPropertyAverage
 	comparisons, err := service.CompareWithPropertyAverage(building.ID)

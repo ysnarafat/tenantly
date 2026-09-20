@@ -1,0 +1,55 @@
+[
+  {
+    "username": "superadmin",
+    "email": "superadmin@test.com",
+    "password": "Test@1234",
+    "first_name": "Super",
+    "last_name": "Admin",
+    "role": "SUPER_ADMIN"
+  },
+  {
+    "username": "orgadmin",
+    "email": "orgadmin@test.com",
+    "password": "Test@1234",
+    "first_name": "Org",
+    "last_name": "Admin",
+    "role": "ORG_ADMIN",
+    "org_slug": "default"
+  },
+  {
+    "username": "adminuser",
+    "email": "admin@test.com",
+    "password": "Test@1234",
+    "first_name": "Admin",
+    "last_name": "User",
+    "role": "Admin",
+    "org_slug": "default"
+  },
+  {
+    "username": "propmanager",
+    "email": "propmanager@test.com",
+    "password": "Test@1234",
+    "first_name": "Property",
+    "last_name": "Manager",
+    "role": "PropertyManager",
+    "org_slug": "default"
+  },
+  {
+    "username": "accountant",
+    "email": "accountant@test.com",
+    "password": "Test@1234",
+    "first_name": "Account",
+    "last_name": "Ant",
+    "role": "Accountant",
+    "org_slug": "default"
+  },
+  {
+    "username": "acmeadmin",
+    "email": "acmeadmin@test.com",
+    "password": "Test@1234",
+    "first_name": "Acme",
+    "last_name": "Admin",
+    "role": "ORG_ADMIN",
+    "org_slug": "acme-properties"
+  }
+]

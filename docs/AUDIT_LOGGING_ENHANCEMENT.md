@@ -140,7 +140,12 @@ Audit logging is currently stubbed in Phase 3 (Angular UI placeholder) with back
 
 ## Security & Compliance
 
-- ✅ No PII in audit logs (except email for user context)
+- ✅ PII and secrets are redacted before storage, at both layers: the DB trigger
+  (`mask_audit_json`, migration `000004`) and the app-level `AuditService`
+  (`maskAuditValue` in `internal/database/audit.go`). Masked fields: name,
+  first/last name, email, phone_number, nid_number, address, and any
+  password/token field. Operational fields (ip_address, user_agent, username)
+  are intentionally retained for security auditing.
 - ✅ Logs immutable (append-only in DB)
 - ✅ Access control: Only ORG_ADMIN+ can view org's audit logs
 - ✅ Encryption: HTTPS to Axiom, PostgreSQL SSL connections
@@ -154,7 +159,7 @@ Audit logging is currently stubbed in Phase 3 (Angular UI placeholder) with back
 - `internal/models/audit_log.go` - Model definition
 - `internal/repositories/audit_log_repository.go` - Database access
 - `internal/models/audit_log.go` - Structs
-- `migrations/000007_admin_hierarchy_phase1.up.sql` - Schema
+- `migrations/000001_initial_schema.up.sql` - Schema
 
 **Frontend (Phase 3, Stubs)**
 - `src/frontend/src/app/core/models/audit-log.model.ts` - TS interface

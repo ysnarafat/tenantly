@@ -1,30 +1,32 @@
 # Build stage
-FROM node:25-alpine AS builder
+FROM node:26-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files first for better caching
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci && \
-    npm cache clean --force
+RUN npm ci && npm cache clean --force
 
-# Copy source code
 COPY . .
 
-# Build the application with optimizations
-RUN npm run build -- --configuration=production
+# Default to production
+ARG BUILD_CONFIGURATION=production
+
+RUN npm run build -- --configuration=${BUILD_CONFIGURATION}
 
 # Production stage
 FROM nginx:alpine
 
-# Copy built application
 COPY --from=builder /app/dist/tenantly-frontend/browser /usr/share/nginx/html
 
-# Copy nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
 
-EXPOSE 80
+# Run as the image's built-in non-root nginx user. Listens on 8080 (not 80)
+# since binding a privileged port requires root.
+RUN chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/run /var/log/nginx
+
+USER nginx
+
+EXPOSE 8080
 
 CMD ["nginx", "-g", "daemon off;"]

@@ -1,8 +1,11 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './core/guards/auth.guard';
+import { GuestGuard } from './core/guards/guest.guard';
 import { superAdminGuard } from './core/guards/super-admin.guard';
 import { orgAdminGuard } from './core/guards/org-admin.guard';
 import { userManagementGuard } from './core/guards/user-management.guard';
+import { permissionGuard } from './core/guards/permission.guard';
+import { Permission } from './core/models/role.model';
 import { provideState } from '@ngrx/store';
 import { provideEffects } from '@ngrx/effects';
 import { propertyReducer } from './features/properties/store/property.reducer';
@@ -12,18 +15,34 @@ import { PropertyEffects } from './features/properties/store/property.effects';
 import { BuildingEffects } from './features/properties/store/building.effects';
 import { UnitEffects } from './features/properties/store/unit.effects';
 
+// `title` sets the document title via AppTitleStrategy (see core/seo). Kept as
+// plain strings so the tab title is correct on first paint, independent of the
+// app's async translations.
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: '/dashboard',
+    redirectTo: '/home',
     pathMatch: 'full',
   },
   {
+    path: 'home',
+    loadComponent: () => import('./features/marketing/homepage/homepage').then((m) => m.Homepage),
+    canActivate: [GuestGuard],
+  },
+  {
+    path: 'contact',
+    title: 'Contact',
+    loadComponent: () => import('./features/marketing/contact/contact').then((m) => m.Contact),
+  },
+  {
     path: 'login',
+    title: 'Sign in',
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
+    canActivate: [GuestGuard],
   },
   {
     path: 'select-organization',
+    title: 'Select organization',
     loadComponent: () =>
       import('./features/auth/organization-picker/organization-picker').then(
         (m) => m.OrganizationPicker
@@ -32,16 +51,18 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard',
+    title: 'Dashboard',
     loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
     canActivate: [AuthGuard],
   },
   {
     path: 'properties',
+    title: 'Properties',
     loadComponent: () =>
       import('./features/properties/property-list/property-list.component').then(
         (m) => m.PropertyListComponent
       ),
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, permissionGuard(Permission.MANAGE_PROPERTIES)],
     providers: [
       provideState('properties', propertyReducer),
       provideState('buildings', buildingReducer),
@@ -50,45 +71,72 @@ export const routes: Routes = [
     ],
   },
   {
+    path: 'properties/:id',
+    title: 'Property Details',
+    loadComponent: () =>
+      import('./features/properties/property-detail/property-detail').then((m) => m.PropertyDetail),
+    canActivate: [AuthGuard, permissionGuard(Permission.MANAGE_PROPERTIES)],
+  },
+  {
+    path: 'properties/:propertyId/buildings/:buildingId',
+    title: 'Building Details',
+    loadComponent: () =>
+      import('./features/properties/building-detail/building-detail').then((m) => m.BuildingDetail),
+    canActivate: [AuthGuard, permissionGuard(Permission.MANAGE_PROPERTIES)],
+  },
+  {
     path: 'tenants',
+    title: 'Tenants',
     loadComponent: () =>
       import('./features/tenants/tenant-list/tenant-list').then((m) => m.TenantList),
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, permissionGuard(Permission.MANAGE_TENANTS)],
   },
   {
     path: 'leases',
+    title: 'Lease Management',
     loadComponent: () => import('./features/leases/lease-list/lease-list').then((m) => m.LeaseList),
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, permissionGuard(Permission.MANAGE_TENANTS)],
   },
   {
     path: 'leases/due',
+    title: 'Rent Due',
     loadComponent: () => import('./features/leases/due-list/due-list').then((m) => m.DueList),
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, permissionGuard(Permission.MANAGE_TENANTS)],
   },
   {
     path: 'payments',
+    title: 'Payments',
     loadComponent: () =>
       import('./features/payments/payment-list/payment-list').then((m) => m.PaymentList),
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, permissionGuard(Permission.VIEW_PAYMENTS)],
+  },
+  {
+    path: 'payments/collect',
+    title: 'Collect Payments',
+    loadComponent: () =>
+      import('./features/payments/payment-collect/payment-collect').then((m) => m.PaymentCollect),
+    canActivate: [AuthGuard, permissionGuard(Permission.RECORD_PAYMENTS)],
   },
   {
     path: 'reports',
-    loadComponent: () =>
-      import('./features/reports/report-list/report-list').then((m) => m.ReportList),
-    canActivate: [AuthGuard],
+    title: 'Reports & Analysis',
+    loadComponent: () => import('./features/reports/report-analysis').then((m) => m.ReportAnalysis),
+    canActivate: [AuthGuard, permissionGuard(Permission.VIEW_REPORTS)],
   },
   {
     path: 'documents',
+    title: 'Documents',
     loadComponent: () =>
       import('./features/attachments/attachment-list/attachment-list').then(
         (m) => m.AttachmentList
       ),
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, permissionGuard(Permission.MANAGE_DOCUMENTS)],
   },
   {
     path: 'users',
+    title: 'User Management',
     loadComponent: () => import('./features/users/user-list/user-list').then((m) => m.UserList),
-    canActivate: [AuthGuard],
+    canActivate: [AuthGuard, userManagementGuard],
   },
   {
     path: 'admin',
@@ -96,6 +144,7 @@ export const routes: Routes = [
     children: [
       {
         path: 'organizations',
+        title: 'Organizations',
         loadComponent: () =>
           import('./features/admin/organization-management/organization-list').then(
             (m) => m.OrganizationListComponent
@@ -104,6 +153,7 @@ export const routes: Routes = [
       },
       {
         path: 'organizations/new',
+        title: 'New organization',
         loadComponent: () =>
           import('./features/admin/organization-management/organization-create').then(
             (m) => m.OrganizationCreateComponent
@@ -111,23 +161,8 @@ export const routes: Routes = [
         canActivate: [superAdminGuard],
       },
       {
-        path: 'organizations/:id',
-        loadComponent: () =>
-          import('./features/admin/organization-management/organization-detail').then(
-            (m) => m.OrganizationDetailComponent
-          ),
-        canActivate: [superAdminGuard],
-      },
-      {
-        path: 'organizations/:id/edit',
-        loadComponent: () =>
-          import('./features/admin/organization-management/organization-edit').then(
-            (m) => m.OrganizationEditComponent
-          ),
-        canActivate: [superAdminGuard],
-      },
-      {
         path: 'invitations',
+        title: 'Invitations',
         loadComponent: () =>
           import('./features/admin/user-onboarding/pending-invitations').then(
             (m) => m.PendingInvitationsComponent
@@ -135,38 +170,21 @@ export const routes: Routes = [
       },
       {
         path: 'invitations/new',
+        title: 'Invite user',
         loadComponent: () =>
           import('./features/admin/user-onboarding/invite-user').then((m) => m.InviteUserComponent),
       },
       {
-        path: 'invitations/bulk',
-        loadComponent: () =>
-          import('./features/admin/user-onboarding/bulk-import').then((m) => m.BulkImportComponent),
-      },
-      {
-        path: 'audit-logs',
-        loadComponent: () =>
-          import('./features/admin/audit-logs/audit-log-viewer').then(
-            (m) => m.AuditLogViewerComponent
-          ),
-      },
-      {
         path: 'users',
+        title: 'User Management',
         loadComponent: () => import('./features/users/user-list/user-list').then((m) => m.UserList),
         canActivate: [userManagementGuard],
       },
       {
         path: 'users/new',
+        title: 'New user',
         loadComponent: () =>
           import('./features/admin/user-management/create-user').then((m) => m.CreateUserComponent),
-        canActivate: [userManagementGuard],
-      },
-      {
-        path: 'users/promote',
-        loadComponent: () =>
-          import('./features/admin/user-management/admin-promotion').then(
-            (m) => m.AdminPromotionComponent
-          ),
         canActivate: [userManagementGuard],
       },
     ],
@@ -182,8 +200,25 @@ export const routes: Routes = [
     redirectTo: 'documents',
     pathMatch: 'full',
   },
+  // 403 — reached when a role guard blocks access
+  {
+    path: 'unauthorized',
+    title: 'Access denied',
+    loadComponent: () =>
+      import('./features/errors/unauthorized/unauthorized').then((m) => m.Unauthorized),
+    canActivate: [AuthGuard],
+  },
+  {
+    path: '401',
+    loadComponent: () =>
+      import('./features/errors/unauthorized/unauthorized').then((m) => m.Unauthorized),
+  },
+  {
+    path: '404',
+    loadComponent: () => import('./features/errors/not-found/not-found').then((m) => m.NotFound),
+  },
   {
     path: '**',
-    redirectTo: '/dashboard',
+    redirectTo: '/404',
   },
 ];

@@ -204,25 +204,6 @@ describe('AuthService', () => {
     });
   });
 
-  describe('getRefreshToken', () => {
-    it('should return refresh token from localStorage', () => {
-      spyOn(localStorage, 'getItem').and.returnValue('test-refresh-token');
-
-      const result = service.getRefreshToken();
-
-      expect(result).toBe('test-refresh-token');
-      expect(localStorage.getItem).toHaveBeenCalledWith('tenantly_refresh_token');
-    });
-
-    it('should return null when no refresh token exists', () => {
-      spyOn(localStorage, 'getItem').and.returnValue(null);
-
-      const result = service.getRefreshToken();
-
-      expect(result).toBeNull();
-    });
-  });
-
   describe('getUser', () => {
     it('should return user from store', () => {
       const result = service.getUser();

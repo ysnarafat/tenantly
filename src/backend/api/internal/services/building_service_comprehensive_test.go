@@ -394,7 +394,7 @@ func TestBuildingService_DeletionConstraints_ActiveInactiveUnits(t *testing.T) {
 					TotalFloors:  3,
 					ActiveStatus: true,
 				}
-				buildingRepo.Create(building)
+				_ = buildingRepo.Create(building)
 				// Don't set active units - building is empty
 			},
 			buildingID:  1,
@@ -412,7 +412,7 @@ func TestBuildingService_DeletionConstraints_ActiveInactiveUnits(t *testing.T) {
 					TotalFloors:  5,
 					ActiveStatus: true,
 				}
-				buildingRepo.Create(building)           // This will assign ID = 1 (first building in this test)
+				_ = buildingRepo.Create(building)       // This will assign ID = 1 (first building in this test)
 				buildingRepo.SetHasActiveUnits(1, true) // Set active units constraint for ID 1
 			},
 			buildingID:     1,
@@ -646,7 +646,7 @@ func TestBuildingService_AggregationCalculations_Analytics(t *testing.T) {
 					TotalFloors:  5,
 					ActiveStatus: true,
 				}
-				buildingRepo.Create(building)
+				_ = buildingRepo.Create(building)
 			},
 			buildingID:  1,
 			expectError: false,
@@ -752,7 +752,7 @@ func TestBuildingService_ErrorHandling_AuditLogging(t *testing.T) {
 				}
 				err := buildingRepo.Create(building)
 				if err == nil {
-					auditService.LogSystemAction("CREATE", "buildings", &building.ID, nil, building)
+					_ = auditService.LogSystemAction("CREATE", "buildings", &building.ID, nil, building)
 				}
 				return err
 			},
@@ -844,7 +844,7 @@ func TestBuildingService_PropertyBuildingAnalytics(t *testing.T) {
 	}
 
 	for _, building := range buildings {
-		buildingRepo.Create(building)
+		_ = buildingRepo.Create(building)
 	}
 
 	// Test GetBuildingsByProperty

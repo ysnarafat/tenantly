@@ -17,8 +17,8 @@ public class NotificationQueue : IAuditableEntity
     public int TenantId { get; set; }
 
     [Required]
-    [Column("shop_id")]
-    public int ShopId { get; set; }
+    [Column("unit_id")]
+    public int UnitId { get; set; }
 
     [Required]
     [Column("message")]
@@ -54,8 +54,8 @@ public class NotificationQueue : IAuditableEntity
     [ForeignKey("TenantId")]
     public virtual Tenant Tenant { get; set; } = null!;
 
-    [ForeignKey("ShopId")]
-    public virtual Shop Shop { get; set; } = null!;
+    [ForeignKey("UnitId")]
+    public virtual Unit Unit { get; set; } = null!;
 }
 
 public enum NotificationType

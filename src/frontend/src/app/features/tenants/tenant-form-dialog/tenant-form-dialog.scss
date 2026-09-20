@@ -24,6 +24,20 @@ mat-dialog-content {
   overflow-x: hidden;
 }
 
+.reveal-suffix-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
 .view-mode {
   ::ng-deep {
     .mat-mdc-form-field.mat-form-field-disabled,
@@ -35,29 +49,34 @@ mat-dialog-content {
       opacity: 1 !important;
 
       .mdc-text-field__input {
-        color: rgba(0, 0, 0, 0.87) !important;
-        -webkit-text-fill-color: rgba(0, 0, 0, 0.87) !important;
+        color: var(--text-primary) !important;
+        -webkit-text-fill-color: var(--text-primary) !important;
       }
 
       .mdc-floating-label {
-        color: rgba(0, 0, 0, 0.6) !important;
+        color: var(--text-secondary) !important;
       }
 
       .mdc-notched-outline__leading,
       .mdc-notched-outline__notch,
       .mdc-notched-outline__trailing {
-        border-color: rgba(0, 0, 0, 0.38) !important;
+        border-color: var(--border-color) !important;
       }
     }
 
     .mat-mdc-select-disabled .mat-mdc-select-value {
-      color: rgba(0, 0, 0, 0.87) !important;
-      -webkit-text-fill-color: rgba(0, 0, 0, 0.87) !important;
+      color: var(--text-primary) !important;
+      -webkit-text-fill-color: var(--text-primary) !important;
     }
 
     .mat-mdc-form-field-icon-prefix .mat-icon {
       opacity: 1 !important;
-      color: rgba(0, 0, 0, 0.54) !important;
+      color: var(--text-hint) !important;
+    }
+
+    .mat-mdc-form-field-icon-suffix .reveal-suffix-icon {
+      pointer-events: all !important;
+      opacity: 1 !important;
     }
   }
 }

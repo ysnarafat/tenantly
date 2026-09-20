@@ -2,12 +2,16 @@ package config
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
+
+	appcrypto "github.com/ysnarafat/tenantly/internal/crypto"
 
 	"github.com/joho/godotenv"
 )
@@ -42,12 +46,22 @@ func loadEnv() error {
 }
 
 type Config struct {
-	DatabaseURL   string
-	JWTSecret     string
-	JWTExpiration time.Duration
-	SMSProvider   SMSConfig
-	EmailProvider EmailConfig
-	Environment   string
+	DatabaseURL    string
+	JWTSecret      string
+	JWTExpiration  time.Duration
+	SMSProvider    SMSConfig
+	EmailProvider  EmailConfig
+	Environment    string
+	AllowedOrigins []string
+	TrustedProxies []string
+	CookieDomain   string
+	CookieSecure   bool
+	NIDProtector   *appcrypto.NIDProtector
+	// PublicAppURL is the externally-reachable base URL (e.g.
+	// https://app.example.com) used to build links embedded in SMS/email —
+	// currently the "download your receipt" link. It must be reachable by
+	// the recipient's phone, not just internal services.
+	PublicAppURL string
 }
 
 type SMSConfig struct {
@@ -89,9 +103,72 @@ func Load() (*Config, error) {
 
 	jwtExpiration, _ := time.ParseDuration(getEnv("JWT_EXPIRATION", "8h"))
 	smtpPort, _ := strconv.Atoi(getEnv("SMTP_PORT", "587"))
+	environment := getEnv("ENVIRONMENT", "development")
+
+	// Load and validate database URL — same no-insecure-default-in-prod pattern as JWT_SECRET.
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		if environment == "production" {
+			return nil, fmt.Errorf("CRITICAL: DATABASE_URL environment variable must be set in production")
+		}
+		fmt.Println("⚠️  WARNING: DATABASE_URL not set. Using local development default.")
+		databaseURL = "postgres://postgres:password@localhost:5432/tenantly?sslmode=disable"
+	}
+
+	// CORS allowed origins — required in production (no wildcard fallback), a
+	// sane localhost default in development.
+	var allowedOrigins []string
+	if raw := os.Getenv("CORS_ALLOWED_ORIGINS"); raw != "" {
+		for _, origin := range strings.Split(raw, ",") {
+			if o := strings.TrimSpace(origin); o != "" {
+				allowedOrigins = append(allowedOrigins, o)
+			}
+		}
+	}
+	if len(allowedOrigins) == 0 {
+		if environment == "production" {
+			return nil, fmt.Errorf("CRITICAL: CORS_ALLOWED_ORIGINS environment variable must be set in production")
+		}
+		fmt.Println("⚠️  WARNING: CORS_ALLOWED_ORIGINS not set. Defaulting to http://localhost:4200 for development.")
+		allowedOrigins = []string{"http://localhost:4200"}
+	}
+
+	// Trusted proxies for Gin's ClientIP() resolution — empty/unset means Gin
+	// ignores X-Forwarded-For entirely and uses the real socket address (safe
+	// default). Set explicitly only if a real reverse proxy forwards client IPs.
+	var trustedProxies []string
+	if raw := os.Getenv("TRUSTED_PROXIES"); raw != "" {
+		for _, proxy := range strings.Split(raw, ",") {
+			if p := strings.TrimSpace(proxy); p != "" {
+				trustedProxies = append(trustedProxies, p)
+			}
+		}
+	}
+
+	cookieSecure := environment == "production"
+	if raw := os.Getenv("COOKIE_SECURE"); raw != "" {
+		if parsed, err := strconv.ParseBool(raw); err == nil {
+			cookieSecure = parsed
+		}
+	}
+
+	// NID protection keys: AES-256 key (base64, 32 bytes) for encryption at rest
+	// and a secret pepper for the deterministic uniqueness hash. Required in
+	// production (no insecure default), same pattern as JWT_SECRET. In
+	// development we derive a *stable* key/pepper from fixed dev material so
+	// encrypted data survives restarts (a random per-boot key would make prior
+	// ciphertext undecryptable).
+	nidKey, nidPepper, err := loadNIDSecrets(environment)
+	if err != nil {
+		return nil, err
+	}
+	nidProtector, err := appcrypto.NewNIDProtector(nidKey, nidPepper)
+	if err != nil {
+		return nil, fmt.Errorf("CRITICAL: failed to initialize NID protector: %w", err)
+	}
 
 	config := &Config{
-		DatabaseURL:   getEnv("DATABASE_URL", "postgres://postgres:password@localhost:5432/tenantly?sslmode=disable"),
+		DatabaseURL:   databaseURL,
 		JWTSecret:     jwtSecret,
 		JWTExpiration: jwtExpiration,
 		SMSProvider: SMSConfig{
@@ -106,9 +183,54 @@ func Load() (*Config, error) {
 			SMTPPassword: getEnv("SMTP_PASSWORD", ""),
 			FromEmail:    getEnv("FROM_EMAIL", "noreply@tenantly.com"),
 		},
-		Environment: getEnv("ENVIRONMENT", "development"),
+		Environment:    environment,
+		AllowedOrigins: allowedOrigins,
+		TrustedProxies: trustedProxies,
+		CookieDomain:   getEnv("COOKIE_DOMAIN", ""),
+		CookieSecure:   cookieSecure,
+		NIDProtector:   nidProtector,
+		PublicAppURL:   strings.TrimRight(getEnv("PUBLIC_APP_URL", "http://localhost:8080"), "/"),
 	}
 	return config, nil
+}
+
+// loadNIDSecrets resolves the AES-256 key and HMAC pepper used to protect NID
+// values. In production both NID_ENCRYPTION_KEY (base64-encoded 32 bytes) and
+// NID_HASH_PEPPER must be set. In development, missing values are derived from
+// fixed dev material so ciphertext remains decryptable across restarts.
+func loadNIDSecrets(environment string) (key, pepper []byte, err error) {
+	rawKey := os.Getenv("NID_ENCRYPTION_KEY")
+	rawPepper := os.Getenv("NID_HASH_PEPPER")
+
+	if rawKey == "" || rawPepper == "" {
+		if environment == "production" {
+			return nil, nil, fmt.Errorf("CRITICAL: NID_ENCRYPTION_KEY and NID_HASH_PEPPER must be set in production")
+		}
+		fmt.Println("⚠️  WARNING: NID_ENCRYPTION_KEY/NID_HASH_PEPPER not set. Deriving stable development keys (NOT for production).")
+		if rawKey == "" {
+			devKey := sha256.Sum256([]byte("tenantly-dev-nid-encryption-key"))
+			key = devKey[:]
+		}
+		if rawPepper == "" {
+			pepper = []byte("tenantly-dev-nid-hash-pepper")
+		}
+	}
+
+	if rawKey != "" {
+		decoded, decErr := base64.StdEncoding.DecodeString(rawKey)
+		if decErr != nil {
+			return nil, nil, fmt.Errorf("CRITICAL: NID_ENCRYPTION_KEY must be base64-encoded: %w", decErr)
+		}
+		if len(decoded) != 32 {
+			return nil, nil, fmt.Errorf("CRITICAL: NID_ENCRYPTION_KEY must decode to 32 bytes (got %d). Use 'openssl rand -base64 32'", len(decoded))
+		}
+		key = decoded
+	}
+	if rawPepper != "" {
+		pepper = []byte(rawPepper)
+	}
+
+	return key, pepper, nil
 }
 
 func getEnv(key, defaultValue string) string {

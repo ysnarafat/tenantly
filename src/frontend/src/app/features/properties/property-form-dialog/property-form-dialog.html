@@ -88,7 +88,7 @@
     <mat-icon>close</mat-icon>
     {{ 'COMMON.BUTTONS.CANCEL' | translate }}
   </button>
-  <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="propertyForm.invalid">
+  <button mat-flat-button color="primary" (click)="onSubmit()" [disabled]="propertyForm.invalid">
     <mat-icon>{{ isEditMode ? 'save' : 'add' }}</mat-icon>
     {{ (isEditMode ? 'PROPERTY_FORM_DIALOG.BUTTONS.UPDATE' : 'PROPERTY_FORM_DIALOG.BUTTONS.CREATE')
     | translate }}

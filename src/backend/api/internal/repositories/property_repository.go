@@ -5,14 +5,15 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/models"
 )
 
 type PropertyRepository struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
-func NewPropertyRepository(db *sql.DB) *PropertyRepository {
+func NewPropertyRepository(db *sqlx.DB) *PropertyRepository {
 	return &PropertyRepository{db: db}
 }
 
@@ -62,7 +63,7 @@ func (r *PropertyRepository) GetByID(id int) (*models.Property, error) {
 	query := `
 		SELECT id, property_name, property_code, address, city, postal_code, property_type,
 		       (SELECT COUNT(*) FROM buildings b WHERE b.property_id = properties.id AND b.active_status = true) as total_buildings,
-		       metadata, active, created_at, updated_at
+		       metadata, active, created_at, updated_at, organization_id
 		FROM properties
 		WHERE id = $1`
 
@@ -80,6 +81,7 @@ func (r *PropertyRepository) GetByID(id int) (*models.Property, error) {
 		&property.Active,
 		&property.CreatedAt,
 		&property.UpdatedAt,
+		&property.OrganizationID,
 	)
 
 	if err != nil {
@@ -95,21 +97,23 @@ func (r *PropertyRepository) GetByID(id int) (*models.Property, error) {
 // GetByIDWithStats retrieves a property with aggregated statistics
 func (r *PropertyRepository) GetByIDWithStats(id int) (*models.PropertyWithStats, error) {
 	query := `
-		SELECT 
-			p.id, p.property_name, p.property_code, p.address, p.city, p.postal_code, 
+		SELECT
+			p.id, p.property_name, p.property_code, p.address, p.city, p.postal_code,
 			p.property_type, p.total_buildings, p.metadata, p.active, p.created_at, p.updated_at,
+			p.organization_id,
 			COALESCE(COUNT(DISTINCT b.id), 0) as building_count,
 			COALESCE(COUNT(DISTINCT u.id), 0) as unit_count,
 			COALESCE(COUNT(DISTINCT CASE WHEN l.active = true THEN u.id END), 0) as occupied_units,
 			COALESCE(SUM(CASE WHEN pay.status = 'Paid' THEN pay.amount_paid ELSE 0 END), 0) as total_revenue
 		FROM properties p
-		LEFT JOIN buildings b ON p.id = b.property_id AND b.active = true
+		LEFT JOIN buildings b ON p.id = b.property_id AND b.active_status = true
 		LEFT JOIN units u ON p.id = u.property_id AND u.active = true
 		LEFT JOIN leases l ON u.id = l.unit_id AND l.active = true
 		LEFT JOIN payments pay ON u.id = pay.unit_id
 		WHERE p.id = $1
 		GROUP BY p.id, p.property_name, p.property_code, p.address, p.city, p.postal_code,
-		         p.property_type, p.total_buildings, p.metadata, p.active, p.created_at, p.updated_at`
+		         p.property_type, p.total_buildings, p.metadata, p.active, p.created_at, p.updated_at,
+		         p.organization_id`
 
 	var property models.PropertyWithStats
 	err := r.db.QueryRow(query, id).Scan(
@@ -125,6 +129,7 @@ func (r *PropertyRepository) GetByIDWithStats(id int) (*models.PropertyWithStats
 		&property.Active,
 		&property.CreatedAt,
 		&property.UpdatedAt,
+		&property.OrganizationID,
 		&property.BuildingCount,
 		&property.UnitCount,
 		&property.OccupiedUnits,
@@ -199,7 +204,7 @@ func (r *PropertyRepository) List(filters map[string]interface{}, limit, offset 
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to list properties: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var properties []*models.Property
 	for rows.Next() {
@@ -367,7 +372,9 @@ func (r *PropertyRepository) CheckPropertyCodeExists(code string, excludeID int)
 
 // HasActiveBuildings checks if property has active buildings
 func (r *PropertyRepository) HasActiveBuildings(id int) (bool, error) {
-	query := `SELECT EXISTS(SELECT 1 FROM buildings WHERE property_id = $1 AND active = true)`
+	// buildings names the flag active_status, not active — the latter made
+	// every property deletion fail with "column active does not exist".
+	query := `SELECT EXISTS(SELECT 1 FROM buildings WHERE property_id = $1 AND active_status = true)`
 	var exists bool
 	err := r.db.QueryRow(query, id).Scan(&exists)
 	if err != nil {
@@ -494,7 +501,7 @@ func (r *PropertyRepository) GetBuildingTypeDistribution(propertyID int) (interf
 	if err != nil {
 		return nil, fmt.Errorf("failed to get building type distribution: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	distribution := make(map[string]int)
 	for rows.Next() {
@@ -523,7 +530,7 @@ func (r *PropertyRepository) GetByOrganizationID(orgID int) ([]*models.Property,
 	if err != nil {
 		return nil, fmt.Errorf("failed to get properties by organization: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var properties []*models.Property
 	for rows.Next() {

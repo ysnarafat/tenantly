@@ -2,17 +2,15 @@ package handlers
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"strconv"
 	"testing"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -22,18 +20,22 @@ import (
 	"github.com/ysnarafat/tenantly/internal/models"
 	"github.com/ysnarafat/tenantly/internal/repositories"
 	"github.com/ysnarafat/tenantly/internal/services"
+	"github.com/ysnarafat/tenantly/internal/testutil"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // BuildingIntegrationTestSuite provides comprehensive integration testing for building management API
 type BuildingIntegrationTestSuite struct {
 	suite.Suite
-	db              *sql.DB
+	db              *sqlx.DB
 	router          *gin.Engine
 	config          *config.Config
 	buildingHandler *BuildingHandler
 	propertyRepo    *repositories.PropertyRepository
 	buildingRepo    *repositories.BuildingRepository
 	userRepo        *repositories.UserRepository
+	orgRepo         *repositories.OrganizationRepository
+	testOrg         *models.Organization
 	testProperty    *models.Property
 	testUser        *models.User
 	authToken       string
@@ -44,26 +46,39 @@ func (suite *BuildingIntegrationTestSuite) SetupSuite() {
 	gin.SetMode(gin.TestMode)
 
 	// Load test configuration
+	databaseURL, err := testutil.EnsureTestDatabase(handlersTestDB)
+	if err != nil {
+		suite.T().Skipf("Skipping integration test: PostgreSQL not available: %v", err)
+		return
+	}
+
 	suite.config = &config.Config{
-		DatabaseURL:   getTestDatabaseURL(),
+		DatabaseURL:   databaseURL,
 		JWTSecret:     "test-jwt-secret-key",
 		JWTExpiration: time.Hour * 24,
 		Environment:   "test",
 	}
 
 	// Initialize test database
-	var err error
 	suite.db, err = database.Connect(suite.config.DatabaseURL)
-	require.NoError(suite.T(), err, "Failed to connect to test database")
+	if err != nil {
+		suite.T().Skipf("Skipping integration test: PostgreSQL not available: %v", err)
+		return
+	}
 
-	// Run migrations
-	err = database.RunMigrations(suite.config.DatabaseURL)
+	// Reset rather than just migrate: this suite seeds fixed slugs, usernames,
+	// and property codes, which collide with whatever the previous run left
+	// behind. testutil resolves the migrations directory relative to the
+	// package under test; database.RunMigrations resolves it against the
+	// process working directory and so only works from the module root.
+	err = testutil.ResetSchema(suite.config.DatabaseURL)
 	require.NoError(suite.T(), err, "Failed to run migrations")
 
 	// Initialize repositories
 	suite.propertyRepo = repositories.NewPropertyRepository(suite.db)
 	suite.buildingRepo = repositories.NewBuildingRepository(suite.db)
 	suite.userRepo = repositories.NewUserRepository(suite.db)
+	suite.orgRepo = repositories.NewOrganizationRepository(suite.db)
 
 	// Initialize services
 	auditService := database.NewAuditService(suite.db)
@@ -73,7 +88,7 @@ func (suite *BuildingIntegrationTestSuite) SetupSuite() {
 	buildingService := services.NewBuildingService(suite.buildingRepo, suite.propertyRepo, auditService, metadataValidator)
 
 	// Initialize handlers
-	userHandler := NewUserHandler(userService)
+	userHandler := NewUserHandler(userService, "", false)
 	propertyHandler := NewPropertyHandler(propertyService)
 	suite.buildingHandler = NewBuildingHandler(buildingService)
 
@@ -91,7 +106,7 @@ func (suite *BuildingIntegrationTestSuite) TearDownSuite() {
 
 	// Close database connection
 	if suite.db != nil {
-		suite.db.Close()
+		_ = suite.db.Close()
 	}
 }
 
@@ -103,7 +118,7 @@ func (suite *BuildingIntegrationTestSuite) SetupTest() {
 func (suite *BuildingIntegrationTestSuite) setupTestRoutes(userHandler *UserHandler, propertyHandler *PropertyHandler, auditService *database.AuditService) {
 	// Add middleware
 	suite.router.Use(middleware.SecurityHeadersMiddleware())
-	suite.router.Use(middleware.CORS(suite.config.Environment))
+	suite.router.Use(middleware.CORS(suite.config.AllowedOrigins))
 	suite.router.Use(gin.Logger())
 	suite.router.Use(gin.Recovery())
 
@@ -116,9 +131,11 @@ func (suite *BuildingIntegrationTestSuite) setupTestRoutes(userHandler *UserHand
 			auth.POST("/login", userHandler.Login)
 		}
 
-		// Protected routes
+		// Protected routes. RequireOrgContext mirrors the real server: every
+		// org-scoped handler reads org_id, which only this middleware sets.
 		protected := v1.Group("/")
 		protected.Use(middleware.AuthRequired(suite.config.JWTSecret, auditService))
+		protected.Use(middleware.RequireOrgContext())
 		{
 			// Property routes
 			properties := protected.Group("/properties")
@@ -150,16 +167,34 @@ func (suite *BuildingIntegrationTestSuite) setupTestRoutes(userHandler *UserHand
 }
 
 func (suite *BuildingIntegrationTestSuite) createTestData() {
-	// Create test user
+	// Every data table is org-scoped, so the organization comes first.
+	suite.testOrg = &models.Organization{
+		Name:             "Test Org",
+		Slug:             "test-org-buildings",
+		SubscriptionTier: models.TierBasic,
+		MaxUsers:         10,
+		Active:           true,
+	}
+	err := suite.orgRepo.Create(suite.testOrg)
+	require.NoError(suite.T(), err, "Failed to create test organization")
+
+	// Create test user. The hash must be a real bcrypt digest of the password
+	// generateAuthToken logs in with — Login compares them with bcrypt, so a
+	// placeholder string leaves every authenticated request a 401.
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(testUserPassword), bcrypt.DefaultCost)
+	require.NoError(suite.T(), err, "Failed to hash test password")
+
 	suite.testUser = &models.User{
-		Username:     "testuser",
-		Email:        "test@example.com",
-		PasswordHash: "hashedpassword",
-		Role:         "Admin",
-		Active:       true,
+		Username:       "testuser",
+		Email:          "test@example.com",
+		PasswordHash:   string(passwordHash),
+		Role:           "Admin",
+		Active:         true,
+		Status:         "active",
+		OrganizationID: &suite.testOrg.ID,
 	}
 
-	err := suite.userRepo.Create(suite.testUser)
+	err = suite.userRepo.Create(suite.testUser)
 	require.NoError(suite.T(), err, "Failed to create test user")
 
 	// Generate auth token
@@ -167,11 +202,12 @@ func (suite *BuildingIntegrationTestSuite) createTestData() {
 
 	// Create test property
 	propertyReq := &models.CreatePropertyRequest{
-		PropertyName: "Test Property",
-		PropertyCode: "TEST001",
-		PropertyType: models.PropertyTypeCommercial,
-		Address:      "123 Test Street",
-		City:         "Test City",
+		PropertyName:   "Test Property",
+		PropertyCode:   "TEST001",
+		PropertyType:   models.PropertyTypeCommercial,
+		Address:        "123 Test Street",
+		City:           "Test City",
+		OrganizationID: suite.testOrg.ID,
 	}
 	suite.testProperty, err = suite.propertyRepo.Create(propertyReq)
 	require.NoError(suite.T(), err, "Failed to create test property")
@@ -180,27 +216,27 @@ func (suite *BuildingIntegrationTestSuite) createTestData() {
 func (suite *BuildingIntegrationTestSuite) cleanupTestData() {
 	// Clean up in reverse order of creation
 	if suite.testProperty != nil {
-		suite.propertyRepo.Delete(suite.testProperty.ID)
+		_ = suite.propertyRepo.Delete(suite.testProperty.ID)
 	}
 	if suite.testUser != nil {
-		suite.userRepo.Delete(suite.testUser.ID)
+		_ = suite.userRepo.Delete(suite.testUser.ID)
 	}
 }
 
 func (suite *BuildingIntegrationTestSuite) cleanupBuildingTestData() {
-	// Clean up buildings created during tests
+	// Hard delete: buildings carry a UNIQUE (property_id, building_code), which
+	// a soft delete leaves in place — so the next test reusing a fixture code
+	// collides with the previous test's row.
 	if suite.testProperty != nil {
-		buildings, _ := suite.buildingRepo.GetByPropertyID(suite.testProperty.ID)
-		for _, building := range buildings {
-			suite.buildingRepo.SoftDelete(building.ID)
-		}
+		_, err := suite.db.Exec(`DELETE FROM buildings WHERE property_id = $1`, suite.testProperty.ID)
+		require.NoError(suite.T(), err)
 	}
 }
 
 func (suite *BuildingIntegrationTestSuite) generateAuthToken() string {
 	loginReq := map[string]string{
 		"username": suite.testUser.Username,
-		"password": "password", // This should match the actual password used in tests
+		"password": testUserPassword,
 	}
 
 	reqBody, _ := json.Marshal(loginReq)
@@ -210,16 +246,17 @@ func (suite *BuildingIntegrationTestSuite) generateAuthToken() string {
 
 	suite.router.ServeHTTP(w, req)
 
-	if w.Code == http.StatusOK {
-		var response map[string]interface{}
-		json.Unmarshal(w.Body.Bytes(), &response)
-		if token, ok := response["token"].(string); ok {
-			return "Bearer " + token
-		}
-	}
+	// Fail here rather than returning a placeholder token: a bad token turns
+	// every assertion in the suite into an indistinguishable 401.
+	require.Equal(suite.T(), http.StatusOK, w.Code, "login failed: %s", w.Body.String())
 
-	// Fallback: generate token directly for testing
-	return "Bearer test-token"
+	var response map[string]interface{}
+	require.NoError(suite.T(), json.Unmarshal(w.Body.Bytes(), &response))
+
+	token, ok := response["token"].(string)
+	require.True(suite.T(), ok, "login response carried no token: %s", w.Body.String())
+
+	return "Bearer " + token
 }
 
 func (suite *BuildingIntegrationTestSuite) makeAuthenticatedRequest(method, path string, body interface{}) *httptest.ResponseRecorder {
@@ -416,9 +453,12 @@ func (suite *BuildingIntegrationTestSuite) TestDeleteBuilding_Success() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "Building deleted successfully", response["message"])
 
-	// Verify building is soft deleted
-	_, err = suite.buildingRepo.GetByID(building.ID)
-	assert.Error(suite.T(), err) // Should not be found after soft delete
+	// Verify building is soft deleted. GetByID is a direct lookup by an ID the
+	// caller already holds, so it still returns the row — deactivated is what
+	// distinguishes it, not absence.
+	deleted, err := suite.buildingRepo.GetByID(building.ID)
+	assert.NoError(suite.T(), err)
+	assert.False(suite.T(), deleted.ActiveStatus)
 }
 
 // Test Property-Building Relationship Endpoints
@@ -678,7 +718,7 @@ func (suite *BuildingIntegrationTestSuite) TestUpdateBuildingStatus() {
 
 	// Deactivate building
 	statusReq := &models.BuildingStatusRequest{
-		ActiveStatus: false,
+		ActiveStatus: boolPtr(false),
 		Reason:       "Maintenance required",
 	}
 
@@ -697,7 +737,7 @@ func (suite *BuildingIntegrationTestSuite) TestUpdateBuildingStatus() {
 	assert.False(suite.T(), updatedBuilding.ActiveStatus)
 
 	// Reactivate building
-	statusReq.ActiveStatus = true
+	statusReq.ActiveStatus = boolPtr(true)
 	statusReq.Reason = "Maintenance completed"
 
 	w = suite.makeAuthenticatedRequest("PUT", fmt.Sprintf("/api/v1/buildings/%d/status", building.ID), statusReq)
@@ -823,12 +863,15 @@ func (suite *BuildingIntegrationTestSuite) TestMetadataValidation() {
 		},
 	}
 
-	for _, tc := range testCases {
+	for i, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
 			buildingReq := &models.CreateBuildingRequest{
 				PropertyID:   suite.testProperty.ID,
 				BuildingName: "Metadata Test Building",
-				BuildingCode: "MTB" + strconv.Itoa(int(time.Now().UnixNano()%1000)),
+				// Indexed, not time-derived: UnixNano()%1000 collided between
+				// subtests often enough that a case meant to fail validation
+				// came back 409 from the unique (property_id, building_code).
+				BuildingCode: fmt.Sprintf("MTB%d", i),
 				BuildingType: tc.buildingType,
 				TotalFloors:  5,
 				Metadata:     tc.metadata,
@@ -875,14 +918,15 @@ func (suite *BuildingIntegrationTestSuite) createTestBuildingWithType(name, code
 
 func (suite *BuildingIntegrationTestSuite) createTestBuildingWithDetails(name, code string, buildingType models.BuildingType, floors int, hasElevator bool) *models.Building {
 	building := &models.Building{
-		PropertyID:   suite.testProperty.ID,
-		BuildingName: name,
-		BuildingCode: code,
-		BuildingType: buildingType,
-		TotalFloors:  floors,
-		HasElevator:  hasElevator,
-		ActiveStatus: true,
-		Metadata:     models.BuildingMetadata{},
+		PropertyID:     suite.testProperty.ID,
+		OrganizationID: suite.testOrg.ID,
+		BuildingName:   name,
+		BuildingCode:   code,
+		BuildingType:   buildingType,
+		TotalFloors:    floors,
+		HasElevator:    hasElevator,
+		ActiveStatus:   true,
+		Metadata:       models.BuildingMetadata{},
 	}
 
 	err := suite.buildingRepo.Create(building)
@@ -892,31 +936,20 @@ func (suite *BuildingIntegrationTestSuite) createTestBuildingWithDetails(name, c
 
 func (suite *BuildingIntegrationTestSuite) createTestBuildingWithMetadata(name, code string, buildingType models.BuildingType, metadata map[string]interface{}) *models.Building {
 	building := &models.Building{
-		PropertyID:   suite.testProperty.ID,
-		BuildingName: name,
-		BuildingCode: code,
-		BuildingType: buildingType,
-		TotalFloors:  5,
-		HasElevator:  false,
-		ActiveStatus: true,
-		Metadata:     models.BuildingMetadata(metadata),
+		PropertyID:     suite.testProperty.ID,
+		OrganizationID: suite.testOrg.ID,
+		BuildingName:   name,
+		BuildingCode:   code,
+		BuildingType:   buildingType,
+		TotalFloors:    5,
+		HasElevator:    false,
+		ActiveStatus:   true,
+		Metadata:       models.BuildingMetadata(metadata),
 	}
 
 	err := suite.buildingRepo.Create(building)
 	require.NoError(suite.T(), err)
 	return building
-}
-
-// Utility functions
-func getTestDatabaseURL() string {
-	if url := os.Getenv("TEST_DATABASE_URL"); url != "" {
-		return url
-	}
-	// Use the main database for testing if test database is not available
-	if url := os.Getenv("DATABASE_URL"); url != "" {
-		return url
-	}
-	return "postgres://postgres:password@localhost:5432/tenantly?sslmode=disable"
 }
 
 func intPtrComprehensive(i int) *int {

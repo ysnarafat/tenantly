@@ -1,0 +1,36 @@
+<h2 mat-dialog-title class="dialog-title">
+  <mat-icon color="warn">warning</mat-icon>
+  {{ 'COMMON.CONFIRM_DELETE_DIALOG.TITLE' | translate: { entityLabel: data.entityLabel } }}
+</h2>
+
+<mat-dialog-content>
+  <p class="warning-text">
+    {{ 'COMMON.CONFIRM_DELETE_DIALOG.WARNING' | translate: { entityLabel: data.entityLabel,
+    entityName: data.entityName } }}
+  </p>
+
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label
+      >{{ 'COMMON.CONFIRM_DELETE_DIALOG.LABEL' | translate: { entityName: data.entityName }
+      }}</mat-label
+    >
+    <input
+      matInput
+      [formControl]="confirmationInput"
+      [placeholder]="
+        'COMMON.CONFIRM_DELETE_DIALOG.PLACEHOLDER' | translate: { entityName: data.entityName }
+      "
+      (keyup.enter)="onConfirm()"
+      autocomplete="off"
+    />
+  </mat-form-field>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">{{ 'COMMON.BUTTONS.CANCEL' | translate }}</button>
+  <button mat-flat-button color="warn" [disabled]="!isMatch" (click)="onConfirm()">
+    <mat-icon>delete</mat-icon>
+    {{ 'COMMON.CONFIRM_DELETE_DIALOG.CONFIRM_BUTTON' | translate: { entityLabel: data.entityLabel }
+    }}
+  </button>
+</mat-dialog-actions>

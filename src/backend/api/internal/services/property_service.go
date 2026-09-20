@@ -53,30 +53,41 @@ func (s *PropertyService) CreateProperty(req *models.CreatePropertyRequest, user
 	}
 
 	// Log audit
-	s.auditService.LogUserAction(userID, "CREATE", "properties", &property.ID, nil, property)
+	_ = s.auditService.LogUserAction(userID, "CREATE", "properties", &property.ID, nil, property)
 
 	return property, nil
 }
 
 // GetProperty retrieves a property by ID
-func (s *PropertyService) GetProperty(id int) (*models.Property, error) {
+func (s *PropertyService) GetProperty(id, orgID int) (*models.Property, error) {
 	property, err := s.propertyRepo.GetByID(id)
 	if err != nil {
+		// Pass the not-found error through unwrapped — the handler matches on
+		// this exact string to return 404 instead of 500. Wrapping it here (as
+		// with the other errors) would break that check.
+		if err.Error() == "property not found" {
+			return nil, err
+		}
 		return nil, fmt.Errorf("failed to get property: %w", err)
+	}
+	if property.OrganizationID != orgID {
+		return nil, fmt.Errorf("property not found")
 	}
 	return property, nil
 }
 
 // GetPropertyWithStats retrieves a property with aggregated statistics including building context
-func (s *PropertyService) GetPropertyWithStats(id int) (*models.PropertyWithStats, error) {
+func (s *PropertyService) GetPropertyWithStats(id, orgID int) (*models.PropertyWithStats, error) {
 	property, err := s.propertyRepo.GetByIDWithStats(id)
 	if err != nil {
+		if err.Error() == "property not found" {
+			return nil, err
+		}
 		return nil, fmt.Errorf("failed to get property with stats: %w", err)
 	}
-
-	// Building context is already included in the PropertyWithStats from repository
-	// Additional building-level aggregations would be implemented in the repository layer
-
+	if property.OrganizationID != orgID {
+		return nil, fmt.Errorf("property not found")
+	}
 	return property, nil
 }
 
@@ -104,15 +115,27 @@ func (s *PropertyService) ListProperties(filters map[string]interface{}, page, p
 		return nil, 0, fmt.Errorf("failed to list properties: %w", err)
 	}
 
+	// An empty result must serialize as [], not null: clients (and the search
+	// endpoint, which routes through here) iterate this directly.
+	if properties == nil {
+		properties = []*models.Property{}
+	}
+
 	return properties, total, nil
 }
 
 // UpdateProperty updates a property with validation
-func (s *PropertyService) UpdateProperty(id int, req *models.UpdatePropertyRequest, userID int) (*models.Property, error) {
+func (s *PropertyService) UpdateProperty(id int, req *models.UpdatePropertyRequest, userID, orgID int) (*models.Property, error) {
 	// Get existing property for audit logging
 	existingProperty, err := s.propertyRepo.GetByID(id)
 	if err != nil {
+		if err.Error() == "property not found" {
+			return nil, err
+		}
 		return nil, fmt.Errorf("failed to get existing property: %w", err)
+	}
+	if existingProperty.OrganizationID != orgID {
+		return nil, fmt.Errorf("property not found")
 	}
 
 	// Validate property type if provided
@@ -140,17 +163,23 @@ func (s *PropertyService) UpdateProperty(id int, req *models.UpdatePropertyReque
 	}
 
 	// Log audit
-	s.auditService.LogUserAction(userID, "UPDATE", "properties", &id, existingProperty, updatedProperty)
+	_ = s.auditService.LogUserAction(userID, "UPDATE", "properties", &id, existingProperty, updatedProperty)
 
 	return updatedProperty, nil
 }
 
 // DeleteProperty soft deletes a property with cascade validation
-func (s *PropertyService) DeleteProperty(id int, userID int) error {
+func (s *PropertyService) DeleteProperty(id int, userID, orgID int) error {
 	// Get existing property for audit logging
 	existingProperty, err := s.propertyRepo.GetByID(id)
 	if err != nil {
+		if err.Error() == "property not found" {
+			return err
+		}
 		return fmt.Errorf("failed to get existing property: %w", err)
+	}
+	if existingProperty.OrganizationID != orgID {
+		return fmt.Errorf("property not found")
 	}
 
 	// Check if property has active buildings
@@ -178,7 +207,7 @@ func (s *PropertyService) DeleteProperty(id int, userID int) error {
 	}
 
 	// Log audit
-	s.auditService.LogUserAction(userID, "DELETE", "properties", &id, existingProperty, nil)
+	_ = s.auditService.LogUserAction(userID, "DELETE", "properties", &id, existingProperty, nil)
 
 	return nil
 }
@@ -199,10 +228,13 @@ func (s *PropertyService) validatePropertyType(propertyType string) error {
 }
 
 // GetPropertyAggregations returns property-level aggregations with building breakdowns
-func (s *PropertyService) GetPropertyAggregations(id int) (map[string]interface{}, error) {
+func (s *PropertyService) GetPropertyAggregations(id, orgID int) (map[string]interface{}, error) {
 	property, err := s.propertyRepo.GetByIDWithStats(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get property aggregations: %w", err)
+	}
+	if property.OrganizationID != orgID {
+		return nil, fmt.Errorf("property not found")
 	}
 
 	occupancyRate := 0.0
@@ -349,7 +381,7 @@ func (s *PropertyService) GetPropertiesWithBuildingStats(filters map[string]inte
 	// Enhance each property with building statistics
 	enhancedProperties := make([]*models.PropertyWithStats, 0, len(properties))
 	for _, property := range properties {
-		enhanced, err := s.GetPropertyWithStats(property.ID)
+		enhanced, err := s.propertyRepo.GetByIDWithStats(property.ID)
 		if err != nil {
 			continue // Skip properties with errors but don't fail the entire request
 		}

@@ -63,7 +63,7 @@ func RateLimitMiddleware(limiter *RateLimiter, auditService *database.AuditServi
 		if !limiter.Allow(key) {
 			// Log rate limit violation
 			if auditService != nil {
-				auditService.LogSystemAction(
+				_ = auditService.LogSystemAction(
 					"RATE_LIMIT_EXCEEDED",
 					"security",
 					nil,
@@ -134,7 +134,7 @@ func SessionTimeoutMiddleware(auditService *database.AuditService) gin.HandlerFu
 		// Log user activity for session management
 		if auditService != nil && userID != nil {
 			if userIDInt, ok := userID.(int); ok {
-				auditService.LogUserAction(
+				_ = auditService.LogUserAction(
 					userIDInt,
 					"SESSION_ACTIVITY",
 					models.TableUsers,
@@ -173,7 +173,7 @@ func AuditMiddleware(auditService *database.AuditService) gin.HandlerFunc {
 
 		if auditService != nil {
 			if userIDInt != nil {
-				auditService.LogUserAction(
+				_ = auditService.LogUserAction(
 					*userIDInt,
 					"API_REQUEST",
 					"api_requests",
@@ -190,7 +190,7 @@ func AuditMiddleware(auditService *database.AuditService) gin.HandlerFunc {
 					},
 				)
 			} else {
-				auditService.LogSystemAction(
+				_ = auditService.LogSystemAction(
 					"API_REQUEST",
 					"api_requests",
 					nil,

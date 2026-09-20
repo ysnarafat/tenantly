@@ -1,5 +1,9 @@
 .property-card {
   mat-card-header {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 16px;
     margin-bottom: 16px;
 
     mat-icon[mat-card-avatar] {
@@ -11,40 +15,71 @@
     }
   }
 
-  .property-info {
+  // Same name/code stacking as .building-info below — bold name, muted
+  // code underneath — so a property reads the same way as its buildings.
+  .property-name-block {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    margin-bottom: 16px;
+    gap: 2px;
+    min-width: 0;
 
-    .info-row {
-      display: flex;
+    .property-name {
+      font-size: 1.1rem;
+      color: var(--text-primary);
+      overflow-wrap: anywhere;
+    }
+
+    .property-code {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+  }
+
+  // Type, address, and building count — pushed to the right of the name
+  // block when there's room, wrapping below it when there isn't.
+  .property-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-left: auto;
+    min-width: 0;
+
+    .type-chip {
+      font-size: 0.75rem;
+      min-height: 24px;
+    }
+
+    .address-line {
+      display: inline-flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
+      min-width: 0;
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      overflow-wrap: anywhere;
 
-      mat-icon {
-        font-size: 20px;
-        width: 20px;
-        height: 20px;
-        color: rgba(0, 0, 0, 0.54);
+      .pin-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+        color: var(--text-hint);
+        flex-shrink: 0;
       }
+    }
 
-      span {
-        font-size: 0.875rem;
-        color: rgba(0, 0, 0, 0.87);
-      }
-
-      .building-count {
-        margin-left: auto;
-        font-weight: 500;
-      }
+    .building-count {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      flex-shrink: 0;
     }
   }
 
   .buildings-section {
     margin-top: 16px;
     padding-top: 16px;
-    border-top: 1px solid rgba(0, 0, 0, 0.12);
+    border-top: 1px solid var(--border-color);
 
     .section-header {
       display: flex;
@@ -57,19 +92,33 @@
         font-size: 1rem;
         font-weight: 500;
         margin: 0;
-        color: rgba(0, 0, 0, 0.87);
+        color: var(--text-primary);
       }
 
       h4 {
         font-size: 0.875rem;
       }
 
-      button {
-        transform: scale(0.8);
+      .add-building-btn,
+      .add-unit-btn {
+        height: 32px;
+        padding: 0 12px;
+        font-size: 0.8125rem;
+        line-height: 32px;
 
-        &.small-fab {
-          transform: scale(0.7);
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+          margin-right: 2px;
         }
+      }
+
+      .add-unit-btn {
+        height: 28px;
+        padding: 0 10px;
+        font-size: 0.75rem;
+        line-height: 28px;
       }
     }
 
@@ -82,14 +131,14 @@
 
       span {
         font-size: 0.875rem;
-        color: rgba(0, 0, 0, 0.6);
+        color: var(--text-secondary);
       }
     }
   }
 
   .building-card {
     margin-bottom: 12px;
-    background-color: rgba(0, 0, 0, 0.02);
+    background-color: var(--bg-secondary);
 
     .building-header {
       display: flex;
@@ -100,11 +149,11 @@
       transition: background-color 0.2s;
 
       &:hover {
-        background-color: rgba(0, 0, 0, 0.04);
+        background-color: var(--bg-hover);
       }
 
       mat-icon {
-        color: rgba(0, 0, 0, 0.54);
+        color: var(--text-hint);
       }
 
       .building-info {
@@ -115,23 +164,23 @@
 
         strong {
           font-size: 0.875rem;
-          color: rgba(0, 0, 0, 0.87);
+          color: var(--text-primary);
         }
 
         .building-code {
           font-size: 0.75rem;
-          color: rgba(0, 0, 0, 0.6);
+          color: var(--text-secondary);
         }
       }
 
       .expand-icon {
-        color: rgba(0, 0, 0, 0.54);
+        color: var(--text-hint);
       }
     }
 
     .units-section {
       padding: 12px;
-      border-top: 1px solid rgba(0, 0, 0, 0.08);
+      border-top: 1px solid var(--border-light);
 
       .section-header {
         margin-bottom: 8px;
@@ -147,9 +196,9 @@
           align-items: center;
           gap: 8px;
           padding: 8px;
-          background-color: white;
+          background-color: var(--bg-surface);
           border-radius: 4px;
-          border: 1px solid rgba(0, 0, 0, 0.12);
+          border: 1px solid var(--border-color);
           transition: all 0.2s;
 
           &:hover {
@@ -197,7 +246,7 @@
 
             strong {
               font-size: 0.875rem;
-              color: rgba(0, 0, 0, 0.87);
+              color: var(--text-primary);
               white-space: nowrap;
               overflow: hidden;
               text-overflow: ellipsis;
@@ -205,7 +254,7 @@
 
             .unit-type {
               font-size: 0.75rem;
-              color: rgba(0, 0, 0, 0.6);
+              color: var(--text-secondary);
             }
 
             .unit-rent {
@@ -242,13 +291,13 @@
         justify-content: center;
         padding: 32px 16px;
         text-align: center;
-        color: rgba(0, 0, 0, 0.6);
+        color: var(--text-secondary);
 
         mat-icon {
           font-size: 48px;
           width: 48px;
           height: 48px;
-          color: rgba(0, 0, 0, 0.26);
+          color: var(--border-color);
           margin-bottom: 12px;
         }
 
@@ -262,9 +311,10 @@
 
   mat-card-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     padding: 8px 16px;
-    border-top: 1px solid rgba(0, 0, 0, 0.12);
+    border-top: 1px solid var(--border-color);
 
     button {
       mat-icon {
@@ -273,6 +323,95 @@
         width: 18px;
         height: 18px;
       }
+    }
+  }
+}
+
+// ── Responsive ──────────────────────────────────────────────────────────────
+@media (max-width: 768px) {
+  .property-card {
+    .building-header {
+      gap: 8px;
+      padding: 10px;
+
+      .building-info strong {
+        overflow-wrap: anywhere;
+      }
+    }
+
+    .units-section .units-grid {
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .property-card {
+    mat-card-header {
+      mat-icon[mat-card-avatar] {
+        width: 32px;
+        height: 32px;
+        font-size: 32px;
+      }
+    }
+
+    .property-meta {
+      margin-left: 0;
+    }
+
+    .property-meta .building-count {
+      flex-basis: 100%;
+    }
+
+    // The apartment icon here is purely decorative (the building name/code
+    // right next to it already says what it is) — drop it to leave the
+    // limited width for the name and the actually-actionable icon buttons.
+    .building-header {
+      gap: 6px;
+      padding: 8px;
+
+      > mat-icon:first-child {
+        display: none;
+      }
+
+      .building-info-btn,
+      .building-edit-btn {
+        width: 32px;
+        height: 32px;
+        padding: 4px;
+
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+        }
+      }
+
+      .expand-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+    }
+
+    .units-section .units-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .unit-item .unit-actions button {
+      width: 28px;
+      height: 28px;
+
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+    }
+
+    mat-card-actions button {
+      flex: 1 1 auto;
+      justify-content: center;
     }
   }
 }

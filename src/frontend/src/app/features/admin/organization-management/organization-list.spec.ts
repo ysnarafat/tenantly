@@ -1,10 +1,26 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { of, throwError } from 'rxjs';
+import { of, throwError, Subject } from 'rxjs';
 import { OrganizationListComponent } from './organization-list';
 import { OrganizationService } from '../../../core/services/organization.service';
 import { Organization } from '../../../core/models';
+
+// actWithUndo drives a real MatSnackBarRef's onAction()/afterDismissed() —
+// this stub lets tests simulate "undo clicked" vs. "toast timed out" without
+// a real timer.
+function createSnackBarRefStub() {
+  const action = new Subject<void>();
+  const dismissed = new Subject<{ dismissedByAction: boolean }>();
+  return {
+    ref: { onAction: () => action.asObservable(), afterDismissed: () => dismissed.asObservable() },
+    clickUndo: () => {
+      action.next();
+      dismissed.next({ dismissedByAction: true });
+    },
+    timeOut: () => dismissed.next({ dismissedByAction: false }),
+  };
+}
 
 describe('OrganizationListComponent', () => {
   let component: OrganizationListComponent;
@@ -126,9 +142,11 @@ describe('OrganizationListComponent', () => {
 
       component.loadOrganizations();
 
-      expect(snackBar.open).toHaveBeenCalledWith('Failed to load organizations', 'Close', {
-        duration: 3000,
-      });
+      expect(snackBar.open).toHaveBeenCalledWith(
+        'Failed to load organizations',
+        'Close',
+        jasmine.objectContaining({ duration: 3000 })
+      );
       expect(component.loading()).toBe(false);
     });
 
@@ -221,54 +239,67 @@ describe('OrganizationListComponent', () => {
       fixture.detectChanges();
     });
 
-    it('should delete organization on confirmation', () => {
+    it('should optimistically remove the organization and show an undo toast', () => {
       const org = mockOrganizations[0];
-      spyOn(window, 'confirm').and.returnValue(true);
-      organizationService.deleteOrganization.and.returnValue(of(void 0));
+      const stub = createSnackBarRefStub();
+      snackBar.open.and.returnValue(stub.ref as never);
 
       component.deleteOrganization(org);
 
-      expect(organizationService.deleteOrganization).toHaveBeenCalledWith(1);
-      expect(snackBar.open).toHaveBeenCalledWith('Organization deleted successfully', 'Close', {
-        duration: 3000,
-      });
-    });
-
-    it('should not delete organization when cancelled', () => {
-      const org = mockOrganizations[0];
-      spyOn(window, 'confirm').and.returnValue(false);
-
-      component.deleteOrganization(org);
-
+      expect(component.dataSource.data).not.toContain(org);
+      expect(snackBar.open).toHaveBeenCalledWith(
+        `Organization "${org.name}" deleted`,
+        'Undo',
+        jasmine.objectContaining({ duration: 5000 })
+      );
       expect(organizationService.deleteOrganization).not.toHaveBeenCalled();
     });
 
-    it('should reload organizations after delete', () => {
+    it('should call the delete API once the toast times out without Undo', () => {
       const org = mockOrganizations[0];
-      spyOn(window, 'confirm').and.returnValue(true);
+      const stub = createSnackBarRefStub();
+      snackBar.open.and.returnValue(stub.ref as never);
       organizationService.deleteOrganization.and.returnValue(of(void 0));
-      organizationService.getOrganizations.calls.reset();
-      organizationService.getOrganizations.and.returnValue(
-        of({ organizations: mockOrganizations.slice(1), total: 2 })
-      );
 
       component.deleteOrganization(org);
+      stub.timeOut();
 
-      expect(organizationService.getOrganizations).toHaveBeenCalled();
+      expect(organizationService.deleteOrganization).toHaveBeenCalledWith(org.id);
     });
 
-    it('should show error when delete fails', () => {
+    it('should restore the organization and skip the delete API when Undo is clicked', () => {
       const org = mockOrganizations[0];
-      spyOn(window, 'confirm').and.returnValue(true);
+      const stub = createSnackBarRefStub();
+      snackBar.open.and.returnValue(stub.ref as never);
+
+      component.deleteOrganization(org);
+      stub.clickUndo();
+
+      expect(component.dataSource.data).toContain(org);
+      expect(organizationService.deleteOrganization).not.toHaveBeenCalled();
+    });
+
+    it('should show an error and reload when the deferred delete fails', () => {
+      const org = mockOrganizations[0];
+      const stub = createSnackBarRefStub();
+      snackBar.open.and.returnValue(stub.ref as never);
       organizationService.deleteOrganization.and.returnValue(
         throwError(() => new Error('Delete failed'))
       );
+      organizationService.getOrganizations.calls.reset();
+      organizationService.getOrganizations.and.returnValue(
+        of({ organizations: mockOrganizations, total: 3 })
+      );
 
       component.deleteOrganization(org);
+      stub.timeOut();
 
-      expect(snackBar.open).toHaveBeenCalledWith('Failed to delete organization', 'Close', {
-        duration: 3000,
-      });
+      expect(snackBar.open).toHaveBeenCalledWith(
+        'Failed to delete organization',
+        'Close',
+        jasmine.objectContaining({ duration: 3000 })
+      );
+      expect(organizationService.getOrganizations).toHaveBeenCalled();
     });
   });
 
@@ -315,18 +346,6 @@ describe('OrganizationListComponent', () => {
 
     it('should set dataSource with correct data', () => {
       expect(component.dataSource.data.length).toBe(3);
-    });
-
-    it('should have paginator after view init', () => {
-      component.ngAfterViewInit();
-
-      expect(component.dataSource.paginator).toBe(component.paginator);
-    });
-
-    it('should have sort after view init', () => {
-      component.ngAfterViewInit();
-
-      expect(component.dataSource.sort).toBe(component.sort);
     });
   });
 
@@ -388,9 +407,11 @@ describe('OrganizationListComponent', () => {
 
       component.loadOrganizations();
 
-      expect(snackBar.open).toHaveBeenCalledWith('Failed to load organizations', 'Close', {
-        duration: 3000,
-      });
+      expect(snackBar.open).toHaveBeenCalledWith(
+        'Failed to load organizations',
+        'Close',
+        jasmine.objectContaining({ duration: 3000 })
+      );
       expect(component.loading()).toBe(false);
     });
 

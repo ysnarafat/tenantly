@@ -43,8 +43,12 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	Token                 string                 `json:"token"`
-	RefreshToken          string                 `json:"refresh_token"`
+	Token string `json:"token"`
+	// RefreshToken is deliberately never serialized (json:"-") — it's set as an
+	// httpOnly cookie by the handler instead of being exposed to JS-readable
+	// response bodies, which would otherwise let XSS steal a long-lived
+	// credential rather than just a session token.
+	RefreshToken          string                 `json:"-"`
 	User                  User                   `json:"user"`
 	Organizations         []UserOrganizationRole `json:"organizations"`
 	DefaultOrganizationID int                    `json:"default_organization_id"`
@@ -62,6 +66,15 @@ type ChangePasswordRequest struct {
 
 type ResetPasswordRequest struct {
 	Email string `json:"email" binding:"required,email"`
+}
+
+// AdminResetPasswordRequest is used by an admin to set a new password for
+// another user directly (e.g. the user forgot theirs and can't self-serve
+// via email reset). Unlike ChangePasswordRequest, it has no current-password
+// field — the caller's own admin role is the authorization, checked by the
+// handler/service, not proof of knowing the old password.
+type AdminResetPasswordRequest struct {
+	NewPassword string `json:"new_password" binding:"required,min=8"`
 }
 
 type ResetPasswordToken struct {

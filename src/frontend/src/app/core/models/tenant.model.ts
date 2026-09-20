@@ -20,7 +20,9 @@ export interface Tenant {
   tenant_type: TenantType;
   phone_number?: string;
   email?: string;
-  nid_number?: string;
+  // Only the last four digits of the NID are returned by default. The full
+  // value must be fetched from the role-gated reveal endpoint.
+  nid_last_four?: string;
   address?: string;
   active: boolean;
   created_at: string; // ISO 8601 UTC timestamp

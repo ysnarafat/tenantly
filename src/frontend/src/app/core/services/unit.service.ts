@@ -9,6 +9,9 @@ import {
   CreateUnitRequest,
   UpdateUnitRequest,
   UnitListResponse,
+  Pagination,
+  BulkCreateUnitsRequest,
+  BulkCreateUnitsResponse,
 } from '../models';
 import { environment } from '../../../environments/environment';
 
@@ -41,10 +44,15 @@ export class UnitService {
     return this.http.get<UnitListResponse>(this.apiUrl, { params: httpParams });
   }
 
-  getUnitsByBuilding(buildingId: number): Observable<UnitListResponse> {
+  // The backend returns the richer UnitWithDetails shape here (tenant_name,
+  // lease_active, property/building names) — a distinct return type from
+  // getUnits()'s plain Unit[], which is why this doesn't share UnitListResponse.
+  getUnitsByBuilding(
+    buildingId: number
+  ): Observable<{ units: UnitWithDetails[]; pagination: Pagination }> {
     return this.http
       .get<{
-        data: Unit[];
+        data: UnitWithDetails[];
         meta: { total: number; page: number; page_size: number };
       }>(`${environment.apiUrl}/buildings/${buildingId}/units/list`)
       .pipe(
@@ -66,10 +74,6 @@ export class UnitService {
     return this.http.get<Unit>(`${this.apiUrl}/${id}`);
   }
 
-  getUnitWithDetails(id: number): Observable<UnitWithDetails> {
-    return this.http.get<UnitWithDetails>(`${this.apiUrl}/${id}/details`);
-  }
-
   createUnit(unit: CreateUnitRequest): Observable<Unit> {
     return this.http.post<Unit>(this.apiUrl, unit);
   }
@@ -82,8 +86,13 @@ export class UnitService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  // Bulk operations
-  createBulkUnits(units: CreateUnitRequest[]): Observable<Unit[]> {
-    return this.http.post<Unit[]>(`${this.apiUrl}/bulk`, units);
+  bulkCreateUnits(
+    buildingId: number,
+    request: BulkCreateUnitsRequest
+  ): Observable<BulkCreateUnitsResponse> {
+    return this.http.post<BulkCreateUnitsResponse>(
+      `${environment.apiUrl}/buildings/${buildingId}/units/bulk`,
+      request
+    );
   }
 }

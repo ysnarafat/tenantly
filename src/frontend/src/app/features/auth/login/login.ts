@@ -1,26 +1,38 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import {
+  ReactiveFormsModule,
+  FormsModule,
+  FormBuilder,
+  FormGroup,
+  Validators,
+} from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter } from 'rxjs';
 import { TranslateModule } from '@ngx-translate/core';
 import { AuthService, LoginRequest } from '../../../core/services/auth.service';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { setRememberMe } from '../../../shared/utils/auth-storage.utils';
+import { notifyError } from '../../../shared/utils/notify.utils';
 
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    FormsModule,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
+    MatIconModule,
     MatProgressSpinnerModule,
     TranslateModule,
   ],
@@ -35,6 +47,11 @@ export class Login implements OnInit {
   loginForm: FormGroup;
   loading = signal(false);
   error = signal<unknown>(null);
+  showPassword = false;
+  // Defaults checked: previously every login persisted via localStorage
+  // regardless of this checkbox (it was never wired up), so defaulting to
+  // checked keeps that behavior for anyone who doesn't touch it.
+  rememberMe = true;
 
   constructor() {
     this.loginForm = this.fb.group({
@@ -49,16 +66,6 @@ export class Login implements OnInit {
 
     this.authService.error$.pipe(takeUntilDestroyed()).subscribe((error) => this.error.set(error));
 
-    // Listen for authentication success — navigation is handled by auth effects
-    this.authService.isAuthenticated$
-      .pipe(
-        takeUntilDestroyed(),
-        filter((isAuth) => isAuth)
-      )
-      .subscribe(() => {
-        this.snackBar.open('Login successful!', 'Close', { duration: 3000 });
-      });
-
     // Listen for errors
     this.authService.error$
       .pipe(
@@ -66,11 +73,11 @@ export class Login implements OnInit {
         filter((error) => !!error)
       )
       .subscribe((error: unknown) => {
-        console.error('Login error:', error);
+        console.error('Login error:', safeErrorMessage(error));
         const errorMessage =
-          (error as { error?: { error?: string } }).error?.error ||
+          (error as { message?: string })?.message ||
           'Login failed. Please check your credentials.';
-        this.snackBar.open(errorMessage, 'Close', { duration: 5000 });
+        notifyError(this.snackBar, errorMessage);
       });
   }
 
@@ -85,6 +92,11 @@ export class Login implements OnInit {
         username: this.loginForm.value.username,
         password: this.loginForm.value.password,
       };
+
+      // Set before dispatching: the login effect writes tokens synchronously
+      // once the HTTP response arrives, so the flag must already be in
+      // place by then to land in the right storage.
+      setRememberMe(this.rememberMe);
 
       // Dispatch login action through AuthService (which uses NgRx)
       this.authService.login(loginRequest);

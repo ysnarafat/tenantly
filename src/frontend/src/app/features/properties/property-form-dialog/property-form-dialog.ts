@@ -56,7 +56,10 @@ export class PropertyFormDialogComponent implements OnInit {
         property?.property_code || this.generatePropertyCode(),
         [Validators.required, Validators.pattern(/^[A-Z0-9-]+$/)],
       ],
-      address: [property?.address || '', [Validators.required, Validators.minLength(5)]],
+      address: [
+        property?.address || '',
+        [Validators.required, Validators.minLength(5), Validators.maxLength(500)],
+      ],
       city: [property?.city || '', [Validators.maxLength(50)]],
       postal_code: [property?.postal_code || '', [Validators.pattern(/^\d{4}$/)]],
       property_type: [property?.property_type || 'Residential', [Validators.required]],

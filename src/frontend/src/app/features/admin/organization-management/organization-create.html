@@ -1,55 +1,59 @@
 <div class="organization-form-container">
-  <h1>Create New Organization</h1>
+  <h1>{{ 'ORG_CREATE.PAGE_TITLE' | translate }}</h1>
 
   <form [formGroup]="form" (ngSubmit)="submit()" class="form">
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Organization Name</mat-label>
+      <mat-label>{{ 'ORG_CREATE.FIELDS.NAME' | translate }}</mat-label>
       <input matInput formControlName="name" required />
       @if (form.get('name')?.hasError('required')) {
-      <mat-error>Name is required</mat-error>
+      <mat-error>{{ 'ORG_CREATE.ERRORS.NAME_REQUIRED' | translate }}</mat-error>
       } @if (form.get('name')?.hasError('minlength')) {
-      <mat-error>Name must be at least 3 characters</mat-error>
+      <mat-error>{{ 'ORG_CREATE.ERRORS.NAME_MIN' | translate }}</mat-error>
       }
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Slug</mat-label>
+      <mat-label>{{ 'ORG_CREATE.FIELDS.SLUG' | translate }}</mat-label>
       <input matInput formControlName="slug" required />
-      <mat-hint>Auto-generated from name</mat-hint>
+      <mat-hint>{{ 'ORG_CREATE.FIELDS.SLUG_HINT' | translate }}</mat-hint>
       @if (form.get('slug')?.hasError('required')) {
-      <mat-error>Slug is required</mat-error>
+      <mat-error>{{ 'ORG_CREATE.ERRORS.SLUG_REQUIRED' | translate }}</mat-error>
       }
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Subscription Tier</mat-label>
+      <mat-label>{{ 'ORG_CREATE.FIELDS.TIER' | translate }}</mat-label>
       <mat-select formControlName="subscriptionTier">
-        <mat-option value="basic">Basic</mat-option>
-        <mat-option value="professional">Professional</mat-option>
-        <mat-option value="enterprise">Enterprise</mat-option>
+        <mat-option value="basic">{{ 'ORG_CREATE.TIERS.BASIC' | translate }}</mat-option>
+        <mat-option value="professional"
+          >{{ 'ORG_CREATE.TIERS.PROFESSIONAL' | translate }}</mat-option
+        >
+        <mat-option value="enterprise">{{ 'ORG_CREATE.TIERS.ENTERPRISE' | translate }}</mat-option>
       </mat-select>
     </mat-form-field>
 
     <mat-form-field appearance="outline" class="full-width">
-      <mat-label>Max Users</mat-label>
+      <mat-label>{{ 'ORG_CREATE.FIELDS.MAX_USERS' | translate }}</mat-label>
       <input matInput type="number" formControlName="maxUsers" required />
       @if (form.get('maxUsers')?.hasError('required')) {
-      <mat-error>Max users is required</mat-error>
+      <mat-error>{{ 'ORG_CREATE.ERRORS.MAX_USERS_REQUIRED' | translate }}</mat-error>
       } @if (form.get('maxUsers')?.hasError('min')) {
-      <mat-error>Max users must be at least 1</mat-error>
+      <mat-error>{{ 'ORG_CREATE.ERRORS.MAX_USERS_MIN' | translate }}</mat-error>
       }
     </mat-form-field>
 
     <div class="form-actions">
-      <button mat-raised-button color="primary" type="submit" [disabled]="loading || form.invalid">
+      <button mat-flat-button color="primary" type="submit" [disabled]="loading || form.invalid">
         @if (loading) {
         <mat-spinner diameter="20"></mat-spinner>
-        <span>Creating...</span>
+        <span>{{ 'ORG_CREATE.BUTTONS.CREATING' | translate }}</span>
         } @else {
-        <span>Create Organization</span>
+        <span>{{ 'ORG_CREATE.BUTTONS.CREATE' | translate }}</span>
         }
       </button>
-      <button mat-stroked-button type="button" (click)="cancel()">Cancel</button>
+      <button mat-stroked-button type="button" (click)="cancel()">
+        {{ 'ORG_CREATE.BUTTONS.CANCEL' | translate }}
+      </button>
     </div>
   </form>
 </div>

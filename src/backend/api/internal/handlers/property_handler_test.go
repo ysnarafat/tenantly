@@ -2,91 +2,44 @@ package handlers
 
 import (
 	"bytes"
-	"database/sql"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/database"
 	"github.com/ysnarafat/tenantly/internal/models"
 	"github.com/ysnarafat/tenantly/internal/repositories"
 	"github.com/ysnarafat/tenantly/internal/services"
+	"github.com/ysnarafat/tenantly/internal/testutil"
 
 	_ "github.com/lib/pq"
 )
 
-func setupPropertyHandlerTestDB(t *testing.T) (*sql.DB, func()) {
-	db, err := sql.Open("postgres", "postgres://postgres:password@localhost:5432/tenantly_test?sslmode=disable")
-	if err != nil {
-		t.Skip("Skipping test: PostgreSQL not available")
-	}
+// handlersTestDB is this package's own database. See testutil.SetupTestDBNamed
+// for why it cannot share one with the repository tests.
+const handlersTestDB = "tenantly_test_handlers"
 
-	// Create test tables
-	createPropertyHandlerTestTables(t, db)
+// testUserPassword is the plaintext the integration suites log in with; their
+// seeded users must carry its bcrypt digest.
+const testUserPassword = "password"
 
-	cleanup := func() {
-		dropPropertyHandlerTestTables(t, db)
-		db.Close()
-	}
-
-	return db, cleanup
-}
-
-func createPropertyHandlerTestTables(t *testing.T, db *sql.DB) {
-	// Create properties table for testing
-	_, err := db.Exec(`
-		CREATE TABLE IF NOT EXISTS properties (
-			id SERIAL PRIMARY KEY,
-			property_name VARCHAR(200) NOT NULL,
-			property_code VARCHAR(50) UNIQUE NOT NULL,
-			address TEXT NOT NULL,
-			city VARCHAR(100),
-			postal_code VARCHAR(20),
-			property_type VARCHAR(50) NOT NULL CHECK (property_type IN ('Residential', 'Commercial', 'Mixed')),
-			total_buildings INTEGER DEFAULT 1,
-			metadata JSONB,
-			active BOOLEAN DEFAULT true,
-			created_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC'),
-			updated_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC')
-		)
-	`)
-	if err != nil {
-		t.Fatalf("Failed to create properties table: %v", err)
-	}
-
-	// Create audit_log table for testing
-	_, err = db.Exec(`
-		CREATE TABLE IF NOT EXISTS audit_log (
-			id SERIAL PRIMARY KEY,
-			user_id INTEGER,
-			action VARCHAR(50) NOT NULL,
-			table_name VARCHAR(50) NOT NULL,
-			record_id INTEGER,
-			old_values JSONB,
-			new_values JSONB,
-			created_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC')
-		)
-	`)
-	if err != nil {
-		t.Fatalf("Failed to create audit_log table: %v", err)
-	}
-}
-
-func dropPropertyHandlerTestTables(t *testing.T, db *sql.DB) {
-	tables := []string{"properties", "audit_log"}
-	for _, table := range tables {
-		_, err := db.Exec("DROP TABLE IF EXISTS " + table + " CASCADE")
-		if err != nil {
-			t.Logf("Warning: Failed to drop table %s: %v", table, err)
-		}
-	}
+func setupPropertyHandlerTestDB(t *testing.T) (*sqlx.DB, func()) {
+	// Migrate rather than hand-roll the schema: the tables these handlers
+	// write to are org-scoped, and a bespoke CREATE TABLE drifts from the
+	// migrations the moment a column is added.
+	return testutil.SetupTestDBNamed(t, handlersTestDB)
 }
 
 func setupPropertyHandler(t *testing.T) (*PropertyHandler, *gin.Engine, func()) {
 	db, cleanup := setupPropertyHandlerTestDB(t)
+
+	orgID := testutil.CreateTestOrganization(t, db)
+	userID := testutil.CreateTestUser(t, db)
 
 	propertyRepo := repositories.NewPropertyRepository(db)
 	auditService := database.NewAuditService(db)
@@ -96,9 +49,11 @@ func setupPropertyHandler(t *testing.T) (*PropertyHandler, *gin.Engine, func()) 
 	gin.SetMode(gin.TestMode)
 	router := gin.New()
 
-	// Add middleware to set user_id in context
+	// Stand in for AuthRequired + RequireOrgContext, which every real
+	// property route sits behind.
 	router.Use(func(c *gin.Context) {
-		c.Set("user_id", 1)
+		c.Set("user_id", userID)
+		c.Set("org_id", orgID)
 		c.Next()
 	})
 
@@ -143,6 +98,8 @@ func TestPropertyHandler_CreateProperty(t *testing.T) {
 			expectError:    true,
 		},
 		{
+			// Rejected by the binding's `oneof` tag before the handler runs,
+			// so this is a 400, not the 500 this case originally expected.
 			name: "Invalid property type",
 			requestBody: models.CreatePropertyRequest{
 				PropertyName: "Test Property 2",
@@ -150,7 +107,7 @@ func TestPropertyHandler_CreateProperty(t *testing.T) {
 				Address:      "789 Test Street",
 				PropertyType: "InvalidType",
 			},
-			expectedStatus: http.StatusInternalServerError,
+			expectedStatus: http.StatusBadRequest,
 			expectError:    true,
 		},
 		{
@@ -162,6 +119,17 @@ func TestPropertyHandler_CreateProperty(t *testing.T) {
 				PropertyType: models.PropertyTypeResidential,
 			},
 			expectedStatus: http.StatusConflict,
+			expectError:    true,
+		},
+		{
+			name: "Address exceeds max length",
+			requestBody: models.CreatePropertyRequest{
+				PropertyName: "Test Property 5",
+				PropertyCode: "TEST005",
+				Address:      strings.Repeat("a", 501),
+				PropertyType: models.PropertyTypeResidential,
+			},
+			expectedStatus: http.StatusBadRequest,
 			expectError:    true,
 		},
 	}
@@ -190,7 +158,8 @@ func TestPropertyHandler_CreateProperty(t *testing.T) {
 					t.Errorf("Expected error in response but got none")
 				}
 			} else {
-				if _, exists := response["property"]; !exists {
+				// Create/Update return the property itself, not a wrapper.
+				if _, exists := response["id"]; !exists {
 					t.Errorf("Expected property in response but got none")
 				}
 			}
@@ -322,9 +291,9 @@ func TestPropertyHandler_GetProperty(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	var createResponse map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &createResponse)
-	property := createResponse["property"].(map[string]interface{})
-	propertyID := int(property["id"].(float64))
+	_ = json.Unmarshal(w.Body.Bytes(), &createResponse)
+	// CreateProperty returns the property itself, not a wrapper.
+	propertyID := int(createResponse["id"].(float64))
 
 	tests := []struct {
 		name           string
@@ -414,9 +383,9 @@ func TestPropertyHandler_UpdateProperty(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	var createResponse map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &createResponse)
-	property := createResponse["property"].(map[string]interface{})
-	propertyID := int(property["id"].(float64))
+	_ = json.Unmarshal(w.Body.Bytes(), &createResponse)
+	// CreateProperty returns the property itself, not a wrapper.
+	propertyID := int(createResponse["id"].(float64))
 
 	newName := "Updated Property Name"
 	newAddress := "Updated Address"
@@ -463,6 +432,15 @@ func TestPropertyHandler_UpdateProperty(t *testing.T) {
 			expectedStatus: http.StatusBadRequest,
 			expectError:    true,
 		},
+		{
+			name:       "Address exceeds max length",
+			propertyID: strconv.Itoa(propertyID),
+			requestBody: models.UpdatePropertyRequest{
+				Address: stringPtr(strings.Repeat("a", 501)),
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectError:    true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -489,7 +467,8 @@ func TestPropertyHandler_UpdateProperty(t *testing.T) {
 					t.Errorf("Expected error in response but got none")
 				}
 			} else {
-				if _, exists := response["property"]; !exists {
+				// Create/Update return the property itself, not a wrapper.
+				if _, exists := response["id"]; !exists {
 					t.Errorf("Expected property in response but got none")
 				}
 			}
@@ -519,9 +498,9 @@ func TestPropertyHandler_DeleteProperty(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	var createResponse map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &createResponse)
-	property := createResponse["property"].(map[string]interface{})
-	propertyID := int(property["id"].(float64))
+	_ = json.Unmarshal(w.Body.Bytes(), &createResponse)
+	// CreateProperty returns the property itself, not a wrapper.
+	propertyID := int(createResponse["id"].(float64))
 
 	tests := []struct {
 		name           string

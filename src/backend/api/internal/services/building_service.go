@@ -84,22 +84,32 @@ func (s *BuildingService) CreateBuilding(req *models.CreateBuildingRequest) (*mo
 	}
 
 	// Log audit action
-	s.auditService.LogSystemAction("CREATE", "buildings", &building.ID, nil, building)
+	_ = s.auditService.LogSystemAction("CREATE", "buildings", &building.ID, nil, building)
 
 	return building, nil
 }
 
 // GetBuilding retrieves a building by ID with proper error handling
-func (s *BuildingService) GetBuilding(id int) (*models.Building, error) {
+func (s *BuildingService) GetBuilding(id, orgID int) (*models.Building, error) {
 	building, err := s.buildingRepo.GetByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get building: %w", err)
+	}
+	if building.OrganizationID != orgID {
+		return nil, fmt.Errorf("failed to get building: building not found")
 	}
 	return building, nil
 }
 
 // GetBuildingWithStats retrieves a building with aggregated statistics and data enrichment
-func (s *BuildingService) GetBuildingWithStats(id int) (*models.BuildingWithStats, error) {
+func (s *BuildingService) GetBuildingWithStats(id, orgID int) (*models.BuildingWithStats, error) {
+	building, err := s.buildingRepo.GetByID(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get building with stats: %w", err)
+	}
+	if building.OrganizationID != orgID {
+		return nil, fmt.Errorf("failed to get building with stats: building not found")
+	}
 	buildingStats, err := s.buildingRepo.GetWithStats(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get building with stats: %w", err)
@@ -108,11 +118,14 @@ func (s *BuildingService) GetBuildingWithStats(id int) (*models.BuildingWithStat
 }
 
 // UpdateBuilding updates a building with metadata validation and audit logging
-func (s *BuildingService) UpdateBuilding(id int, req *models.UpdateBuildingRequest) (*models.Building, error) {
+func (s *BuildingService) UpdateBuilding(id int, req *models.UpdateBuildingRequest, orgID int) (*models.Building, error) {
 	// Get existing building for audit logging
 	existingBuilding, err := s.buildingRepo.GetByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get existing building: %w", err)
+	}
+	if existingBuilding.OrganizationID != orgID {
+		return nil, fmt.Errorf("building not found")
 	}
 
 	// Validate building update request
@@ -167,17 +180,20 @@ func (s *BuildingService) UpdateBuilding(id int, req *models.UpdateBuildingReque
 	}
 
 	// Log audit action
-	s.auditService.LogSystemAction("UPDATE", "buildings", &id, existingBuilding, updatedBuilding)
+	_ = s.auditService.LogSystemAction("UPDATE", "buildings", &id, existingBuilding, updatedBuilding)
 
 	return updatedBuilding, nil
 }
 
 // DeleteBuilding performs soft delete with active unit constraint validation
-func (s *BuildingService) DeleteBuilding(id int) error {
+func (s *BuildingService) DeleteBuilding(id, orgID int) error {
 	// Get existing building for audit logging
 	existingBuilding, err := s.buildingRepo.GetByID(id)
 	if err != nil {
 		return fmt.Errorf("failed to get existing building: %w", err)
+	}
+	if existingBuilding.OrganizationID != orgID {
+		return fmt.Errorf("building not found")
 	}
 
 	// Validate building deletion constraints
@@ -191,7 +207,7 @@ func (s *BuildingService) DeleteBuilding(id int) error {
 	}
 
 	// Log audit action
-	s.auditService.LogSystemAction("DELETE", "buildings", &id, existingBuilding, nil)
+	_ = s.auditService.LogSystemAction("DELETE", "buildings", &id, existingBuilding, nil)
 
 	return nil
 }
@@ -318,7 +334,7 @@ func (s *BuildingService) BulkCreateBuildings(req *models.BulkCreateBuildingsReq
 
 	// Log audit actions for each building
 	for _, building := range buildings {
-		s.auditService.LogSystemAction("CREATE", "buildings", &building.ID, nil, building)
+		_ = s.auditService.LogSystemAction("CREATE", "buildings", &building.ID, nil, building)
 	}
 
 	return buildings, nil
@@ -348,11 +364,13 @@ func (s *BuildingService) SearchBuildings(filters *models.BuildingSearchFilters)
 }
 
 // GetBuildingAnalytics retrieves building performance metrics
-func (s *BuildingService) GetBuildingAnalytics(id int) (*models.BuildingAnalytics, error) {
-	// Validate building exists
-	_, err := s.buildingRepo.GetByID(id)
+func (s *BuildingService) GetBuildingAnalytics(id, orgID int) (*models.BuildingAnalytics, error) {
+	building, err := s.buildingRepo.GetByID(id)
 	if err != nil {
 		return nil, fmt.Errorf("building validation failed: %w", err)
+	}
+	if building.OrganizationID != orgID {
+		return nil, fmt.Errorf("building validation failed: building not found")
 	}
 
 	analytics, err := s.buildingRepo.GetAnalytics(id)
@@ -390,9 +408,9 @@ func (s *BuildingService) GetPropertyBuildingAnalytics(propertyID int) ([]*model
 
 // CalculateBuildingOccupancyRate calculates the occupancy rate for a building
 func (s *BuildingService) CalculateBuildingOccupancyRate(id int) (float64, error) {
-	analytics, err := s.GetBuildingAnalytics(id)
+	analytics, err := s.buildingRepo.GetAnalytics(id)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("building validation failed: %w", err)
 	}
 
 	return analytics.OccupancyRate, nil
@@ -400,9 +418,9 @@ func (s *BuildingService) CalculateBuildingOccupancyRate(id int) (float64, error
 
 // CalculateBuildingRevenue calculates the monthly revenue for a building
 func (s *BuildingService) CalculateBuildingRevenue(id int) (float64, error) {
-	analytics, err := s.GetBuildingAnalytics(id)
+	analytics, err := s.buildingRepo.GetAnalytics(id)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("building validation failed: %w", err)
 	}
 
 	return analytics.MonthlyRevenue, nil
@@ -410,9 +428,9 @@ func (s *BuildingService) CalculateBuildingRevenue(id int) (float64, error) {
 
 // GetBuildingUnitCounts returns unit counts for a building
 func (s *BuildingService) GetBuildingUnitCounts(id int) (total int, occupied int, vacant int, err error) {
-	analytics, err := s.GetBuildingAnalytics(id)
+	analytics, err := s.buildingRepo.GetAnalytics(id)
 	if err != nil {
-		return 0, 0, 0, err
+		return 0, 0, 0, fmt.Errorf("building validation failed: %w", err)
 	}
 
 	return analytics.UnitCount, analytics.OccupiedUnits, analytics.VacantUnits, nil
@@ -723,11 +741,14 @@ func (s *BuildingService) AdvancedSearchBuildings(req *models.BuildingSearchRequ
 }
 
 // GetBuildingUnits retrieves units for a specific building with pagination
-func (s *BuildingService) GetBuildingUnits(buildingID int, page, pageSize int) (*models.BuildingUnitsResponse, error) {
-	// Validate building exists
+func (s *BuildingService) GetBuildingUnits(buildingID, orgID int, page, pageSize int) (*models.BuildingUnitsResponse, error) {
+	// Validate building exists and belongs to the caller's organization (IDOR guard)
 	building, err := s.buildingRepo.GetByID(buildingID)
 	if err != nil {
 		return nil, fmt.Errorf("building validation failed: %w", err)
+	}
+	if building.OrganizationID != orgID {
+		return nil, fmt.Errorf("building validation failed: building not found")
 	}
 
 	// Set defaults
@@ -769,6 +790,12 @@ func (s *BuildingService) GetBuildingUnits(buildingID int, page, pageSize int) (
 		TotalPages:  totalPages,
 		HasNext:     hasNext,
 		HasPrev:     hasPrev,
+	}
+
+	// A building with no units must serialize as [], not null: clients iterate
+	// this field directly.
+	if units == nil {
+		units = []*models.BuildingUnitSummary{}
 	}
 
 	response := &models.BuildingUnitsResponse{
@@ -975,15 +1002,18 @@ func (s *BuildingService) ExportBuildingData(req *models.BuildingExportRequest) 
 }
 
 // UpdateBuildingStatus updates building activation/deactivation status
-func (s *BuildingService) UpdateBuildingStatus(buildingID int, req *models.BuildingStatusRequest) (*models.Building, error) {
+func (s *BuildingService) UpdateBuildingStatus(buildingID, orgID int, req *models.BuildingStatusRequest) (*models.Building, error) {
 	// Get existing building for audit logging
 	existingBuilding, err := s.buildingRepo.GetByID(buildingID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get existing building: %w", err)
 	}
+	if existingBuilding.OrganizationID != orgID {
+		return nil, fmt.Errorf("building not found")
+	}
 
 	// If deactivating, check for active units
-	if !req.ActiveStatus {
+	if !*req.ActiveStatus {
 		if err := s.ValidateBuildingDeletion(buildingID); err != nil {
 			return nil, fmt.Errorf("cannot deactivate building: %w", err)
 		}
@@ -991,7 +1021,7 @@ func (s *BuildingService) UpdateBuildingStatus(buildingID int, req *models.Build
 
 	// Prepare updates
 	updates := map[string]interface{}{
-		"active_status": req.ActiveStatus,
+		"active_status": *req.ActiveStatus,
 		"updated_at":    time.Now(),
 	}
 
@@ -1008,10 +1038,10 @@ func (s *BuildingService) UpdateBuildingStatus(buildingID int, req *models.Build
 
 	// Log audit action
 	action := "ACTIVATE"
-	if !req.ActiveStatus {
+	if !*req.ActiveStatus {
 		action = "DEACTIVATE"
 	}
-	s.auditService.LogSystemAction(action, "buildings", &buildingID, existingBuilding, updatedBuilding)
+	_ = s.auditService.LogSystemAction(action, "buildings", &buildingID, existingBuilding, updatedBuilding)
 
 	return updatedBuilding, nil
 }

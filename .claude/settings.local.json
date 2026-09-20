@@ -21,7 +21,11 @@
       "Bash(git am *)",
       "Bash(git apply *)",
       "Bash(git stash *)",
-      "Bash(git config *)"
+      "Bash(git config *)",
+      "Bash(xargs -I{} echo {})"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "angular-cli"
+  ]
 }

@@ -174,7 +174,7 @@ func (s *UserService) CreateUser(req *models.CreateUserRequest) (*models.User, e
 
 	// Log user creation
 	if s.auditService != nil {
-		s.auditService.LogSystemAction(
+		_ = s.auditService.LogSystemAction(
 			models.AuditActionCreate,
 			models.TableUsers,
 			&user.ID,
@@ -197,14 +197,14 @@ func (s *UserService) Login(req *models.LoginRequest, clientIP, userAgent string
 
 	user, err := s.userRepo.GetByUsername(username)
 	if err != nil {
-		return nil, fmt.Errorf("no user found with that username")
+		return nil, fmt.Errorf("invalid credentials")
 	}
 
 	// Check if user is active
 	if !user.Active {
 		// Log failed login attempt for inactive user
 		if s.auditService != nil {
-			s.auditService.LogUserAction(
+			_ = s.auditService.LogUserAction(
 				user.ID,
 				models.AuditActionLogin,
 				models.TableUsers,
@@ -226,7 +226,7 @@ func (s *UserService) Login(req *models.LoginRequest, clientIP, userAgent string
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
 		// Log failed login attempt
 		if s.auditService != nil {
-			s.auditService.LogUserAction(
+			_ = s.auditService.LogUserAction(
 				user.ID,
 				models.AuditActionLogin,
 				models.TableUsers,
@@ -252,7 +252,7 @@ func (s *UserService) Login(req *models.LoginRequest, clientIP, userAgent string
 
 	// Log successful login
 	if s.auditService != nil {
-		s.auditService.LogUserAction(
+		_ = s.auditService.LogUserAction(
 			user.ID,
 			models.AuditActionLogin,
 			models.TableUsers,
@@ -448,7 +448,7 @@ func (s *UserService) UpdateUser(id int, req *models.UpdateUserRequest) error {
 
 	// Log user update
 	if s.auditService != nil {
-		s.auditService.LogSystemAction(
+		_ = s.auditService.LogSystemAction(
 			models.AuditActionUpdate,
 			models.TableUsers,
 			&id,
@@ -458,6 +458,78 @@ func (s *UserService) UpdateUser(id int, req *models.UpdateUserRequest) error {
 	}
 
 	return nil
+}
+
+// UpdateUserInOrganization updates a user only if they belong to orgID, preventing
+// cross-organization mutation (IDOR) by non-SUPER_ADMIN callers.
+func (s *UserService) UpdateUserInOrganization(id int, req *models.UpdateUserRequest, orgID int) error {
+	if _, err := s.GetUserByIDInOrganization(id, orgID); err != nil {
+		return fmt.Errorf("user not found")
+	}
+	return s.UpdateUser(id, req)
+}
+
+// DeleteUserInOrganization deletes a user only if they belong to orgID, preventing
+// cross-organization mutation (IDOR) by non-SUPER_ADMIN callers.
+func (s *UserService) DeleteUserInOrganization(id int, orgID int) error {
+	if _, err := s.GetUserByIDInOrganization(id, orgID); err != nil {
+		return fmt.Errorf("user not found")
+	}
+	return s.DeleteUser(id)
+}
+
+// AdminResetPassword lets an admin set a new password for another user
+// directly — unlike ChangePassword, it has no current-password check; the
+// caller's admin role (verified by the handler before this is reached) is
+// the authorization, covering cases like the user forgetting their password
+// with no working self-service email reset.
+func (s *UserService) AdminResetPassword(id int, newPassword string) error {
+	user, err := s.userRepo.GetByID(id)
+	if err != nil {
+		return fmt.Errorf("user not found")
+	}
+
+	if err := s.ValidatePassword(newPassword); err != nil {
+		return fmt.Errorf("new password validation failed: %w", err)
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), 12)
+	if err != nil {
+		return fmt.Errorf("failed to hash new password: %w", err)
+	}
+
+	updates := map[string]interface{}{
+		"password_hash": string(hashedPassword),
+		"updated_at":    time.Now(),
+	}
+	if err := s.userRepo.Update(id, updates); err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+
+	if s.auditService != nil {
+		_ = s.auditService.LogUserAction(
+			id,
+			"ADMIN_PASSWORD_RESET",
+			models.TableUsers,
+			&id,
+			nil,
+			map[string]interface{}{
+				"username": user.Username,
+			},
+		)
+	}
+
+	return nil
+}
+
+// AdminResetPasswordInOrganization resets a user's password only if they
+// belong to orgID, preventing cross-organization mutation (IDOR) by
+// non-SUPER_ADMIN callers — mirrors UpdateUserInOrganization.
+func (s *UserService) AdminResetPasswordInOrganization(id int, newPassword string, orgID int) error {
+	if _, err := s.GetUserByIDInOrganization(id, orgID); err != nil {
+		return fmt.Errorf("user not found")
+	}
+	return s.AdminResetPassword(id, newPassword)
 }
 
 func (s *UserService) DeleteUser(id int) error {
@@ -474,7 +546,7 @@ func (s *UserService) DeleteUser(id int) error {
 
 	// Log user deletion
 	if s.auditService != nil {
-		s.auditService.LogSystemAction(
+		_ = s.auditService.LogSystemAction(
 			models.AuditActionDelete,
 			models.TableUsers,
 			&id,
@@ -616,7 +688,7 @@ func (s *UserService) RefreshToken(refreshTokenString string) (*models.LoginResp
 
 	// Log token refresh
 	if s.auditService != nil {
-		s.auditService.LogUserAction(
+		_ = s.auditService.LogUserAction(
 			user.ID,
 			"TOKEN_REFRESH",
 			models.TableUsers,
@@ -640,7 +712,7 @@ func (s *UserService) RefreshToken(refreshTokenString string) (*models.LoginResp
 func (s *UserService) Logout(userID int, clientIP, userAgent string) error {
 	// Log logout
 	if s.auditService != nil {
-		s.auditService.LogUserAction(
+		_ = s.auditService.LogUserAction(
 			userID,
 			models.AuditActionLogout,
 			models.TableUsers,
@@ -693,7 +765,7 @@ func (s *UserService) ChangePassword(userID int, currentPassword, newPassword st
 
 	// Log password change
 	if s.auditService != nil {
-		s.auditService.LogUserAction(
+		_ = s.auditService.LogUserAction(
 			userID,
 			"PASSWORD_CHANGE",
 			models.TableUsers,
@@ -715,7 +787,7 @@ func (s *UserService) ResetPassword(email string) error {
 		// Don't reveal if email exists or not for security
 		// Still log the attempt for security monitoring
 		if s.auditService != nil {
-			s.auditService.LogSystemAction(
+			_ = s.auditService.LogSystemAction(
 				"PASSWORD_RESET_REQUEST",
 				models.TableUsers,
 				nil,
@@ -755,7 +827,7 @@ func (s *UserService) ResetPassword(email string) error {
 
 	// Log password reset request
 	if s.auditService != nil {
-		s.auditService.LogUserAction(
+		_ = s.auditService.LogUserAction(
 			user.ID,
 			"PASSWORD_RESET_REQUEST",
 			models.TableUsers,
@@ -819,7 +891,7 @@ func (s *UserService) ConfirmPasswordReset(token, newPassword string) error {
 	if err := s.userRepo.MarkResetTokenUsed(resetToken.ID); err != nil {
 		// Log error but don't fail the operation
 		if s.auditService != nil {
-			s.auditService.LogSystemAction(
+			_ = s.auditService.LogSystemAction(
 				"PASSWORD_RESET_TOKEN_CLEANUP_FAILED",
 				models.TableUsers,
 				&user.ID,
@@ -834,7 +906,7 @@ func (s *UserService) ConfirmPasswordReset(token, newPassword string) error {
 
 	// Log successful password reset
 	if s.auditService != nil {
-		s.auditService.LogUserAction(
+		_ = s.auditService.LogUserAction(
 			user.ID,
 			"PASSWORD_RESET_COMPLETED",
 			models.TableUsers,
@@ -971,7 +1043,7 @@ func (s *UserService) RegisterWithInvitation(req *models.RegisterWithInvitationR
 
 	// Log user creation
 	if s.auditService != nil {
-		s.auditService.LogSystemAction(
+		_ = s.auditService.LogSystemAction(
 			models.AuditActionCreate,
 			models.TableUsers,
 			&user.ID,

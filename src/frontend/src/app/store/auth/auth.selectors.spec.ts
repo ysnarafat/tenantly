@@ -65,7 +65,6 @@ describe('Auth Selectors', () => {
   const mockAuthState: AuthState = {
     user: mockUser,
     token: 'test-token',
-    refreshToken: 'test-refresh-token',
     expiresAt: '2099-12-31T23:59:59Z',
     isAuthenticated: true,
     loading: false,
@@ -102,13 +101,6 @@ describe('Auth Selectors', () => {
     it('should select the token', () => {
       const result = AuthSelectors.selectToken.projector(mockAuthState);
       expect(result).toBe('test-token');
-    });
-  });
-
-  describe('selectRefreshToken', () => {
-    it('should select the refresh token', () => {
-      const result = AuthSelectors.selectRefreshToken.projector(mockAuthState);
-      expect(result).toBe('test-refresh-token');
     });
   });
 

@@ -57,7 +57,7 @@ type Property struct {
 type CreatePropertyRequest struct {
 	PropertyName   string           `json:"property_name" binding:"required,max=200"`
 	PropertyCode   string           `json:"property_code" binding:"required,max=50"`
-	Address        string           `json:"address" binding:"required"`
+	Address        string           `json:"address" binding:"required,max=500"`
 	City           string           `json:"city" binding:"omitempty,max=100"`
 	PostalCode     string           `json:"postal_code" binding:"omitempty,max=20"`
 	PropertyType   PropertyType     `json:"property_type" binding:"required,oneof=Residential Commercial Mixed"`
@@ -68,7 +68,7 @@ type CreatePropertyRequest struct {
 // UpdatePropertyRequest represents the request to update a property
 type UpdatePropertyRequest struct {
 	PropertyName   *string           `json:"property_name" binding:"omitempty,max=200"`
-	Address        *string           `json:"address" binding:"omitempty"`
+	Address        *string           `json:"address" binding:"omitempty,max=500"`
 	City           *string           `json:"city" binding:"omitempty,max=100"`
 	PostalCode     *string           `json:"postal_code" binding:"omitempty,max=20"`
 	PropertyType   *PropertyType     `json:"property_type" binding:"omitempty,oneof=Residential Commercial Mixed"`

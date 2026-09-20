@@ -1,0 +1,38 @@
+# Normalize line endings across all platforms.
+# Text files are stored as LF in the repo and checked out as LF everywhere,
+# so tooling that expects LF (Prettier, gofmt) behaves identically locally and in CI.
+* text=auto eol=lf
+
+# Explicit LF for source/config (belt-and-suspenders; covered by the rule above).
+*.ts     text eol=lf
+*.js     text eol=lf
+*.mjs    text eol=lf
+*.cjs    text eol=lf
+*.html   text eol=lf
+*.scss   text eol=lf
+*.css    text eol=lf
+*.json   text eol=lf
+*.go     text eol=lf
+*.cs     text eol=lf
+*.md     text eol=lf
+*.yml    text eol=lf
+*.yaml   text eol=lf
+*.sql    text eol=lf
+*.sh     text eol=lf
+
+# Windows-specific scripts keep CRLF.
+*.bat    text eol=crlf
+*.cmd    text eol=crlf
+*.ps1    text eol=crlf
+
+# Binary files: never touch line endings.
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.woff   binary
+*.woff2  binary
+*.ttf    binary
+*.eot    binary
+*.pdf    binary

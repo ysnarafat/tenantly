@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/models"
 )
 
 // UserInvitationRepository handles database operations for user invitations
 type UserInvitationRepository struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
 // NewUserInvitationRepository creates a new instance of UserInvitationRepository
-func NewUserInvitationRepository(db *sql.DB) *UserInvitationRepository {
+func NewUserInvitationRepository(db *sqlx.DB) *UserInvitationRepository {
 	return &UserInvitationRepository{db: db}
 }
 
@@ -157,7 +158,7 @@ func (r *UserInvitationRepository) GetPendingByOrganization(orgID int) ([]*model
 	if err != nil {
 		return nil, fmt.Errorf("failed to query pending invitations: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var invitations []*models.UserInvitation
 	for rows.Next() {
@@ -262,7 +263,7 @@ func (r *UserInvitationRepository) GetByOrganization(orgID int) ([]*models.UserI
 	if err != nil {
 		return nil, fmt.Errorf("failed to query invitations: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var invitations []*models.UserInvitation
 	for rows.Next() {

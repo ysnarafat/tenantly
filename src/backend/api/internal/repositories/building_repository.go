@@ -6,17 +6,18 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/models"
 	"github.com/ysnarafat/tenantly/internal/models/columns"
 )
 
 // BuildingRepository implements the BuildingRepositoryInterface
 type BuildingRepository struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
 // NewBuildingRepository creates a new building repository instance
-func NewBuildingRepository(db *sql.DB) *BuildingRepository {
+func NewBuildingRepository(db *sqlx.DB) *BuildingRepository {
 	return &BuildingRepository{db: db}
 }
 
@@ -107,9 +108,11 @@ func (r *BuildingRepository) GetByPropertyID(propertyID int) ([]*models.Building
 	if err != nil {
 		return nil, fmt.Errorf("failed to get buildings by property: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
-	var buildings []*models.Building
+	// make(..., 0) rather than a nil-defaulted var — a nil slice serializes to
+	// JSON null (not []), which crashes frontend code that assumes an array.
+	buildings := make([]*models.Building, 0)
 	for rows.Next() {
 		var building models.Building
 		err := rows.Scan(
@@ -267,7 +270,7 @@ func (r *BuildingRepository) BulkCreate(buildings []*models.Building) error {
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
 	query := fmt.Sprintf(`
 		INSERT INTO %s (%s, %s, %s, %s, %s,
@@ -380,9 +383,11 @@ func (r *BuildingRepository) Search(filters *models.BuildingSearchFilters) ([]*m
 	if err != nil {
 		return nil, fmt.Errorf("failed to search buildings: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
-	var buildings []*models.Building
+	// make(..., 0) rather than a nil-defaulted var — a nil slice serializes to
+	// JSON null (not []), which crashes frontend code that assumes an array.
+	buildings := make([]*models.Building, 0)
 	for rows.Next() {
 		var building models.Building
 		err := rows.Scan(
@@ -446,7 +451,6 @@ func (r *BuildingRepository) CountByProperty(propertyID int, filters *models.Bui
 		if filters.MaxFloors != nil {
 			whereConditions = append(whereConditions, fmt.Sprintf("%s <= $%d", columns.BuildingTotalFloors, argIndex))
 			args = append(args, *filters.MaxFloors)
-			argIndex++
 		}
 	} else {
 		whereConditions = append(whereConditions, "active_status = true")
@@ -554,9 +558,11 @@ func (r *BuildingRepository) GetByPropertyWithSorting(propertyID int, filters *m
 	if err != nil {
 		return nil, fmt.Errorf("failed to get buildings with sorting: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
-	var buildings []*models.Building
+	// make(..., 0) rather than a nil-defaulted var — a nil slice serializes to
+	// JSON null (not []), which crashes frontend code that assumes an array.
+	buildings := make([]*models.Building, 0)
 	for rows.Next() {
 		var building models.Building
 		err := rows.Scan(
@@ -723,9 +729,11 @@ func (r *BuildingRepository) AdvancedSearch(req *models.BuildingSearchRequest) (
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to search buildings: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
-	var buildings []*models.Building
+	// make(..., 0) rather than a nil-defaulted var — a nil slice serializes to
+	// JSON null (not []), which crashes frontend code that assumes an array.
+	buildings := make([]*models.Building, 0)
 	for rows.Next() {
 		var building models.Building
 		err := rows.Scan(
@@ -769,7 +777,7 @@ func (r *BuildingRepository) GetBuildingUnits(buildingID int, offset, limit int)
 			COALESCE(t.name, '') as tenant_name,
 			COALESCE(l.active, false) as lease_active
 		FROM %s u
-		LEFT JOIN leases l ON u.%s = l.unit_id AND l.active = true
+		LEFT JOIN leases l ON u.%s = l.unit_id AND l.active = true AND l.end_date >= CURRENT_DATE
 		LEFT JOIN tenants t ON l.tenant_id = t.id
 		WHERE u.%s = $1
 		ORDER BY u.%s, u.%s, u.%s
@@ -785,7 +793,7 @@ func (r *BuildingRepository) GetBuildingUnits(buildingID int, offset, limit int)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get building units: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var units []*models.BuildingUnitSummary
 	for rows.Next() {
@@ -823,9 +831,11 @@ func (r *BuildingRepository) GetByOrganizationID(orgID int) ([]*models.Building,
 	if err != nil {
 		return nil, fmt.Errorf("failed to get buildings by organization: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
-	var buildings []*models.Building
+	// make(..., 0) rather than a nil-defaulted var — a nil slice serializes to
+	// JSON null (not []), which crashes frontend code that assumes an array.
+	buildings := make([]*models.Building, 0)
 	for rows.Next() {
 		var building models.Building
 		var metadata sql.NullString

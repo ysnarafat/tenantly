@@ -68,6 +68,27 @@ type CreateUnitRequest struct {
 	Metadata   UnitMetadata `json:"metadata" binding:"omitempty"`
 }
 
+// BulkCreateUnitItem represents a single unit within a bulk-create request.
+// BuildingID/PropertyID are omitted here — they're hoisted to the wrapper
+// request (BuildingID from the URL path, PropertyID derived server-side from
+// the building record), never trusted from the client per-item.
+type BulkCreateUnitItem struct {
+	UnitNumber string       `json:"unit_number" binding:"required,max=50"`
+	UnitName   string       `json:"unit_name" binding:"omitempty,max=100"`
+	Floor      int          `json:"floor" binding:"omitempty"`
+	Section    string       `json:"section" binding:"omitempty,max=50"`
+	UnitType   UnitType     `json:"unit_type" binding:"required,oneof=Shop Apartment Office Parking Storage Other"`
+	Metadata   UnitMetadata `json:"metadata" binding:"omitempty"`
+}
+
+// BulkCreateUnitsRequest represents the request to create multiple units under a single building
+type BulkCreateUnitsRequest struct {
+	BuildingID     int                  `json:"-"`
+	PropertyID     int                  `json:"-"`
+	OrganizationID int                  `json:"-"`
+	Units          []BulkCreateUnitItem `json:"units" binding:"required,min=1,dive"`
+}
+
 // UpdateUnitRequest represents the request to update a unit
 type UpdateUnitRequest struct {
 	UnitName *string       `json:"unit_name" binding:"omitempty,max=100"`

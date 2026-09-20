@@ -23,10 +23,7 @@ func NewOrganizationHandler(organizationService *services.OrganizationService) *
 func (h *OrganizationHandler) CreateOrganization(c *gin.Context) {
 	var req models.CreateOrganizationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request data",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request data", err)
 		return
 	}
 
@@ -40,13 +37,10 @@ func (h *OrganizationHandler) CreateOrganization(c *gin.Context) {
 	org, err := h.organizationService.CreateOrganization(&req, userID.(int))
 	if err != nil {
 		if err.Error() == "organization slug already exists" {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			respondError(c, http.StatusConflict, "ORGANIZATION_SLUG_EXISTS", "Organization slug already exists", err)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to create organization",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusInternalServerError, "CREATE_ORGANIZATION_FAILED", "Failed to create organization", err)
 		return
 	}
 
@@ -76,10 +70,7 @@ func (h *OrganizationHandler) ListOrganizations(c *gin.Context) {
 
 	orgs, err := h.organizationService.ListOrganizations(activeOnly)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to list organizations",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusInternalServerError, "LIST_ORGANIZATIONS_FAILED", "Failed to list organizations", err)
 		return
 	}
 
@@ -103,10 +94,7 @@ func (h *OrganizationHandler) UpdateOrganization(c *gin.Context) {
 
 	var req models.UpdateOrganizationRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request data",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request data", err)
 		return
 	}
 
@@ -123,10 +111,7 @@ func (h *OrganizationHandler) UpdateOrganization(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Organization not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to update organization",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusInternalServerError, "UPDATE_ORGANIZATION_FAILED", "Failed to update organization", err)
 		return
 	}
 
@@ -156,10 +141,7 @@ func (h *OrganizationHandler) DeleteOrganization(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Organization not found"})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to delete organization",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusInternalServerError, "DELETE_ORGANIZATION_FAILED", "Failed to delete organization", err)
 		return
 	}
 
@@ -176,10 +158,7 @@ func (h *OrganizationHandler) InviteUser(c *gin.Context) {
 
 	var req models.InviteUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error":   "Invalid request data",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request data", err)
 		return
 	}
 
@@ -197,13 +176,10 @@ func (h *OrganizationHandler) InviteUser(c *gin.Context) {
 			return
 		}
 		if err.Error() == "cannot invite users to inactive organization" || err.Error() == "invitation already pending for this email" {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			respondError(c, http.StatusConflict, "INVITE_USER_CONFLICT", "Unable to invite user to this organization", err)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to invite user",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusInternalServerError, "INVITE_USER_FAILED", "Failed to invite user", err)
 		return
 	}
 
@@ -220,10 +196,7 @@ func (h *OrganizationHandler) GetPendingInvitations(c *gin.Context) {
 
 	invitations, err := h.organizationService.GetPendingInvitations(orgID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to get pending invitations",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusInternalServerError, "GET_PENDING_INVITATIONS_FAILED", "Failed to get pending invitations", err)
 		return
 	}
 
@@ -259,13 +232,10 @@ func (h *OrganizationHandler) RevokeInvitation(c *gin.Context) {
 			return
 		}
 		if err.Error() == "cannot revoke accepted invitation" {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			respondError(c, http.StatusConflict, "REVOKE_INVITATION_CONFLICT", "Cannot revoke this invitation", err)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to revoke invitation",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusInternalServerError, "REVOKE_INVITATION_FAILED", "Failed to revoke invitation", err)
 		return
 	}
 
@@ -282,7 +252,7 @@ func (h *OrganizationHandler) ValidateInvitationToken(c *gin.Context) {
 
 	invitation, err := h.organizationService.ValidateInvitationToken(token)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "INVALID_INVITATION_TOKEN", "Invalid or expired invitation token", err)
 		return
 	}
 
@@ -322,17 +292,14 @@ func (h *OrganizationHandler) AcceptInvitation(c *gin.Context) {
 	invitation, err := h.organizationService.AcceptInvitation(token, userID.(int))
 	if err != nil {
 		if err.Error() == "invalid or expired invitation token" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			respondError(c, http.StatusBadRequest, "INVALID_INVITATION_TOKEN", "Invalid or expired invitation token", err)
 			return
 		}
 		if err.Error() == "invitation has already been accepted" || err.Error() == "invitation has expired" {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			respondError(c, http.StatusConflict, "ACCEPT_INVITATION_CONFLICT", "Unable to accept this invitation", err)
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to accept invitation",
-			"details": err.Error(),
-		})
+		respondError(c, http.StatusInternalServerError, "ACCEPT_INVITATION_FAILED", "Failed to accept invitation", err)
 		return
 	}
 

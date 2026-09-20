@@ -690,9 +690,10 @@ func (s *BuildingAnalyticsService) getRevenuePeriod(buildingID int, period strin
 	}
 
 	totalRevenue := analytics.MonthlyRevenue
-	if period == "quarter" {
+	switch period {
+	case "quarter":
 		totalRevenue *= 3
-	} else if period == "year" {
+	case "year":
 		totalRevenue *= 12
 	}
 

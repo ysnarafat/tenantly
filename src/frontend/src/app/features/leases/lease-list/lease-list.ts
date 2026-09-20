@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
+import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
@@ -12,13 +13,19 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSelectModule } from '@angular/material/select';
+import { MatOptionModule } from '@angular/material/core';
 import { TranslateModule } from '@ngx-translate/core';
 import { LeaseService, LeaseWithDetails } from '../../../core/services/lease.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CreateLeaseDialog } from '../create-lease-dialog/create-lease-dialog';
 import { EditLeaseDialog } from '../edit-lease-dialog/edit-lease-dialog';
+import { RenewLeaseDialog } from '../renew-lease-dialog/renew-lease-dialog';
+import { LoadingSpinner } from '../../../shared/components/loading-spinner/loading-spinner';
+import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm-delete-dialog/confirm-delete-dialog';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
 
 @Component({
   selector: 'app-lease-list',
@@ -27,6 +34,7 @@ import { EditLeaseDialog } from '../edit-lease-dialog/edit-lease-dialog';
     CommonModule,
     FormsModule,
     MatTableModule,
+    MatSortModule,
     MatButtonModule,
     MatIconModule,
     MatCardModule,
@@ -35,9 +43,11 @@ import { EditLeaseDialog } from '../edit-lease-dialog/edit-lease-dialog';
     MatFormFieldModule,
     MatInputModule,
     MatPaginatorModule,
-    MatProgressSpinnerModule,
     MatTooltipModule,
+    MatSelectModule,
+    MatOptionModule,
     TranslateModule,
+    LoadingSpinner,
   ],
   templateUrl: './lease-list.html',
   styleUrls: ['./lease-list.scss'],
@@ -72,6 +82,17 @@ export class LeaseList implements OnInit {
   ];
   expandableColumns = [...this.displayedColumns, 'expandedDetail'];
 
+  sortState: Sort = { active: '', direction: '' };
+
+  private readonly sortAccessors: Record<string, (l: LeaseWithDetails) => string | number> = {
+    tenant_name: (l) => l.tenant_name?.toLowerCase() ?? '',
+    lease_type: (l) => l.lease_type ?? '',
+    monthly_rent: (l) => l.monthly_rent,
+    duration: (l) => l.duration_months,
+    status: (l) =>
+      ({ active: 0, expiring: 1, expired: 2, inactive: 3 })[this.getStatusClass(l)] ?? 99,
+  };
+
   ngOnInit() {
     this.loadLeases();
   }
@@ -85,8 +106,8 @@ export class LeaseList implements OnInit {
         this.loading = false;
       },
       error: (error) => {
-        console.error('Error loading leases:', error);
-        this.snackBar.open('Error loading leases', 'Close', { duration: 3000 });
+        console.error('Error loading leases:', safeErrorMessage(error));
+        notifyError(this.snackBar, 'Error loading leases');
         this.loading = false;
       },
     });
@@ -117,9 +138,31 @@ export class LeaseList implements OnInit {
     if (this.typeFilter !== 'all') result = result.filter((l) => l.lease_type === this.typeFilter);
 
     this.filteredLeases = result;
+    this.applySort();
     this.pageIndex = 0;
     this.expandedLease = null;
     this.updatePagedData();
+  }
+
+  onSortChange(sort: Sort) {
+    this.sortState = sort;
+    this.applySort();
+    this.updatePagedData();
+  }
+
+  private applySort() {
+    const { active, direction } = this.sortState;
+    const accessor = this.sortAccessors[active];
+    if (!direction || !accessor) return;
+
+    const dir = direction === 'asc' ? 1 : -1;
+    this.filteredLeases = [...this.filteredLeases].sort((a, b) => {
+      const valueA = accessor(a);
+      const valueB = accessor(b);
+      if (valueA < valueB) return -dir;
+      if (valueA > valueB) return dir;
+      return 0;
+    });
   }
 
   updatePagedData() {
@@ -149,6 +192,13 @@ export class LeaseList implements OnInit {
     this.applyFilters();
   }
 
+  resetFilters() {
+    this.searchQuery = '';
+    this.statusFilter = 'all';
+    this.typeFilter = 'all';
+    this.applyFilters();
+  }
+
   toggleExpand(lease: LeaseWithDetails, event: Event) {
     event.stopPropagation();
     this.expandedLease = this.expandedLease === lease ? null : lease;
@@ -162,7 +212,14 @@ export class LeaseList implements OnInit {
   }
 
   getStatusText(lease: LeaseWithDetails): string {
-    if (!lease.active) return 'Inactive';
+    if (!lease.active) {
+      // end_reason distinguishes an early move-out or a renewal from a lease
+      // that simply reached the end of its term — same badge color/sort
+      // order (still "inactive"), more specific label.
+      if (lease.end_reason === 'Terminated') return 'Terminated';
+      if (lease.end_reason === 'Renewed') return 'Renewed';
+      return 'Inactive';
+    }
     if (lease.is_expired) return 'Expired';
     if (lease.days_remaining <= 30) return `${lease.days_remaining}d left`;
     return 'Active';
@@ -199,19 +256,36 @@ export class LeaseList implements OnInit {
     });
   }
 
+  renewLease(lease: LeaseWithDetails): void {
+    const dialogRef = this.dialog.open(RenewLeaseDialog, {
+      width: '520px',
+      data: { lease },
+    });
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) this.loadLeases();
+    });
+  }
+
   deleteLease(lease: LeaseWithDetails) {
-    if (confirm(`Delete lease for ${lease.tenant_name}? This cannot be undone.`)) {
-      this.leaseService.deleteLease(lease.id).subscribe({
-        next: () => {
-          this.snackBar.open('Lease deleted', 'Close', { duration: 3000 });
-          this.loadLeases();
-        },
-        error: (error) => {
-          console.error('Error deleting lease:', error);
-          this.snackBar.open('Error deleting lease', 'Close', { duration: 3000 });
-        },
-      });
-    }
+    const dialogRef = this.dialog.open(ConfirmDeleteDialogComponent, {
+      width: '480px',
+      data: { entityLabel: 'lease', entityName: lease.tenant_name },
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (confirmed) {
+        this.leaseService.deleteLease(lease.id).subscribe({
+          next: () => {
+            notifySuccess(this.snackBar, 'Lease deleted');
+            this.loadLeases();
+          },
+          error: (error) => {
+            console.error('Error deleting lease:', safeErrorMessage(error));
+            notifyError(this.snackBar, 'Error deleting lease');
+          },
+        });
+      }
+    });
   }
 
   createLease() {

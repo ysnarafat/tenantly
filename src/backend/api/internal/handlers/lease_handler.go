@@ -23,21 +23,21 @@ func NewLeaseHandler(leaseService interfaces.LeaseServiceInterface) *LeaseHandle
 func (h *LeaseHandler) CreateLease(c *gin.Context) {
 	var req models.CreateLeaseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "CREATE_LEASE_INVALID_BODY", "Invalid request body", err)
 		return
 	}
 
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 	orgID := c.GetInt("org_id")
 	req.OrganizationID = orgID
 
 	lease, err := h.leaseService.CreateLease(&req, userID)
 	if err != nil {
 		if err.Error() == "unit already has an active lease" {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			respondError(c, http.StatusConflict, "CREATE_LEASE_CONFLICT", err.Error(), err)
 			return
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "CREATE_LEASE_FAILED", "Failed to create lease", err)
 		return
 	}
 
@@ -70,7 +70,7 @@ func (h *LeaseHandler) GetAllLeases(c *gin.Context) {
 
 	response, err := h.leaseService.GetAllLeases(page, pageSize, orgID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondError(c, http.StatusInternalServerError, "GET_ALL_LEASES_FAILED", "Failed to retrieve leases", err)
 		return
 	}
 
@@ -87,16 +87,20 @@ func (h *LeaseHandler) UpdateLease(c *gin.Context) {
 
 	var req models.UpdateLeaseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "UPDATE_LEASE_INVALID_BODY", "Invalid request body", err)
 		return
 	}
 
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 	orgID := c.GetInt("org_id")
 
 	lease, err := h.leaseService.UpdateLease(id, &req, userID, orgID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		if err.Error() == "end date must be after start date" {
+			respondError(c, http.StatusBadRequest, "UPDATE_LEASE_INVALID_DATES", err.Error(), err)
+			return
+		}
+		respondError(c, http.StatusBadRequest, "UPDATE_LEASE_FAILED", "Failed to update lease", err)
 		return
 	}
 
@@ -111,11 +115,11 @@ func (h *LeaseHandler) DeleteLease(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 	orgID := c.GetInt("org_id")
 
 	if err := h.leaseService.DeleteLease(id, userID, orgID); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "DELETE_LEASE_FAILED", "Failed to delete lease", err)
 		return
 	}
 
@@ -130,7 +134,7 @@ func (h *LeaseHandler) TerminateLease(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetInt("userID")
+	userID := c.GetInt("user_id")
 	orgID := c.GetInt("org_id")
 
 	// Check for termination_date in query params or body
@@ -148,11 +152,132 @@ func (h *LeaseHandler) TerminateLease(c *gin.Context) {
 	}
 
 	if err := h.leaseService.TerminateLease(id, userID, orgID, terminationDateStr); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		if err.Error() == "lease is not active" {
+			respondError(c, http.StatusConflict, "TERMINATE_LEASE_INACTIVE", err.Error(), err)
+			return
+		}
+		if err.Error() == "termination date cannot be before lease start date" {
+			respondError(c, http.StatusBadRequest, "TERMINATE_LEASE_INVALID_DATE", err.Error(), err)
+			return
+		}
+		respondError(c, http.StatusBadRequest, "TERMINATE_LEASE_FAILED", "Failed to terminate lease", err)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Lease terminated successfully"})
+}
+
+// RenewLease handles starting a new lease term for a unit/tenant, closing out
+// the lease being renewed rather than mutating it in place.
+func (h *LeaseHandler) RenewLease(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid lease ID"})
+		return
+	}
+
+	var req models.RenewLeaseRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, http.StatusBadRequest, "RENEW_LEASE_INVALID_BODY", "Invalid request body", err)
+		return
+	}
+
+	userID := c.GetInt("user_id")
+	orgID := c.GetInt("org_id")
+
+	lease, err := h.leaseService.RenewLease(id, &req, userID, orgID)
+	if err != nil {
+		if err.Error() == "only an active lease can be renewed" {
+			respondError(c, http.StatusConflict, "RENEW_LEASE_INACTIVE", err.Error(), err)
+			return
+		}
+		respondError(c, http.StatusBadRequest, "RENEW_LEASE_FAILED", "Failed to renew lease", err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, lease)
+}
+
+// AddLeaseCharge handles adding a recurring charge (utility, service charge,
+// etc.) to a lease.
+func (h *LeaseHandler) AddLeaseCharge(c *gin.Context) {
+	leaseID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid lease ID"})
+		return
+	}
+
+	var req models.CreateLeaseChargeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, http.StatusBadRequest, "ADD_LEASE_CHARGE_INVALID_BODY", "Invalid request body", err)
+		return
+	}
+
+	userID := c.GetInt("user_id")
+	orgID := c.GetInt("org_id")
+
+	charge, err := h.leaseService.AddLeaseCharge(leaseID, &req, userID, orgID)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "ADD_LEASE_CHARGE_FAILED", "Failed to add lease charge", err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, charge)
+}
+
+// UpdateLeaseCharge handles updating one of a lease's recurring charges.
+func (h *LeaseHandler) UpdateLeaseCharge(c *gin.Context) {
+	leaseID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid lease ID"})
+		return
+	}
+	chargeID, err := strconv.Atoi(c.Param("chargeId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid lease charge ID"})
+		return
+	}
+
+	var req models.UpdateLeaseChargeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		respondError(c, http.StatusBadRequest, "UPDATE_LEASE_CHARGE_INVALID_BODY", "Invalid request body", err)
+		return
+	}
+
+	userID := c.GetInt("user_id")
+	orgID := c.GetInt("org_id")
+
+	charge, err := h.leaseService.UpdateLeaseCharge(leaseID, chargeID, &req, userID, orgID)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "UPDATE_LEASE_CHARGE_FAILED", "Failed to update lease charge", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, charge)
+}
+
+// DeleteLeaseCharge handles removing one of a lease's recurring charges.
+func (h *LeaseHandler) DeleteLeaseCharge(c *gin.Context) {
+	leaseID, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid lease ID"})
+		return
+	}
+	chargeID, err := strconv.Atoi(c.Param("chargeId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid lease charge ID"})
+		return
+	}
+
+	userID := c.GetInt("user_id")
+	orgID := c.GetInt("org_id")
+
+	if err := h.leaseService.RemoveLeaseCharge(leaseID, chargeID, userID, orgID); err != nil {
+		respondError(c, http.StatusBadRequest, "DELETE_LEASE_CHARGE_FAILED", "Failed to remove lease charge", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Lease charge removed successfully"})
 }
 
 // GetLeasesByUnit handles fetching leases by unit ID
@@ -169,7 +294,7 @@ func (h *LeaseHandler) GetLeasesByUnit(c *gin.Context) {
 
 	response, err := h.leaseService.GetLeasesByUnit(unitID, page, pageSize, orgID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondError(c, http.StatusInternalServerError, "GET_LEASES_BY_UNIT_FAILED", "Failed to retrieve leases", err)
 		return
 	}
 
@@ -190,7 +315,7 @@ func (h *LeaseHandler) GetLeasesByTenant(c *gin.Context) {
 
 	response, err := h.leaseService.GetLeasesByTenant(tenantID, page, pageSize, orgID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondError(c, http.StatusInternalServerError, "GET_LEASES_BY_TENANT_FAILED", "Failed to retrieve leases", err)
 		return
 	}
 
@@ -203,7 +328,7 @@ func (h *LeaseHandler) GetLeasesDue(c *gin.Context) {
 
 	leasesDue, err := h.leaseService.GetLeasesDue(orgID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondError(c, http.StatusInternalServerError, "GET_LEASES_DUE_FAILED", "Failed to retrieve due leases", err)
 		return
 	}
 
@@ -216,7 +341,7 @@ func (h *LeaseHandler) GetDueSummary(c *gin.Context) {
 
 	summary, err := h.leaseService.GetDueSummary(orgID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondError(c, http.StatusInternalServerError, "GET_DUE_SUMMARY_FAILED", "Failed to retrieve due summary", err)
 		return
 	}
 

@@ -14,7 +14,7 @@ export const orgAdminGuard = () => {
       if (role === 'SUPER_ADMIN' || role === 'ORG_ADMIN' || role === 'Admin') {
         return true;
       }
-      router.navigate(['/dashboard']);
+      router.navigate(['/401']);
       return false;
     })
   );

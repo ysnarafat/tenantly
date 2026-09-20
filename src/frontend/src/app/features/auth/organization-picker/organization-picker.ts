@@ -1,10 +1,13 @@
 import { Component, OnInit, inject, signal, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { Store } from '@ngrx/store';
+import { Actions, ofType } from '@ngrx/effects';
 import { Subject } from 'rxjs';
-import { takeUntil, filter } from 'rxjs/operators';
+import { takeUntil } from 'rxjs/operators';
 import { AppState } from '../../../store';
+import { notifyError } from '../../../shared/utils/notify.utils';
 import * as AuthSelectors from '../../../store/auth/auth.selectors';
 import * as AuthActions from '../../../store/auth/auth.actions';
 import { UserOrganization } from '../../../core/models/organization.model';
@@ -521,9 +524,23 @@ import { UserOrganization } from '../../../core/models/organization.model';
       }
 
       /* ─── Responsive ─── */
+      @media (max-width: 768px) {
+        .picker-page {
+          padding: 32px 16px;
+        }
+
+        .picker-wrapper {
+          gap: 32px;
+        }
+      }
+
       @media (max-width: 480px) {
         .picker-title {
           font-size: 1.75rem;
+        }
+
+        .picker-subtitle {
+          font-size: 0.875rem;
         }
 
         .org-card {
@@ -535,6 +552,15 @@ import { UserOrganization } from '../../../core/models/organization.model';
           width: 42px;
           height: 42px;
         }
+
+        .org-name {
+          font-size: 0.9375rem;
+        }
+
+        .logout-link {
+          padding: 12px 16px;
+          min-height: 40px;
+        }
       }
     `,
   ],
@@ -542,6 +568,8 @@ import { UserOrganization } from '../../../core/models/organization.model';
 export class OrganizationPicker implements OnInit, OnDestroy {
   private store = inject(Store<AppState>);
   private router = inject(Router);
+  private actions$ = inject(Actions);
+  private snackBar = inject(MatSnackBar);
   private destroy$ = new Subject<void>();
 
   organizations = signal<UserOrganization[]>([]);
@@ -572,16 +600,22 @@ export class OrganizationPicker implements OnInit, OnDestroy {
         }
       });
 
-    // Listen for successful org switch to stop loading
-    this.store
-      .select(AuthSelectors.selectCurrentOrganizationId)
-      .pipe(
-        takeUntil(this.destroy$),
-        filter((id) => id !== null)
-      )
+    // Listen for the switch resolving either way to stop loading — on
+    // failure, tell the user why nothing happened instead of leaving the
+    // card stuck in its "switching" state with no explanation.
+    this.actions$
+      .pipe(ofType(AuthActions.switchOrganizationSuccess), takeUntil(this.destroy$))
       .subscribe(() => {
         this.isSwitching.set(false);
         this.switchingOrgId.set(null);
+      });
+
+    this.actions$
+      .pipe(ofType(AuthActions.switchOrganizationFailure), takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.isSwitching.set(false);
+        this.switchingOrgId.set(null);
+        notifyError(this.snackBar, 'Could not switch organization. Please try again.', 4000);
       });
   }
 

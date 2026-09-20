@@ -17,6 +17,7 @@ import { OrganizationService } from '../../../core/services/organization.service
 import { Organization } from '../../../core/models';
 import { AppState } from '../../../store';
 import * as AuthSelectors from '../../../store/auth/auth.selectors';
+import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
 
 @Component({
   selector: 'app-invite-user',
@@ -158,6 +159,9 @@ export class InviteUserComponent implements OnInit {
   callerOrgName = signal<string>('');
 
   private callerUser = toSignal(this.store.select(AuthSelectors.selectUser));
+  private callerOrganizations = toSignal(this.store.select(AuthSelectors.selectUserOrganizations), {
+    initialValue: [],
+  });
   isSuperAdmin = computed(() => this.callerUser()?.role === 'SUPER_ADMIN');
 
   allowedRoles = [
@@ -180,16 +184,17 @@ export class InviteUserComponent implements OnInit {
       if (user.role === 'SUPER_ADMIN') {
         this.organizationService.getOrganizations().subscribe({
           next: (res) => this.organizations.set(res.organizations),
-          error: () =>
-            this.snackBar.open('Failed to load organizations', 'Close', { duration: 3000 }),
+          error: () => notifyError(this.snackBar, 'Failed to load organizations'),
         });
       } else if (user.organization_id) {
         this.form.patchValue({ organizationId: user.organization_id });
-        this.organizationService.getOrganization(user.organization_id).subscribe({
-          next: (org) => this.callerOrgName.set(org.name),
-          error: () =>
-            this.snackBar.open('Failed to load organization', 'Close', { duration: 3000 }),
-        });
+        // GET /organizations/:id is SUPER_ADMIN-only too — look the caller's
+        // own org name up in their login-derived org list instead of a call
+        // that would just 403.
+        const org = this.callerOrganizations().find(
+          (o) => o.organization_id === user.organization_id
+        );
+        this.callerOrgName.set(org?.organization.name || '');
       }
     });
   }
@@ -207,13 +212,11 @@ export class InviteUserComponent implements OnInit {
       .sendInvitation(organizationId, { email, firstName, lastName, role })
       .subscribe({
         next: () => {
-          this.snackBar.open('Invitation sent successfully', 'Close', { duration: 3000 });
+          notifySuccess(this.snackBar, 'Invitation sent successfully');
           this.router.navigate(['/admin/invitations']);
         },
         error: (err) => {
-          this.snackBar.open(err.error?.error || 'Failed to send invitation', 'Close', {
-            duration: 5000,
-          });
+          notifyError(this.snackBar, err.error?.error || 'Failed to send invitation');
           this.submitting.set(false);
         },
       });

@@ -1,17 +1,21 @@
 import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
+import { MatSortModule } from '@angular/material/sort';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { DataTable } from '../../../shared/components/data-table/data-table';
 import { LeaseService, LeaseDue, DueSummary } from '../../../core/services/lease.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { LanguageService } from '../../../core/services/language.service';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { notifyError } from '../../../shared/utils/notify.utils';
+import { LoadingSpinner } from '../../../shared/components/loading-spinner/loading-spinner';
 
 @Component({
   selector: 'app-due-list',
@@ -19,13 +23,15 @@ import { LanguageService } from '../../../core/services/language.service';
   imports: [
     CommonModule,
     MatTableModule,
+    MatSortModule,
     MatButtonModule,
     MatIconModule,
     MatCardModule,
     MatChipsModule,
-    MatProgressSpinnerModule,
     MatTooltipModule,
     TranslateModule,
+    DataTable,
+    LoadingSpinner,
   ],
   templateUrl: './due-list.html',
   styleUrls: ['./due-list.scss'],
@@ -70,10 +76,8 @@ export class DueList {
         this.loading.set(false);
       })
       .catch((error) => {
-        console.error('Error loading due list:', error);
-        this.snackBar.open(this.translateService.instant('DUE_LIST.ERROR_LOADING'), 'Close', {
-          duration: 3000,
-        });
+        console.error('Error loading due list:', safeErrorMessage(error));
+        notifyError(this.snackBar, this.translateService.instant('DUE_LIST.ERROR_LOADING'));
         this.loading.set(false);
       });
   }

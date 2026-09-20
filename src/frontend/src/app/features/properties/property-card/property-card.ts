@@ -1,5 +1,6 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -23,6 +24,7 @@ export interface BuildingWithUnits extends Building {
   standalone: true,
   imports: [
     CommonModule,
+    RouterModule,
     MatCardModule,
     MatIconModule,
     MatButtonModule,
@@ -40,6 +42,10 @@ export class PropertyCardComponent {
   @Output() editProperty = new EventEmitter<DisplayedProperty>();
   @Output() deleteProperty = new EventEmitter<DisplayedProperty>();
   @Output() addBuilding = new EventEmitter<DisplayedProperty>();
+  @Output() editBuilding = new EventEmitter<{
+    building: BuildingWithUnits;
+    property: DisplayedProperty;
+  }>();
   @Output() toggleBuilding = new EventEmitter<BuildingWithUnits>();
   @Output() addUnit = new EventEmitter<{
     building: BuildingWithUnits;
@@ -56,6 +62,10 @@ export class PropertyCardComponent {
     building: BuildingWithUnits;
     property: DisplayedProperty;
   }>();
+  @Output() viewUnitDetails = new EventEmitter<{
+    unit: UnitWithDetails;
+    building: BuildingWithUnits;
+  }>();
 
   onToggleProperty() {
     this.toggleProperty.emit(this.property);
@@ -71,6 +81,11 @@ export class PropertyCardComponent {
 
   onAddBuilding() {
     this.addBuilding.emit(this.property);
+  }
+
+  onEditBuilding(building: BuildingWithUnits, event: Event) {
+    event.stopPropagation();
+    this.editBuilding.emit({ building, property: this.property });
   }
 
   onToggleBuilding(building: BuildingWithUnits) {
@@ -91,6 +106,10 @@ export class PropertyCardComponent {
 
   onAddPayment(unit: UnitWithDetails, building: BuildingWithUnits) {
     this.addPayment.emit({ unit, building, property: this.property });
+  }
+
+  onViewUnitDetails(unit: UnitWithDetails, building: BuildingWithUnits) {
+    this.viewUnitDetails.emit({ unit, building });
   }
 
   getPropertyTypeColor(type: string): string {

@@ -35,10 +35,7 @@ func PropertyValidationMiddleware(propertyRepo *repositories.PropertyRepository)
 			if err.Error() == "property not found" {
 				c.JSON(http.StatusNotFound, gin.H{"error": "Property not found"})
 			} else {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"error":   "Failed to validate property",
-					"details": err.Error(),
-				})
+				respondError(c, http.StatusInternalServerError, "PROPERTY_VALIDATION_FAILED", "Failed to validate property", err)
 			}
 			c.Abort()
 			return

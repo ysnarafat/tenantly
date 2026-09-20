@@ -8,8 +8,11 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { TranslateModule } from '@ngx-translate/core';
 import { CreateOrgRequest } from '../../../core/models';
 import { OrganizationService } from '../../../core/services/organization.service';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
 
 @Component({
   selector: 'app-organization-create',
@@ -23,6 +26,7 @@ import { OrganizationService } from '../../../core/services/organization.service
     MatButtonModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    TranslateModule,
   ],
   templateUrl: './organization-create.html',
   styleUrls: ['./organization-create.scss'],
@@ -68,12 +72,12 @@ export class OrganizationCreateComponent implements OnInit {
 
     this.organizationService.createOrganization(req).subscribe({
       next: () => {
-        this.snackBar.open('Organization created successfully', 'Close', { duration: 3000 });
+        notifySuccess(this.snackBar, 'Organization created successfully');
         this.router.navigate(['/admin/organizations']);
       },
       error: (error) => {
-        console.error('Error creating organization:', error);
-        this.snackBar.open('Failed to create organization', 'Close', { duration: 3000 });
+        console.error('Error creating organization:', safeErrorMessage(error));
+        notifyError(this.snackBar, 'Failed to create organization');
         this.loading = false;
       },
     });

@@ -62,7 +62,7 @@ func (s *OrganizationService) CreateOrganization(req *models.CreateOrganizationR
 	}
 
 	// Log audit
-	s.auditService.LogUserAction(userID, "CREATE", "organizations", &org.ID, nil, org)
+	_ = s.auditService.LogUserAction(userID, "CREATE", "organizations", &org.ID, nil, org)
 
 	return org, nil
 }
@@ -127,7 +127,7 @@ func (s *OrganizationService) UpdateOrganization(id int, req *models.UpdateOrgan
 	}
 
 	// Log audit
-	s.auditService.LogUserAction(userID, "UPDATE", "organizations", &id, org, updates)
+	_ = s.auditService.LogUserAction(userID, "UPDATE", "organizations", &id, org, updates)
 
 	return nil
 }
@@ -146,7 +146,7 @@ func (s *OrganizationService) DeleteOrganization(id int, userID int) error {
 	}
 
 	// Log audit
-	s.auditService.LogUserAction(userID, "DELETE", "organizations", &id, org, nil)
+	_ = s.auditService.LogUserAction(userID, "DELETE", "organizations", &id, org, nil)
 
 	return nil
 }
@@ -191,7 +191,7 @@ func (s *OrganizationService) InviteUserToOrganization(orgID int, req *models.In
 	}
 
 	// Log audit
-	s.auditService.LogUserAction(invitedByUserID, "INVITE_USER", "user_invitations", &invitation.ID, nil, invitation)
+	_ = s.auditService.LogUserAction(invitedByUserID, "INVITE_USER", "user_invitations", &invitation.ID, nil, invitation)
 
 	return invitation, nil
 }
@@ -223,7 +223,7 @@ func (s *OrganizationService) RevokeInvitation(invitationID int, revokedByUserID
 	}
 
 	// Log audit
-	s.auditService.LogUserAction(revokedByUserID, "REVOKE_INVITATION", "user_invitations", &invitationID, invitation, nil)
+	_ = s.auditService.LogUserAction(revokedByUserID, "REVOKE_INVITATION", "user_invitations", &invitationID, invitation, nil)
 
 	return nil
 }
@@ -259,7 +259,7 @@ func (s *OrganizationService) AcceptInvitation(token string, userID int) (*model
 	}
 
 	// Log audit
-	s.auditService.LogUserAction(userID, "ACCEPT_INVITATION", "user_invitations", &invitation.ID, nil, invitation)
+	_ = s.auditService.LogUserAction(userID, "ACCEPT_INVITATION", "user_invitations", &invitation.ID, nil, invitation)
 
 	return invitation, nil
 }

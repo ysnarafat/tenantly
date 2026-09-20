@@ -1,29 +1,35 @@
 import { Component, OnInit, inject, Input } from '@angular/core';
 
 import { MatTableModule } from '@angular/material/table';
+import { MatSortModule } from '@angular/material/sort';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatDialog } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
 import { FormsModule } from '@angular/forms';
+import { TranslateModule } from '@ngx-translate/core';
+import { DataTable } from '../../../shared/components/data-table/data-table';
 import {
   AttachmentService,
   Attachment,
   AttachmentType,
 } from '../../../core/services/attachment.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { actWithUndo } from '../../../shared/utils/undo-toast.utils';
+import { notifyError } from '../../../shared/utils/notify.utils';
 
 @Component({
   selector: 'app-attachment-list',
   standalone: true,
   imports: [
     MatTableModule,
+    MatSortModule,
     MatButtonModule,
     MatIconModule,
     MatCardModule,
@@ -33,6 +39,8 @@ import { AuthService } from '../../../core/services/auth.service';
     MatSelectModule,
     MatInputModule,
     FormsModule,
+    TranslateModule,
+    DataTable,
   ],
   templateUrl: './attachment-list.html',
   styleUrls: ['./attachment-list.scss'],
@@ -45,7 +53,6 @@ export class AttachmentList implements OnInit {
   private attachmentService = inject(AttachmentService);
   private authService = inject(AuthService);
   private snackBar = inject(MatSnackBar);
-  private dialog = inject(MatDialog);
 
   attachments: Attachment[] = [];
   filteredAttachments: Attachment[] = [];
@@ -85,8 +92,8 @@ export class AttachmentList implements OnInit {
         this.loading = false;
       },
       error: (error) => {
-        console.error('Error loading attachments:', error);
-        this.snackBar.open('Error loading attachments', 'Close', { duration: 3000 });
+        console.error('Error loading attachments:', safeErrorMessage(error));
+        notifyError(this.snackBar, 'Error loading attachments');
         this.loading = false;
       },
     });
@@ -181,8 +188,8 @@ export class AttachmentList implements OnInit {
         window.URL.revokeObjectURL(url);
       },
       error: (error) => {
-        console.error('Error downloading attachment:', error);
-        this.snackBar.open('Error downloading attachment', 'Close', { duration: 3000 });
+        console.error('Error downloading attachment:', safeErrorMessage(error));
+        notifyError(this.snackBar, 'Error downloading attachment');
       },
     });
   }
@@ -205,18 +212,28 @@ export class AttachmentList implements OnInit {
   }
 
   deleteAttachment(attachment: Attachment) {
-    if (confirm(`Are you sure you want to delete "${attachment.file_name}"?`)) {
-      this.attachmentService.deleteAttachment(attachment.id).subscribe({
-        next: () => {
-          this.loadAttachments();
-          this.snackBar.open('Attachment deleted successfully', 'Close', { duration: 3000 });
-          this.loadAttachments();
+    const previousAttachments = this.attachments;
+    this.attachments = previousAttachments.filter((a) => a.id !== attachment.id);
+    this.applyFilters();
+
+    actWithUndo(
+      this.snackBar,
+      `"${attachment.file_name}" deleted`,
+      () => {
+        this.attachmentService.deleteAttachment(attachment.id).subscribe({
+          error: (error) => {
+            console.error('Error deleting attachment:', safeErrorMessage(error));
+            notifyError(this.snackBar, 'Error deleting attachment');
+            this.loadAttachments();
+          },
+        });
+      },
+      {
+        onUndo: () => {
+          this.attachments = previousAttachments;
+          this.applyFilters();
         },
-        error: (error) => {
-          console.error('Error deleting attachment:', error);
-          this.snackBar.open('Error deleting attachment', 'Close', { duration: 3000 });
-        },
-      });
-    }
+      }
+    );
   }
 }

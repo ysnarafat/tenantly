@@ -6,6 +6,7 @@ import { UnitService } from '../../../core/services/unit.service';
 import { UnitActions } from './unit.actions';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Unit, UnitListResponse } from '../../../core/models';
+import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
 
 @Injectable()
 export class UnitEffects {
@@ -54,11 +55,11 @@ export class UnitEffects {
       mergeMap(({ request }) =>
         this.unitService.createUnit(request).pipe(
           map((unit: Unit) => {
-            this.snackBar.open('Unit created successfully', 'Close', { duration: 3000 });
+            notifySuccess(this.snackBar, 'Unit created successfully');
             return UnitActions.createUnitSuccess({ unit });
           }),
           catchError((error) => {
-            this.snackBar.open('Error creating unit', 'Close', { duration: 3000 });
+            notifyError(this.snackBar, 'Error creating unit');
             return of(UnitActions.createUnitFailure({ error }));
           })
         )
@@ -72,11 +73,11 @@ export class UnitEffects {
       mergeMap(({ id, request }) =>
         this.unitService.updateUnit(id, request).pipe(
           map((unit: Unit) => {
-            this.snackBar.open('Unit updated successfully', 'Close', { duration: 3000 });
+            notifySuccess(this.snackBar, 'Unit updated successfully');
             return UnitActions.updateUnitSuccess({ unit });
           }),
           catchError((error) => {
-            this.snackBar.open('Error updating unit', 'Close', { duration: 3000 });
+            notifyError(this.snackBar, 'Error updating unit');
             return of(UnitActions.updateUnitFailure({ error }));
           })
         )
@@ -90,11 +91,11 @@ export class UnitEffects {
       mergeMap(({ id }) =>
         this.unitService.deleteUnit(id).pipe(
           map(() => {
-            this.snackBar.open('Unit deleted successfully', 'Close', { duration: 3000 });
+            notifySuccess(this.snackBar, 'Unit deleted successfully');
             return UnitActions.deleteUnitSuccess({ id });
           }),
           catchError((error) => {
-            this.snackBar.open('Error deleting unit', 'Close', { duration: 3000 });
+            notifyError(this.snackBar, 'Error deleting unit');
             return of(UnitActions.deleteUnitFailure({ error }));
           })
         )

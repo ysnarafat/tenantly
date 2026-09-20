@@ -30,7 +30,7 @@ func TestBuildingAnalyticsIntegration_WithPropertyService(t *testing.T) {
 	}
 
 	for _, building := range buildings {
-		mockRepo.Create(building)
+		_ = mockRepo.Create(building)
 		// Set different analytics for each building
 		analytics := &models.BuildingAnalytics{
 			BuildingID:     building.ID,
@@ -96,7 +96,7 @@ func TestBuildingAnalyticsIntegration_WithUnitService(t *testing.T) {
 		BuildingType: models.BuildingTypeCommercial,
 		ActiveStatus: true,
 	}
-	mockRepo.Create(building)
+	_ = mockRepo.Create(building)
 
 	// Set analytics with unit-related data
 	analytics := &models.BuildingAnalytics{
@@ -156,7 +156,7 @@ func TestBuildingAnalyticsIntegration_WithPaymentService(t *testing.T) {
 		BuildingType: models.BuildingTypeCommercial,
 		ActiveStatus: true,
 	}
-	mockRepo.Create(building)
+	_ = mockRepo.Create(building)
 
 	// Set analytics with revenue data
 	analytics := &models.BuildingAnalytics{
@@ -250,7 +250,7 @@ func TestBuildingAnalyticsIntegration_WithReportingService(t *testing.T) {
 		{OccupancyRate: 95, OccupiedUnits: 38, UnitCount: 40, VacantUnits: 2, MonthlyRevenue: 100000, AverageRent: 2500, TotalArea: 2000},
 	}
 	for i, building := range buildings {
-		mockRepo.Create(building)
+		_ = mockRepo.Create(building)
 		a := analyticsData[i]
 		a.BuildingID = building.ID
 		mockRepo.SetAnalytics(building.ID, a)
@@ -322,7 +322,7 @@ func TestBuildingAnalyticsIntegration_CrossServiceDataConsistency(t *testing.T) 
 		BuildingType: models.BuildingTypeCommercial,
 		ActiveStatus: true,
 	}
-	mockRepo.Create(building)
+	_ = mockRepo.Create(building)
 
 	// Set consistent analytics data
 	analytics := &models.BuildingAnalytics{
@@ -425,7 +425,7 @@ func TestBuildingAnalyticsIntegration_ErrorPropagation(t *testing.T) {
 		BuildingType: models.BuildingTypeCommercial,
 		ActiveStatus: true,
 	}
-	mockRepo.Create(building)
+	_ = mockRepo.Create(building)
 	// Don't set analytics for this building
 
 	// Should still work with default analytics
@@ -457,7 +457,7 @@ func TestBuildingAnalyticsIntegration_ServiceDependencyInjection(t *testing.T) {
 		BuildingType: models.BuildingTypeCommercial,
 		ActiveStatus: true,
 	}
-	mockRepo.Create(building)
+	_ = mockRepo.Create(building)
 
 	// Test that service methods work with injected repository
 	metrics, err := service.GetBuildingMetrics(building.ID)

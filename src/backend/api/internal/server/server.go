@@ -2,12 +2,12 @@ package server
 
 import (
 	"crypto/tls"
-	"database/sql"
 	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
 	"github.com/ysnarafat/tenantly/internal/config"
 	"github.com/ysnarafat/tenantly/internal/database"
 	"github.com/ysnarafat/tenantly/internal/handlers"
@@ -18,15 +18,21 @@ import (
 
 type Server struct {
 	config *config.Config
-	db     *sql.DB
+	db     *sqlx.DB
 	router *gin.Engine
 }
 
-func New(cfg *config.Config, db *sql.DB) *Server {
+func New(cfg *config.Config, db *sqlx.DB) *Server {
 	s := &Server{
 		config: cfg,
 		db:     db,
 		router: gin.Default(),
+	}
+
+	// Empty/nil means Gin ignores X-Forwarded-For entirely and uses the real
+	// socket address — safe default unless a specific reverse proxy is configured.
+	if err := s.router.SetTrustedProxies(cfg.TrustedProxies); err != nil {
+		panic(fmt.Sprintf("invalid TRUSTED_PROXIES configuration: %v", err))
 	}
 
 	s.setupMiddleware()
@@ -48,8 +54,7 @@ func (s *Server) setupMiddleware() {
 		c.Next()
 	})
 
-	// CORS is handled by nginx proxy, no need for API-level CORS
-	s.router.Use(middleware.CORS(s.config.Environment))
+	s.router.Use(middleware.CORS(s.config.AllowedOrigins))
 
 	// Rate limiting (5 requests per second per IP)
 	rateLimiter := middleware.NewRateLimiter(100, time.Minute)
@@ -75,9 +80,15 @@ func (s *Server) setupRoutes() {
 	propertyRepo := repositories.NewPropertyRepository(s.db)
 	buildingRepo := repositories.NewBuildingRepository(s.db)
 	unitRepo := repositories.NewUnitRepository(s.db)
-	tenantRepo := repositories.NewTenantRepository(s.db)
+	tenantRepo := repositories.NewTenantRepository(s.db, s.config.NIDProtector)
+	mfaRepo := repositories.NewMFARepository(s.db)
 	paymentRepo := repositories.NewPaymentRepository(s.db)
+	paymentTransactionRepo := repositories.NewPaymentTransactionRepository(s.db)
+	paymentTransactionAttachmentRepo := repositories.NewPaymentTransactionAttachmentRepository(s.db)
+	receiptAccessTokenRepo := repositories.NewReceiptAccessTokenRepository(s.db)
+	notificationRepo := repositories.NewNotificationRepository(s.db)
 	leaseRepo := repositories.NewLeaseRepository(s.db)
+	leaseChargeRepo := repositories.NewLeaseChargeRepository(s.db)
 	organizationRepo := repositories.NewOrganizationRepository(s.db)
 	userInvitationRepo := repositories.NewUserInvitationRepository(s.db)
 	userOrgRoleRepo := repositories.NewUserOrganizationRoleRepository(s.db)
@@ -92,17 +103,21 @@ func (s *Server) setupRoutes() {
 	buildingService := services.NewBuildingService(buildingRepo, propertyRepo, auditService, metadataValidator)
 	unitService := services.NewUnitService(unitRepo, buildingRepo, propertyRepo, auditService)
 	tenantService := services.NewTenantService(tenantRepo, leaseRepo, auditService)
-	leaseService := services.NewLeaseService(leaseRepo, tenantRepo, unitRepo, auditService)
-	paymentService := services.NewPaymentService(paymentRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo)
+	mfaService := services.NewMFAService(mfaRepo, s.config.NIDProtector, s.config.JWTSecret)
+	leaseService := services.NewLeaseService(leaseRepo, tenantRepo, unitRepo, leaseChargeRepo, auditService)
+	paymentService := services.NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, leaseRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, s.config.PublicAppURL)
+	reportService := services.NewReportService(paymentRepo, propertyRepo)
 	// Initialize handlers
-	userHandler := handlers.NewUserHandler(userService)
+	userHandler := handlers.NewUserHandler(userService, s.config.CookieDomain, s.config.CookieSecure)
 	propertyHandler := handlers.NewPropertyHandler(propertyService)
 	buildingHandler := handlers.NewBuildingHandler(buildingService)
 	unitHandler := handlers.NewUnitHandler(unitService)
 	tenantHandler := handlers.NewTenantHandler(tenantService)
+	mfaHandler := handlers.NewMFAHandler(mfaService)
 	leaseHandler := handlers.NewLeaseHandler(leaseService)
 	paymentHandler := handlers.NewPaymentHandler(paymentService)
 	organizationHandler := handlers.NewOrganizationHandler(organizationService)
+	reportHandler := handlers.NewReportHandler(reportService)
 
 	// Health check endpoint
 	s.router.GET("/health", func(c *gin.Context) {
@@ -116,9 +131,10 @@ func (s *Server) setupRoutes() {
 	v1 := s.router.Group("/api/v1")
 	{
 		// Authentication routes (public)
+		loginRateLimiter := middleware.NewRateLimiter(10, time.Minute)
 		auth := v1.Group("/auth")
 		{
-			auth.POST("/login", userHandler.Login)
+			auth.POST("/login", middleware.RateLimitMiddleware(loginRateLimiter, auditService), userHandler.Login)
 			auth.POST("/refresh", userHandler.RefreshToken)
 			auth.POST("/reset-password", userHandler.ResetPassword)
 			auth.POST("/confirm-reset-password", userHandler.ConfirmPasswordReset)
@@ -129,6 +145,13 @@ func (s *Server) setupRoutes() {
 		invitations := v1.Group("/invitations")
 		{
 			invitations.GET("/validate", organizationHandler.ValidateInvitationToken)
+		}
+
+		// Public receipt download route — no auth, reached via the "payment
+		// recorded" SMS link (tenants have no login to authenticate with).
+		receipts := v1.Group("/receipts")
+		{
+			receipts.GET("/:token", paymentHandler.DownloadReceiptByToken)
 		}
 
 		// Protected routes
@@ -144,6 +167,11 @@ func (s *Server) setupRoutes() {
 				authProtected.POST("/logout", userHandler.Logout)
 				authProtected.POST("/change-password", userHandler.ChangePassword)
 				authProtected.POST("/set-organization", userHandler.SetOrganization)
+
+				// MFA (TOTP) enrollment and step-up verification
+				authProtected.GET("/mfa/status", mfaHandler.GetStatus)
+				authProtected.POST("/mfa/enroll", mfaHandler.Enroll)
+				authProtected.POST("/mfa/verify", mfaHandler.Verify)
 			}
 
 			// Invitation acceptance routes (protected)
@@ -159,25 +187,28 @@ func (s *Server) setupRoutes() {
 				users.POST("", middleware.RequireSuperAdminOrAdmin(), userHandler.CreateUser)
 				users.GET("/:id", middleware.RequireAnyRole(), userHandler.GetUser)
 				users.PUT("/:id", middleware.RequireSuperAdminOrAdmin(), userHandler.UpdateUser)
+				users.PUT("/:id/reset-password", middleware.RequireSuperAdminOrAdmin(), userHandler.AdminResetPassword)
 				users.DELETE("/:id", middleware.RequireSuperAdminOrAdmin(), userHandler.DeleteUser)
 			}
 
-			// Organization management routes (SUPER_ADMIN only)
+			// Organization management routes
 			organizations := protected.Group("/organizations")
-			organizations.Use(middleware.RequireSuperAdmin())
 			{
-				organizations.POST("", organizationHandler.CreateOrganization)
-				organizations.GET("", organizationHandler.ListOrganizations)
+				// Platform-level management (SUPER_ADMIN only)
+				organizations.POST("", middleware.RequireSuperAdmin(), organizationHandler.CreateOrganization)
+				organizations.GET("", middleware.RequireSuperAdmin(), organizationHandler.ListOrganizations)
 
-				// User invitation routes within organization (register before generic :id route)
-				organizations.POST("/:id/invitations", middleware.OrganizationValidationMiddleware(organizationRepo), middleware.RequireOrgAdmin(organizationRepo), organizationHandler.InviteUser)
-				organizations.GET("/:id/invitations", middleware.OrganizationValidationMiddleware(organizationRepo), middleware.RequireOrgAdmin(organizationRepo), organizationHandler.GetPendingInvitations)
-				organizations.DELETE("/:id/invitations/:invitation_id", middleware.RequireOrgAdmin(organizationRepo), organizationHandler.RevokeInvitation)
+				// User invitation routes within organization — SUPER_ADMIN, or ORG_ADMIN of
+				// THIS organization specifically (RequireOrgAdmin verifies membership via DB,
+				// not just the JWT role claim). Register before the generic :id route.
+				organizations.POST("/:id/invitations", middleware.OrganizationValidationMiddleware(organizationRepo), middleware.RequireOrgAdmin(organizationRepo, userOrgRoleRepo), organizationHandler.InviteUser)
+				organizations.GET("/:id/invitations", middleware.OrganizationValidationMiddleware(organizationRepo), middleware.RequireOrgAdmin(organizationRepo, userOrgRoleRepo), organizationHandler.GetPendingInvitations)
+				organizations.DELETE("/:id/invitations/:invitation_id", middleware.OrganizationValidationMiddleware(organizationRepo), middleware.RequireOrgAdmin(organizationRepo, userOrgRoleRepo), organizationHandler.RevokeInvitation)
 
-				// Generic organization routes (register after specific nested routes)
-				organizations.GET("/:id", organizationHandler.GetOrganization)
-				organizations.PUT("/:id", organizationHandler.UpdateOrganization)
-				organizations.DELETE("/:id", organizationHandler.DeleteOrganization)
+				// Generic organization routes (SUPER_ADMIN only; register after specific nested routes)
+				organizations.GET("/:id", middleware.RequireSuperAdmin(), organizationHandler.GetOrganization)
+				organizations.PUT("/:id", middleware.RequireSuperAdmin(), organizationHandler.UpdateOrganization)
+				organizations.DELETE("/:id", middleware.RequireSuperAdmin(), organizationHandler.DeleteOrganization)
 			}
 
 			// Property management routes
@@ -218,6 +249,7 @@ func (s *Server) setupRoutes() {
 
 				// Building-unit relationship endpoints
 				buildings.GET("/:id/units/list", middleware.RequireAnyRole(), unitHandler.GetUnitsByBuilding)
+				buildings.POST("/:id/units/bulk", middleware.RequireAdminOrPropertyManager(), unitHandler.BulkCreateUnits)
 			}
 
 			// Unit management routes
@@ -231,14 +263,17 @@ func (s *Server) setupRoutes() {
 				units.GET("/:id/hierarchy", middleware.RequireAnyRole(), unitHandler.GetUnitHierarchyContext)
 			}
 
-			// Placeholder routes for other modules (will be implemented in later tasks)
+			// Placeholder routes for other modules (will be implemented in later tasks).
+			// Org-scoped and role-checked now, matching every other data route group,
+			// so real handlers can't land here later without access control already in place.
 			shops := protected.Group("/shops")
+			shops.Use(middleware.RequireOrgContext())
 			{
-				shops.GET("", s.handlePlaceholder("Get shops"))
-				shops.POST("", s.handlePlaceholder("Create shop"))
-				shops.GET("/:id", s.handlePlaceholder("Get shop"))
-				shops.PUT("/:id", s.handlePlaceholder("Update shop"))
-				shops.DELETE("/:id", s.handlePlaceholder("Delete shop"))
+				shops.GET("", middleware.RequireAnyRole(), s.handlePlaceholder("Get shops"))
+				shops.POST("", middleware.RequireAdminOrPropertyManager(), s.handlePlaceholder("Create shop"))
+				shops.GET("/:id", middleware.RequireAnyRole(), s.handlePlaceholder("Get shop"))
+				shops.PUT("/:id", middleware.RequireAdminOrPropertyManager(), s.handlePlaceholder("Update shop"))
+				shops.DELETE("/:id", middleware.RequireAdmin(), s.handlePlaceholder("Delete shop"))
 			}
 
 			tenants := protected.Group("/tenants")
@@ -247,6 +282,7 @@ func (s *Server) setupRoutes() {
 				tenants.GET("", middleware.RequireAnyRole(), tenantHandler.GetAllTenants)
 				tenants.POST("", middleware.RequireAdminOrPropertyManager(), tenantHandler.CreateTenant)
 				tenants.GET("/:id", middleware.RequireAnyRole(), tenantHandler.GetTenantByID)
+				tenants.GET("/:id/nid", middleware.RequireAdminOrPropertyManager(), middleware.RequireStepUp(s.config.JWTSecret), tenantHandler.RevealNID)
 				tenants.PUT("/:id", middleware.RequireAdminOrPropertyManager(), tenantHandler.UpdateTenant)
 				tenants.DELETE("/:id", middleware.RequireAdmin(), tenantHandler.DeleteTenant)
 			}
@@ -260,6 +296,10 @@ func (s *Server) setupRoutes() {
 				leases.PUT("/:id", middleware.RequireAdminOrPropertyManager(), leaseHandler.UpdateLease)
 				leases.DELETE("/:id", middleware.RequireAdmin(), leaseHandler.DeleteLease)
 				leases.POST("/:id/terminate", middleware.RequireAdminOrPropertyManager(), leaseHandler.TerminateLease)
+				leases.POST("/:id/renew", middleware.RequireAdminOrPropertyManager(), leaseHandler.RenewLease)
+				leases.POST("/:id/charges", middleware.RequireAdminOrPropertyManager(), leaseHandler.AddLeaseCharge)
+				leases.PUT("/:id/charges/:chargeId", middleware.RequireAdminOrPropertyManager(), leaseHandler.UpdateLeaseCharge)
+				leases.DELETE("/:id/charges/:chargeId", middleware.RequireAdminOrPropertyManager(), leaseHandler.DeleteLeaseCharge)
 
 				// Lease relationships
 				leases.GET("/unit/:unit_id", middleware.RequireAnyRole(), leaseHandler.GetLeasesByUnit)
@@ -279,20 +319,34 @@ func (s *Server) setupRoutes() {
 				payments.POST("/generate-monthly", middleware.RequireAdminOrPropertyManager(), paymentHandler.GenerateMonthlyPayments)
 				payments.GET("/search", middleware.RequireAnyRole(), paymentHandler.SearchLeases)
 				payments.GET("/:id", middleware.RequireAnyRole(), paymentHandler.GetPayment)
+				payments.GET("/:id/receipt", middleware.RequireAnyRole(), paymentHandler.DownloadReceipt)
 				payments.PUT("/:id", middleware.RequireAdminOrPropertyManager(), paymentHandler.UpdatePayment)
+				payments.POST("/:id/transactions", middleware.RequireAdminOrPropertyManager(), paymentHandler.RecordPaymentTransaction)
+				payments.GET("/:id/transactions", middleware.RequireAnyRole(), paymentHandler.GetPaymentTransactions)
+				payments.DELETE("/:id/transactions/:transactionId", middleware.RequireAdminOrPropertyManager(), paymentHandler.DeletePaymentTransaction)
+				payments.POST("/:id/transactions/:transactionId/attachments", middleware.RequireAdminOrPropertyManager(), paymentHandler.UploadPaymentTransactionAttachment)
+				payments.GET("/:id/transactions/:transactionId/attachments", middleware.RequireAnyRole(), paymentHandler.GetPaymentTransactionAttachments)
+				payments.GET("/:id/transactions/:transactionId/attachments/:attachmentId", middleware.RequireAnyRole(), paymentHandler.DownloadPaymentTransactionAttachment)
+				payments.DELETE("/:id/transactions/:transactionId/attachments/:attachmentId", middleware.RequireAdminOrPropertyManager(), paymentHandler.DeletePaymentTransactionAttachment)
 				payments.GET("/building/:building_id/report", middleware.RequireAnyRole(), paymentHandler.GetBuildingPaymentReport)
 				payments.GET("/property/:property_id/report", middleware.RequireAnyRole(), paymentHandler.GetPropertyPaymentReport)
 			}
 
 			dashboard := protected.Group("/dashboard")
+			dashboard.Use(middleware.RequireOrgContext())
 			{
 				dashboard.GET("/summary", middleware.RequireAnyRole(), paymentHandler.GetDashboardSummary)
 			}
 
 			reports := protected.Group("/reports")
+			reports.Use(middleware.RequireOrgContext())
 			{
-				reports.GET("/ledger", s.handlePlaceholder("Ledger report"))
-				reports.GET("/export", s.handlePlaceholder("Export report"))
+				reports.GET("/ledger", middleware.RequireAnyRole(), reportHandler.GetFinancialLedger)
+				reports.GET("/collection-summary", middleware.RequireAnyRole(), reportHandler.GetCollectionSummary)
+				reports.GET("/payment-analysis", middleware.RequireAnyRole(), reportHandler.GetPaymentAnalysis)
+				reports.GET("/dashboard-metrics", middleware.RequireAnyRole(), reportHandler.GetDashboardMetrics)
+				reports.GET("/tenant-summary", middleware.RequireAnyRole(), reportHandler.GetTenantSummary)
+				reports.GET("/property-analytics", middleware.RequireAnyRole(), reportHandler.GetPropertyAnalytics)
 			}
 		}
 	}
