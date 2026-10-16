@@ -1,0 +1,197 @@
+// ── ErrorPage ─────────────────────────────────────────────────────────────────
+// A door/unit nameplate on a faint architectural floor-plan grid. Fills the
+// content area (in-shell) or the viewport (standalone) and centres its contents.
+
+:host {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: 48px 20px;
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+// Floor-plan grid — a quiet blueprint texture that fades out toward the edges.
+:host::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--border-light) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-light) 1px, transparent 1px);
+  background-size: 34px 34px;
+  opacity: 0.55;
+  mask-image: radial-gradient(ellipse 65% 60% at 50% 42%, #000 28%, transparent 76%);
+  -webkit-mask-image: radial-gradient(ellipse 65% 60% at 50% 42%, #000 28%, transparent 76%);
+  pointer-events: none;
+}
+
+.error-page {
+  --tone-color: var(--color-primary);
+  --plate-bevel: rgba(255, 255, 255, 0.6);
+
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 520px;
+  width: 100%;
+
+  &.tone-warn {
+    --tone-color: var(--warning-color);
+  }
+}
+
+// ── Nameplate ───────────────────────────────────────────────────────────────
+.error-plate {
+  position: relative;
+  margin-bottom: 36px;
+  padding: 36px 60px 26px;
+  min-width: 232px;
+  border-radius: 18px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  box-shadow:
+    inset 0 1px 0 var(--plate-bevel),
+    0 20px 44px -20px var(--shadow-card),
+    0 3px 10px -5px var(--shadow-card);
+  animation: plate-in 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+// A small tone-coloured seal that overlaps the plate's top edge.
+.plate-badge {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tone-color);
+  color: #fff;
+  box-shadow: 0 8px 18px -8px var(--tone-color);
+
+  mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    line-height: 24px;
+  }
+}
+
+.plate-code {
+  font-size: clamp(4rem, 13vw, 7rem);
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.plate-rule {
+  width: 46px;
+  height: 3px;
+  margin: 16px auto 12px;
+  border-radius: 2px;
+  background: var(--tone-color);
+}
+
+.plate-status {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+// ── Copy ────────────────────────────────────────────────────────────────────
+.error-title {
+  margin: 0 0 12px;
+  font-size: clamp(1.35rem, 3.6vw, 1.9rem);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  animation: rise-in 0.5s ease both 0.08s;
+}
+
+.error-message {
+  margin: 0 0 30px;
+  max-width: 44ch;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  animation: rise-in 0.5s ease both 0.16s;
+}
+
+.error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  animation: rise-in 0.5s ease both 0.24s;
+
+  a,
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+// ── Motion ──────────────────────────────────────────────────────────────────
+@keyframes plate-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .error-plate,
+  .error-title,
+  .error-message,
+  .error-actions {
+    animation: none;
+  }
+}
+
+// ── Theming ─────────────────────────────────────────────────────────────────
+// A bright inset highlight reads as engraved metal in light mode but blows out
+// on a dark surface, so soften it there.
+:host-context([data-theme='dark']) .error-page {
+  --plate-bevel: rgba(255, 255, 255, 0.05);
+}
+
+// ── Responsive ──────────────────────────────────────────────────────────────
+@media (max-width: 480px) {
+  :host {
+    padding: 32px 16px;
+  }
+
+  .error-plate {
+    padding: 32px 36px 22px;
+    min-width: 0;
+  }
+}

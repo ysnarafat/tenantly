@@ -257,6 +257,14 @@
                       <span>Renew</span>
                     </button>
                     <button
+                      *ngIf="canReplaceTenant(lease)"
+                      mat-menu-item
+                      (click)="replaceTenant(lease)"
+                    >
+                      <mat-icon>swap_horiz</mat-icon>
+                      <span>{{ 'LEASE_LIST.ACTIONS.REPLACE_TENANT' | translate }}</span>
+                    </button>
+                    <button
                       *ngIf="canDelete()"
                       mat-menu-item
                       (click)="deleteLease(lease)"

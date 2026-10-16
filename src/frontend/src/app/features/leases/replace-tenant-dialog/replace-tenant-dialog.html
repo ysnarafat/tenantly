@@ -1,0 +1,145 @@
+<h2 mat-dialog-title class="dialog-title">
+  <mat-icon>swap_horiz</mat-icon>
+  {{ 'REPLACE_TENANT_DIALOG.TITLE' | translate }}
+</h2>
+
+<mat-dialog-content class="dialog-content">
+  <!-- What is being handed over, and by whom -->
+  <div class="context-card">
+    <div class="context-row">
+      <mat-icon>apartment</mat-icon>
+      <div>
+        <div class="context-label">{{ 'REPLACE_TENANT_DIALOG.LABELS.UNIT' | translate }}</div>
+        <div class="context-value">
+          {{ lease.unit_number }} — {{ lease.building_name }} · {{ lease.property_name }}
+        </div>
+      </div>
+    </div>
+    <div class="context-row">
+      <mat-icon>person_off</mat-icon>
+      <div>
+        <div class="context-label">
+          {{ 'REPLACE_TENANT_DIALOG.LABELS.OUTGOING_TENANT' | translate }}
+        </div>
+        <div class="context-value">
+          {{ lease.tenant_name }}<span *ngIf="lease.tenant_phone"> · {{ lease.tenant_phone }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form [formGroup]="form" class="replace-form">
+    <mat-form-field appearance="outline">
+      <mat-label>{{ 'REPLACE_TENANT_DIALOG.FIELDS.NEW_TENANT' | translate }}</mat-label>
+      <mat-icon matPrefix>person_add</mat-icon>
+      <mat-select formControlName="new_tenant_id" [disabled]="loadingTenants">
+        <mat-option *ngFor="let tenant of candidateTenants" [value]="tenant.id">
+          {{ tenant.name }}
+          <span *ngIf="tenant.phone_number"> · {{ tenant.phone_number }}</span>
+        </mat-option>
+      </mat-select>
+      <mat-hint *ngIf="!loadingTenants && candidateTenants.length === 0">
+        {{ 'REPLACE_TENANT_DIALOG.HINTS.NO_TENANTS' | translate }}
+      </mat-hint>
+      <mat-error *ngIf="form.get('new_tenant_id')?.hasError('required')">
+        {{ 'REPLACE_TENANT_DIALOG.ERRORS.TENANT_REQUIRED' | translate }}
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>{{ 'REPLACE_TENANT_DIALOG.FIELDS.HANDOVER_DATE' | translate }}</mat-label>
+      <input
+        matInput
+        [matDatepicker]="handoverPicker"
+        formControlName="handover_date"
+        [min]="minHandoverDate"
+      />
+      <mat-datepicker-toggle matSuffix [for]="handoverPicker"></mat-datepicker-toggle>
+      <mat-datepicker #handoverPicker></mat-datepicker>
+      <mat-hint>{{ 'REPLACE_TENANT_DIALOG.HINTS.HANDOVER_DATE' | translate }}</mat-hint>
+      <mat-error *ngIf="form.get('handover_date')?.hasError('required')">
+        {{ 'REPLACE_TENANT_DIALOG.ERRORS.HANDOVER_REQUIRED' | translate }}
+      </mat-error>
+    </mat-form-field>
+
+    <!-- Terms carried over from the outgoing lease; editable when they change -->
+    <p class="terms-note">
+      <mat-icon>content_copy</mat-icon>
+      {{ 'REPLACE_TENANT_DIALOG.TERMS_NOTE' | translate }}
+    </p>
+
+    <div class="row-fields">
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'REPLACE_TENANT_DIALOG.FIELDS.MONTHLY_RENT' | translate }}</mat-label>
+        <mat-icon matPrefix>payments</mat-icon>
+        <input matInput type="number" formControlName="monthly_rent" min="1" />
+        <mat-error *ngIf="form.get('monthly_rent')?.invalid">
+          {{ 'REPLACE_TENANT_DIALOG.ERRORS.RENT_INVALID' | translate }}
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'REPLACE_TENANT_DIALOG.FIELDS.SECURITY_DEPOSIT' | translate }}</mat-label>
+        <mat-icon matPrefix>savings</mat-icon>
+        <input matInput type="number" formControlName="security_deposit" min="0" />
+      </mat-form-field>
+    </div>
+
+    <div class="row-fields">
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'REPLACE_TENANT_DIALOG.FIELDS.LEASE_TYPE' | translate }}</mat-label>
+        <mat-select formControlName="lease_type">
+          <mat-option value="Residential">Residential</mat-option>
+          <mat-option value="Commercial">Commercial</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>{{ 'REPLACE_TENANT_DIALOG.FIELDS.DURATION_MONTHS' | translate }}</mat-label>
+        <mat-icon matPrefix>event_repeat</mat-icon>
+        <input matInput type="number" formControlName="duration_months" min="1" max="60" />
+        <mat-error *ngIf="form.get('duration_months')?.invalid">
+          {{ 'REPLACE_TENANT_DIALOG.ERRORS.DURATION_INVALID' | translate }}
+        </mat-error>
+      </mat-form-field>
+    </div>
+
+    <!-- Spell out both sides of the swap before it is committed -->
+    <div class="outcome" *ngIf="form.get('handover_date')?.value">
+      <div class="outcome-row">
+        <mat-icon>logout</mat-icon>
+        <span>
+          {{ 'REPLACE_TENANT_DIALOG.OUTCOME.CLOSES' | translate: { tenant: lease.tenant_name } }}
+          <strong>{{ form.get('handover_date')?.value | date: 'mediumDate' }}</strong>
+        </span>
+      </div>
+      <div class="outcome-row" *ngIf="successorEndDate">
+        <mat-icon>login</mat-icon>
+        <span>
+          {{ 'REPLACE_TENANT_DIALOG.OUTCOME.OPENS' | translate }}
+          <strong>{{ form.get('handover_date')?.value | date: 'mediumDate' }}</strong>
+          →
+          <strong>{{ successorEndDate | date: 'mediumDate' }}</strong>
+        </span>
+      </div>
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" (click)="onCancel()" [disabled]="submitLoading">
+    {{ 'COMMON.BUTTONS.CANCEL' | translate }}
+  </button>
+  <button
+    mat-flat-button
+    color="primary"
+    type="button"
+    (click)="onSubmit()"
+    [disabled]="submitLoading || form.invalid"
+  >
+    <mat-spinner *ngIf="submitLoading" diameter="18" class="inline-spinner"></mat-spinner>
+    <mat-icon *ngIf="!submitLoading">swap_horiz</mat-icon>
+    {{ (submitLoading ? 'REPLACE_TENANT_DIALOG.BUTTONS.REPLACING' :
+    'REPLACE_TENANT_DIALOG.BUTTONS.REPLACE') | translate }}
+  </button>
+</mat-dialog-actions>

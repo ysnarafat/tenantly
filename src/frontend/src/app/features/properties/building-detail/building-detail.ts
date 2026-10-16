@@ -224,6 +224,9 @@ export class BuildingDetail implements OnInit {
       data: {
         building,
         property: { id: building.property_id, property_name: building.property_name } as Property,
+        // Lets the dialog flag collisions up front — the API rejects the whole
+        // batch on the first unit number that already exists.
+        existingUnitNumbers: this.units().map((unit) => unit.unit_number),
       },
     });
 

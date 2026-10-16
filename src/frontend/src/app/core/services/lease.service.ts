@@ -181,6 +181,25 @@ export interface RenewLeaseRequest {
   carry_forward_charges?: boolean;
 }
 
+/**
+ * Tenant turnover on an existing lease: the current lease closes at
+ * handover_date and a successor lease opens on the same unit that day.
+ * Term fields are optional — omit one to carry it over from the current lease.
+ */
+export interface ReplaceTenantRequest {
+  new_tenant_id: number;
+  handover_date: string;
+  lease_type?: LeaseType;
+  duration_months?: number;
+  monthly_rent?: number;
+  security_deposit?: number;
+}
+
+export interface ReplaceTenantResponse {
+  previous_lease: LeaseWithDetails;
+  new_lease: LeaseWithDetails;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -234,6 +253,15 @@ export class LeaseService {
 
   renewLease(id: number, request: RenewLeaseRequest): Observable<LeaseWithDetails> {
     return this.http.post<LeaseWithDetails>(`${this.apiUrl}/${id}/renew`, request);
+  }
+
+  /**
+   * Hands a unit over to a new tenant. The API closes the current lease and
+   * opens the successor in one transaction, so this either fully succeeds or
+   * leaves the current lease untouched.
+   */
+  replaceTenant(id: number, request: ReplaceTenantRequest): Observable<ReplaceTenantResponse> {
+    return this.http.post<ReplaceTenantResponse>(`${this.apiUrl}/${id}/replace-tenant`, request);
   }
 
   getLeasesByUnit(

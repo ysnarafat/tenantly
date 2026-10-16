@@ -360,6 +360,7 @@ type LeaseRepositoryInterface interface {
 	Delete(id int) error
 	SoftDelete(id int, endDate time.Time, reason models.LeaseEndReason) error
 	RenewLease(oldLeaseID int, req *models.RenewLeaseRequest) (*models.Lease, error)
+	ReplaceTenant(oldLeaseID int, handoverDate time.Time, successor *models.CreateLeaseRequest) (*models.Lease, error)
 	HasActiveLeaseOnUnit(unitID int, excludeLeaseID *int) (bool, error)
 	HasActiveLeaseForTenant(tenantID int) (bool, error)
 	HasPayableLeaseForUnitAndTenant(unitID, tenantID int) (bool, error)
@@ -389,6 +390,7 @@ type LeaseServiceInterface interface {
 	AddLeaseCharge(leaseID int, req *models.CreateLeaseChargeRequest, userID, orgID int) (*models.LeaseCharge, error)
 	UpdateLeaseCharge(leaseID, chargeID int, req *models.UpdateLeaseChargeRequest, userID, orgID int) (*models.LeaseCharge, error)
 	RemoveLeaseCharge(leaseID, chargeID int, userID, orgID int) error
+	ReplaceTenant(leaseID int, req *models.ReplaceTenantRequest, userID, orgID int) (*models.ReplaceTenantResponse, error)
 	GetLeasesByUnit(unitID int, page, pageSize, orgID int) (*models.LeaseListResponse, error)
 	GetLeasesByTenant(tenantID int, page, pageSize, orgID int) (*models.LeaseListResponse, error)
 	GetLeasesDue(orgID int) ([]models.LeaseDue, error)

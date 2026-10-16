@@ -300,6 +300,7 @@ func (s *Server) setupRoutes() {
 				leases.POST("/:id/charges", middleware.RequireAdminOrPropertyManager(), leaseHandler.AddLeaseCharge)
 				leases.PUT("/:id/charges/:chargeId", middleware.RequireAdminOrPropertyManager(), leaseHandler.UpdateLeaseCharge)
 				leases.DELETE("/:id/charges/:chargeId", middleware.RequireAdminOrPropertyManager(), leaseHandler.DeleteLeaseCharge)
+				leases.POST("/:id/replace-tenant", middleware.RequireAdminOrPropertyManager(), leaseHandler.ReplaceTenant)
 
 				// Lease relationships
 				leases.GET("/unit/:unit_id", middleware.RequireAnyRole(), leaseHandler.GetLeasesByUnit)

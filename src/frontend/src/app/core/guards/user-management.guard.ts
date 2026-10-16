@@ -14,7 +14,7 @@ export const userManagementGuard = () => {
       if (role === 'SUPER_ADMIN' || role === 'ORG_ADMIN' || role === 'Admin') {
         return true;
       }
-      router.navigate(['/401']);
+      router.navigate(['/unauthorized']);
       return false;
     })
   );

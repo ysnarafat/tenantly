@@ -208,10 +208,11 @@ export const routes: Routes = [
       import('./features/errors/unauthorized/unauthorized').then((m) => m.Unauthorized),
     canActivate: [AuthGuard],
   },
+  // Legacy alias — some guards still navigate to the old /401 path
   {
     path: '401',
-    loadComponent: () =>
-      import('./features/errors/unauthorized/unauthorized').then((m) => m.Unauthorized),
+    redirectTo: '/unauthorized',
+    pathMatch: 'full',
   },
   {
     path: '404',
@@ -219,6 +220,8 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: '/404',
+    // render in place so the mistyped address is preserved in the URL bar
+    title: 'Page not found',
+    loadComponent: () => import('./features/errors/not-found/not-found').then((m) => m.NotFound),
   },
 ];

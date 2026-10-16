@@ -79,7 +79,13 @@ describe('UnitFormDialogComponent - Unit Type Validation', () => {
         MatDialogModule,
         TranslateModule.forRoot(),
       ],
-      providers: [{ provide: MatDialogRef, useValue: mockDialogRef }],
+      providers: [
+        { provide: MatDialogRef, useValue: mockDialogRef },
+        // The component injects MAT_DIALOG_DATA at construction; each test then
+        // overwrites component.data with its own fixture before calling
+        // ngOnInit(), so a placeholder is enough to let createComponent() run.
+        { provide: MAT_DIALOG_DATA, useValue: {} },
+      ],
     }).compileComponents();
   });
 
@@ -90,8 +96,6 @@ describe('UnitFormDialogComponent - Unit Type Validation', () => {
         property: mockProperty,
         mode: 'create',
       };
-      TestBed.inject(MAT_DIALOG_DATA);
-
       fixture = TestBed.createComponent(UnitFormDialogComponent);
       component = fixture.componentInstance;
       (component as any).data = dialogData;

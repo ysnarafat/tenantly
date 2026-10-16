@@ -709,6 +709,96 @@ func (r *LeaseRepository) RenewLease(oldLeaseID int, req *models.RenewLeaseReque
 	return newLease, nil
 }
 
+// ReplaceTenant performs a tenant turnover on a unit in a single transaction:
+// the outgoing lease is closed at handoverDate and the successor lease is
+// inserted for the incoming tenant.
+//
+// Both statements must share one transaction. The service's "unit already has an
+// active lease" guard would reject the successor while the outgoing lease is
+// still active, so there is no valid intermediate state to expose — and a
+// failure between the two would otherwise leave a unit either double-leased or
+// silently vacant.
+//
+// The UPDATE is guarded on active = true so two concurrent turnovers cannot both
+// succeed: the loser affects zero rows and rolls back.
+func (r *LeaseRepository) ReplaceTenant(oldLeaseID int, handoverDate time.Time, successor *models.CreateLeaseRequest) (*models.Lease, error) {
+	startDate, err := time.Parse("2006-01-02", successor.StartDate)
+	if err != nil {
+		return nil, fmt.Errorf("invalid start date format: %w", err)
+	}
+
+	endDate := startDate.AddDate(0, successor.DurationMonths, 0)
+	if successor.EndDate != nil {
+		endDate, err = time.Parse("2006-01-02", *successor.EndDate)
+		if err != nil {
+			return nil, fmt.Errorf("invalid end date format: %w", err)
+		}
+	}
+
+	tx, err := r.db.Begin()
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	now := time.Now()
+
+	result, err := tx.Exec(
+		`UPDATE leases SET active = false, end_date = $1, end_reason = $2, updated_at = $3 WHERE id = $4 AND active = true`,
+		handoverDate, models.LeaseEndReasonTerminated, now, oldLeaseID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to close outgoing lease: %w", err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return nil, fmt.Errorf("failed to confirm outgoing lease closure: %w", err)
+	}
+	if rowsAffected == 0 {
+		return nil, fmt.Errorf("lease is no longer active")
+	}
+
+	lease := &models.Lease{
+		UnitID:          successor.UnitID,
+		TenantID:        successor.TenantID,
+		LeaseType:       successor.LeaseType,
+		StartDate:       startDate,
+		EndDate:         endDate,
+		DurationMonths:  successor.DurationMonths,
+		MonthlyRent:     successor.MonthlyRent,
+		SecurityDeposit: successor.SecurityDeposit,
+		Active:          true,
+		OrganizationID:  successor.OrganizationID,
+	}
+
+	err = tx.QueryRow(
+		`INSERT INTO leases (unit_id, tenant_id, lease_type, start_date, end_date, duration_months, monthly_rent, security_deposit, active, organization_id, created_at, updated_at)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+		 RETURNING id, created_at, updated_at`,
+		lease.UnitID,
+		lease.TenantID,
+		lease.LeaseType,
+		lease.StartDate,
+		lease.EndDate,
+		lease.DurationMonths,
+		lease.MonthlyRent,
+		lease.SecurityDeposit,
+		lease.Active,
+		lease.OrganizationID,
+		now,
+		now,
+	).Scan(&lease.ID, &lease.CreatedAt, &lease.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create successor lease: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit tenant replacement: %w", err)
+	}
+
+	return lease, nil
+}
+
 // HasActiveLeaseOnUnit checks if a unit has an active lease
 func (r *LeaseRepository) HasActiveLeaseOnUnit(unitID int, excludeLeaseID *int) (bool, error) {
 	query := `
