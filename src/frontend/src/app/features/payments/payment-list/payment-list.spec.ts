@@ -5,8 +5,12 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { of, throwError } from 'rxjs';
 import { PageEvent } from '@angular/material/paginator';
+import { provideRouter } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 import { PaymentList } from './payment-list';
 import { PaymentService } from '../../../core/services/payment.service';
+import { PropertyService } from '../../../core/services/property.service';
+import { Property } from '../../../core/models/property.model';
 import {
   PaymentWithDetails,
   DashboardSummary,
@@ -18,6 +22,7 @@ describe('PaymentList', () => {
   let component: PaymentList;
   let fixture: ComponentFixture<PaymentList>;
   let paymentServiceSpy: jasmine.SpyObj<PaymentService>;
+  let propertyServiceSpy: jasmine.SpyObj<PropertyService>;
   let dialogSpy: jasmine.SpyObj<MatDialog>;
   let snackBarSpy: jasmine.SpyObj<MatSnackBar>;
 
@@ -61,6 +66,18 @@ describe('PaymentList', () => {
     tenant_count: 38,
   };
 
+  const mockProperty: Property = {
+    id: 3,
+    property_name: 'Sunrise Apartments',
+    property_code: 'PROP-003',
+    address: '12 Gulshan Ave',
+    property_type: 'Residential',
+    total_buildings: 2,
+    active: true,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+  };
+
   const mockListResponse: PaymentListResponse = {
     payments: [mockPayment],
     total: 1,
@@ -74,13 +91,30 @@ describe('PaymentList', () => {
   beforeEach(async () => {
     paymentServiceSpy = jasmine.createSpyObj('PaymentService', [
       'getPayments',
+      'getAllPayments',
       'getDashboardSummary',
       'createPayment',
       'updatePayment',
       'recordPaymentTransaction',
     ]);
     paymentServiceSpy.getPayments.and.returnValue(of(mockListResponse));
+    paymentServiceSpy.getAllPayments.and.returnValue(of([mockPayment]));
     paymentServiceSpy.getDashboardSummary.and.returnValue(of(mockSummary));
+
+    propertyServiceSpy = jasmine.createSpyObj('PropertyService', ['getProperties']);
+    propertyServiceSpy.getProperties.and.returnValue(
+      of({
+        properties: [mockProperty],
+        pagination: {
+          current_page: 1,
+          page_size: 100,
+          total_items: 1,
+          total_pages: 1,
+          has_next: false,
+          has_prev: false,
+        },
+      })
+    );
 
     dialogSpy = jasmine.createSpyObj('MatDialog', ['open']);
     dialogSpy.open.and.returnValue({ afterClosed: () => of(null) } as any);
@@ -88,11 +122,18 @@ describe('PaymentList', () => {
     snackBarSpy = jasmine.createSpyObj('MatSnackBar', ['open']);
 
     await TestBed.configureTestingModule({
-      imports: [PaymentList, NoopAnimationsModule, HttpClientTestingModule],
+      imports: [
+        PaymentList,
+        NoopAnimationsModule,
+        HttpClientTestingModule,
+        TranslateModule.forRoot(),
+      ],
       providers: [
         { provide: PaymentService, useValue: paymentServiceSpy },
+        { provide: PropertyService, useValue: propertyServiceSpy },
         { provide: MatDialog, useValue: dialogSpy },
         { provide: MatSnackBar, useValue: snackBarSpy },
+        provideRouter([]),
       ],
     })
       .overrideProvider(MatDialog, { useValue: dialogSpy })
@@ -119,7 +160,7 @@ describe('PaymentList', () => {
     it('should expose the required displayedColumns', () => {
       expect(component.displayedColumns).toEqual([
         'tenant',
-        'unit',
+        'property',
         'period',
         'amount_due',
         'amount_paid',
@@ -135,6 +176,20 @@ describe('PaymentList', () => {
     it('should initialise page signal to 1 and pageSize signal to 20', () => {
       expect(component.page()).toBe(1);
       expect(component.pageSize()).toBe(20);
+    });
+
+    it('should combine the selected month and year into the period value', () => {
+      component.filterYear = 2025;
+      component.filterMonth = '3';
+
+      expect(component.selectedPeriod).toBe('2025-3');
+    });
+
+    it('should expose a compact range of pages around the current page', () => {
+      component.total.set(200);
+      component.page.set(5);
+
+      expect(component.visiblePages()).toEqual([4, 5, 6]);
     });
   });
 
@@ -221,6 +276,80 @@ describe('PaymentList', () => {
   describe('loadSummary', () => {
     it('should populate the summary signal with data from the service', () => {
       expect(component.summary()).toEqual(mockSummary);
+    });
+
+    describe('payment trends', () => {
+      it('loads six real monthly payment aggregates', () => {
+        expect(paymentServiceSpy.getAllPayments).toHaveBeenCalledTimes(6);
+        expect(component.monthlyTrend().length).toBe(6);
+        expect(component.trendLoading()).toBeFalse();
+        expect(component.monthlyTrend()[5].amountDue).toBe(mockPayment.amount_due);
+        expect(component.monthlyTrend()[5].amountPaid).toBe(mockPayment.amount_paid);
+      });
+
+      it('loads all matching payments for the property view', () => {
+        component.treeFilterMonth = 5;
+        component.treeFilterYear = 2026;
+
+        component.loadTreePayments();
+
+        expect(paymentServiceSpy.getAllPayments).toHaveBeenCalledWith({
+          month: 5,
+          year: 2026,
+        });
+        expect(component.treePayments()).toEqual([mockPayment]);
+      });
+
+      it('loads property metadata for every page when opening By Property', () => {
+        propertyServiceSpy.getProperties.and.returnValues(
+          of({
+            properties: [mockProperty],
+            pagination: {
+              current_page: 1,
+              page_size: 100,
+              total_items: 2,
+              total_pages: 2,
+              has_next: true,
+              has_prev: false,
+            },
+          }),
+          of({
+            properties: [{ ...mockProperty, id: 4, property_name: 'West Tower' }],
+            pagination: {
+              current_page: 2,
+              page_size: 100,
+              total_items: 2,
+              total_pages: 2,
+              has_next: false,
+              has_prev: true,
+            },
+          })
+        );
+
+        component.onTabChange(1);
+
+        expect(propertyServiceSpy.getProperties.calls.allArgs()).toEqual([
+          [{ page: 1, page_size: 100 }],
+          [{ page: 2, page_size: 100 }],
+        ]);
+        expect(component.properties().length).toBe(2);
+        expect(component.propertiesLoaded()).toBeTrue();
+      });
+
+      it('uses property details to filter and describe payment aggregates', () => {
+        component.treePayments.set([mockPayment]);
+        component.properties.set([mockProperty]);
+
+        const property = component.treeData()[0];
+
+        expect(property.property_type).toBe('Residential');
+        expect(property.address).toBe('12 Gulshan Ave');
+        expect(property.totalBuildings).toBe(2);
+        expect(property.unitCount).toBe(1);
+
+        component.treePropertyType.set('Commercial');
+        expect(component.treeData()).toEqual([]);
+      });
     });
 
     it('should not throw when getDashboardSummary errors (silent failure)', () => {
@@ -335,6 +464,40 @@ describe('PaymentList', () => {
       component.onPageChange(event);
 
       expect(component.page()).toBe(3);
+    });
+
+    describe('custom pagination and period selection', () => {
+      it('should load the selected page', () => {
+        component.total.set(100);
+        paymentServiceSpy.getPayments.calls.reset();
+
+        component.goToPage(2);
+
+        expect(component.page()).toBe(2);
+        expect(paymentServiceSpy.getPayments.calls.mostRecent().args[0]!['page']).toBe(2);
+      });
+
+      it('should apply year and month when a period is selected', () => {
+        paymentServiceSpy.getPayments.calls.reset();
+
+        component.onPeriodChange('2025-3');
+
+        expect(component.filterYear).toBe(2025);
+        expect(component.filterMonth).toBe('3');
+        const filters = paymentServiceSpy.getPayments.calls.mostRecent().args[0]!;
+        expect(filters['year']).toBe(2025);
+        expect(filters['month']).toBe(3);
+      });
+
+      it('should select a full year when all months is chosen', () => {
+        paymentServiceSpy.getPayments.calls.reset();
+
+        component.onPeriodChange('2024-all');
+
+        expect(component.filterYear).toBe(2024);
+        expect(component.filterMonth).toBe('');
+        expect(paymentServiceSpy.getPayments.calls.mostRecent().args[0]!['year']).toBe(2024);
+      });
     });
 
     it('should update the pageSize signal', () => {

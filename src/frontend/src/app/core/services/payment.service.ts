@@ -53,6 +53,10 @@ export class PaymentService {
     return this.http.get<PaymentListResponse>(this.apiUrl, { params });
   }
 
+  getAllPayments(filters: PaymentFilters = {}): Observable<PaymentWithDetails[]> {
+    return this.fetchAllFilteredPages(filters);
+  }
+
   getPayment(id: number): Observable<PaymentWithDetails> {
     return this.http.get<PaymentWithDetails>(`${this.apiUrl}/${id}`);
   }
@@ -174,6 +178,22 @@ export class PaymentService {
       this.fetchAllPages({ month, year, status })
     );
     return forkJoin(requests).pipe(map((pages) => pages.flat()));
+  }
+
+  private fetchAllFilteredPages(
+    filters: PaymentFilters,
+    page = 1,
+    accumulated: PaymentWithDetails[] = []
+  ): Observable<PaymentWithDetails[]> {
+    return this.getPayments({ ...filters, page, page_size: MAX_PAGE_SIZE }).pipe(
+      switchMap((response) => {
+        const combined = [...accumulated, ...response.payments];
+        if (response.payments.length === 0 || combined.length >= response.total) {
+          return of(combined);
+        }
+        return this.fetchAllFilteredPages(filters, page + 1, combined);
+      })
+    );
   }
 
   private fetchAllPages(

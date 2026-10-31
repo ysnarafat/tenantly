@@ -14,6 +14,267 @@ body {
     color 0.25s;
 }
 
+.payment-container .payments-workspace .payments-section {
+  display: block;
+  min-width: 0;
+  gap: 0;
+  padding: 0 16px 4px;
+}
+
+.payment-container {
+  .payments-table-scroll {
+    overflow-x: auto;
+  }
+
+  .payments-table {
+    width: 100%;
+    min-width: 920px;
+    border-collapse: collapse;
+    table-layout: fixed;
+    background: #fff;
+    font-family: Inter, 'Noto Sans Bengali', sans-serif;
+  }
+
+  .payments-table th.mat-mdc-header-cell {
+    height: 48px;
+    padding: 12px;
+    border-bottom: 1px solid #c1c6d4;
+    background: #edeeef;
+    color: #414752;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.035em;
+    text-align: left;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .payments-table td.mat-mdc-cell {
+    height: 64px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #c1c6d4;
+    color: #191c1d;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    vertical-align: middle;
+  }
+
+  .payments-table tr.mat-mdc-row {
+    background: #fff;
+  }
+
+  .payments-table tr.mat-mdc-row:hover {
+    background: #f3f4f5;
+  }
+
+  .payments-table .col-tenant {
+    width: 25%;
+  }
+
+  .payments-table .col-property {
+    width: 22%;
+  }
+
+  .payments-table .col-period {
+    width: 12%;
+  }
+
+  .payments-table .col-amount {
+    width: 14%;
+    text-align: right;
+  }
+
+  .payments-table .col-status {
+    width: 10%;
+  }
+
+  .payments-table .col-actions {
+    width: 64px;
+    text-align: center;
+  }
+
+  .payments-table th.mat-mdc-header-cell.col-amount {
+    text-align: right;
+  }
+
+  .payments-table th.mat-mdc-header-cell.col-actions {
+    text-align: center;
+  }
+
+  .payments-table .amount-cell {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .payments-table .amount-paid-cell {
+    font-weight: 700;
+  }
+
+  .payments-table .cell-main {
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .payments-table .tenant-avatar {
+    width: 32px;
+    height: 32px;
+    background: rgb(0 93 172 / 10%);
+    font-size: 0.7rem;
+  }
+
+  .payments-table .actions-cell {
+    text-align: center;
+  }
+
+  .payments-table .actions-cell button {
+    width: 32px;
+    height: 32px;
+    line-height: 32px;
+  }
+
+  .payments-table .actions-cell mat-icon {
+    color: #414752;
+    font-size: 20px;
+  }
+
+  .property-table-cell {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .property-table-cell > span {
+    overflow: hidden;
+    font-size: 0.875rem;
+    text-overflow: ellipsis;
+  }
+
+  .property-table-cell small {
+    overflow: hidden;
+    color: #717783;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    text-overflow: ellipsis;
+  }
+
+  .payments-table-state {
+    display: flex;
+    min-height: 220px;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: #717783;
+  }
+
+  .payments-table-state > mat-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 32px;
+  }
+
+  .payment-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 9px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 600;
+  }
+
+  .payment-status i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .payment-status.status-paid {
+    background: rgb(0 110 28 / 9%);
+    color: #006e1c;
+  }
+
+  .payment-status.status-due,
+  .payment-status.status-partial {
+    background: rgb(136 79 0 / 10%);
+    color: #884f00;
+  }
+
+  .payment-status.status-overdue {
+    background: rgb(186 26 26 / 9%);
+    color: #ba1a1a;
+  }
+
+  .payments-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 -16px -4px;
+    padding: 12px 16px;
+    border-top: 1px solid #c1c6d4;
+    background: #edeeef;
+    color: #717783;
+    font-size: 0.75rem;
+  }
+
+  .page-controls {
+    display: flex;
+    align-items: center;
+  }
+
+  .page-controls button {
+    display: grid;
+    min-width: 34px;
+    height: 34px;
+    place-items: center;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #191c1d;
+    cursor: pointer;
+  }
+
+  .page-controls button.current-page {
+    background: #005dac;
+    color: #fff;
+  }
+
+  .page-controls button:first-child,
+  .page-controls button:last-child {
+    border: 1px solid #c1c6d4;
+    background: #fff;
+  }
+}
+
+@media (max-width: 768px) {
+  .payment-container {
+    .payments-table-scroll {
+      display: none;
+    }
+
+    .payments-pagination {
+      align-items: flex-start;
+      flex-direction: column;
+      justify-content: center;
+      padding: 12px 0;
+    }
+
+    .page-controls {
+      align-self: flex-end;
+    }
+  }
+
+  .payment-container .payments-workspace .payments-section {
+    padding: 0 14px 4px;
+  }
+}
+
 // ── CSS Custom Properties ─────────────────────────────────────────────────────
 
 :root,

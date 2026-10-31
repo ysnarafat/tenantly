@@ -149,8 +149,11 @@ Two ways to populate demo data — choose whichever fits your workflow.
 
 Reads JSON files from `seeds/dev/` and inserts via the repository layer — no SQL, no HTTP server required. Safe to run repeatedly (idempotent: skips records that already exist).
 
+**Apply database migrations before running the seed command.** Seeding does not run migrations; it expects the schema (including the `organizations` table from migration `000002_multi_tenancy`) to already exist. If you see an error such as `relation "organizations" does not exist`, run `go run cmd/migrate/main.go up` from `src/backend/api`, then retry the seed command. Make sure both commands use the intended database from `DATABASE_URL` in `.env`.
+
 ```bash
 # From src/backend/api/
+go run cmd/migrate/main.go up        # create/update the database schema
 go run cmd/migrate/main.go seed        # seeds from seeds/dev/ (default)
 go run cmd/migrate/main.go seed dev    # same, explicit env name
 go run cmd/migrate/main.go seed staging  # loads from seeds/staging/
@@ -180,4 +183,3 @@ go run cmd/migrate/main.go seed staging  # loads from seeds/staging/
   }
 }
 ```
-

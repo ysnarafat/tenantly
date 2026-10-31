@@ -126,19 +126,30 @@
   },
   "TENANT_LIST": {
     "PAGE_TITLE": "ভাড়াটেরা",
+    "PAGE_SUBTITLE": "আবাসিক ও বাণিজ্যিক ভাড়ার রেকর্ড পরিচালনা করুন",
     "STATS": {
       "TOTAL": "মোট",
       "ACTIVE": "সক্রিয়",
-      "INACTIVE": "নিষ্ক্রিয়"
+      "INACTIVE": "নিষ্ক্রিয়",
+      "NEW_THIS_MONTH": "এই মাসে নতুন",
+      "TENANTS": "জন ভাড়াটে"
     },
     "BUTTONS": {
-      "ADD_TENANT": "নতুন ভাড়াটে যোগ করুন"
+      "ADD_TENANT": "নতুন ভাড়াটে যোগ করুন",
+      "EXPORT": "তালিকা রপ্তানি",
+      "APPLY_FILTERS": "ফিল্টার প্রয়োগ"
+    },
+    "EXPORT": {
+      "EMAIL": "ইমেইল",
+      "PHONE": "ফোন"
     },
     "FILTERS": {
       "SEARCH_LABEL": "ভাড়াটে খুঁজুন",
       "SEARCH_PLACEHOLDER": "নাম, ফোন, ইমেল বা নাগরিকত্ব নম্বর…",
       "STATUS_LABEL": "অবস্থা",
       "TYPE_LABEL": "ধরন",
+      "ALL_TYPES": "সব ধরন",
+      "ALL_STATUS": "সব অবস্থা",
       "INDIVIDUAL": "ব্যক্তিগত",
       "BUSINESS": "ব্যবসা",
       "ALL": "সব"
@@ -181,15 +192,63 @@
       "ACTIVE_LEASES": "সক্রিয় লীজ",
       "EXPIRING_SOON": "শীঘ্রই শেষ হবে",
       "TOTAL_ATTACHMENTS": "মোট সংযুক্তি",
-      "RECENT_FILES": "সাম্প্রতিক ফাইল"
+      "RECENT_FILES": "সাম্প্রতিক ফাইল",
+      "EXPIRING_WITHIN_30_DAYS": "৩০ দিনের মধ্যে শেষ হবে",
+      "TOTAL_DUE": "মোট বকেয়া ভাড়া",
+      "TOTAL_DUE_DESCRIPTION": "নথিভুক্ত পেমেন্টের মোট",
+      "TOTAL_COLLECTED": "এই মাসে সংগৃহীত",
+      "TOTAL_COLLECTED_DESCRIPTION": "নথিভুক্ত পেমেন্টের বিপরীতে পরিশোধিত",
+      "TOTAL_PENDING": "অপেক্ষমাণ পেমেন্ট",
+      "OVERDUE": "মেয়াদোত্তীর্ণ",
+      "COLLECTION_EFFICIENCY": "আদায়ের হার",
+      "OCCUPANCY_RATE": "দখলের হার",
+      "UNITS_OCCUPIED": "টি ইউনিট দখলকৃত",
+      "OCCUPIED": "দখলকৃত",
+      "CURRENT_MONTH": "চলতি মাসের জন্য",
+      "PENDING_COUNT": "অপেক্ষমাণ",
+      "OVERDUE_UNITS": "টি ইউনিটের বকেয়া",
+      "LEASES": "টি লীজ",
+      "ACTIVE": "সক্রিয়",
+      "NEEDS_RENEWAL": "নবায়ন প্রয়োজন",
+      "VACANT": "খালি"
     },
     "SECTIONS": {
       "EXPIRING_LEASES": "শীঘ্রই শেষ হওয়া লীজ",
       "RECENT_LEASES": "সাম্প্রতিক লীজ",
-      "RECENT_ATTACHMENTS": "সাম্প্রতিক সংযুক্তি"
+      "RECENT_ATTACHMENTS": "সাম্প্রতিক নথি",
+      "PORTFOLIO_OVERVIEW": "পোর্টফোলিও সারসংক্ষেপ",
+      "ACTIVE_LEASES_BY_PROPERTY": "সম্পত্তি অনুযায়ী সক্রিয় লীজ ও মাসিক ভাড়া",
+      "ACTIVE_LEASE": "সক্রিয় লীজ",
+      "ACTIVE_LEASES": "সক্রিয় লীজ",
+      "OF_TOTAL_RENT": "মোট ভাড়ার",
+      "ACTIVE": "সক্রিয়",
+      "EXPIRING_SOON": "শীঘ্রই শেষ হবে",
+      "EXPIRING_DESCRIPTION": "আগামী ৩০ দিনের মধ্যে শেষ হবে",
+      "RECENT_LEASES_DESCRIPTION": "আপনার সম্পত্তির সাম্প্রতিক কার্যকলাপ",
+      "EXPIRED": "মেয়াদ শেষ",
+      "COLLECTION_TRENDS": "মাসিক ভাড়া আদায়ের প্রবণতা",
+      "COLLECTION_TRENDS_DESCRIPTION": "বিল করা ভাড়া ও প্রাপ্ত পেমেন্টের তুলনা",
+      "RECENT_COLLECTIONS": "সাম্প্রতিক আদায় ও লেনদেন",
+      "RECENT_COLLECTIONS_DESCRIPTION": "সাম্প্রতিক নথিভুক্ত পেমেন্ট লেনদেন",
+      "ACTIVE_PROPERTIES": "সক্রিয় সম্পত্তি",
+      "BUILDINGS": "টি ভবন"
     },
     "BUTTONS": {
-      "VIEW_ALL": "সব দেখুন"
+      "VIEW_ALL": "সব দেখুন",
+      "VIEW_ALL_LEASES": "সব লীজ দেখুন",
+      "ALL_PAYMENTS": "সব পেমেন্ট",
+      "UPLOAD_DOCUMENT": "নতুন নথি আপলোড করুন",
+      "DOWNLOAD_DOCUMENT": "{{name}} ডাউনলোড করুন"
+    },
+    "TABLE": {
+      "TENANT_UNIT": "ভাড়াটে ও ইউনিট",
+      "PROPERTY": "সম্পত্তি",
+      "MONTHLY_RENT": "মাসিক ভাড়া",
+      "STATUS": "অবস্থা"
+    },
+    "TRANSACTIONS": {
+      "PAID_IN_FULL": "সম্পূর্ণ পরিশোধিত",
+      "PARTIAL": "আংশিক"
     },
     "SUFFIXES": {
       "DAYS_LEFT": "দিন বাকি",
@@ -197,9 +256,37 @@
     },
     "EMPTY_STATE": {
       "NO_RECENT_LEASES": "কোনো সাম্প্রতিক লীজ পাওয়া যায়নি।",
-      "NO_RECENT_ATTACHMENTS": "কোনো সাম্প্রতিক সংযুক্তি পাওয়া যায়নি।"
+      "NO_RECENT_ATTACHMENTS": "কোনো সাম্প্রতিক সংযুক্তি পাওয়া যায়নি।",
+      "NO_PROPERTY_DATA": "কোনো সক্রিয় সম্পত্তি পাওয়া যায়নি।",
+      "NO_COLLECTION_DATA": "এই সময়ের জন্য কোনো পেমেন্ট তথ্য নেই।",
+      "NO_RECENT_COLLECTIONS": "কোনো সাম্প্রতিক পেমেন্ট লেনদেন পাওয়া যায়নি।"
     },
-    "LOADING": "ড্যাশবোর্ড ডেটা লোড হচ্ছে..."
+    "CHART": {
+      "LAST_SIX_MONTHS": "গত ৬ মাস",
+      "YEAR_TO_DATE": "চলতি বছর",
+      "PERIOD_COLLECTED": "সময়ে মোট আদায়",
+      "AVERAGE_EFFICIENCY": "গড় আদায়ের হার",
+      "COLLECTION_TARGET": "আদায়ের লক্ষ্য",
+      "TOTAL_DUE": "মোট বকেয়া",
+      "COLLECTED": "আদায়",
+      "PEAK_COLLECTION": "সর্বোচ্চ আদায়",
+      "TARGET_NOTE": "আদায়ের লক্ষ্য: ৯০%",
+      "MONTH_OVER_MONTH": "মাসিক পরিবর্তন",
+      "LOWEST_COLLECTION": "সর্বনিম্ন মাস",
+      "OUTSTANDING_RECEIVABLES": "অনাদায়ী পাওনা",
+      "FULL_BREAKDOWN": "আদায়ের বিস্তারিত দেখুন",
+      "CURRENCY_NOTE": "সব পরিমাণ বাংলাদেশি টাকা (৳ BDT)"
+    },
+    "LOADING": "ড্যাশবোর্ড ডেটা লোড হচ্ছে...",
+    "INTRO": "স্বাগতম, {{user}}। আপনার সম্পত্তি, ভাড়া এবং আদায়ের সারসংক্ষেপ।",
+    "LIVE_PORTFOLIO": "লাইভ পোর্টফোলিও",
+    "RECORD_PAYMENT": "পেমেন্ট নথিভুক্ত করুন",
+    "A11Y": {
+      "PORTFOLIO_SUMMARY": "পোর্টফোলিও সারসংক্ষেপ",
+      "VIEW_DOCUMENTS": "সব নথি দেখুন",
+      "CHART_PERIOD": "আদায় চার্টের সময়সীমা",
+      "COLLECTION_CHART": "মাসিক বিল ও আদায়কৃত ভাড়া"
+    }
   },
   "CREATE_LEASE_DIALOG": {
     "TITLE": "নতুন লীজ তৈরি করুন",
@@ -519,17 +606,25 @@
   },
   "PAYMENT_LIST": {
     "PAGE_TITLE": "পেমেন্ট",
-    "PAGE_SUBTITLE": "সকল পেমেন্ট লেনদেন পরিচালনা ও ট্র্যাক করুন",
+    "PAGE_SUBTITLE": "আপনার সম্পত্তি পোর্টফোলিওর সব আয় পরিচালনা ও ট্র্যাক করুন।",
+    "A11Y": {
+      "FINANCIAL_SUMMARY": "আর্থিক সারসংক্ষেপ",
+      "PAYMENT_TRENDS": "গত ছয় মাসের বিল ও আদায়কৃত পেমেন্ট"
+    },
     "SUMMARY": {
       "TOTAL_DUE": "মোট বকেয়া",
       "TOTAL_COLLECTED": "মোট সংগৃহীত",
       "PENDING": "অপেক্ষমাণ",
       "OVERDUE": "নির্ধারিত সময় অতিক্রম করেছে",
-      "COLLECTION_RATE": "সংগ্রহের হার"
+      "COLLECTION_RATE": "সংগ্রহের হার",
+      "ALL_PERIODS": "সব পেমেন্ট সময়কাল মিলিয়ে",
+      "REMAINING_BALANCE": "বকেয়া ব্যালেন্স",
+      "PAST_DUE_BALANCE": "মেয়াদোত্তীর্ণ বকেয়া"
     },
     "TABS": {
       "ALL_PAYMENTS": "সকল পেমেন্ট",
-      "BY_PROPERTY": "সম্পত্তি অনুযায়ী"
+      "BY_PROPERTY": "সম্পত্তি অনুযায়ী",
+      "VIEW_SELECTOR": "পেমেন্টের ধরন"
     },
     "BUTTONS": {
       "NEW_PAYMENT": "নতুন পেমেন্ট",
@@ -538,22 +633,35 @@
       "UPDATE": "আপডেট করুন",
       "LOAD": "লোড করুন",
       "GENERATE_MONTHLY": "মাসিক তৈরি করুন",
-      "COLLECT_PAYMENTS": "পেমেন্ট সংগ্রহ করুন"
+      "COLLECT_PAYMENTS": "পেমেন্ট রেকর্ড করুন",
+      "EXPORT_REPORT": "রিপোর্ট এক্সপোর্ট করুন",
+      "GENERATE_TOOLTIP": "সক্রিয় লীজের জন্য বকেয়া রেকর্ড তৈরি করুন",
+      "RECEIPT": "রসিদ"
     },
     "FILTERS": {
       "STATUS": "স্থিতি",
       "MONTH": "মাস",
       "YEAR": "বছর",
-      "ALL": "সব"
+      "PERIOD": "সময়কাল",
+      "ALL": "সব",
+      "ALL_MONTHS": "সব মাস",
+      "OPTIONS": "ফিল্টার অপশন"
     },
     "TABLE": {
       "TENANT_UNIT": "ভাড়াটে / ইউনিট",
       "PROPERTY": "সম্পত্তি",
       "UNIT": "ইউনিট",
       "PERIOD": "সময়কাল",
-      "AMOUNT_DUE": "বকেয়া (৳)",
-      "AMOUNT_PAID": "পরিশোধিত (৳)",
-      "STATUS": "স্থিতি"
+      "AMOUNT_DUE": "বকেয়ার পরিমাণ",
+      "AMOUNT_PAID": "পরিশোধিত পরিমাণ",
+      "STATUS": "স্থিতি",
+      "ACTIONS": "কার্যক্রম"
+    },
+    "PAGINATION": {
+      "SHOWING": "{{total}}টি পেমেন্টের মধ্যে {{start}} থেকে {{end}} দেখানো হচ্ছে",
+      "NAVIGATION": "পেমেন্ট পৃষ্ঠা",
+      "PREVIOUS": "আগের পৃষ্ঠা",
+      "NEXT": "পরের পৃষ্ঠা"
     },
     "STATUS": {
       "PAID": "পরিশোধিত",
@@ -579,7 +687,39 @@
       "EMPTY_TITLE": "কোনো পেমেন্ট নেই",
       "EMPTY_HINT": "একটি সময়কাল নির্বাচন করে লোড করুন, অথবা মাসিক পেমেন্ট তৈরি করুন",
       "LOADING": "ট্রি তৈরি হচ্ছে...",
-      "PAYMENTS_SUFFIX": "পেমেন্ট"
+      "PAYMENTS_SUFFIX": "পেমেন্ট",
+      "PROPERTY_TYPE": "ধরন",
+      "ALL_PROPERTIES": "সব সম্পত্তি",
+      "RESIDENTIAL": "আবাসিক",
+      "COMMERCIAL": "বাণিজ্যিক",
+      "MIXED": "মিশ্র",
+      "SORT_BY": "সাজান",
+      "SORT_HIGHEST_DUE": "সর্বোচ্চ বকেয়া",
+      "SORT_COLLECTION_RATE": "আদায়ের হার",
+      "SORT_ALPHABETICAL": "বর্ণানুক্রমে",
+      "BUILDINGS": "ভবন",
+      "UNITS_WITH_PAYMENTS": "পেমেন্টসহ ইউনিট",
+      "COLLECTION": "আদায়",
+      "VIEW_PROPERTY": "সম্পত্তি দেখুন",
+      "MANAGED_PROPERTIES": "পরিচালিত সম্পত্তি",
+      "FULLY_COLLECTED": "সম্পূর্ণ আদায়",
+      "ACTION_REQUIRED": "পদক্ষেপ প্রয়োজন",
+      "EXPORT_SUMMARY": "পোর্টফোলিও সারাংশ রপ্তানি"
+    },
+    "INSIGHTS": {
+      "TRENDS_TITLE": "পেমেন্টের প্রবণতা",
+      "TRENDS_DESCRIPTION": "গত ছয় মাসে আদায়কৃত পেমেন্ট",
+      "LAST_SIX_MONTHS": "গত ৬ মাস",
+      "TOTAL_DUE": "মোট বকেয়া",
+      "TOTAL_COLLECTED": "আদায়",
+      "LOADING_TRENDS": "পেমেন্টের প্রবণতা লোড হচ্ছে...",
+      "NO_TREND_DATA": "এই সময়ের জন্য কোনো পেমেন্ট তথ্য নেই।",
+      "PORTFOLIO_HEALTH": "পোর্টফোলিওর অবস্থা",
+      "HEALTH_DESCRIPTION": "আদায়ের অগ্রগতি ও পোর্টফোলিওর পরিধি দেখুন।",
+      "COLLECTION_GOAL": "আদায়ের লক্ষ্য",
+      "VIEW_DETAILS": "বিস্তারিত দেখুন",
+      "PROPERTIES": "টি সম্পত্তি",
+      "BUILDINGS": "টি ভবন"
     },
     "EMPTY_STATE": "কোনো পেমেন্ট পাওয়া যায়নি",
     "LOADING": "পেমেন্ট লোড হচ্ছে..."
