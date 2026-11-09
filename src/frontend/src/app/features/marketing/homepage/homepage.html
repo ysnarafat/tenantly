@@ -6,6 +6,9 @@
     </div>
 
     <nav class="hp-nav-actions">
+      <a class="hp-nav-link" href="#pricing" (click)="scrollTo('pricing', $event)"
+        >{{ 'HOMEPAGE.NAV.PRICING' | translate }}</a
+      >
       <a class="hp-nav-link" href="#faq" (click)="scrollTo('faq', $event)"
         >{{ 'HOMEPAGE.NAV.FAQ' | translate }}</a
       >
@@ -100,6 +103,49 @@
         </article>
         }
       </div>
+    </section>
+
+    <section class="hp-pricing" id="pricing">
+      <span class="hp-eyebrow">{{ 'HOMEPAGE.PRICING.EYEBROW' | translate }}</span>
+      <h2 class="hp-section-title">{{ 'HOMEPAGE.PRICING.TITLE' | translate }}</h2>
+      <p class="hp-pricing-intro">{{ 'HOMEPAGE.PRICING.SUBTITLE' | translate }}</p>
+
+      @if (pricingLoading()) {
+      <p class="hp-pricing-status" role="status">{{ 'HOMEPAGE.PRICING.LOADING' | translate }}</p>
+      } @else if (pricingError()) {
+      <p class="hp-pricing-status" role="alert">{{ 'HOMEPAGE.PRICING.ERROR' | translate }}</p>
+      } @else if (plans().length === 0) {
+      <p class="hp-pricing-status">{{ 'HOMEPAGE.PRICING.EMPTY' | translate }}</p>
+      } @else {
+      <div class="hp-pricing-grid">
+        @for (plan of plans(); track plan.code) {
+        <article class="hp-plan-card" [class.hp-plan-featured]="plan.code === 'professional'">
+          @if (plan.code === 'professional') {
+          <span class="hp-plan-badge">{{ 'HOMEPAGE.PRICING.POPULAR' | translate }}</span>
+          }
+          <h3>{{ planName(plan) }}</h3>
+          <p class="hp-plan-description">{{ planDescription(plan) }}</p>
+          <p class="hp-plan-price">
+            @if (plan.price_minor === null) {
+            <span>{{ 'HOMEPAGE.PRICING.CONTACT_PRICE' | translate }}</span>
+            } @else {
+            <span>{{ planPrice(plan) }}</span>
+            <small>{{ 'HOMEPAGE.PRICING.PER_PERIOD.' + plan.billing_period | translate }}</small>
+            }
+          </p>
+          <ul class="hp-plan-features">
+            @for (feature of planFeatures(plan); track $index) {
+            <li><mat-icon aria-hidden="true">check</mat-icon>{{ feature }}</li>
+            }
+          </ul>
+          <a class="hp-plan-cta" [href]="planContactHref(plan)">
+            {{ 'HOMEPAGE.PRICING.CONTACT_CTA' | translate }}
+            <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+          </a>
+        </article>
+        }
+      </div>
+      }
     </section>
 
     <section class="hp-faq" id="faq">

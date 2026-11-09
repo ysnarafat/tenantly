@@ -174,6 +174,18 @@
           <mat-icon class="nav-icon">folder</mat-icon>
           <span class="nav-label">{{ 'NAV.ITEMS.DOCUMENTS' | translate }}</span>
         </a>
+        } @if (canAccessSupport()) {
+        <a
+          class="nav-item"
+          routerLink="/support"
+          routerLinkActive="nav-active"
+          (click)="onNavigate()"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? ('NAV.ITEMS.SUPPORT' | translate) : ''"
+          matTooltipPosition="right"
+        >
+          <mat-icon class="nav-icon">support_agent</mat-icon>
+          <span class="nav-label">{{ 'NAV.ITEMS.SUPPORT' | translate }}</span>
+        </a>
         } } @if (hasAdminNav()) {
         <div class="nav-section-header">
           <span class="nav-section-label">{{ 'NAV.SECTIONS.ADMIN' | translate }}</span>

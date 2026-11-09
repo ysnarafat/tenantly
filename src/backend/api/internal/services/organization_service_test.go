@@ -155,9 +155,22 @@ func (m *MockUserInvitationRepository) GetByOrganization(orgID int) ([]*models.U
 	return invitations, nil
 }
 
-func (m *MockUserInvitationRepository) AcceptInvitation(invitationID int, userID int) error {
-	inv, exists := m.invitations[invitationID]
-	if !exists {
+func (m *MockUserInvitationRepository) UpdateDeliveryStatus(invitationID int, status string) error {
+	if invitation, exists := m.invitations[invitationID]; exists {
+		invitation.EmailDeliveryStatus = status
+	}
+	return nil
+}
+
+func (m *MockUserInvitationRepository) AcceptInvitation(token string, userID int) error {
+	var inv *models.UserInvitation
+	for _, invitation := range m.invitations {
+		if invitation.InvitationToken == token {
+			inv = invitation
+			break
+		}
+	}
+	if inv == nil {
 		return nil
 	}
 	now := time.Now()

@@ -182,6 +182,47 @@ func RequireOrgAdmin(orgRepo *repositories.OrganizationRepository, userOrgRoleRe
 	}
 }
 
+// RequireOrgAdminContext requires an ORG_ADMIN membership for the organization
+// selected in the authenticated context. Unlike RequireOrgAdmin, this is for
+// routes that do not accept an organization ID in the URL.
+func RequireOrgAdminContext(userOrgRoleRepo interfaces.UserOrganizationRoleRepositoryInterface) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		role, err := GetUserRole(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User role not found"})
+			c.Abort()
+			return
+		}
+		if role != RoleOrgAdmin {
+			c.JSON(http.StatusForbidden, gin.H{"error": "ORG_ADMIN access required"})
+			c.Abort()
+			return
+		}
+
+		userID, err := GetUserID(c)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User ID not found"})
+			c.Abort()
+			return
+		}
+		organizationID, exists := c.Get("org_id")
+		orgID, ok := organizationID.(int)
+		if !exists || !ok || orgID < 1 {
+			c.JSON(http.StatusForbidden, gin.H{"error": "organization context required"})
+			c.Abort()
+			return
+		}
+
+		membership, err := userOrgRoleRepo.GetByUserAndOrg(userID, orgID)
+		if err != nil || membership == nil || membership.Role != RoleOrgAdmin {
+			c.JSON(http.StatusForbidden, gin.H{"error": "ORG_ADMIN membership in this organization required"})
+			c.Abort()
+			return
+		}
+		c.Next()
+	}
+}
+
 // RequireSuperAdmin middleware ensures user is a SUPER_ADMIN
 func RequireSuperAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {

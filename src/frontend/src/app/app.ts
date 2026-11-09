@@ -97,6 +97,9 @@ export class App implements OnInit {
   canViewPayments = computed(() => this.permissions.hasPermission(Permission.VIEW_PAYMENTS));
   canViewReports = computed(() => this.permissions.hasPermission(Permission.VIEW_REPORTS));
   canViewDocuments = computed(() => this.permissions.hasPermission(Permission.VIEW_DOCUMENTS));
+  canAccessSupport = computed(() =>
+    this.permissions.hasPermission(Permission.ACCESS_SUPPORT_CENTER)
+  );
 
   // Admin nav is gated on management capability, matching the route guards.
   canManageUsers = computed(() => this.permissions.hasPermission(Permission.MANAGE_USERS));
@@ -129,7 +132,8 @@ export class App implements OnInit {
       this.canViewLeases() ||
       this.canViewPayments() ||
       this.canViewReports() ||
-      this.canViewDocuments()
+      this.canViewDocuments() ||
+      this.canAccessSupport()
   );
 
   isOnAuthRoute = computed(() =>

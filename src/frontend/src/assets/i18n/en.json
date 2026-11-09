@@ -53,6 +53,24 @@
       "CONFIRM_BUTTON": "Delete {{entityLabel}}"
     }
   },
+  "INVITATION_ACTIVATION": {
+    "TITLE": "Activate your Tenantly account",
+    "VALIDATING": "Validating your invitation…",
+    "ERROR_INVALID": "This invitation link is invalid, expired, or already used.",
+    "GO_TO_LOGIN": "Go to sign in",
+    "INVITED_TO": "You have been invited to administer",
+    "FIRST_NAME": "First name",
+    "LAST_NAME": "Last name",
+    "REQUIRED": "This field is required.",
+    "PASSWORD": "Create password",
+    "PASSWORD_HELP": "Use 8–72 characters with uppercase, lowercase, a number, and a symbol.",
+    "PASSWORD_ERROR": "Password does not meet the requirements.",
+    "CONFIRM_PASSWORD": "Confirm password",
+    "PASSWORD_MISMATCH": "Passwords do not match.",
+    "SUBMITTING": "Activating account…",
+    "SUBMIT": "Create account",
+    "ERROR_SUBMIT": "We could not activate your account. Please try again."
+  },
   "DUE_LIST": {
     "PAGE_TITLE": "Rent Due List",
     "REFRESH": "Refresh",
@@ -964,6 +982,38 @@
     "LOADING": "Loading attachments...",
     "NO_DESCRIPTION": "No description"
   },
+  "SUPPORT_CENTER": {
+    "EYEBROW": "CUSTOMER SUPPORT",
+    "PAGE_TITLE": "Support Center",
+    "PAGE_SUBTITLE": "Create a ticket or continue a conversation with our support team.",
+    "NEW_TICKET": "Create a support ticket",
+    "SUBJECT": "Subject",
+    "SUBJECT_PLACEHOLDER": "What do you need help with?",
+    "DESCRIPTION": "How can we help?",
+    "DESCRIPTION_PLACEHOLDER": "Describe the issue and any steps you've tried.",
+    "SUBMIT": "Submit ticket",
+    "SUBMITTING": "Submitting…",
+    "CASE_CREATED": "Support ticket created.",
+    "MY_TICKETS": "Your tickets",
+    "LOADING": "Loading tickets…",
+    "EMPTY_TICKETS": "You haven't created any support tickets yet.",
+    "LOADING_CONVERSATION": "Loading conversation…",
+    "YOU": "You",
+    "NO_REPLIES": "No replies yet. Our team will respond here.",
+    "REPLY": "Reply",
+    "REPLY_PLACEHOLDER": "Write a message to the support team…",
+    "SEND_REPLY": "Send reply",
+    "SELECT_TICKET": "Select a ticket",
+    "SELECT_TICKET_HINT": "Choose a ticket to view its status and conversation.",
+    "ERROR": "Unable to complete the support request. Please try again.",
+    "STATUS": {
+      "OPEN": "Open",
+      "IN_PROGRESS": "In progress",
+      "WAITING": "Waiting",
+      "RESOLVED": "Resolved",
+      "CLOSED": "Closed"
+    }
+  },
   "NAV": {
     "SUBTITLE": "Property Management",
     "SECTIONS": {
@@ -978,6 +1028,7 @@
       "PAYMENTS": "Payments",
       "REPORTS": "Reports",
       "DOCUMENTS": "Documents",
+      "SUPPORT": "Support Center",
       "ORGANIZATIONS": "Organizations",
       "INVITATIONS": "Invitations",
       "USERS": "Users"
@@ -1022,6 +1073,7 @@
       "DESCRIPTION": "Tenantly is property and rent management built for Bangladesh — track units, tenants, and every cash, bank transfer, bKash, or Nagad payment, in English or বাংলা."
     },
     "NAV": {
+      "PRICING": "Pricing",
       "FAQ": "FAQ",
       "CONTACT": "Contact",
       "LOGIN": "Log in"
@@ -1054,6 +1106,21 @@
       "PORTFOLIO_TITLE": "Every building, every unit, in view",
       "PORTFOLIO_BODY": "From a single house to a full apartment block, organize properties, buildings, and units the way you already think about them."
     },
+    "PRICING": {
+      "EYEBROW": "Plans for every portfolio",
+      "TITLE": "Simple plans, clear limits",
+      "SUBTITLE": "Choose a plan that fits your properties and team. Get in touch and we’ll help you get started.",
+      "LOADING": "Loading plans…",
+      "ERROR": "Plans are temporarily unavailable. Please contact us for details.",
+      "EMPTY": "No plans are currently published. Contact us to discuss your portfolio.",
+      "POPULAR": "Most popular",
+      "CONTACT_PRICE": "Let’s talk",
+      "PER_PERIOD": {
+        "monthly": "per month",
+        "yearly": "per year"
+      },
+      "CONTACT_CTA": "Talk to our team"
+    },
     "FAQ": {
       "EYEBROW": "Questions, answered plainly",
       "TITLE": "Is this actually easy to use?",
@@ -1072,7 +1139,7 @@
       "Q7_Q": "Is my tenants' NID and personal information safe?",
       "Q7_A": "Yes. National ID numbers are encrypted at rest, and sensitive actions require a second verification step, so a guessed password alone isn't enough to reach that data.",
       "Q8_Q": "What does it cost?",
-      "Q8_A": "It depends on how many properties and team members you need. Talk to us and we'll work out a plan that fits your portfolio."
+      "Q8_A": "Tenantly offers Basic, Professional, and Enterprise plans. See the pricing section for current features and limits, and contact us to choose a plan."
     },
     "CTA": {
       "TITLE": "Ready to close the ledger for good?",

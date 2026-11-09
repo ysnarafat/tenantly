@@ -43,6 +43,9 @@ export enum Permission {
   MANAGE_DOCUMENTS = 'manage_documents',
   VIEW_DOCUMENTS = 'view_documents',
 
+  // Support
+  ACCESS_SUPPORT_CENTER = 'access_support_center',
+
   // System
   VIEW_DASHBOARD = 'view_dashboard',
   MANAGE_SETTINGS = 'manage_settings',
@@ -89,6 +92,8 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     // System
     Permission.VIEW_DASHBOARD,
     Permission.MANAGE_SETTINGS,
+    // Tenant support
+    Permission.ACCESS_SUPPORT_CENTER,
   ],
   Admin: [
     Permission.MANAGE_USERS,

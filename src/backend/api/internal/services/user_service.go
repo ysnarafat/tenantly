@@ -939,6 +939,9 @@ func (s *UserService) RegisterWithInvitation(req *models.RegisterWithInvitationR
 	if s.organizationService == nil {
 		return nil, fmt.Errorf("organization service is not configured")
 	}
+	if s.userOrgRoleRepo == nil {
+		return nil, fmt.Errorf("organization membership repository is not configured")
+	}
 
 	// Validate the invitation token
 	invitation, err := s.organizationService.ValidateInvitationToken(req.InvitationToken)
@@ -1034,6 +1037,10 @@ func (s *UserService) RegisterWithInvitation(req *models.RegisterWithInvitationR
 	if _, err := s.organizationService.AcceptInvitation(req.InvitationToken, user.ID); err != nil {
 		return nil, fmt.Errorf("failed to accept invitation: %w", err)
 	}
+	organizations, err := s.userOrgRoleRepo.GetByUserID(user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load invited organization membership: %w", err)
+	}
 
 	// Generate tokens
 	token, refreshToken, err := s.generateTokens(user)
@@ -1059,10 +1066,12 @@ func (s *UserService) RegisterWithInvitation(req *models.RegisterWithInvitationR
 	}
 
 	return &models.LoginResponse{
-		Token:        token,
-		RefreshToken: refreshToken,
-		User:         *user,
-		ExpiresAt:    time.Now().Add(s.jwtExpiration),
+		Token:                 token,
+		RefreshToken:          refreshToken,
+		User:                  *user,
+		Organizations:         organizations,
+		DefaultOrganizationID: invitation.OrganizationID,
+		ExpiresAt:             time.Now().Add(s.jwtExpiration),
 	}, nil
 }
 

@@ -41,6 +41,14 @@ export const routes: Routes = [
     canActivate: [GuestGuard],
   },
   {
+    path: 'accept-invitation',
+    title: 'Activate your account',
+    loadComponent: () =>
+      import('./features/auth/invitation-activation/invitation-activation').then(
+        (m) => m.InvitationActivation
+      ),
+  },
+  {
     path: 'select-organization',
     title: 'Select organization',
     loadComponent: () =>
@@ -54,6 +62,13 @@ export const routes: Routes = [
     title: 'Dashboard',
     loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
     canActivate: [AuthGuard],
+  },
+  {
+    path: 'support',
+    title: 'Support Center',
+    loadComponent: () =>
+      import('./features/support/support-center/support-center').then((m) => m.SupportCenter),
+    canActivate: [AuthGuard, permissionGuard(Permission.ACCESS_SUPPORT_CENTER)],
   },
   {
     path: 'properties',

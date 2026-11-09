@@ -258,12 +258,12 @@ func (h *OrganizationHandler) ValidateInvitationToken(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"invitation": gin.H{
-			"id":              invitation.ID,
-			"organization_id": invitation.OrganizationID,
-			"email":           invitation.Email,
-			"role":            invitation.Role,
-			"expires_at":      invitation.ExpiresAt,
-			"token":           invitation.InvitationToken,
+			"id":                invitation.ID,
+			"organization_id":   invitation.OrganizationID,
+			"organization_name": invitation.OrganizationName,
+			"email":             invitation.Email,
+			"role":              invitation.Role,
+			"expires_at":        invitation.ExpiresAt,
 		},
 	})
 }

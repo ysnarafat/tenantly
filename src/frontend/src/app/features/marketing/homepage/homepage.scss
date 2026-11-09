@@ -461,6 +461,144 @@ $hp-nav-height: 56px;
   }
 }
 
+// ── Pricing ────────────────────────────────────────────────────────────────
+.hp-pricing {
+  padding: 88px 24px 100px;
+  background: color-mix(in srgb, var(--hp-jute) 24%, var(--hp-paper));
+  text-align: center;
+  scroll-margin-top: 72px;
+}
+
+.hp-pricing-intro {
+  max-width: 56ch;
+  margin: 12px auto 0;
+  color: var(--hp-text-soft);
+  line-height: 1.6;
+}
+
+.hp-pricing-status {
+  margin: 36px auto 0;
+  color: var(--hp-text-soft);
+}
+
+.hp-pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  max-width: 1180px;
+  margin: 40px auto 0;
+  text-align: left;
+}
+
+.hp-plan-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 28px 26px;
+  border: 1px solid var(--hp-jute);
+  border-radius: 20px;
+  background: var(--hp-surface);
+  color: var(--hp-text);
+
+  h3 {
+    margin: 0;
+    font:
+      700 1.4rem 'Space Grotesk',
+      sans-serif;
+  }
+
+  .hp-plan-description {
+    min-height: 3.2em;
+    margin: 10px 0 20px;
+    color: var(--hp-text-soft);
+    line-height: 1.6;
+  }
+}
+
+.hp-plan-featured {
+  border: 2px solid var(--hp-terracotta);
+  box-shadow: 0 16px 38px rgba(193, 103, 62, 0.14);
+}
+
+.hp-plan-badge {
+  align-self: flex-start;
+  margin: -46px 0 18px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: var(--hp-terracotta);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.hp-plan-price {
+  margin: 0 0 18px;
+  color: var(--hp-ink);
+  font:
+    700 clamp(1.7rem, 3vw, 2.2rem) 'Space Grotesk',
+    sans-serif;
+
+  small {
+    display: block;
+    margin-top: 4px;
+    color: var(--hp-text-soft);
+    font:
+      400 0.85rem 'Roboto',
+      sans-serif;
+  }
+}
+
+.hp-plan-features {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0 26px;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: 9px;
+    color: var(--hp-text-soft);
+    line-height: 1.45;
+  }
+
+  mat-icon {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--hp-terracotta);
+    font-size: 18px;
+  }
+}
+
+.hp-plan-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: auto;
+  border-radius: 24px;
+  background: var(--hp-ink);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    background 0.18s ease,
+    transform 0.18s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    background: var(--hp-violet);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--hp-marigold);
+    outline-offset: 3px;
+  }
+}
+
 // ── FAQ ─────────────────────────────────────────────────────────────────────
 .hp-faq {
   max-width: 900px;
@@ -607,6 +745,10 @@ $hp-nav-height: 56px;
   .hp-features-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .hp-pricing-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 900px) {
@@ -640,13 +782,23 @@ $hp-nav-height: 56px;
   }
 
   .hp-features,
-  .hp-faq {
+  .hp-faq,
+  .hp-pricing {
     padding-left: 16px;
     padding-right: 16px;
   }
 
   .hp-features-grid {
     grid-template-columns: 1fr;
+  }
+
+  .hp-pricing-grid {
+    grid-template-columns: 1fr;
+    max-width: 460px;
+  }
+
+  .hp-plan-featured {
+    margin-top: 18px;
   }
 }
 
@@ -656,7 +808,8 @@ $hp-nav-height: 56px;
   }
 
   .hp-features,
-  .hp-faq {
+  .hp-faq,
+  .hp-pricing {
     padding-left: 12px;
     padding-right: 12px;
   }
@@ -680,7 +833,8 @@ $hp-nav-height: 56px;
   .hp-cta-primary,
   .hp-cta-secondary,
   .hp-faq-caret,
-  .hp-faq-answer-wrap {
+  .hp-faq-answer-wrap,
+  .hp-plan-cta {
     transition: none;
   }
 }

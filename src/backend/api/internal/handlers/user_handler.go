@@ -467,5 +467,6 @@ func (h *UserHandler) RegisterWithInvitation(c *gin.Context) {
 		return
 	}
 
+	h.setRefreshCookie(c, response.RefreshToken)
 	c.JSON(http.StatusCreated, response)
 }

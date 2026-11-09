@@ -46,7 +46,8 @@ type UserInvitationRepositoryInterface interface {
 	GetByEmailAndOrg(email string, orgID int) (*models.UserInvitation, error)
 	GetPendingByOrganization(orgID int) ([]*models.UserInvitation, error)
 	GetByOrganization(orgID int) ([]*models.UserInvitation, error)
-	AcceptInvitation(invitationID int, userID int) error
+	UpdateDeliveryStatus(invitationID int, status string) error
+	AcceptInvitation(token string, userID int) error
 	Delete(id int) error
 	CleanupExpiredInvitations() error
 }

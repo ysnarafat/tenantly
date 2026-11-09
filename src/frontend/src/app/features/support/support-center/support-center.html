@@ -1,0 +1,135 @@
+<main class="support-page">
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">{{ 'SUPPORT_CENTER.EYEBROW' | translate }}</p>
+      <h1>{{ 'SUPPORT_CENTER.PAGE_TITLE' | translate }}</h1>
+      <p class="muted">{{ 'SUPPORT_CENTER.PAGE_SUBTITLE' | translate }}</p>
+    </div>
+  </header>
+
+  @if (error) {
+  <div class="feedback error" role="alert">{{ error | translate }}</div>
+  } @if (notice) {
+  <div class="feedback success" role="status">{{ notice | translate }}</div>
+  }
+
+  <div class="support-layout">
+    <section class="ticket-column">
+      <form class="panel new-ticket" (ngSubmit)="createCase()">
+        <h2>{{ 'SUPPORT_CENTER.NEW_TICKET' | translate }}</h2>
+        <label>
+          {{ 'SUPPORT_CENTER.SUBJECT' | translate }}
+          <input
+            name="subject"
+            [(ngModel)]="newCase.subject"
+            maxlength="200"
+            required
+            [placeholder]="'SUPPORT_CENTER.SUBJECT_PLACEHOLDER' | translate"
+          />
+        </label>
+        <label>
+          {{ 'SUPPORT_CENTER.DESCRIPTION' | translate }}
+          <textarea
+            name="description"
+            [(ngModel)]="newCase.description"
+            rows="4"
+            maxlength="10000"
+            required
+            [placeholder]="'SUPPORT_CENTER.DESCRIPTION_PLACEHOLDER' | translate"
+          ></textarea>
+        </label>
+        <button class="primary" type="submit" [disabled]="submittingCase">
+          {{ submittingCase ? ('SUPPORT_CENTER.SUBMITTING' | translate) : ('SUPPORT_CENTER.SUBMIT' |
+          translate) }}
+        </button>
+      </form>
+
+      <section class="ticket-list" aria-label="Support tickets">
+        <div class="list-heading">
+          <h2>{{ 'SUPPORT_CENTER.MY_TICKETS' | translate }}</h2>
+          @if (!loadingCases) {
+          <span class="count">{{ cases.length }}</span>
+          }
+        </div>
+        @if (loadingCases) {
+        <p class="empty">{{ 'SUPPORT_CENTER.LOADING' | translate }}</p>
+        } @else { @for (supportCase of cases; track supportCase.id) {
+        <button
+          class="ticket-row"
+          [class.selected]="selectedCase?.id === supportCase.id"
+          (click)="openCase(supportCase)"
+        >
+          <span class="ticket-row-main">
+            <strong>{{ supportCase.subject }}</strong>
+            <small>#{{ supportCase.id }} · {{ formatDate(supportCase.updated_at) }}</small>
+          </span>
+          <span class="status" [class]="'status ' + supportCase.status">
+            {{ statusTranslation(supportCase.status) | translate }}
+          </span>
+        </button>
+        } @empty {
+        <p class="empty">{{ 'SUPPORT_CENTER.EMPTY_TICKETS' | translate }}</p>
+        } }
+      </section>
+    </section>
+
+    <section class="panel ticket-detail" aria-live="polite">
+      @if (selectedCase; as activeCase) {
+      <header class="detail-heading">
+        <div>
+          <p class="eyebrow">#{{ activeCase.id }} · {{ activeCase.priority }}</p>
+          <h2>{{ activeCase.subject }}</h2>
+        </div>
+        <span class="status" [class]="'status ' + activeCase.status">
+          {{ statusTranslation(activeCase.status) | translate }}
+        </span>
+      </header>
+      @if (loadingCase) {
+      <p class="empty">{{ 'SUPPORT_CENTER.LOADING_CONVERSATION' | translate }}</p>
+      } @else {
+      <div class="conversation">
+        <article class="message customer-message">
+          <header>
+            <strong>{{ 'SUPPORT_CENTER.YOU' | translate }}</strong>
+            <time>{{ formatDate(activeCase.created_at) }}</time>
+          </header>
+          <p>{{ activeCase.description }}</p>
+        </article>
+        @for (message of activeCase.messages ?? []; track message.id) {
+        <article class="message">
+          <header>
+            <strong>{{ message.author }}</strong>
+            <time>{{ formatDate(message.created_at) }}</time>
+          </header>
+          <p>{{ message.body }}</p>
+        </article>
+        } @empty {
+        <p class="empty">{{ 'SUPPORT_CENTER.NO_REPLIES' | translate }}</p>
+        }
+      </div>
+      <form class="reply-form" (ngSubmit)="addReply()">
+        <label>
+          {{ 'SUPPORT_CENTER.REPLY' | translate }}
+          <textarea
+            name="reply"
+            [(ngModel)]="replyBody"
+            rows="3"
+            maxlength="10000"
+            required
+            [placeholder]="'SUPPORT_CENTER.REPLY_PLACEHOLDER' | translate"
+          ></textarea>
+        </label>
+        <button class="primary" type="submit" [disabled]="submittingReply || !replyBody.trim()">
+          {{ 'SUPPORT_CENTER.SEND_REPLY' | translate }}
+        </button>
+      </form>
+      } } @else {
+      <div class="detail-empty">
+        <mat-icon aria-hidden="true">support_agent</mat-icon>
+        <h2>{{ 'SUPPORT_CENTER.SELECT_TICKET' | translate }}</h2>
+        <p>{{ 'SUPPORT_CENTER.SELECT_TICKET_HINT' | translate }}</p>
+      </div>
+      }
+    </section>
+  </div>
+</main>
