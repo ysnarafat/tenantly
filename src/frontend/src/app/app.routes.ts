@@ -124,13 +124,24 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/payments/payment-list/payment-list').then((m) => m.PaymentList),
     canActivate: [AuthGuard, permissionGuard(Permission.VIEW_PAYMENTS)],
-  },
-  {
-    path: 'payments/collect',
-    title: 'Collect Payments',
-    loadComponent: () =>
-      import('./features/payments/payment-collect/payment-collect').then((m) => m.PaymentCollect),
-    canActivate: [AuthGuard, permissionGuard(Permission.RECORD_PAYMENTS)],
+    children: [
+      {
+        path: 'collect',
+        title: 'Collect Payments',
+        loadComponent: () =>
+          import('./features/payments/payment-collect/payment-collect').then(
+            (m) => m.PaymentCollect
+          ),
+        canActivate: [AuthGuard, permissionGuard(Permission.RECORD_PAYMENTS)],
+      },
+      {
+        path: 'electricity',
+        title: 'Electricity Bills',
+        loadComponent: () =>
+          import('./features/billing-runs/billing-runs').then((m) => m.BillingRuns),
+        canActivate: [AuthGuard, permissionGuard(Permission.RECORD_PAYMENTS)],
+      },
+    ],
   },
   {
     path: 'reports',

@@ -1,17 +1,29 @@
-<main class="billing-page">
-  <header class="page-header no-print" data-testid="page-header">
+<main class="billing-page" data-theme="light">
+  <header class="page-header no-print" [attr.testId]="'page-header'">
     <div>
-      <h1 data-testid="page-title">{{ 'BILLING_RUN.PAGE_TITLE' | translate }}</h1>
-      <p data-testid="page-description">{{ 'BILLING_RUN.SUBTITLE' | translate }}</p>
+      <h1 [attr.testId]="'page-title'">
+        <mat-icon
+          class="electricity-icon"
+          aria-hidden="false"
+          aria-label="Electricity icon"
+          fontIcon="bolt"
+        ></mat-icon>
+
+        {{ 'BILLING_RUN.PAGE_TITLE' | translate }}
+      </h1>
+      <p [attr.testId]="'page-description'">{{ 'BILLING_RUN.SUBTITLE' | translate }}</p>
     </div>
-    <a routerLink="/payments" class="btn secondary" data-testid="nav-to-payments">
+    <a routerLink="/payments" class="btn secondary" [attr.testId]="'nav-to-payments'">
       {{ 'BILLING_RUN.PAYMENTS' | translate }}
     </a>
   </header>
 
-  <section class="filters-card no-print" data-testid="filters-section" aria-label="Filters">
+  <section class="filters-card no-print" [attr.testId]="'filters-section'" aria-label="Filters">
+    <div class="summary-badge">
+      <span class="badge-text">{{ 'BILLING_RUN.FILTERS_LABEL' | translate }}</span>
+    </div>
     <div class="filter-row">
-      <div class="form-group">
+      <div class="form-group filter-item">
         <label for="property-filter" class="form-label">
           {{ 'BILLING_RUN.PROPERTY' | translate }}
         </label>
@@ -19,21 +31,22 @@
           id="property-filter"
           [(ngModel)]="selectedPropertyId"
           (ngModelChange)="onPropertyChange($event)"
-          data-testid="property-select"
+          [attr.testId]="'property-select'"
           aria-label="{{ 'BILLING_RUN.PROPERTY' | translate }}"
+          class="input-with-icon"
         >
-          <option [ngValue]="null" data-testid="select-all-properties">
+          <option [ngValue]="null" [attr.testId]="'select-all-properties'">
             {{ 'BILLING_RUN.SELECT_PROPERTY' | translate }}
           </option>
           @for (property of properties(); track property.id) {
-          <option [ngValue]="property.id" data-testid="property-option-{{ property.id }}">
+          <option [ngValue]="property.id" [attr.testId]="'property-option-{{ property.id }}'">
             {{ property.property_name }}
           </option>
           }
         </select>
       </div>
 
-      <div class="form-group">
+      <div class="form-group filter-item">
         <label for="building-filter" class="form-label">
           {{ 'BILLING_RUN.BUILDING' | translate }}
         </label>
@@ -42,38 +55,40 @@
           [ngModel]="selectedBuildingId"
           (ngModelChange)="onBuildingChange($event)"
           [disabled]="!selectedPropertyId || buildings().length === 0"
-          data-testid="building-select"
+          [attr.testId]="'building-select'"
           aria-label="{{ 'BILLING_RUN.BUILDING' | translate }}"
+          class="input-with-icon"
         >
-          <option [ngValue]="null" data-testid="select-all-buildings">
+          <option [ngValue]="null" [attr.testId]="'select-all-buildings'">
             {{ 'BILLING_RUN.SELECT_BUILDING' | translate }}
           </option>
           @for (building of buildings(); track building.id) {
-          <option [ngValue]="building.id" data-testid="building-option-{{ building.id }}">
+          <option [ngValue]="building.id" [attr.testId]="'building-option-{{ building.id }}'">
             {{ building.building_name }}
           </option>
           }
         </select>
       </div>
 
-      <div class="form-group">
+      <div class="form-group filter-item">
         <label for="month-filter" class="form-label"> {{ 'BILLING_RUN.MONTH' | translate }} </label>
         <select
           id="month-filter"
           [(ngModel)]="month"
           (ngModelChange)="loadRun()"
-          data-testid="month-select"
+          [attr.testId]="'month-select'"
           aria-label="{{ 'BILLING_RUN.MONTH' | translate }}"
+          class="input-with-icon"
         >
           @for (monthNumber of [1,2,3,4,5,6,7,8,9,10,11,12]; track monthNumber) {
-          <option [ngValue]="monthNumber" data-testid="month-option-{{ monthNumber }}">
+          <option [ngValue]="monthNumber" [attr.testId]="'month-option-{{ monthNumber }}'">
             {{ monthName(monthNumber) }}
           </option>
           }
         </select>
       </div>
 
-      <div class="form-group">
+      <div class="form-group filter-item">
         <label for="year-filter" class="form-label"> {{ 'BILLING_RUN.YEAR' | translate }} </label>
         <input
           type="number"
@@ -82,9 +97,10 @@
           max="2030"
           [(ngModel)]="year"
           (change)="loadRun()"
-          data-testid="year-input"
+          [attr.testId]="'year-input'"
           aria-label="{{ 'BILLING_RUN.YEAR' | translate }}"
           aria-describedby="year-hint"
+          class="input-with-icon"
         />
         <span id="year-hint" class="hint-text">{{ 'BILLING_RUN.YEAR_HINT' | translate }}</span>
       </div>
@@ -93,11 +109,12 @@
       <div class="btn-group">
         <button
           type="button"
-          class="primary"
+          class="btn primary create-run-btn"
           [disabled]="!selectedBuildingId || loading()"
           (click)="createRun()"
-          data-testid="create-run-button"
+          [attr.testId]="'create-run-button'"
         >
+          <span class="action-icon">➕</span>
           {{ 'BILLING_RUN.CREATE' | translate }}
         </button>
       </div>
@@ -106,49 +123,75 @@
   </section>
 
   @if (error()) {
-  <div class="alert alert-error no-print" role="alert" data-testid="error-message">
+  <div class="alert alert-error no-print" role="alert" [attr.testId]="'error-message'">
     {{ error() }}
   </div>
   } @if (loading()) {
-  <p class="loading no-print" data-testid="loading-indicator">
+  <p class="loading no-print" [attr.testId]="'loading-indicator'">
+    <span class="loading-spinner"></span>
     {{ 'BILLING_RUN.LOADING' | translate }}
   </p>
   } @if (run(); as billingRun) {
 
-  <section class="run-heading no-print" data-testid="run-info-section">
+  <section class="run-heading no-print" [attr.testId]="'run-info-section'">
     <div class="run-info">
-      <h2 data-testid="run-title">
+      <div class="electricity-icon large">⚡</div>
+      <h2 [attr.testId]="'run-title'">
         {{ billingRun.building_name }} — {{ monthName(billingRun.month) }} {{ billingRun.year }}
       </h2>
-      <p data-testid="run-subtitle">
+      <p [attr.testId]="'run-subtitle'">
         {{ billingRun.property_name }} · {{ billingRun.building_code }}
       </p>
-      <span
-        class="status"
-        [class.finalized]="billingRun.status === 'Finalized'"
-        data-testid="billing-run-status"
-      >
-        {{ (billingRun.status === 'Draft' ? 'BILLING_RUN.DRAFT' : 'BILLING_RUN.FINALIZED') |
-        translate }}
+      @if (billingRun.status === 'Draft') {
+      <span class="status draft" [attr.testId]="'billing-run-status'">
+        <span class="status-dot"></span>
+        <span class="status-text">{{ 'BILLING_RUN.DRAFT' | translate }}</span>
+        <small class="status-subtext">Ready to enter bills</small>
       </span>
+      } @else {
+      <span class="status finalized" [attr.testId]="'billing-run-status'">
+        <span class="status-dot"></span>
+        <span class="status-text">{{ 'BILLING_RUN.FINALIZED' | translate }}</span>
+        <small class="status-subtext">Read-only view</small>
+      </span>
+      }
     </div>
     <div class="actions">
+      @if (billingRun.status === 'Draft') {
+      <button
+        type="button"
+        class="btn primary batch-action"
+        [disabled]="!canBatchSave() || loading()"
+        (click)="batchSaveAll()"
+        [attr.testId]="'batch-save-button'"
+      >
+        <span class="action-icon">💾</span>
+        {{ 'BILLING_RUN.BATCH_SAVE' | translate }} @if (hasMissingAmounts()) {
+        <span class="action-badge" aria-label="{{ unitsWithMissing() }} units incomplete">
+          <span class="badge-icon">⚠️</span>
+          {{ unitsWithMissing() }}
+        </span>
+        }
+      </button>
+      }
       <button
         type="button"
         class="btn secondary"
-        data-testid="print-register-button"
+        [attr.testId]="'print-register-button'"
         (click)="printRegister()"
       >
+        <span class="action-icon">🖨️</span>
         {{ 'BILLING_RUN.PRINT_REGISTER' | translate }}
       </button>
       @if (billingRun.status === 'Draft') {
       <button
         type="button"
-        class="btn primary"
+        class="btn danger"
         [disabled]="loading()"
-        data-testid="finalize-button"
         (click)="finalize()"
+        [attr.testId]="'finalize-button'"
       >
+        <span class="action-icon">✅</span>
         {{ 'BILLING_RUN.FINALIZE' | translate }}
       </button>
       }
@@ -156,32 +199,60 @@
   </section>
 
   @if (!billingRun.items.length) {
-  <p class="empty no-print" data-testid="no-units-message">
+  <p class="empty no-print" [attr.testId]="'no-units-message'">
     {{ 'BILLING_RUN.NO_UNITS' | translate }}
   </p>
   } @else {
 
-  <div class="table-wrap no-print" data-testid="table-container">
+  <div class="table-wrap no-print" [attr.testId]="'table-container'">
+    <div class="table-header-info">
+      <span class="info-icon">🔢</span>
+      <span class="info-text">{{ unitsTotal() }} {{ 'BILLING_RUN.UNITS_TOTAL' | translate }}</span>
+    </div>
+    @if (billingRun.status === 'Draft') {
+    <div class="stats-row">
+      <div class="stat-item">
+        <span class="stat-icon">💰</span>
+        <span class="stat-label">{{ 'BILLING_RUN.TOTAL_AMOUNT_LABEL' | translate }}</span>
+        <span class="stat-value">৳{{ totalAmount() | number:'1.2-2' }}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-icon">✅</span>
+        <span class="stat-label">{{ 'BILLING_RUN.COMPLETED_UNITS_LABEL' | translate }}</span>
+        <span class="stat-value" [class.incomplete]="hasMissingAmounts()"
+          >{{ unitsCompleted() }}/{{ unitsTotal() }}</span
+        >
+      </div>
+    </div>
+    }
     <table class="bill-table" role="grid">
       <thead>
-        <tr data-testid="table-header-row">
-          <th scope="col">{{ 'BILLING_RUN.UNIT' | translate }}</th>
+        <tr [attr.testId]="'table-header-row'">
+          <th scope="col" class="unit-col">{{ 'BILLING_RUN.UNIT' | translate }}</th>
           <th scope="col">{{ 'BILLING_RUN.METER_NUMBER' | translate }}</th>
-          <th scope="col">{{ 'BILLING_RUN.ELECTRICITY_AMOUNT' | translate }}</th>
-          <th scope="col">{{ 'BILLING_RUN.UNIT_TYPE' | translate }}</th>
-          <th scope="col">{{ 'BILLING_RUN.FLOOR' | translate }}</th>
-          @if (billingRun.status === 'Draft') {
-          <th scope="col" data-testid="save-action-col">{{ 'BILLING_RUN.SAVE' | translate }}</th>
-          }
+          <th scope="col" class="amount-col">{{ 'BILLING_RUN.ELECTRICITY_AMOUNT' | translate }}</th>
+          <th scope="col" class="unit-type-col">{{ 'BILLING_RUN.UNIT_TYPE' | translate }}</th>
+          <th scope="col" class="floor-col">{{ 'BILLING_RUN.FLOOR' | translate }}</th>
         </tr>
       </thead>
       <tbody>
-        @for (item of billingRun.items; track item.id) {
-        <tr class="table-row" data-testid="unit-row-{{ item.unit_number }}">
-          <td scope="row">
-            <span class="unit-badge">{{ item.unit_number }}</span>
+        @for (item of billingRun.items; track item.id; let i = $index) {
+        <tr [attr.testId]="'unit-row-{{ item.unit_number }}'" class="table-row">
+          <td scope="row" class="unit-cell">
+            <div class="unit-info">
+              <span class="unit-badge">{{ item.unit_number }}</span>
+              @if (billingRun.status === 'Draft') {
+              <span
+                [ngClass]="{'missing': item.electricity_amount === null}"
+                class="completion-status"
+              >
+                {{ billingRun.items.length - 1 }}
+                <small>{{ billingRun.items.length }}</small>
+              </span>
+              }
+            </div>
           </td>
-          <td>
+          <td class="meter-cell">
             @if (billingRun.status === 'Draft') {
             <input
               type="text"
@@ -189,70 +260,71 @@
               [(ngModel)]="item.meter_number"
               [attr.aria-label]="'BILLING_RUN.METER_NUMBER' | translate"
               class="editable-input"
-              data-testid="meter-input-{{ item.id }}"
+              [attr.testId]="'meter-input-{{ item.id }}'"
             />
             } @else {
             <span class="read-only-text">{{ item.meter_number }}</span>
             }
           </td>
-          <td>
+          <td class="amount-cell">
             @if (billingRun.status === 'Draft') {
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              [(ngModel)]="item.electricity_amount"
-              [attr.aria-label]="'BILLING_RUN.ELECTRICITY_AMOUNT' | translate"
-              class="amount-input"
-              data-testid="amount-input-{{ item.id }}"
-            />
+            <div
+              [ngClass]="{'missing': item.electricity_amount === null, saving: savingItemId() === item.id}"
+              class="input-group"
+            >
+              <span class="amount-icon">💵</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                [(ngModel)]="item.electricity_amount"
+                [attr.aria-label]="'BILLING_RUN.ELECTRICITY_AMOUNT' | translate"
+                class="amount-input"
+                [attr.testId]="'amount-input-{{ item.id }}'"
+              />
+              @if (savingItemId() === item.id) {
+              <span class="saving-indicator">⏳</span>
+              }
+            </div>
             } @else {
             <span class="read-only-text">৳{{ item.electricity_amount | number:'1.2-2' }}</span>
             }
           </td>
-          <td><span class="read-only-text">{{ item.unit_type }}</span></td>
-          <td><span class="read-only-text">{{ item.floor }}</span></td>
-          @if (billingRun.status === 'Draft') {
-          <td>
-            <button
-              type="button"
-              (click)="saveElectricity(item)"
-              [disabled]="savingItemId() !== null || item.electricity_amount === null"
-              class="save-btn"
-              data-testid="save-button-{{ item.id }}"
-            >
-              {{ savingItemId() === item.id ? ('BILLING_RUN.SAVING' | translate) :
-              ('BILLING_RUN.SAVE' | translate) }}
-            </button>
+          <td class="unit-type-cell">
+            <span class="read-only-text">{{ item.unit_type }}</span>
+            @if (billingRun.status === 'Draft' && item.electricity_amount === null) {
+            <span class="missing-indicator">⚠️</span>
+            }
           </td>
-          }
+          <td class="floor-cell">
+            <span class="read-only-text">{{ item.floor }}</span>
+          </td>
         </tr>
         }
       </tbody>
       <tfoot>
-        <tr class="table-footer-row" data-testid="total-row">
+        <tr class="table-footer-row" [attr.testId]="'total-row'">
           <th scope="row" colspan="2">
             {{ 'BILLING_RUN.BUILDING_TOTAL' | translate }}
             <span class="count-badge">{{ billingRun.items.length }}</span>
           </th>
           <th>৳{{ totalAmount() | number:'1.2-2' }}</th>
-          <th [attr.colspan]="billingRun.status === 'Draft' ? 3 : 2"></th>
         </tr>
       </tfoot>
     </table>
   </div>
 
-  <section class="print-register" data-testid="print-section">
-    <header class="print-header" data-testid="print-header">
-      <h1 data-testid="print-property-title">
+  <section class="print-register" [attr.testId]="'print-section'">
+    <header class="print-header" [attr.testId]="'print-header'">
+      <h1 class="print-title">
         {{ billingRun.property_name }} — {{ billingRun.building_name }} ({{ billingRun.building_code
         }})
       </h1>
-      <h2 data-testid="print-subtitle">
+      <h2 class="print-subtitle">
         {{ 'BILLING_RUN.PRINT_TITLE' | translate }} · {{ monthName(billingRun.month) }} {{
         billingRun.year }}
       </h2>
-      <p data-testid="print-date">
+      <p [attr.testId]="'print-date'">
         {{ 'BILLING_RUN.PREPARED_DATE' | translate }}: {{ preparedDate() }}
       </p>
     </header>
@@ -268,17 +340,17 @@
         </thead>
         <tbody>
           @for (item of itemsForColumn(column); track item.id) {
-          <tr>
+          <tr [attr.testId]="'print-row-{{ item.id }}'">
             <td>{{ item.unit_number }}</td>
             <td>{{ item.meter_number }}</td>
-            <td>৳{{ item.electricity_amount | number:'1.2-2' }}</td>
+            <td class="print-amount">৳{{ item.electricity_amount | number:'1.2-2' }}</td>
           </tr>
           }
         </tbody>
       </table>
       }
     </div>
-    <footer data-testid="print-footer">
+    <footer [attr.testId]="'print-footer'">
       {{ 'BILLING_RUN.BUILDING_TOTAL' | translate }}: ৳{{ totalAmount() | number:'1.2-2' }}
     </footer>
   </section>

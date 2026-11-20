@@ -43,8 +43,30 @@ describe('OperationsApp support conversation', () => {
     http.expectOne(`${environment.apiUrl}/ops/organizations`).flush({ organizations: [] });
     http.expectOne(`${environment.apiUrl}/ops/support/cases`).flush({ cases: [supportCase] });
     http.expectOne(`${environment.apiUrl}/ops/support/agents`).flush({ agents: [] });
+    http.expectOne(`${environment.apiUrl}/ops/invitations`).flush({ invitations: [] });
     fixture.detectChanges();
   }
+
+  it('signs in using the operations-only authentication endpoint', () => {
+    component.username = 'platform-admin';
+    component.password = 'secret';
+    component.login();
+
+    const request = http.expectOne(`${environment.apiUrl}/ops/auth/login`);
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ username: 'platform-admin', password: 'secret' });
+    request.flush({
+      token: 'operations-token',
+      user: { role: 'SUPER_ADMIN', email: 'ops@example.com' },
+    });
+
+    expect(sessionStorage.getItem('tenantly_ops_token')).toBe('operations-token');
+    http.expectOne(`${environment.apiUrl}/ops/plans`).flush({ plans: [] });
+    http.expectOne(`${environment.apiUrl}/ops/organizations`).flush({ organizations: [] });
+    http.expectOne(`${environment.apiUrl}/ops/support/cases`).flush({ cases: [] });
+    http.expectOne(`${environment.apiUrl}/ops/support/agents`).flush({ agents: [] });
+    http.expectOne(`${environment.apiUrl}/ops/invitations`).flush({ invitations: [] });
+  });
 
   it('renders customer-visible messages separately from private staff notes', () => {
     signInForTest();

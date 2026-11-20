@@ -5,7 +5,7 @@
       <h1>{{ 'LEASE_LIST.PAGE_TITLE' | translate }}</h1>
       <div class="stats-row">
         <span class="stat-chip total"
-          >{{ leases.length }} {{ 'LEASE_LIST.STATS.TOTAL' | translate }}</span
+          >{{ filteredLeases.length }} {{ 'LEASE_LIST.STATS.TOTAL' | translate }}</span
         >
         <span class="stat-chip active"
           >{{ activeCount }} {{ 'LEASE_LIST.STATS.ACTIVE' | translate }}</span
@@ -99,14 +99,93 @@
       ></app-loading-spinner>
 
       <ng-container *ngIf="!loading">
-        <!-- Table -->
-        <div class="table-wrapper" *ngIf="pagedLeases.length > 0">
+        <!-- Mobile Cards -->
+        <div class="lease-mobile-list" *ngIf="filteredLeases.length > 0 && isMobileView()">
+          <article class="lease-mobile-card" *ngFor="let lease of filteredLeases; let i = index">
+            <div class="mobile-card-header">
+              <span class="unit-number">Unit {{ lease.unit_number }}</span>
+              <span class="mobile-unit-sub"
+                >{{ lease.building_name }} · {{ lease.property_name }}</span
+              >
+            </div>
+            <div class="mobile-card-body">
+              <div class="mobile-row">
+                <span class="mobile-label">{{ 'LEASE_LIST.TABLE.TENANT' | translate }}</span>
+                <span class="mobile-value">{{ lease.tenant_name }}</span>
+              </div>
+              <div *ngIf="lease.tenant_phone" class="mobile-row">
+                <span class="mobile-label">{{ 'LEASE_LIST.TABLE.CONTACT' | translate }}</span>
+                <span class="mobile-value">{{ lease.tenant_phone }}</span>
+              </div>
+              <div class="mobile-row">
+                <span class="mobile-label">{{ 'LEASE_LIST.TABLE.TYPE' | translate }}</span>
+                <span class="mobile-value">
+                  <span class="type-badge" [class.commercial]="lease.lease_type === 'Commercial'">
+                    {{ lease.lease_type }}
+                  </span>
+                </span>
+              </div>
+              <div class="mobile-row">
+                <span class="mobile-label">{{ 'LEASE_LIST.TABLE.MONTHLY_RENT' | translate }}</span>
+                <span class="mobile-value rent-value"
+                  >{{ formatCurrency(lease.monthly_rent) }}</span
+                >
+              </div>
+              <div class="mobile-row">
+                <span class="mobile-label">{{ 'LEASE_LIST.TABLE.DURATION' | translate }}</span>
+                <span class="mobile-value">
+                  {{ formatDate(lease.start_date) }} → {{ formatDate(lease.end_date) }} ({{
+                  lease.duration_months }} months)
+                </span>
+              </div>
+              <div class="mobile-row">
+                <span class="mobile-label">{{ 'LEASE_LIST.TABLE.STATUS' | translate }}</span>
+                <span class="mobile-value status-badge" [ngClass]="getStatusClass(lease)">
+                  <span class="status-dot"></span>
+                  {{ getStatusText(lease) }}
+                </span>
+              </div>
+            </div>
+            <div class="mobile-card-actions">
+              <button
+                mat-icon-button
+                [matTooltip]="'COMMON.ACTIONS.VIEW_DETAILS' | translate"
+                (click)="viewLease(lease.id)"
+              >
+                <mat-icon>visibility</mat-icon>
+              </button>
+              <button
+                *ngIf="canEdit()"
+                mat-icon-button
+                [matTooltip]="'COMMON.BUTTONS.EDIT' | translate"
+                (click)="editLease(lease)"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                *ngIf="canDelete()"
+                mat-icon-button
+                color="accent"
+                [matTooltip]="'COMMON.BUTTONS.DELETE' | translate"
+                (click)="deleteLease(lease)"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <!-- Desktop Table -->
+        <div
+          class="table-wrapper"
+          *ngIf="(filteredLeases.length > 0 && !isMobileView()) || (filteredLeases.length === 0)"
+        >
           <table
             mat-table
             [dataSource]="pagedLeases"
             matSort
             (matSortChange)="onSortChange($event)"
-            class="lease-table"
+            class="lease-desktop-table"
           >
             <!-- Unit Info Column -->
             <ng-container matColumnDef="unit_info">

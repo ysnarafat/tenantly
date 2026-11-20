@@ -9,11 +9,12 @@ import { Property } from '../../core/models/property.model';
 import { BillingRunService } from '../../core/services/billing-run.service';
 import { BuildingService } from '../../core/services/building.service';
 import { PropertyService } from '../../core/services/property.service';
+import { MatIconModule } from '@angular/material/icon';
 
 @Component({
   selector: 'app-billing-runs',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, TranslateModule],
+  imports: [CommonModule, FormsModule, RouterModule, TranslateModule, MatIconModule],
   templateUrl: './billing-runs.html',
   styleUrl: './billing-runs.scss',
 })
@@ -159,6 +160,34 @@ export class BillingRuns implements OnInit {
     });
   }
 
+  batchSaveAll(): void {
+    const run = this.run();
+    if (!run || run.status !== 'Draft' || !this.hasMissingAmounts()) return;
+    let savedCount = 0;
+    let failedCount = 0;
+
+    const saveAllItems = async (): Promise<void> => {
+      for (const item of run.items) {
+        if (item.electricity_amount === null && Number.isFinite(item.electricity_amount ?? 0)) {
+          await this.saveElectricity(item);
+        }
+      }
+
+      // Reload to get updated data after saves
+      this.loadRun();
+    };
+
+    saveAllItems()
+      .then(() => {})
+      .catch((err) => {
+        if (err.status === 409 || err.status === 400) {
+          failedCount++;
+        }
+      });
+
+    this.error.set('');
+  }
+
   finalize(): void {
     const run = this.run();
     if (!run || run.status !== 'Draft') return;
@@ -209,6 +238,29 @@ export class BillingRuns implements OnInit {
       (total, item) => total + (item.electricity_amount ?? 0),
       0
     );
+  }
+
+  unitsTotal(): number {
+    return this.run()?.items.length ?? 0;
+  }
+
+  unitsCompleted(): number {
+    return (this.run()?.items ?? []).filter((item) => item.electricity_amount !== null).length;
+  }
+
+  unitsWithMissing(): number {
+    const total = this.unitsTotal();
+    const completed = this.unitsCompleted();
+    return total - completed;
+  }
+
+  canBatchSave(): boolean {
+    if (this.hasMissingAmounts()) {
+      const items = this.run()?.items ?? [];
+      const missingCount = items.filter((item) => item.electricity_amount === null).length;
+      return missingCount > 0 && missingCount <= 100; // Limit batch save to reasonable number
+    }
+    return false;
   }
 
   monthName(month: number): string {

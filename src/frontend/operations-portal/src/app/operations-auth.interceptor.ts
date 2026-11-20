@@ -1,4 +1,5 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
+import { catchError, throwError } from 'rxjs';
 
 const TOKEN_KEY = 'tenantly_ops_token';
 
@@ -12,5 +13,12 @@ export const operationsAuthInterceptor: HttpInterceptorFn = (request, next) => {
     return next(request);
   }
 
-  return next(request.clone({ setHeaders: { Authorization: `Bearer ${token}` } }));
+  return next(request.clone({ setHeaders: { Authorization: `Bearer ${token}` } })).pipe(
+    catchError((error: HttpErrorResponse) => {
+      if (error.status === 403 && error.error?.code === 'TOKEN_AUDIENCE_MISMATCH') {
+        sessionStorage.removeItem(TOKEN_KEY);
+      }
+      return throwError(() => error);
+    })
+  );
 };

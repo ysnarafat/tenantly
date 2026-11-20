@@ -1,5 +1,6 @@
 :host {
   display: block;
+  min-width: 0;
   --color-restricted-bg: #fff3cd;
   --color-restricted-text: #7f5600;
   --av0-bg: rgb(25 118 210 / 12%);
@@ -37,6 +38,7 @@
   width: min(100%, 1440px);
   margin: 0 auto;
   padding: 24px;
+  box-sizing: border-box;
   color: var(--text-primary);
 }
 
@@ -302,9 +304,152 @@
   }
 }
 
+.tenant-mobile-list {
+  display: none;
+}
+
+.tenant-mobile-card {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-surface);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 6%);
+}
+
+.tenant-mobile-card-header {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.tenant-mobile-identity {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 3px;
+    border-radius: 8px;
+  }
+}
+
+.tenant-mobile-identity-content {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.tenant-mobile-name {
+  max-width: 100%;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.tenant-mobile-actions.mat-mdc-icon-button {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+}
+
+.tenant-mobile-contacts {
+  display: grid;
+  min-width: 0;
+  gap: 12px;
+  margin: 14px 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.tenant-mobile-contact {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.tenant-mobile-label {
+  color: var(--text-hint);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.tenant-mobile-email {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.tenant-mobile-phone {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+
+  > mat-icon {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    color: var(--text-muted);
+    font-size: 16px;
+  }
+}
+
+.tenant-mobile-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 12px;
+}
+
+.tenant-mobile-meta-item {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: 5px;
+}
+
+.tenant-mobile-meta-value {
+  display: flex;
+  min-width: 0;
+  min-height: 24px;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.tenant-mobile-meta-value.date-value {
+  white-space: normal;
+}
+
 .tenant-name-cell {
   display: inline-flex;
-  min-width: 180px;
+  min-width: 0;
   align-items: center;
   gap: 10px;
   padding: 0;
@@ -318,6 +463,11 @@
 
   &:hover .tenant-name {
     color: var(--color-primary);
+  }
+
+  .tenant-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 }
 
@@ -386,7 +536,7 @@
 
 .contact-cell {
   display: flex;
-  min-width: 180px;
+  min-width: 0;
   flex-direction: column;
   gap: 5px;
 }
@@ -589,8 +739,18 @@
 
 @media (max-width: 768px) {
   .table-card {
-    ::ng-deep .dt-table {
-      min-width: 0;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+
+    .tenant-mobile-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .tenant-desktop-table:not(.tenant-mobile-placeholder) {
+      display: none;
     }
 
     ::ng-deep .dt-table-container {
@@ -614,12 +774,14 @@
 
     button {
       flex: 1;
+      min-height: 44px;
     }
   }
 
   .filters-bar {
     align-items: stretch;
     flex-direction: column;
+    padding: 16px;
 
     .search-field,
     .filter-control {
@@ -629,12 +791,43 @@
     }
 
     .filter-control {
-      justify-content: space-between;
+      align-items: stretch;
+      flex-direction: column;
+      gap: 6px;
 
       select {
-        flex: 1;
+        width: 100%;
+        min-width: 0;
       }
     }
+  }
+
+  .tenant-mobile-card {
+    padding: 14px;
+  }
+
+  .contact-phone {
+    flex-wrap: wrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .reveal-button,
+  .clear-search {
+    width: 44px;
+    height: 44px;
+  }
+
+  .reveal-button {
+    flex-basis: 44px;
+  }
+
+  .filters-bar .filter-control select {
+    min-height: 44px;
+  }
+
+  .apply-filters-button {
+    min-height: 44px;
   }
 
   .filter-summary {

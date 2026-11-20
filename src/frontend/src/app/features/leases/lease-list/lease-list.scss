@@ -527,6 +527,249 @@ mat-paginator {
   }
 }
 
+// ── Mobile Cards ────────────────────────────────────────────────────────────
+.lease-mobile-list {
+  display: grid;
+  gap: 12px;
+}
+
+.lease-mobile-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.2s;
+
+  &:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .mobile-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-light);
+
+    .unit-number {
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--text-primary);
+      flex-shrink: 0;
+    }
+
+    .mobile-unit-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+  }
+
+  .mobile-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .mobile-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+
+    .mobile-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .mobile-value {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: right;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
+
+      &.rent-value {
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+    }
+  }
+
+  .type-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+
+    &.commercial {
+      background: var(--bg-chip-blue);
+      color: var(--text-chip-blue);
+    }
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+
+    .status-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    &.active {
+      background: var(--bg-chip-green);
+      color: var(--text-chip-green);
+      .status-dot {
+        background: #4caf50;
+      }
+    }
+
+    &.expiring {
+      background: var(--bg-chip-orange);
+      color: var(--text-chip-orange);
+      .status-dot {
+        background: #ff9800;
+      }
+    }
+
+    &.expired {
+      background: var(--bg-chip-red);
+      color: var(--text-chip-red);
+      .status-dot {
+        background: #ef5350;
+      }
+    }
+
+    &.inactive {
+      background: var(--bg-chip-grey);
+      color: var(--text-hint);
+      .status-dot {
+        background: var(--text-disabled);
+      }
+    }
+  }
+
+  .mobile-card-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-light);
+
+    button {
+      color: var(--text-muted);
+
+      &:hover {
+        color: var(--text-secondary);
+      }
+
+      &.mat-mdc-icon-button {
+        color: inherit;
+      }
+    }
+  }
+}
+
+// ── Responsive ───────────────────────────────────────────────────────────────
+@media (max-width: 768px) {
+  .lease-list-container {
+    padding: 16px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+
+    .search-field,
+    .filter-select {
+      width: 100%;
+      min-width: unset;
+      // Stop the row-direction flex-basis from becoming a height once the bar stacks
+      flex: none;
+    }
+
+    .results-count {
+      margin-left: 0;
+    }
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  // Mobile cards visible on mobile, hide desktop table
+  .lease-mobile-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .lease-desktop-table:not(.lease-mobile-placeholder) {
+    display: none;
+  }
+
+  // Stacked-card fallback for any remaining table elements
+  .table-wrapper {
+    overflow-x: visible;
+  }
+}
+
+@media (max-width: 640px) {
+  .lease-list-container {
+    padding: 12px;
+  }
+
+  .lease-mobile-card {
+    padding: 12px;
+
+    .mobile-card-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+
+      .unit-number {
+        font-size: 14px;
+      }
+
+      .mobile-unit-sub {
+        font-size: 11px;
+      }
+    }
+
+    .mobile-row {
+      flex-direction: column;
+      align-items: flex-start;
+
+      .mobile-label {
+        font-size: 11px;
+      }
+
+      .mobile-value {
+        max-width: 100%;
+      }
+    }
+  }
+}
+
 @media (max-width: 480px) {
   .lease-list-container {
     padding: 12px;

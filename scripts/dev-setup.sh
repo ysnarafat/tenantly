@@ -1,38 +1,42 @@
 #!/bin/bash
+set -e
 
-echo "Setting up Tenantly development environment..."
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+API_DIR="$ROOT/src/backend/api"
+FRONTEND_DIR="$ROOT/src/frontend"
 
-# Create .env file from example if it doesn't exist
-if [ ! -f .env ]; then
-    cp .env.example .env
-    echo "Created .env file from .env.example"
-    echo "Please update the .env file with your actual configuration values"
+if [ ! -f "$API_DIR/go.mod" ]; then
+    echo "Backend API was not found under \"$API_DIR\"." >&2
+    exit 1
 fi
 
-# Start PostgreSQL with Docker
-echo "Starting PostgreSQL database..."
-docker run -d \
-    --name tenantly-postgres \
-    -e POSTGRES_DB=tenantly \
-    -e POSTGRES_USER=postgres \
-    -e POSTGRES_PASSWORD=password \
-    -p 5432:5432 \
-    postgres:15-alpine
+if [ ! -f "$FRONTEND_DIR/package.json" ]; then
+    echo "Frontend was not found under \"$FRONTEND_DIR\"." >&2
+    exit 1
+fi
 
-# Wait for PostgreSQL to be ready
-echo "Waiting for PostgreSQL to be ready..."
-sleep 10
+if [ ! -f "$ROOT/.env" ] && [ -f "$ROOT/.env.example" ]; then
+    cp "$ROOT/.env.example" "$ROOT/.env"
+    echo "Created .env from .env.example."
+fi
 
-# Run database migrations
-echo "Running database migrations..."
-cd backend/api && go run cmd/server/main.go migrate || echo "Migration will be implemented in later tasks"
-cd ../..
+LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/tenantly-dev.XXXXXX")"
 
-echo "Development environment setup complete!"
-echo ""
-echo "To start the services:"
-echo "1. Go API: cd backend/api && go run cmd/server/main.go"
-echo "2. Angular Frontend: cd frontend && npm install && npm start"
-echo "3. C# Notification Service: cd backend/notification-service && dotnet run"
-echo ""
-echo "Or use Docker Compose: docker-compose up"
+nohup sh -c 'cd "$1" && exec go run ./cmd/server' sh "$API_DIR" \
+    >"$LOG_DIR/api.log" 2>&1 < /dev/null &
+API_PID=$!
+
+nohup sh -c 'cd "$1" && exec npm start' sh "$FRONTEND_DIR" \
+    >"$LOG_DIR/frontend.log" 2>&1 < /dev/null &
+FRONTEND_PID=$!
+
+nohup sh -c 'cd "$1" && exec npm run start:operations' sh "$FRONTEND_DIR" \
+    >"$LOG_DIR/operations.log" 2>&1 < /dev/null &
+OPERATIONS_PID=$!
+
+echo "Started Tenantly API (PID $API_PID), frontend (PID $FRONTEND_PID), and operations-portal (PID $OPERATIONS_PID)."
+echo "PostgreSQL must already be running for the API to connect."
+echo "API:              http://localhost:8080"
+echo "Frontend:         http://localhost:4200"
+echo "Operations Portal: http://localhost:4300"
+echo "Logs:             $LOG_DIR"

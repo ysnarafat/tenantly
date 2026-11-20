@@ -95,6 +95,10 @@ export class App implements OnInit {
   canViewTenants = computed(() => this.permissions.hasPermission(Permission.VIEW_TENANTS));
   canViewLeases = computed(() => this.permissions.hasPermission(Permission.VIEW_LEASES));
   canViewPayments = computed(() => this.permissions.hasPermission(Permission.VIEW_PAYMENTS));
+
+  // Check if any payments sub-route is active (for parent menu highlighting)
+  isPaymentsActive = computed(() => this.currentUrl().startsWith('/payments'));
+
   canViewReports = computed(() => this.permissions.hasPermission(Permission.VIEW_REPORTS));
   canViewDocuments = computed(() => this.permissions.hasPermission(Permission.VIEW_DOCUMENTS));
   canAccessSupport = computed(() =>

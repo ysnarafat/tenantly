@@ -75,7 +75,144 @@
   </section>
 
   <section class="table-card">
+    @if (!loading && pagedTenants.length > 0) {
+    <div class="tenant-mobile-list" aria-label="Tenants">
+      @for (tenant of pagedTenants; track tenant.id) {
+      <article class="tenant-mobile-card">
+        <header class="tenant-mobile-card-header">
+          <button class="tenant-mobile-identity" type="button" (click)="viewTenant(tenant)">
+            <span class="tenant-avatar" [attr.data-color]="getAvatarColorIndex(tenant.name)">
+              {{ getInitials(tenant.name) }}
+            </span>
+            <span class="tenant-mobile-identity-content">
+              <span class="tenant-mobile-name">{{ tenant.name }}</span>
+              <span
+                class="status-badge"
+                [class.is-active]="tenant.active"
+                [class.is-inactive]="!tenant.active"
+              >
+                <span class="status-dot"></span>
+                {{ tenant.active ? ('TENANT_LIST.TABLE.ACTIVE' | translate) :
+                ('TENANT_LIST.TABLE.INACTIVE' | translate) }}
+              </span>
+            </span>
+          </button>
+          <button
+            mat-icon-button
+            class="tenant-mobile-actions"
+            [matMenuTriggerFor]="tenantActions"
+            [matMenuTriggerData]="{ tenant: tenant }"
+            [attr.aria-label]="'TENANT_LIST.TABLE.ACTIONS' | translate"
+          >
+            <mat-icon>more_vert</mat-icon>
+          </button>
+        </header>
+
+        <div class="tenant-mobile-contacts">
+          @if (tenant.email) {
+          <div class="tenant-mobile-contact">
+            <span class="tenant-mobile-label">{{ 'TENANT_LIST.EXPORT.EMAIL' | translate }}</span>
+            <a class="tenant-mobile-email" [href]="'mailto:' + tenant.email">
+              {{ tenant.email }}
+            </a>
+          </div>
+          } @if (tenant.phone_number) {
+          <div class="tenant-mobile-contact">
+            <span class="tenant-mobile-label">{{ 'TENANT_LIST.EXPORT.PHONE' | translate }}</span>
+            <span class="tenant-mobile-phone">
+              <mat-icon aria-hidden="true">phone</mat-icon>
+              <span
+                [class.masked-val]="!isPhoneRevealed(tenant.id) && !isAccountantRole"
+                [class.restricted-val]="isAccountantRole"
+                >{{ getDisplayPhone(tenant) }}</span
+              >
+              @if (canRevealPii) {
+              <button
+                class="reveal-button"
+                type="button"
+                (click)="togglePhoneReveal(tenant.id)"
+                [matTooltip]="(isPhoneRevealed(tenant.id) ? 'TENANT_LIST.MASKING.HIDE' : 'TENANT_LIST.MASKING.REVEAL') | translate"
+                [attr.aria-label]="(isPhoneRevealed(tenant.id) ? 'TENANT_LIST.MASKING.HIDE' : 'TENANT_LIST.MASKING.REVEAL') | translate"
+              >
+                <mat-icon>
+                  {{ isPhoneRevealed(tenant.id) ? 'visibility_off' : 'visibility' }}
+                </mat-icon>
+              </button>
+              } @if (isAccountantRole) {
+              <mat-icon
+                class="restricted-icon"
+                [matTooltip]="'TENANT_LIST.MASKING.RESTRICTED_TOOLTIP' | translate"
+                >lock</mat-icon
+              >
+              }
+            </span>
+          </div>
+          } @if (!tenant.email && !tenant.phone_number) {
+          <div class="tenant-mobile-contact">
+            <span class="tenant-mobile-label">{{ 'TENANT_LIST.TABLE.CONTACT' | translate }}</span>
+            <span class="empty-val">{{ 'TENANT_LIST.TABLE.EMPTY_VALUE' | translate }}</span>
+          </div>
+          }
+        </div>
+
+        <div class="tenant-mobile-meta-grid">
+          <div class="tenant-mobile-meta-item">
+            <span class="tenant-mobile-label">{{ 'TENANT_LIST.TABLE.TYPE' | translate }}</span>
+            <span class="tenant-mobile-meta-value">
+              <span class="type-badge" [class.business]="tenant.tenant_type === 'Business'">
+                <mat-icon aria-hidden="true">
+                  {{ tenant.tenant_type === 'Business' ? 'business' : 'person' }}
+                </mat-icon>
+                {{ tenant.tenant_type === 'Business' ? ('TENANT_LIST.FILTERS.BUSINESS' | translate)
+                : ('TENANT_LIST.FILTERS.INDIVIDUAL' | translate) }}
+              </span>
+            </span>
+          </div>
+          <div class="tenant-mobile-meta-item">
+            <span class="tenant-mobile-label">{{ 'TENANT_LIST.TABLE.NID' | translate }}</span>
+            <span class="tenant-mobile-meta-value">
+              <span
+                class="nid-value"
+                [class.masked-val]="!isNidRevealed(tenant.id) && !!tenant.nid_last_four && !isAccountantRole"
+                [class.restricted-val]="isAccountantRole && !!tenant.nid_last_four"
+                >{{ getDisplayNid(tenant) }}</span
+              >
+              @if (canRevealPii && tenant.nid_last_four) {
+              <button
+                class="reveal-button"
+                type="button"
+                (click)="toggleNidReveal(tenant.id)"
+                [matTooltip]="(isNidRevealed(tenant.id) ? 'TENANT_LIST.MASKING.HIDE' : 'TENANT_LIST.MASKING.REVEAL') | translate"
+                [attr.aria-label]="(isNidRevealed(tenant.id) ? 'TENANT_LIST.MASKING.HIDE' : 'TENANT_LIST.MASKING.REVEAL') | translate"
+              >
+                <mat-icon>
+                  {{ isNidRevealed(tenant.id) ? 'visibility_off' : 'visibility' }}
+                </mat-icon>
+              </button>
+              } @if (isAccountantRole && tenant.nid_last_four) {
+              <mat-icon
+                class="restricted-icon"
+                [matTooltip]="'TENANT_LIST.MASKING.RESTRICTED_TOOLTIP' | translate"
+                >lock</mat-icon
+              >
+              }
+            </span>
+          </div>
+          <div class="tenant-mobile-meta-item">
+            <span class="tenant-mobile-label">{{ 'TENANT_LIST.TABLE.JOINED' | translate }}</span>
+            <span class="tenant-mobile-meta-value date-value">
+              {{ tenant.created_at | date: 'mediumDate' }}
+            </span>
+          </div>
+        </div>
+      </article>
+      }
+    </div>
+    }
+
     <app-data-table
+      class="tenant-desktop-table"
+      [class.tenant-mobile-placeholder]="loading || pagedTenants.length === 0"
       matSort
       (sortChange)="onSortChange($event)"
       [dataSource]="pagedTenants"

@@ -151,7 +151,7 @@ export class OperationsApp implements OnInit {
     this.loginError = '';
     this.busy = true;
     this.http
-      .post<LoginResponse>(`${this.apiUrl}/auth/login`, {
+      .post<LoginResponse>(`${this.apiUrl}/ops/auth/login`, {
         username: this.username,
         password: this.password,
       })
@@ -286,10 +286,7 @@ export class OperationsApp implements OnInit {
     this.invitationActionID = invitation.id;
     this.clearMessages();
     this.http
-      .post<OrganizationInvitation>(
-        `${this.apiUrl}/ops/invitations/${invitation.id}/resend`,
-        {}
-      )
+      .post<OrganizationInvitation>(`${this.apiUrl}/ops/invitations/${invitation.id}/resend`, {})
       .subscribe({
         next: (updatedInvitation) => {
           this.invitationActionID = null;
@@ -314,7 +311,9 @@ export class OperationsApp implements OnInit {
     this.http.delete(`${this.apiUrl}/ops/invitations/${invitation.id}`).subscribe({
       next: () => {
         this.invitationActionID = null;
-        this.pendingInvitations = this.pendingInvitations.filter((item) => item.id !== invitation.id);
+        this.pendingInvitations = this.pendingInvitations.filter(
+          (item) => item.id !== invitation.id
+        );
         this.notice = `Invitation for ${invitation.email} revoked.`;
       },
       error: (error: HttpErrorResponse) => {
@@ -465,10 +464,12 @@ export class OperationsApp implements OnInit {
   }
 
   private loadPendingInvitations(): void {
-    this.http.get<{ invitations: OrganizationInvitation[] }>(`${this.apiUrl}/ops/invitations`).subscribe({
-      next: ({ invitations }) => (this.pendingInvitations = invitations),
-      error: (error: HttpErrorResponse) => this.showError(error),
-    });
+    this.http
+      .get<{ invitations: OrganizationInvitation[] }>(`${this.apiUrl}/ops/invitations`)
+      .subscribe({
+        next: ({ invitations }) => (this.pendingInvitations = invitations),
+        error: (error: HttpErrorResponse) => this.showError(error),
+      });
   }
 
   private loadCases(): void {

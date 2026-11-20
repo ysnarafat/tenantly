@@ -83,6 +83,7 @@ func (s *Server) setupRoutes() {
 	tenantRepo := repositories.NewTenantRepository(s.db, s.config.NIDProtector)
 	mfaRepo := repositories.NewMFARepository(s.db)
 	paymentRepo := repositories.NewPaymentRepository(s.db)
+	billingRunRepo := repositories.NewBillingRunRepository(s.db)
 	paymentTransactionRepo := repositories.NewPaymentTransactionRepository(s.db)
 	paymentTransactionAttachmentRepo := repositories.NewPaymentTransactionAttachmentRepository(s.db)
 	receiptAccessTokenRepo := repositories.NewReceiptAccessTokenRepository(s.db)
@@ -116,6 +117,7 @@ func (s *Server) setupRoutes() {
 	mfaService := services.NewMFAService(mfaRepo, s.config.NIDProtector, s.config.JWTSecret)
 	leaseService := services.NewLeaseService(leaseRepo, tenantRepo, unitRepo, leaseChargeRepo, auditService)
 	paymentService := services.NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, leaseRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, s.config.PublicAppURL)
+	billingRunService := services.NewBillingRunService(billingRunRepo, auditService)
 	reportService := services.NewReportService(paymentRepo, propertyRepo)
 	// Initialize handlers
 	userHandler := handlers.NewUserHandler(userService, s.config.CookieDomain, s.config.CookieSecure)
@@ -126,6 +128,7 @@ func (s *Server) setupRoutes() {
 	mfaHandler := handlers.NewMFAHandler(mfaService)
 	leaseHandler := handlers.NewLeaseHandler(leaseService)
 	paymentHandler := handlers.NewPaymentHandler(paymentService)
+	billingRunHandler := handlers.NewBillingRunHandler(billingRunService)
 	organizationHandler := handlers.NewOrganizationHandler(organizationService)
 	operationsHandler := handlers.NewOperationsHandler(operationsService)
 	reportHandler := handlers.NewReportHandler(reportService)
@@ -151,6 +154,8 @@ func (s *Server) setupRoutes() {
 			auth.POST("/confirm-reset-password", userHandler.ConfirmPasswordReset)
 			auth.POST("/register-with-invitation", userHandler.RegisterWithInvitation)
 		}
+		opsAuth := v1.Group("/ops/auth")
+		opsAuth.POST("/login", middleware.RateLimitMiddleware(loginRateLimiter, auditService), userHandler.LoginOperations)
 
 		// Public invitation routes
 		invitations := v1.Group("/invitations")
@@ -174,6 +179,7 @@ func (s *Server) setupRoutes() {
 		auditService := database.NewAuditService(s.db)
 		protected := v1.Group("/")
 		protected.Use(middleware.AuthRequired(s.config.JWTSecret, auditService))
+		protected.Use(middleware.RequireTokenAudience("customer"))
 		// Session timeout middleware can be added later if needed
 		// protected.Use(middleware.SessionTimeoutMiddleware(auditService))
 		{
@@ -225,28 +231,6 @@ func (s *Server) setupRoutes() {
 				organizations.GET("/:id", middleware.RequireSuperAdmin(), organizationHandler.GetOrganization)
 				organizations.PUT("/:id", middleware.RequireSuperAdmin(), organizationHandler.UpdateOrganization)
 				organizations.DELETE("/:id", middleware.RequireSuperAdmin(), organizationHandler.DeleteOrganization)
-			}
-
-			operations := protected.Group("/ops", middleware.RequireSuperAdmin())
-			{
-				operations.POST("/organizations/onboard", operationsHandler.OnboardOrganization)
-				operations.GET("/invitations", operationsHandler.ListPendingOrganizationInvitations)
-				operations.POST("/invitations/:invitation_id/resend", operationsHandler.ResendOrganizationInvitation)
-				operations.DELETE("/invitations/:invitation_id", operationsHandler.RevokeOrganizationInvitation)
-				operations.GET("/plans", operationsHandler.ListPlans)
-				operations.PUT("/plans/:code", operationsHandler.UpdatePlan)
-				operations.GET("/organizations", operationsHandler.ListOrganizations)
-				operations.GET("/organizations/:organization_id/subscription", operationsHandler.GetSubscription)
-				operations.PUT("/organizations/:organization_id/subscription", operationsHandler.UpdateSubscription)
-				operations.GET("/support/cases", operationsHandler.ListSupportCases)
-				operations.POST("/support/cases", operationsHandler.CreateSupportCase)
-				operations.GET("/support/agents", operationsHandler.ListSupportAgents)
-				operations.PUT("/support/cases/:case_id/status", operationsHandler.UpdateSupportCase)
-				operations.PUT("/support/cases/:case_id/assignment", operationsHandler.UpdateSupportCaseAssignment)
-				operations.GET("/support/cases/:case_id/messages", operationsHandler.ListSupportCaseMessages)
-				operations.POST("/support/cases/:case_id/messages", operationsHandler.CreateSupportCaseMessage)
-				operations.GET("/support/cases/:case_id/notes", operationsHandler.ListSupportCaseNotes)
-				operations.POST("/support/cases/:case_id/notes", operationsHandler.CreateSupportCaseNote)
 			}
 
 			support := protected.Group("/support")
@@ -380,6 +364,16 @@ func (s *Server) setupRoutes() {
 				payments.GET("/property/:property_id/report", middleware.RequireAnyRole(), paymentHandler.GetPropertyPaymentReport)
 			}
 
+			billingRuns := protected.Group("/billing-runs")
+			billingRuns.Use(middleware.RequireOrgContext())
+			{
+				billingRuns.POST("", middleware.RequireAdminOrPropertyManager(), billingRunHandler.Create)
+				billingRuns.GET("/period", middleware.RequireAdminOrPropertyManager(), billingRunHandler.GetByPeriod)
+				billingRuns.GET("/:id", middleware.RequireAdminOrPropertyManager(), billingRunHandler.GetByID)
+				billingRuns.PATCH("/:id/items/:itemId/electricity", middleware.RequireAdminOrPropertyManager(), billingRunHandler.UpdateElectricity)
+				billingRuns.POST("/:id/finalize", middleware.RequireAdminOrPropertyManager(), billingRunHandler.Finalize)
+			}
+
 			dashboard := protected.Group("/dashboard")
 			dashboard.Use(middleware.RequireOrgContext())
 			{
@@ -396,6 +390,31 @@ func (s *Server) setupRoutes() {
 				reports.GET("/tenant-summary", middleware.RequireAnyRole(), reportHandler.GetTenantSummary)
 				reports.GET("/property-analytics", middleware.RequireAnyRole(), reportHandler.GetPropertyAnalytics)
 			}
+		}
+
+		operations := v1.Group("/ops")
+		operations.Use(middleware.AuthRequired(s.config.JWTSecret, auditService))
+		operations.Use(middleware.RequireTokenAudience("operations"))
+		operations.Use(middleware.RequireSuperAdmin())
+		{
+			operations.POST("/organizations/onboard", operationsHandler.OnboardOrganization)
+			operations.GET("/invitations", operationsHandler.ListPendingOrganizationInvitations)
+			operations.POST("/invitations/:invitation_id/resend", operationsHandler.ResendOrganizationInvitation)
+			operations.DELETE("/invitations/:invitation_id", operationsHandler.RevokeOrganizationInvitation)
+			operations.GET("/plans", operationsHandler.ListPlans)
+			operations.PUT("/plans/:code", operationsHandler.UpdatePlan)
+			operations.GET("/organizations", operationsHandler.ListOrganizations)
+			operations.GET("/organizations/:organization_id/subscription", operationsHandler.GetSubscription)
+			operations.PUT("/organizations/:organization_id/subscription", operationsHandler.UpdateSubscription)
+			operations.GET("/support/cases", operationsHandler.ListSupportCases)
+			operations.POST("/support/cases", operationsHandler.CreateSupportCase)
+			operations.GET("/support/agents", operationsHandler.ListSupportAgents)
+			operations.PUT("/support/cases/:case_id/status", operationsHandler.UpdateSupportCase)
+			operations.PUT("/support/cases/:case_id/assignment", operationsHandler.UpdateSupportCaseAssignment)
+			operations.GET("/support/cases/:case_id/messages", operationsHandler.ListSupportCaseMessages)
+			operations.POST("/support/cases/:case_id/messages", operationsHandler.CreateSupportCaseMessage)
+			operations.GET("/support/cases/:case_id/notes", operationsHandler.ListSupportCaseNotes)
+			operations.POST("/support/cases/:case_id/notes", operationsHandler.CreateSupportCaseNote)
 		}
 	}
 }

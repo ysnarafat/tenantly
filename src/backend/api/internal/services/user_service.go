@@ -3,6 +3,7 @@ package services
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -13,6 +14,8 @@ import (
 	"github.com/ysnarafat/tenantly/internal/models"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var ErrOperationsPortalRequired = errors.New("platform administrators must use the Operations Portal")
 
 type UserService struct {
 	userRepo            interfaces.UserRepositoryInterface
@@ -191,7 +194,14 @@ func (s *UserService) CreateUser(req *models.CreateUserRequest) (*models.User, e
 }
 
 func (s *UserService) Login(req *models.LoginRequest, clientIP, userAgent string) (*models.LoginResponse, error) {
+	return s.login(req, clientIP, userAgent, "customer")
+}
 
+func (s *UserService) LoginOperations(req *models.LoginRequest, clientIP, userAgent string) (*models.LoginResponse, error) {
+	return s.login(req, clientIP, userAgent, "operations")
+}
+
+func (s *UserService) login(req *models.LoginRequest, clientIP, userAgent, audience string) (*models.LoginResponse, error) {
 	// Normalize username
 	username := strings.TrimSpace(req.Username)
 
@@ -244,8 +254,31 @@ func (s *UserService) Login(req *models.LoginRequest, clientIP, userAgent string
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
-	// Generate JWT token
-	token, refreshToken, err := s.generateTokens(user)
+	if audience == "customer" && user.Role == "SUPER_ADMIN" {
+		if s.auditService != nil {
+			_ = s.auditService.LogUserAction(
+				user.ID,
+				models.AuditActionLogin,
+				models.TableUsers,
+				&user.ID,
+				nil,
+				map[string]interface{}{
+					"username":   username,
+					"success":    false,
+					"reason":     "operations_portal_required",
+					"ip_address": clientIP,
+					"user_agent": userAgent,
+				},
+			)
+		}
+		return nil, ErrOperationsPortalRequired
+	}
+	if audience == "operations" && user.Role != "SUPER_ADMIN" {
+		return nil, fmt.Errorf("invalid credentials")
+	}
+
+	// Generate a token scoped to the app that authenticated the user.
+	token, refreshToken, err := s.generateTokensForAudience(user, audience)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate token: %w", err)
 	}
@@ -261,6 +294,7 @@ func (s *UserService) Login(req *models.LoginRequest, clientIP, userAgent string
 			map[string]interface{}{
 				"username":   username,
 				"success":    true,
+				"audience":   audience,
 				"ip_address": clientIP,
 				"user_agent": userAgent,
 			},
@@ -270,14 +304,14 @@ func (s *UserService) Login(req *models.LoginRequest, clientIP, userAgent string
 	// Load all organizations this user belongs to
 	var userOrgs []models.UserOrganizationRole
 	defaultOrgID := 0
-	if s.userOrgRoleRepo != nil {
+	if audience == "customer" && s.userOrgRoleRepo != nil {
 		userOrgs, _ = s.userOrgRoleRepo.GetByUserID(user.ID)
 		if len(userOrgs) > 0 {
 			defaultOrgID = userOrgs[0].OrganizationID
 		}
 	}
 	// Fallback: use the user's organization_id field if no junction entries
-	if defaultOrgID == 0 && user.OrganizationID != nil {
+	if audience == "customer" && defaultOrgID == 0 && user.OrganizationID != nil {
 		defaultOrgID = *user.OrganizationID
 	}
 
@@ -566,11 +600,16 @@ func (s *UserService) DeleteUser(id int) error {
 
 // generateTokens creates both access and refresh tokens
 func (s *UserService) generateTokens(user *models.User) (string, string, error) {
+	return s.generateTokensForAudience(user, "customer")
+}
+
+func (s *UserService) generateTokensForAudience(user *models.User, audience string) (string, string, error) {
 	// Generate access token
 	accessClaims := jwt.MapClaims{
 		"user_id":  user.ID,
 		"username": user.Username,
 		"role":     user.Role,
+		"aud":      audience,
 		"type":     "access",
 		"iat":      time.Now().Unix(),
 		"exp":      time.Now().Add(s.jwtExpiration).Unix(),
@@ -591,6 +630,7 @@ func (s *UserService) generateTokens(user *models.User) (string, string, error) 
 	refreshClaims := jwt.MapClaims{
 		"user_id":  user.ID,
 		"username": user.Username,
+		"aud":      audience,
 		"type":     "refresh",
 		"iat":      time.Now().Unix(),
 		"exp":      time.Now().Add(7 * 24 * time.Hour).Unix(), // 7 days
@@ -612,6 +652,7 @@ func (s *UserService) generateTokensForOrg(user *models.User, orgID int, role st
 		"username":        user.Username,
 		"role":            role,
 		"organization_id": orgID,
+		"aud":             "customer",
 		"type":            "access",
 		"iat":             time.Now().Unix(),
 		"exp":             time.Now().Add(s.jwtExpiration).Unix(),
@@ -626,6 +667,7 @@ func (s *UserService) generateTokensForOrg(user *models.User, orgID int, role st
 	refreshClaims := jwt.MapClaims{
 		"user_id":  user.ID,
 		"username": user.Username,
+		"aud":      "customer",
 		"type":     "refresh",
 		"iat":      time.Now().Unix(),
 		"exp":      time.Now().Add(7 * 24 * time.Hour).Unix(),
@@ -679,9 +721,13 @@ func (s *UserService) RefreshToken(refreshTokenString string) (*models.LoginResp
 	if !user.Active {
 		return nil, fmt.Errorf("user account is deactivated")
 	}
+	audience, _ := claims["aud"].(string)
+	if (audience != "" && audience != "customer") || user.Role == "SUPER_ADMIN" {
+		return nil, fmt.Errorf("invalid refresh token audience")
+	}
 
 	// Generate new tokens
-	accessToken, newRefreshToken, err := s.generateTokens(user)
+	accessToken, newRefreshToken, err := s.generateTokensForAudience(user, "customer")
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate new tokens: %w", err)
 	}

@@ -80,10 +80,16 @@ $nav-transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 .menu-button {
   margin-right: 8px;
+
+  @media (max-width: 768px) {
+    width: 48px;
+    height: 48px;
+  }
 }
 
 .spacer {
   flex: 1 1 auto;
+  min-width: 0;
 }
 
 // Organization selector styling
@@ -93,11 +99,7 @@ app-organization-selector {
   align-items: center;
 
   @media (max-width: 768px) {
-    margin: 0 8px;
-
-    .org-name {
-      display: none !important;
-    }
+    margin: 0 4px;
   }
 }
 
@@ -318,9 +320,27 @@ mat-nav-list {
   .sidenav-container {
     height: calc(100vh - 56px);
   }
+
   mat-toolbar {
     height: 56px;
     padding: 0 16px;
+  }
+
+  .app-toolbar {
+    padding: 0 24px 0 8px;
+  }
+
+  .theme-toggle,
+  .language-toggle,
+  .avatar-btn.mat-mdc-icon-button {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+  }
+
+  .avatar-btn.mat-mdc-icon-button {
+    width: 48px !important;
+    height: 48px !important;
   }
 }
 

@@ -99,6 +99,7 @@ type BuildingRepositoryInterface interface {
 type UserServiceInterface interface {
 	CreateUser(req *models.CreateUserRequest) (*models.User, error)
 	Login(req *models.LoginRequest, clientIP, userAgent string) (*models.LoginResponse, error)
+	LoginOperations(req *models.LoginRequest, clientIP, userAgent string) (*models.LoginResponse, error)
 	RefreshToken(refreshToken string) (*models.LoginResponse, error)
 	RegisterWithInvitation(req *models.RegisterWithInvitationRequest) (*models.LoginResponse, error)
 	Logout(userID int, clientIP, userAgent string) error
@@ -310,6 +311,23 @@ type PaymentServiceInterface interface {
 	GenerateMonthlyPayments(req *models.GenerateMonthlyPaymentsRequest, orgID, userID int) (*models.GenerateMonthlyPaymentsResult, error)
 	GenerateReceiptPDF(paymentID, orgID int) ([]byte, error)
 	DownloadReceiptByToken(token string) ([]byte, string, error)
+}
+
+// BillingRunRepositoryInterface stores monthly electricity bill registers for one building.
+type BillingRunRepositoryInterface interface {
+	Create(buildingID, orgID, month, year, userID int) (*models.BillingRun, error)
+	Get(id, orgID int) (*models.BillingRun, error)
+	GetByPeriod(buildingID, orgID, month, year int) (*models.BillingRun, error)
+	UpdateElectricity(runID, itemID, orgID int, meterNumber string, amount float64) (*models.BillingRun, error)
+	Finalize(id, orgID int) (*models.BillingRun, error)
+}
+
+type BillingRunServiceInterface interface {
+	Create(req *models.CreateBillingRunRequest, orgID, userID int) (*models.BillingRun, error)
+	Get(id, orgID int) (*models.BillingRun, error)
+	GetByPeriod(buildingID, orgID, month, year int) (*models.BillingRun, error)
+	UpdateElectricity(runID, itemID, orgID, userID int, meterNumber string, amount float64) (*models.BillingRun, error)
+	Finalize(id, orgID, userID int) (*models.BillingRun, error)
 }
 
 // TenantRepositoryInterface defines the interface for tenant repository operations

@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/ysnarafat/tenantly/internal/models"
+	"github.com/ysnarafat/tenantly/internal/services"
 )
 
 // MockUserService is a mock implementation of UserServiceInterface
@@ -28,6 +29,14 @@ func (m *MockUserService) CreateUser(req *models.CreateUserRequest) (*models.Use
 }
 
 func (m *MockUserService) Login(req *models.LoginRequest, clientIP, userAgent string) (*models.LoginResponse, error) {
+	args := m.Called(req, clientIP, userAgent)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.LoginResponse), args.Error(1)
+}
+
+func (m *MockUserService) LoginOperations(req *models.LoginRequest, clientIP, userAgent string) (*models.LoginResponse, error) {
 	args := m.Called(req, clientIP, userAgent)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -268,6 +277,50 @@ func TestUserHandler_Login(t *testing.T) {
 
 		mockService.AssertExpectations(t)
 	})
+
+	t.Run("Platform administrator must use operations portal", func(t *testing.T) {
+		req := &models.LoginRequest{Username: "platform-admin", Password: "password123"}
+		mockService.On("Login", req, "", "").Return(nil, services.ErrOperationsPortalRequired)
+
+		reqBody, _ := json.Marshal(req)
+		w := httptest.NewRecorder()
+		httpReq, _ := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(reqBody))
+		httpReq.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, httpReq)
+
+		assert.Equal(t, http.StatusForbidden, w.Code)
+		assert.Contains(t, w.Body.String(), "OPERATIONS_PORTAL_REQUIRED")
+		cookies := w.Result().Cookies()
+		assert.Len(t, cookies, 1)
+		assert.Equal(t, refreshCookieName, cookies[0].Name)
+		assert.Equal(t, -1, cookies[0].MaxAge)
+		mockService.AssertExpectations(t)
+	})
+}
+
+func TestUserHandler_LoginOperations(t *testing.T) {
+	mockService := new(MockUserService)
+	handler := NewUserHandler(mockService, "", false)
+	router := setupTestRouter()
+	router.POST("/ops/auth/login", handler.LoginOperations)
+
+	req := &models.LoginRequest{Username: "platform-admin", Password: "password123"}
+	loginResponse := &models.LoginResponse{
+		Token: "operations-token",
+		User:  models.User{ID: 1, Username: req.Username, Role: "SUPER_ADMIN"},
+	}
+	mockService.On("LoginOperations", req, "", "").Return(loginResponse, nil)
+
+	reqBody, _ := json.Marshal(req)
+	w := httptest.NewRecorder()
+	httpReq, _ := http.NewRequest("POST", "/ops/auth/login", bytes.NewBuffer(reqBody))
+	httpReq.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, httpReq)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Empty(t, w.Result().Cookies())
+	assert.Contains(t, w.Body.String(), "operations-token")
+	mockService.AssertExpectations(t)
 }
 
 func TestUserHandler_RefreshToken(t *testing.T) {

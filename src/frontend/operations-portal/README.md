@@ -27,7 +27,7 @@ npm ci
 npm run start:operations
 ```
 
-Open `http://localhost:4300`. The development API URL defaults to `http://localhost:8080/api/v1`. The backend's development CORS defaults include ports 4200 and 4300. Sign in with an account whose platform role is `SUPER_ADMIN`; API authorization is enforced independently of the portal UI.
+Open `http://localhost:4300`. The development API URL defaults to `http://localhost:8080/api/v1`. The backend's development CORS defaults include ports 4200 and 4300. Sign in with an account whose platform role is `SUPER_ADMIN`; the portal uses the staff-only `/ops/auth/login` endpoint, and API authorization is enforced independently of the portal UI. A platform administrator cannot sign in through the customer app's `/auth/login` endpoint.
 
 Build the standalone portal with:
 

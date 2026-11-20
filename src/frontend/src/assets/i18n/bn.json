@@ -1033,6 +1033,10 @@
       "INVITATIONS": "আমন্ত্রণ",
       "USERS": "ব্যবহারকারী"
     },
+    "SUBMENU": {
+      "COLLECT_PAYMENTS": "পেমেন্ট রেকর্ড করুন",
+      "ELECTRICITY_BILLS": "বিদ্যুৎ বিল"
+    },
     "USER_MENU": {
       "LOGOUT": "লগআউট"
     },
@@ -1157,5 +1161,52 @@
   },
   "LEASE_CUSTOM_FIELDS": {
     "SECTION_TITLE": "কাস্টম ফিল্ড"
+  },
+  "BILLING_RUN": {
+    "PAGE_TITLE": "বিদ্যুৎ বিল",
+    "SUBTITLE": "একটি ভবনের মাসিক বিদ্যুৎ বিল লিখুন এবং তালিকা প্রিন্ট করুন।",
+    "PAYMENTS": "পেমেন্ট",
+    "PROPERTY": "সম্পত্তি",
+    "SELECT_PROPERTY": "সম্পত্তি নির্বাচন করুন",
+    "BUILDING": "ভবন",
+    "SELECT_BUILDING": "ভবন নির্বাচন করুন",
+    "MONTH": "মাস",
+    "YEAR": "বছর",
+    "CREATE": "বিদ্যুৎ বিলের তালিকা তৈরি করুন",
+    "PRINT_REGISTER": "তালিকা প্রিন্ট করুন",
+    "FINALIZE": "তালিকা চূড়ান্ত করুন",
+    "CONFIRM_FINALIZE": "এই ভবনের বিদ্যুৎ বিলের তালিকা চূড়ান্ত করবেন? এরপর এটি পরিবর্তন করা যাবে না।",
+    "DRAFT": "খসড়া",
+    "FINALIZED": "চূড়ান্ত",
+    "NO_UNITS": "এই ভবনে কোনো সক্রিয় ইউনিট নেই।",
+    "UNIT": "ইউনিট",
+    "METER_NUMBER": "মিটারের নম্বর",
+    "ELECTRICITY_AMOUNT": "বিদ্যুৎ বিল (৳)",
+    "UNIT_TYPE": "ইউনিটের ধরন",
+    "FLOOR": "তলা",
+    "SAVE": "সংরক্ষণ",
+    "SAVING": "সংরক্ষণ হচ্ছে...",
+    "BUILDING_TOTAL": "ভবনের মোট",
+    "PRINT_TITLE": "বিদ্যুৎ বিলের তালিকা",
+    "PREPARED_DATE": "তৈরির তারিখ",
+    "MONTHLY_BILLING_LINK": "বিদ্যুৎ বিল",
+    "CREATE_MONTHLY_BILL": "বিদ্যুৎ বিলের তালিকা তৈরি করুন",
+    "LOADING": "লোড হচ্ছে...",
+    "YEAR_HINT": "২০২০ থেকে ২০৩০ এর মধ্যে বছর লিখুন",
+    "ERRORS": {
+      "LOAD_PROPERTIES": "সম্পত্তির তালিকা লোড করা যায়নি।",
+      "LOAD_BUILDINGS": "ভবনের তালিকা লোড করা যায়নি।",
+      "LOAD_RUN": "বিলিং রান লোড করা যায়নি।",
+      "CREATE_RUN": "বিলিং রান তৈরি করা যায়নি।",
+      "SAVE_ELECTRICITY": "বিদ্যুতের পরিমাণ সংরক্ষণ করা যায়নি।",
+      "FINALIZE_RUN": "বিদ্যুৎ বিলের তালিকা চূড়ান্ত করা যায়নি।",
+      "INVALID_AMOUNT": "সঠিক শূন্য বা তার বেশি বিদ্যুৎ বিল লিখুন।",
+      "MISSING_AMOUNTS": "প্রিন্ট বা চূড়ান্ত করার আগে প্রতিটি ইউনিটের বিদ্যুৎ বিল লিখুন।"
+    },
+    "FILTERS_LABEL": "ফিল্টার",
+    "UNITS_TOTAL": "ইউনিট",
+    "TOTAL_AMOUNT_LABEL": "মোট পরিমাণ",
+    "COMPLETED_UNITS_LABEL": "সম্পন্ন",
+    "BATCH_SAVE": "একসাথে সংরক্ষণ"
   }
 }

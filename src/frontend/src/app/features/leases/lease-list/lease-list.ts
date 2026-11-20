@@ -17,6 +17,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 import { MatOptionModule } from '@angular/material/core';
 import { TranslateModule } from '@ngx-translate/core';
+import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { LeaseService, LeaseWithDetails } from '../../../core/services/lease.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CreateLeaseDialog } from '../create-lease-dialog/create-lease-dialog';
@@ -24,8 +25,8 @@ import { EditLeaseDialog } from '../edit-lease-dialog/edit-lease-dialog';
 import { RenewLeaseDialog } from '../renew-lease-dialog/renew-lease-dialog';
 import { LoadingSpinner } from '../../../shared/components/loading-spinner/loading-spinner';
 import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm-delete-dialog/confirm-delete-dialog';
-import { safeErrorMessage } from '../../../shared/utils/error.utils';
-import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
+import { Observable, map } from 'rxjs';
+import { inject } from '@angular/core';
 
 @Component({
   selector: 'app-lease-list',

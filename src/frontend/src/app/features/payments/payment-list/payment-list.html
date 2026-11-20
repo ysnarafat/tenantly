@@ -13,14 +13,9 @@
         <mat-icon>add_card</mat-icon>
         {{ 'PAYMENT_LIST.BUTTONS.COLLECT_PAYMENTS' | translate }}
       </button>
-      <button
-        mat-flat-button
-        class="generate-btn"
-        (click)="openGenerateDialog()"
-        [matTooltip]="'PAYMENT_LIST.BUTTONS.GENERATE_TOOLTIP' | translate"
-      >
-        <mat-icon>bolt</mat-icon>
-        {{ 'PAYMENT_LIST.BUTTONS.GENERATE_MONTHLY' | translate }}
+      <button mat-stroked-button routerLink="/billing-runs">
+        <mat-icon>receipt_long</mat-icon>
+        {{ 'BILLING_RUN.MONTHLY_BILLING_LINK' | translate }}
       </button>
     </div>
   </header>

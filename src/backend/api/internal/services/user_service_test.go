@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/ysnarafat/tenantly/internal/models"
@@ -363,7 +364,100 @@ func TestLogin_Success(t *testing.T) {
 	assert.NotEmpty(t, response.Token)
 	assert.NotEmpty(t, response.RefreshToken)
 	assert.Equal(t, user.ID, response.User.ID)
+	assert.Equal(t, "customer", loginTokenAudience(t, response.Token, "test-secret"))
 	mockRepo.AssertExpectations(t)
+}
+
+func TestLoginOperationsScopesOnlyPlatformAdministrators(t *testing.T) {
+	mockRepo := new(MockUserRepository)
+	mockAudit := new(MockAuditService)
+	userService := &UserService{
+		userRepo:      mockRepo,
+		auditService:  mockAudit,
+		jwtSecret:     "test-secret",
+		jwtExpiration: 8 * time.Hour,
+	}
+	hashedPassword := "$2a$12$IvN20ZIyAUeHeR/TTal/RepPLN81XW6p.3Da//V6adrPSv.Y5MBUa"
+	platformAdmin := &models.User{
+		ID: 1, Username: "platform-admin", PasswordHash: hashedPassword, Role: "SUPER_ADMIN", Active: true,
+	}
+	req := &models.LoginRequest{Username: platformAdmin.Username, Password: "password123"}
+
+	mockRepo.On("GetByUsername", platformAdmin.Username).Return(platformAdmin, nil).Twice()
+	mockAudit.On("LogUserAction", mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything, mock.Anything).Return(nil).Twice()
+
+	customerResponse, err := userService.Login(req, "127.0.0.1", "test-agent")
+	assert.Nil(t, customerResponse)
+	assert.ErrorIs(t, err, ErrOperationsPortalRequired)
+
+	operationsResponse, err := userService.LoginOperations(req, "127.0.0.1", "test-agent")
+	assert.NoError(t, err)
+	assert.NotNil(t, operationsResponse)
+	assert.Equal(t, "operations", loginTokenAudience(t, operationsResponse.Token, "test-secret"))
+	mockRepo.AssertExpectations(t)
+	mockAudit.AssertExpectations(t)
+}
+
+func TestLoginOperationsRejectsCustomerAccounts(t *testing.T) {
+	mockRepo := new(MockUserRepository)
+	userService := &UserService{
+		userRepo:      mockRepo,
+		jwtSecret:     "test-secret",
+		jwtExpiration: 8 * time.Hour,
+	}
+	user := &models.User{
+		ID: 1, Username: "org-admin", PasswordHash: "$2a$12$IvN20ZIyAUeHeR/TTal/RepPLN81XW6p.3Da//V6adrPSv.Y5MBUa",
+		Role: "ORG_ADMIN", Active: true,
+	}
+	mockRepo.On("GetByUsername", user.Username).Return(user, nil)
+
+	response, err := userService.LoginOperations(
+		&models.LoginRequest{Username: user.Username, Password: "password123"}, "127.0.0.1", "test-agent",
+	)
+
+	assert.Nil(t, response)
+	assert.ErrorContains(t, err, "invalid credentials")
+	mockRepo.AssertExpectations(t)
+}
+
+func TestRefreshTokenCannotConvertOperationsSessionToCustomerSession(t *testing.T) {
+	mockRepo := new(MockUserRepository)
+	userService := &UserService{
+		userRepo:      mockRepo,
+		jwtSecret:     "test-secret",
+		jwtExpiration: 8 * time.Hour,
+	}
+	user := &models.User{ID: 1, Username: "platform-admin", Role: "SUPER_ADMIN", Active: true}
+	mockRepo.On("GetByID", user.ID).Return(user, nil)
+	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": user.ID,
+		"aud":     "operations",
+		"type":    "refresh",
+		"exp":     time.Now().Add(time.Hour).Unix(),
+	}).SignedString([]byte("test-secret"))
+	assert.NoError(t, err)
+
+	response, err := userService.RefreshToken(refreshToken)
+
+	assert.Nil(t, response)
+	assert.ErrorContains(t, err, "invalid refresh token audience")
+	mockRepo.AssertExpectations(t)
+}
+
+func loginTokenAudience(t *testing.T, tokenString, secret string) string {
+	t.Helper()
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		return []byte(secret), nil
+	})
+	if !assert.NoError(t, err) {
+		return ""
+	}
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !assert.True(t, ok) {
+		return ""
+	}
+	audience, _ := claims["aud"].(string)
+	return audience
 }
 
 func TestLogin_InvalidCredentials(t *testing.T) {

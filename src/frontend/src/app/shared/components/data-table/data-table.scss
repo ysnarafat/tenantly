@@ -20,7 +20,7 @@
   // Angular Material's MDC-based table renders `mat-mdc-header-cell`/`mat-mdc-cell`,
   // not the plain `mat-header-cell`/`mat-cell` these selectors used to target —
   // those never matched anything.
-  th.mat-mdc-header-cell {
+  ::ng-deep th.mat-mdc-header-cell {
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
@@ -34,7 +34,7 @@
     background-color: var(--bg-secondary);
   }
 
-  td.mat-mdc-cell {
+  ::ng-deep td.mat-mdc-cell {
     padding: 8px 16px;
     border-bottom: 1px solid var(--border-table);
     vertical-align: middle;
@@ -95,15 +95,22 @@ mat-paginator {
     overflow-x: visible;
   }
 
+  mat-paginator ::ng-deep .mat-mdc-paginator-container {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 12px;
+    padding: 4px 8px;
+  }
+
   .dt-table {
     display: block;
     width: 100%;
 
-    tr[mat-header-row] {
+    tr.mat-mdc-header-row {
       display: none;
     }
 
-    tr.dt-row {
+    tr.mat-mdc-row.dt-row {
       display: block;
       margin-bottom: 12px;
       border: 1px solid var(--border-color);
@@ -116,12 +123,13 @@ mat-paginator {
       }
     }
 
-    td.mat-cell {
+    ::ng-deep td.mat-mdc-cell {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 16px;
       width: 100%;
+      min-width: 0;
       box-sizing: border-box;
       padding: 10px 14px;
       border-bottom: 1px solid var(--border-light);

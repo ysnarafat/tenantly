@@ -15,6 +15,7 @@ import {
 import { AuthService } from '../services/auth.service';
 import { AppState } from '../../store';
 import * as AuthSelectors from '../../store/auth/auth.selectors';
+import * as AuthActions from '../../store/auth/auth.actions';
 
 // Shared across all interceptor invocations (module-level, not per-call) so
 // that N concurrent requests hitting a 401 (or an expired token) at once
@@ -82,6 +83,13 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
     return next(authReq).pipe(
       catchError((error: HttpErrorResponse) => {
+        if (
+          error.status === 403 &&
+          ['TOKEN_AUDIENCE_MISMATCH', 'OPERATIONS_PORTAL_REQUIRED'].includes(error.error?.code)
+        ) {
+          store.dispatch(AuthActions.logoutSuccess());
+          return throwError(() => error);
+        }
         if (error.status === 401) {
           // Token might be expired, try to refresh (deduped — see triggerRefresh)
           return triggerRefresh(authService, store, token).pipe(
@@ -102,7 +110,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         return throwError(() => error);
       })
     );
-  } else if (isTokenExpired) {
+  } else if (isTokenExpired && token !== null) {
+    // Only attempt a refresh if we actually have a token to refresh.
+    // When there's no token at all (e.g. first visit, or expired refresh
+    // cookie), there's nothing to refresh — just proceed without auth.
     // Token is expired — attempt a refresh. The httpOnly refresh cookie (if
     // any) is sent automatically by the browser on the /auth/refresh call;
     // there's nothing to check in localStorage anymore.
