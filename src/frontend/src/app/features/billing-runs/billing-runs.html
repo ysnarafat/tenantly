@@ -1,0 +1,286 @@
+<main class="billing-page">
+  <header class="page-header no-print" data-testid="page-header">
+    <div>
+      <h1 data-testid="page-title">{{ 'BILLING_RUN.PAGE_TITLE' | translate }}</h1>
+      <p data-testid="page-description">{{ 'BILLING_RUN.SUBTITLE' | translate }}</p>
+    </div>
+    <a routerLink="/payments" class="btn secondary" data-testid="nav-to-payments">
+      {{ 'BILLING_RUN.PAYMENTS' | translate }}
+    </a>
+  </header>
+
+  <section class="filters-card no-print" data-testid="filters-section" aria-label="Filters">
+    <div class="filter-row">
+      <div class="form-group">
+        <label for="property-filter" class="form-label">
+          {{ 'BILLING_RUN.PROPERTY' | translate }}
+        </label>
+        <select
+          id="property-filter"
+          [(ngModel)]="selectedPropertyId"
+          (ngModelChange)="onPropertyChange($event)"
+          data-testid="property-select"
+          aria-label="{{ 'BILLING_RUN.PROPERTY' | translate }}"
+        >
+          <option [ngValue]="null" data-testid="select-all-properties">
+            {{ 'BILLING_RUN.SELECT_PROPERTY' | translate }}
+          </option>
+          @for (property of properties(); track property.id) {
+          <option [ngValue]="property.id" data-testid="property-option-{{ property.id }}">
+            {{ property.property_name }}
+          </option>
+          }
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="building-filter" class="form-label">
+          {{ 'BILLING_RUN.BUILDING' | translate }}
+        </label>
+        <select
+          id="building-filter"
+          [ngModel]="selectedBuildingId"
+          (ngModelChange)="onBuildingChange($event)"
+          [disabled]="!selectedPropertyId || buildings().length === 0"
+          data-testid="building-select"
+          aria-label="{{ 'BILLING_RUN.BUILDING' | translate }}"
+        >
+          <option [ngValue]="null" data-testid="select-all-buildings">
+            {{ 'BILLING_RUN.SELECT_BUILDING' | translate }}
+          </option>
+          @for (building of buildings(); track building.id) {
+          <option [ngValue]="building.id" data-testid="building-option-{{ building.id }}">
+            {{ building.building_name }}
+          </option>
+          }
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="month-filter" class="form-label"> {{ 'BILLING_RUN.MONTH' | translate }} </label>
+        <select
+          id="month-filter"
+          [(ngModel)]="month"
+          (ngModelChange)="loadRun()"
+          data-testid="month-select"
+          aria-label="{{ 'BILLING_RUN.MONTH' | translate }}"
+        >
+          @for (monthNumber of [1,2,3,4,5,6,7,8,9,10,11,12]; track monthNumber) {
+          <option [ngValue]="monthNumber" data-testid="month-option-{{ monthNumber }}">
+            {{ monthName(monthNumber) }}
+          </option>
+          }
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="year-filter" class="form-label"> {{ 'BILLING_RUN.YEAR' | translate }} </label>
+        <input
+          type="number"
+          id="year-filter"
+          min="2020"
+          max="2030"
+          [(ngModel)]="year"
+          (change)="loadRun()"
+          data-testid="year-input"
+          aria-label="{{ 'BILLING_RUN.YEAR' | translate }}"
+          aria-describedby="year-hint"
+        />
+        <span id="year-hint" class="hint-text">{{ 'BILLING_RUN.YEAR_HINT' | translate }}</span>
+      </div>
+
+      @if (!run()) {
+      <div class="btn-group">
+        <button
+          type="button"
+          class="primary"
+          [disabled]="!selectedBuildingId || loading()"
+          (click)="createRun()"
+          data-testid="create-run-button"
+        >
+          {{ 'BILLING_RUN.CREATE' | translate }}
+        </button>
+      </div>
+      }
+    </div>
+  </section>
+
+  @if (error()) {
+  <div class="alert alert-error no-print" role="alert" data-testid="error-message">
+    {{ error() }}
+  </div>
+  } @if (loading()) {
+  <p class="loading no-print" data-testid="loading-indicator">
+    {{ 'BILLING_RUN.LOADING' | translate }}
+  </p>
+  } @if (run(); as billingRun) {
+
+  <section class="run-heading no-print" data-testid="run-info-section">
+    <div class="run-info">
+      <h2 data-testid="run-title">
+        {{ billingRun.building_name }} — {{ monthName(billingRun.month) }} {{ billingRun.year }}
+      </h2>
+      <p data-testid="run-subtitle">
+        {{ billingRun.property_name }} · {{ billingRun.building_code }}
+      </p>
+      <span
+        class="status"
+        [class.finalized]="billingRun.status === 'Finalized'"
+        data-testid="billing-run-status"
+      >
+        {{ (billingRun.status === 'Draft' ? 'BILLING_RUN.DRAFT' : 'BILLING_RUN.FINALIZED') |
+        translate }}
+      </span>
+    </div>
+    <div class="actions">
+      <button
+        type="button"
+        class="btn secondary"
+        data-testid="print-register-button"
+        (click)="printRegister()"
+      >
+        {{ 'BILLING_RUN.PRINT_REGISTER' | translate }}
+      </button>
+      @if (billingRun.status === 'Draft') {
+      <button
+        type="button"
+        class="btn primary"
+        [disabled]="loading()"
+        data-testid="finalize-button"
+        (click)="finalize()"
+      >
+        {{ 'BILLING_RUN.FINALIZE' | translate }}
+      </button>
+      }
+    </div>
+  </section>
+
+  @if (!billingRun.items.length) {
+  <p class="empty no-print" data-testid="no-units-message">
+    {{ 'BILLING_RUN.NO_UNITS' | translate }}
+  </p>
+  } @else {
+
+  <div class="table-wrap no-print" data-testid="table-container">
+    <table class="bill-table" role="grid">
+      <thead>
+        <tr data-testid="table-header-row">
+          <th scope="col">{{ 'BILLING_RUN.UNIT' | translate }}</th>
+          <th scope="col">{{ 'BILLING_RUN.METER_NUMBER' | translate }}</th>
+          <th scope="col">{{ 'BILLING_RUN.ELECTRICITY_AMOUNT' | translate }}</th>
+          <th scope="col">{{ 'BILLING_RUN.UNIT_TYPE' | translate }}</th>
+          <th scope="col">{{ 'BILLING_RUN.FLOOR' | translate }}</th>
+          @if (billingRun.status === 'Draft') {
+          <th scope="col" data-testid="save-action-col">{{ 'BILLING_RUN.SAVE' | translate }}</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of billingRun.items; track item.id) {
+        <tr class="table-row" data-testid="unit-row-{{ item.unit_number }}">
+          <td scope="row">
+            <span class="unit-badge">{{ item.unit_number }}</span>
+          </td>
+          <td>
+            @if (billingRun.status === 'Draft') {
+            <input
+              type="text"
+              maxlength="50"
+              [(ngModel)]="item.meter_number"
+              [attr.aria-label]="'BILLING_RUN.METER_NUMBER' | translate"
+              class="editable-input"
+              data-testid="meter-input-{{ item.id }}"
+            />
+            } @else {
+            <span class="read-only-text">{{ item.meter_number }}</span>
+            }
+          </td>
+          <td>
+            @if (billingRun.status === 'Draft') {
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              [(ngModel)]="item.electricity_amount"
+              [attr.aria-label]="'BILLING_RUN.ELECTRICITY_AMOUNT' | translate"
+              class="amount-input"
+              data-testid="amount-input-{{ item.id }}"
+            />
+            } @else {
+            <span class="read-only-text">৳{{ item.electricity_amount | number:'1.2-2' }}</span>
+            }
+          </td>
+          <td><span class="read-only-text">{{ item.unit_type }}</span></td>
+          <td><span class="read-only-text">{{ item.floor }}</span></td>
+          @if (billingRun.status === 'Draft') {
+          <td>
+            <button
+              type="button"
+              (click)="saveElectricity(item)"
+              [disabled]="savingItemId() !== null || item.electricity_amount === null"
+              class="save-btn"
+              data-testid="save-button-{{ item.id }}"
+            >
+              {{ savingItemId() === item.id ? ('BILLING_RUN.SAVING' | translate) :
+              ('BILLING_RUN.SAVE' | translate) }}
+            </button>
+          </td>
+          }
+        </tr>
+        }
+      </tbody>
+      <tfoot>
+        <tr class="table-footer-row" data-testid="total-row">
+          <th scope="row" colspan="2">
+            {{ 'BILLING_RUN.BUILDING_TOTAL' | translate }}
+            <span class="count-badge">{{ billingRun.items.length }}</span>
+          </th>
+          <th>৳{{ totalAmount() | number:'1.2-2' }}</th>
+          <th [attr.colspan]="billingRun.status === 'Draft' ? 3 : 2"></th>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <section class="print-register" data-testid="print-section">
+    <header class="print-header" data-testid="print-header">
+      <h1 data-testid="print-property-title">
+        {{ billingRun.property_name }} — {{ billingRun.building_name }} ({{ billingRun.building_code
+        }})
+      </h1>
+      <h2 data-testid="print-subtitle">
+        {{ 'BILLING_RUN.PRINT_TITLE' | translate }} · {{ monthName(billingRun.month) }} {{
+        billingRun.year }}
+      </h2>
+      <p data-testid="print-date">
+        {{ 'BILLING_RUN.PREPARED_DATE' | translate }}: {{ preparedDate() }}
+      </p>
+    </header>
+    <div class="register-columns">
+      @for (column of [0, 1]; track column) {
+      <table>
+        <thead>
+          <tr>
+            <th>{{ 'BILLING_RUN.UNIT' | translate }}</th>
+            <th>{{ 'BILLING_RUN.METER_NUMBER' | translate }}</th>
+            <th>{{ 'BILLING_RUN.ELECTRICITY_AMOUNT' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of itemsForColumn(column); track item.id) {
+          <tr>
+            <td>{{ item.unit_number }}</td>
+            <td>{{ item.meter_number }}</td>
+            <td>৳{{ item.electricity_amount | number:'1.2-2' }}</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+      }
+    </div>
+    <footer data-testid="print-footer">
+      {{ 'BILLING_RUN.BUILDING_TOTAL' | translate }}: ৳{{ totalAmount() | number:'1.2-2' }}
+    </footer>
+  </section>
+  } }
+</main>
