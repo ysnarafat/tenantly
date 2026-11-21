@@ -18,44 +18,49 @@
 
   <section class="filters-bar" aria-label="Tenant filters">
     <div class="search-field">
-      <mat-icon>search</mat-icon>
-      <input
-        [(ngModel)]="searchQuery"
-        [placeholder]="'TENANT_LIST.FILTERS.SEARCH_PLACEHOLDER' | translate"
-        [attr.aria-label]="'TENANT_LIST.FILTERS.SEARCH_LABEL' | translate"
-      />
-      @if (searchQuery) {
-      <button
-        class="clear-search"
-        type="button"
-        (click)="clearSearch()"
-        [matTooltip]="'COMMON.ACTIONS.CLEAR' | translate"
-      >
-        <mat-icon>close</mat-icon>
-      </button>
-      }
+      <mat-form-field appearance="outline" class="search-form-field">
+        <mat-icon matPrefix class="search-icon">search</mat-icon>
+        <input
+          matInput
+          [(ngModel)]="searchQuery"
+          [placeholder]="'TENANT_LIST.FILTERS.SEARCH_PLACEHOLDER' | translate"
+          [aria-label]="'TENANT_LIST.FILTERS.SEARCH_LABEL' | translate"
+        />
+        @if (searchQuery) {
+        <button
+          mat-icon-button
+          matSuffix
+          type="button"
+          (click)="clearSearch()"
+          [matTooltip]="'COMMON.ACTIONS.CLEAR' | translate"
+          aria-label="clear search"
+        >
+          <mat-icon>close</mat-icon>
+        </button>
+        }
+      </mat-form-field>
     </div>
 
     <div class="filter-group">
-      <label class="filter-field">
-        <span class="filter-label">{{ 'TENANT_LIST.FILTERS.TYPE_LABEL' | translate }}</span>
-        <select [(ngModel)]="draftTypeFilter" class="select-input">
-          <option value="all">{{ 'TENANT_LIST.FILTERS.ALL_TYPES' | translate }}</option>
-          <option value="Individual">{{ 'TENANT_LIST.FILTERS.INDIVIDUAL' | translate }}</option>
-          <option value="Business">{{ 'TENANT_LIST.FILTERS.BUSINESS' | translate }}</option>
-        </select>
-        <mat-icon class="select-arrow" aria-hidden="true">arrow_drop_down</mat-icon>
-      </label>
+      <mat-form-field appearance="outline" class="filter-form-field">
+        <mat-label>{{ 'TENANT_LIST.FILTERS.TYPE_LABEL' | translate }}</mat-label>
+        <mat-select [(ngModel)]="draftTypeFilter">
+          <mat-option value="all">{{ 'TENANT_LIST.FILTERS.ALL_TYPES' | translate }}</mat-option>
+          <mat-option value="Individual"
+            >{{ 'TENANT_LIST.FILTERS.INDIVIDUAL' | translate }}</mat-option
+          >
+          <mat-option value="Business">{{ 'TENANT_LIST.FILTERS.BUSINESS' | translate }}</mat-option>
+        </mat-select>
+      </mat-form-field>
 
-      <label class="filter-field">
-        <span class="filter-label">{{ 'TENANT_LIST.FILTERS.STATUS_LABEL' | translate }}</span>
-        <select [(ngModel)]="draftActiveFilter" class="select-input">
-          <option value="all">{{ 'TENANT_LIST.FILTERS.ALL_STATUS' | translate }}</option>
-          <option value="active">{{ 'TENANT_LIST.TABLE.ACTIVE' | translate }}</option>
-          <option value="inactive">{{ 'TENANT_LIST.TABLE.INACTIVE' | translate }}</option>
-        </select>
-        <mat-icon class="select-arrow" aria-hidden="true">arrow_drop_down</mat-icon>
-      </label>
+      <mat-form-field appearance="outline" class="filter-form-field">
+        <mat-label>{{ 'TENANT_LIST.FILTERS.STATUS_LABEL' | translate }}</mat-label>
+        <mat-select [(ngModel)]="draftActiveFilter">
+          <mat-option value="all">{{ 'TENANT_LIST.FILTERS.ALL_STATUS' | translate }}</mat-option>
+          <mat-option value="active">{{ 'TENANT_LIST.TABLE.ACTIVE' | translate }}</mat-option>
+          <mat-option value="inactive">{{ 'TENANT_LIST.TABLE.INACTIVE' | translate }}</mat-option>
+        </mat-select>
+      </mat-form-field>
     </div>
 
     <div class="filter-actions">

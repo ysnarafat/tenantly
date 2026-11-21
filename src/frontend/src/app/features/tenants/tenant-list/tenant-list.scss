@@ -141,75 +141,16 @@
   background: var(--bg-surface);
   box-shadow: 0 1px 3px rgb(0 0 0 / 5%);
 
-  .search-field {
-    position: relative;
-    display: flex;
-    min-width: 260px;
-    min-height: 42px;
+  .search-form-field {
+    min-width: 280px;
     flex: 1 1 340px;
-    align-items: center;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background: var(--bg-primary);
-    color: var(--text-muted);
 
-    > mat-icon {
-      position: absolute;
-      left: 12px;
-      width: 20px;
-      height: 20px;
-      font-size: 20px;
-      pointer-events: none;
+    .mat-mdc-text-field-wrapper {
+      height: 40px;
     }
 
-    input {
-      width: 100%;
-      height: 42px;
-      padding: 0 42px;
-      border: 0;
-      border-radius: inherit;
-      outline: 0;
-      background: transparent;
-      color: var(--text-primary);
-      font: inherit;
-      font-size: 13px;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-      transition:
-        border-color 0.2s ease,
-        box-shadow 0.2s ease;
-
-      &::placeholder {
-        color: var(--text-muted);
-      }
-
-      &:focus {
-        border-color: var(--color-primary);
-        box-shadow:
-          0 0 0 1px var(--color-primary),
-          0 1px 3px rgba(0, 0, 0, 0.1);
-      }
-    }
-  }
-
-  .clear-search {
-    position: absolute;
-    right: 8px;
-    display: inline-flex;
-    width: 28px;
-    height: 28px;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: transparent;
-    color: var(--text-muted);
-    cursor: pointer;
-
-    mat-icon {
-      width: 18px;
-      height: 18px;
-      font-size: 18px;
+    .mat-mdc-text-field-wrapper input {
+      height: 40px;
     }
   }
 
@@ -217,53 +158,12 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-shrink: 0;
   }
 
-  .filter-field {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .filter-label {
-    color: var(--text-hint);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  .select-input {
+  .filter-form-field {
     min-width: 150px;
-    height: 42px;
-    padding: 0 34px 0 14px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    outline: 0;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    font: inherit;
-    font-size: 13px;
-    cursor: pointer;
-    appearance: none;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-
-    &:focus-visible {
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 1px var(--color-primary);
-    }
-  }
-
-  .select-arrow {
-    position: absolute;
-    right: 8px;
-    bottom: 11px;
-    width: 18px;
-    height: 18px;
-    font-size: 18px;
-    color: var(--text-muted);
-    pointer-events: none;
+    height: 40px;
   }
 }
 
