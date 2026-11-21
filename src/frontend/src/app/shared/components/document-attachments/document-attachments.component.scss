@@ -1,0 +1,163 @@
+.attachment-section {
+  width: 100%;
+}
+
+.attachment-card {
+  width: 100%;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.upload-area {
+  border: 2px dashed var(--color-primary);
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  background: rgba(var(--color-primary-rgb), 0.04);
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover:not(.disabled) {
+    background: rgba(var(--color-primary-rgb), 0.08);
+    border-color: var(--color-primary);
+  }
+
+  &.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: var(--color-primary);
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  span {
+    margin: 0 12px;
+    color: var(--text-secondary);
+  }
+
+  .hint {
+    display: block;
+    margin-top: 8px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+  }
+
+  button {
+    margin-top: 12px;
+  }
+}
+
+.attachments-list {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid rgba(var(--color-primary-rgb), 0.1);
+
+  .attachment-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: linear-gradient(
+      135deg,
+      rgba(var(--color-primary-rgb), 0.1),
+      rgba(var(--color-primary-rgb), 0.15)
+    );
+    color: var(--color-primary);
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .attachment-info {
+    flex: 1;
+    min-width: 0;
+
+    .name {
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .meta {
+      display: flex;
+      gap: 12px;
+      margin-top: 4px;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+
+      span {
+        white-space: nowrap;
+      }
+    }
+  }
+
+  .remove-btn {
+    color: var(--text-secondary);
+    opacity: 0.7;
+
+    &:hover {
+      opacity: 1;
+      color: #c62828;
+      background: rgba(234, 67, 53, 0.1);
+    }
+  }
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  background: #ffebee;
+  border-radius: 8px;
+  color: #c62828;
+  font-size: 0.875rem;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .attachment-item {
+    padding: 10px;
+    gap: 10px;
+
+    .attachment-info .meta {
+      flex-direction: column;
+      gap: 4px;
+    }
+  }
+}

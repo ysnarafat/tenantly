@@ -214,6 +214,16 @@
       class="full-width"
       [(customFields)]="customFields"
     ></app-lease-custom-fields-editor>
+
+    <!-- Document Attachments -->
+    <div class="section-divider full-width"></div>
+    <h3 class="section-title full-width">{{ 'LEASE_DOCUMENTS.SECTION_TITLE' | translate }}</h3>
+    <document-attachments
+      class="full-width"
+      [attachments]="attachments"
+      (attachmentsChange)="onAttachmentsChange($event)"
+      [isUploading]="isUploading"
+    ></document-attachments>
   </form>
 </mat-dialog-content>
 <mat-dialog-actions align="end">

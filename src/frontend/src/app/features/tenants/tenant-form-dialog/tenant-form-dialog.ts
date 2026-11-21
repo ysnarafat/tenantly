@@ -16,10 +16,18 @@ import { TenantService } from '../../../core/services/tenant.service';
 import { MfaService } from '../../../core/services/mfa.service';
 import { maskFromLastFour, maskPhone } from '../../../shared/utils/pii-mask.utils';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
+import { DocumentAttachmentsComponent } from '../../../shared/components/document-attachments/document-attachments.component';
 
 export interface TenantFormDialogData {
   tenant?: Tenant;
   mode: 'create' | 'edit' | 'view';
+  attachments?: Array<{
+    id: number;
+    file_name: string;
+    content_type: string;
+    file_size: number;
+    uploaded_at: string;
+  }>;
 }
 
 @Component({
@@ -36,6 +44,7 @@ export interface TenantFormDialogData {
     MatIconModule,
     MatTooltipModule,
     TranslateModule,
+    DocumentAttachmentsComponent,
   ],
   templateUrl: './tenant-form-dialog.html',
   styleUrls: ['./tenant-form-dialog.scss'],
@@ -49,6 +58,9 @@ export class TenantFormDialogComponent implements OnInit {
   public data = inject<TenantFormDialogData>(MAT_DIALOG_DATA);
 
   tenantForm!: FormGroup;
+  attachments = this.data.attachments || [];
+  isUploading = false;
+
   tenantTypes: TenantType[] = ['Individual', 'Business'];
 
   nidRevealed = false;
@@ -156,27 +168,105 @@ export class TenantFormDialogComponent implements OnInit {
       ],
       email: [tenant?.email || '', this.isViewMode ? [] : [Validators.email]],
       address: [tenant?.address || ''],
+      attachments: [],
     });
 
     if (this.isViewMode) {
       this.tenantForm.disable();
     }
+
+    // Load existing attachments for view mode or edit
+    if (!this.isEditMode && !this.data.tenant?.id && this.attachments.length > 0) {
+      // This is create mode with pre-loaded attachments (e.g., from dialog data)
+    } else if (tenant?.id || this.isViewMode) {
+      // In edit or view mode, load existing attachments
+      const attachmentIds: number[] = [];
+      this.attachments.forEach((att: any) => {
+        attachmentIds.push(att.id);
+      });
+      this.tenantForm.get('attachments')?.setValue(attachmentIds);
+    }
+  }
+
+  handleUploadProgress(event: any): void {
+    if (event.progress) {
+      console.log('Upload progress:', event.progress, event.status);
+    }
+  }
+
+  handleFileSelected(event: any): void {
+    const file = event.file;
+    console.log('File selected:', file);
+
+    // Update the form control with attachment data
+    const attachmentsData: any[] = [];
+
+    // Check if there's an existing attachments value
+    const currentAttachments = this.tenantForm.get('attachments')?.value || [];
+
+    // Add new file info - we'll store the file object initially
+    // The document component manages this, we just need to track it
+    if (event.selected) {
+      attachmentsData.push({
+        id: null, // Will be set after upload completes
+        file: event.file,
+        status: 'uploading',
+      });
+    } else if (event.deleted) {
+      // Remove the deleted attachment from our tracking
+      const filtered = currentAttachments.filter((att: any) => att.id !== event.attachmentId);
+      this.tenantForm.get('attachments')?.setValue(filtered);
+    }
+
+    this.tenantForm.get('attachments')?.setValue(attachmentsData);
+  }
+
+  handleFilesDeleted(event: any): void {
+    const deletedIds = event.deletedIds;
+    console.log('Files deleted:', deletedIds);
+
+    // Update form control to remove deleted attachments
+    const currentAttachments = this.tenantForm.get('attachments')?.value || [];
+    const filtered = currentAttachments.filter((att: any) => !deletedIds.includes(att.id));
+    this.tenantForm.get('attachments')?.setValue(filtered);
   }
 
   onSubmit() {
     if (this.tenantForm.valid) {
       const value = { ...this.tenantForm.value };
+
       // In edit mode a blank NID means "keep the existing value" — omit it so
       // the backend does not overwrite the stored NID with an empty string.
       if (this.isEditMode && !value.nid_number?.trim()) {
         delete value.nid_number;
       }
+
+      // Handle attachments - extract attachment IDs or file data
+      const attachmentsData = this.getAttachmentData();
+
+      // Only include attachments if they exist and are not empty
+      if (attachmentsData && attachmentsData.length > 0) {
+        value.attachments = attachmentsData;
+      }
+
       this.dialogRef.close(value);
     } else {
       Object.keys(this.tenantForm.controls).forEach((key) => {
         this.tenantForm.get(key)?.markAsTouched();
       });
     }
+  }
+
+  private getAttachmentData(): any[] | null {
+    const attachments = this.tenantForm.get('attachments')?.value || [];
+
+    if (!attachments || attachments.length === 0) {
+      return null;
+    }
+
+    // Return attachments as-is (they may contain file objects or ID references)
+    // The backend will handle both cases: existing attachment IDs or new file uploads
+    return attachments;
   }
 
   onCancel() {

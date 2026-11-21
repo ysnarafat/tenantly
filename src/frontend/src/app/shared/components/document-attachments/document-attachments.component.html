@@ -1,0 +1,60 @@
+<div class="attachment-section">
+  <mat-card appearance="outlined" class="attachment-card">
+    <div class="card-header">
+      <h3 mat-card-title>Attachments</h3>
+      <p mat-card-subtitle>
+        Upload supporting documents ({{ attachments.length }}/{{ MAX_ATTACHMENT_COUNT }})
+      </p>
+    </div>
+
+    <!-- Upload Area -->
+    <div
+      class="upload-area"
+      [class.disabled]="isUploading"
+      (drop)="handleFileUpload($event)"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+    >
+      <input #fileInput type="file" multiple (change)="handleFileUpload($event)" />
+      <mat-icon matTooltip="Click or drag files here">insert_drive_file</mat-icon>
+      <span>or</span>
+      <button mat-raised-button color="primary" (click)="fileInput.click()">Browse Files</button>
+      <small class="hint"
+        >Max {{ MAX_ATTACHMENT_COUNT }} files per entity, 10MB each, images and PDFs only</small
+      >
+    </div>
+
+    <!-- Uploaded Attachments -->
+    <div class="attachments-list" *ngIf="attachments.length > 0">
+      <div class="attachment-item" *ngFor="let attachment of attachments; let i = index">
+        <div class="attachment-icon">
+          <mat-icon>{{ getIconForAttachmentType(attachment.content_type) }}</mat-icon>
+        </div>
+        <div class="attachment-info">
+          <div class="name">{{ attachment.file_name }}</div>
+          <div class="meta">
+            <span *ngIf="attachment.content_type.startsWith('image/')">{{
+              formatContentType(attachment.content_type)
+            }}</span>
+            <span *ngIf="attachment.content_type === 'application/pdf'">{{
+              formatContentType(attachment.content_type)
+            }}</span>
+            <span>{{ formatFileSize(attachment.file_size) }}</span>
+          </div>
+        </div>
+        <button mat-icon-button (click)="removeAttachment(attachment.id)" class="remove-btn">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <!-- Progress Bar when uploading -->
+      <mat-progress-bar *ngIf="isUploading" mode="indeterminate" color="accent"></mat-progress-bar>
+    </div>
+
+    <!-- Error Message -->
+    <div class="error-message" *ngIf="errorMessage">
+      <mat-icon>error</mat-icon>
+      {{ errorMessage }}
+    </div>
+  </mat-card>
+</div>

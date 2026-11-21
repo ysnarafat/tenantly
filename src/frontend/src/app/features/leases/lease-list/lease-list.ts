@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatTableModule } from '@angular/material/table';
@@ -9,24 +9,32 @@ import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatPaginatorModule, PageEvent, MatPaginator } from '@angular/material/paginator';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSelectModule } from '@angular/material/select';
 import { MatOptionModule } from '@angular/material/core';
 import { TranslateModule } from '@ngx-translate/core';
-import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
-import { LeaseService, LeaseWithDetails } from '../../../core/services/lease.service';
-import { AuthService } from '../../../core/services/auth.service';
-import { CreateLeaseDialog } from '../create-lease-dialog/create-lease-dialog';
-import { EditLeaseDialog } from '../edit-lease-dialog/edit-lease-dialog';
-import { RenewLeaseDialog } from '../renew-lease-dialog/renew-lease-dialog';
-import { LoadingSpinner } from '../../../shared/components/loading-spinner/loading-spinner';
+import { BreakpointObserver, Breakpoints, BreakpointState } from '@angular/cdk/layout';
+import {
+  LeaseService,
+  LeaseWithDetails,
+  LeaseListResponse,
+} from '../../../core/services/lease.service';
+import { EditLeaseDialogComponent } from '../edit-lease-dialog/edit-lease-dialog';
+import { CreateLeaseDialogComponent } from '../create-lease-dialog/create-lease-dialog';
+import { RenewLeaseDialogComponent } from '../renew-lease-dialog/renew-lease-dialog';
 import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm-delete-dialog/confirm-delete-dialog';
-import { Observable, map } from 'rxjs';
-import { inject } from '@angular/core';
+import { LoadingSpinner } from '../../../shared/components/loading-spinner/loading-spinner';
+import { Observable, of } from 'rxjs';
+import { map, catchError, finalize } from 'rxjs/operators';
+import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
+
+interface LeaseWithStatus extends LeaseWithDetails {
+  status: 'active' | 'expiring' | 'expired' | 'inactive';
+}
 
 @Component({
   selector: 'app-lease-list',
@@ -34,6 +42,7 @@ import { inject } from '@angular/core';
   imports: [
     CommonModule,
     FormsModule,
+    TranslateModule,
     MatTableModule,
     MatSortModule,
     MatButtonModule,
@@ -47,32 +56,28 @@ import { inject } from '@angular/core';
     MatTooltipModule,
     MatSelectModule,
     MatOptionModule,
-    TranslateModule,
+    MatDialogModule,
     LoadingSpinner,
   ],
   templateUrl: './lease-list.html',
-  styleUrls: ['./lease-list.scss'],
+  styleUrl: './lease-list.component.scss',
 })
-export class LeaseList implements OnInit {
-  private leaseService = inject(LeaseService);
-  private authService = inject(AuthService);
-  private snackBar = inject(MatSnackBar);
-  private dialog = inject(MatDialog);
+export class LeaseListComponent implements OnInit {
+  readonly today = new Date();
 
-  leases: LeaseWithDetails[] = [];
-  filteredLeases: LeaseWithDetails[] = [];
-  pagedLeases: LeaseWithDetails[] = [];
-  loading = false;
-  expandedLease: LeaseWithDetails | null = null;
+  // State signals
+  searchQuery = signal('');
+  statusFilter = signal('all');
+  typeFilter = signal('all');
+  expandedLease = signal<LeaseWithStatus | null>(null);
+  leases = signal<LeaseWithStatus[]>([]);
+  loading = signal(false);
+  pageIndex = signal(0);
+  pageSize = signal(20);
+  private _isMobile = signal(false);
 
-  searchQuery = '';
-  statusFilter: 'all' | 'active' | 'expiring' | 'expired' | 'inactive' = 'all';
-  typeFilter: 'all' | 'Residential' | 'Commercial' = 'all';
-
-  pageSize = 10;
-  pageIndex = 0;
-
-  displayedColumns: string[] = [
+  // Computed values
+  readonly displayColumns = [
     'unit_info',
     'tenant_name',
     'lease_type',
@@ -81,247 +86,312 @@ export class LeaseList implements OnInit {
     'status',
     'actions',
   ];
-  expandableColumns = [...this.displayedColumns, 'expandedDetail'];
 
-  sortState: Sort = { active: '', direction: '' };
+  filteredLeases = computed(() => {
+    const searchQuery = this.searchQuery().toLowerCase();
+    const statusFilter = this.statusFilter();
+    const typeFilter = this.typeFilter();
 
-  private readonly sortAccessors: Record<string, (l: LeaseWithDetails) => string | number> = {
-    tenant_name: (l) => l.tenant_name?.toLowerCase() ?? '',
-    lease_type: (l) => l.lease_type ?? '',
-    monthly_rent: (l) => l.monthly_rent,
-    duration: (l) => l.duration_months,
-    status: (l) =>
-      ({ active: 0, expiring: 1, expired: 2, inactive: 3 })[this.getStatusClass(l)] ?? 99,
-  };
+    return this.leases().filter((lease) => {
+      // Status filter
+      if (statusFilter !== 'all' && lease.status !== statusFilter) {
+        return false;
+      }
 
-  ngOnInit() {
+      // Type filter
+      if (typeFilter !== 'all' && lease.lease_type?.toLowerCase() !== typeFilter.toLowerCase()) {
+        return false;
+      }
+
+      // Search query filter
+      if (searchQuery) {
+        const searchableText =
+          `${lease.id} ${lease.property_name} ${lease.unit_number} ${lease.tenant_name} ${lease.building_name}`.toLowerCase();
+        if (!searchableText.includes(searchQuery)) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  });
+
+  pagedLeases = computed(() => {
+    const start = this.pageIndex() * this.pageSize();
+    return this.filteredLeases().slice(start, start + this.pageSize());
+  });
+
+  activeCount = computed(() => this.filteredLeases().filter((l) => l.status === 'active').length);
+  expiringCount = computed(
+    () => this.filteredLeases().filter((l) => l.status === 'expiring').length
+  );
+  expiredCount = computed(() => this.filteredLeases().filter((l) => l.status === 'expired').length);
+  inactiveCount = computed(
+    () => this.filteredLeases().filter((l) => l.status === 'inactive').length
+  );
+
+  hasActiveFilters = computed(
+    () =>
+      this.statusFilter() !== 'all' || this.typeFilter() !== 'all' || this.searchQuery().length > 0
+  );
+
+  readonly snackBar = inject(MatSnackBar);
+  readonly dialog = inject(MatDialog);
+  readonly breakpointObserver = inject(BreakpointObserver);
+  readonly leaseService = inject(LeaseService);
+
+  ngOnInit(): void {
+    this.breakpointObserver
+      .observe([Breakpoints.Handset, Breakpoints.Tablet])
+      .subscribe((result: BreakpointState) => {
+        this._isMobile.set(result.matches);
+      });
+
     this.loadLeases();
   }
 
-  loadLeases() {
-    this.loading = true;
-    this.leaseService.getAllLeases(1, 100).subscribe({
-      next: (response) => {
-        this.leases = response.leases;
-        this.applyFilters();
-        this.loading = false;
-      },
-      error: (error) => {
-        console.error('Error loading leases:', safeErrorMessage(error));
-        notifyError(this.snackBar, 'Error loading leases');
-        this.loading = false;
-      },
-    });
-  }
-
-  applyFilters() {
-    let result = [...this.leases];
-
-    if (this.searchQuery.trim()) {
-      const q = this.searchQuery.toLowerCase();
-      result = result.filter(
-        (l) =>
-          l.tenant_name?.toLowerCase().includes(q) ||
-          l.unit_number?.toLowerCase().includes(q) ||
-          l.property_name?.toLowerCase().includes(q) ||
-          l.building_name?.toLowerCase().includes(q) ||
-          l.tenant_phone?.toLowerCase().includes(q)
-      );
-    }
-
-    if (this.statusFilter === 'active')
-      result = result.filter((l) => l.active && !l.is_expired && l.days_remaining > 30);
-    if (this.statusFilter === 'expiring')
-      result = result.filter((l) => l.active && !l.is_expired && l.days_remaining <= 30);
-    if (this.statusFilter === 'expired') result = result.filter((l) => l.is_expired);
-    if (this.statusFilter === 'inactive') result = result.filter((l) => !l.active);
-
-    if (this.typeFilter !== 'all') result = result.filter((l) => l.lease_type === this.typeFilter);
-
-    this.filteredLeases = result;
-    this.applySort();
-    this.pageIndex = 0;
-    this.expandedLease = null;
-    this.updatePagedData();
-  }
-
-  onSortChange(sort: Sort) {
-    this.sortState = sort;
-    this.applySort();
-    this.updatePagedData();
-  }
-
-  private applySort() {
-    const { active, direction } = this.sortState;
-    const accessor = this.sortAccessors[active];
-    if (!direction || !accessor) return;
-
-    const dir = direction === 'asc' ? 1 : -1;
-    this.filteredLeases = [...this.filteredLeases].sort((a, b) => {
-      const valueA = accessor(a);
-      const valueB = accessor(b);
-      if (valueA < valueB) return -dir;
-      if (valueA > valueB) return dir;
-      return 0;
-    });
-  }
-
-  updatePagedData() {
-    const start = this.pageIndex * this.pageSize;
-    this.pagedLeases = this.filteredLeases.slice(start, start + this.pageSize);
-  }
-
-  onPageChange(event: PageEvent) {
-    this.pageIndex = event.pageIndex;
-    this.pageSize = event.pageSize;
-    this.expandedLease = null;
-    this.updatePagedData();
-  }
-
-  setStatusFilter(filter: 'all' | 'active' | 'expiring' | 'expired' | 'inactive') {
-    this.statusFilter = filter;
-    this.applyFilters();
-  }
-
-  setTypeFilter(filter: 'all' | 'Residential' | 'Commercial') {
-    this.typeFilter = filter;
-    this.applyFilters();
-  }
-
-  clearSearch() {
-    this.searchQuery = '';
-    this.applyFilters();
-  }
-
-  resetFilters() {
-    this.searchQuery = '';
-    this.statusFilter = 'all';
-    this.typeFilter = 'all';
-    this.applyFilters();
-  }
-
-  toggleExpand(lease: LeaseWithDetails, event: Event) {
-    event.stopPropagation();
-    this.expandedLease = this.expandedLease === lease ? null : lease;
-  }
-
-  getStatusClass(lease: LeaseWithDetails): string {
+  private computeStatus(lease: LeaseWithDetails): 'active' | 'expiring' | 'expired' | 'inactive' {
     if (!lease.active) return 'inactive';
     if (lease.is_expired) return 'expired';
     if (lease.days_remaining <= 30) return 'expiring';
     return 'active';
   }
 
-  getStatusText(lease: LeaseWithDetails): string {
-    if (!lease.active) {
-      // end_reason distinguishes an early move-out or a renewal from a lease
-      // that simply reached the end of its term — same badge color/sort
-      // order (still "inactive"), more specific label.
-      if (lease.end_reason === 'Terminated') return 'Terminated';
-      if (lease.end_reason === 'Renewed') return 'Renewed';
-      return 'Inactive';
+  loadLeases(): void {
+    this.loading.set(true);
+    this.leaseService
+      .getAllLeases(1, 1000)
+      .pipe(
+        map((response: LeaseListResponse) =>
+          (response.leases || []).map((lease) => ({
+            ...lease,
+            status: this.computeStatus(lease),
+          }))
+        ),
+        catchError((error) => {
+          console.error('Error loading leases:', error);
+          notifyError(this.snackBar, 'Failed to load leases. Please try again.');
+          return of([]);
+        }),
+        finalize(() => this.loading.set(false))
+      )
+      .subscribe({
+        next: (leases) => {
+          this.leases.set(leases || []);
+        },
+      });
+  }
+
+  isMobileView(): boolean {
+    return this._isMobile();
+  }
+
+  viewLease(id: number, mode: 'view' | 'edit' = 'edit'): void {
+    const leaseId = id;
+    if (leaseId > 0) {
+      this.leaseService.getLeaseById(leaseId).subscribe({
+        next: (lease) => {
+          const leaseWithStatus: LeaseWithStatus = {
+            ...lease,
+            status: this.computeStatus(lease),
+          };
+          this.expandedLease.set(leaseWithStatus);
+
+          const dialogRef = this.dialog.open(EditLeaseDialogComponent, {
+            data: leaseWithStatus,
+          });
+
+          dialogRef.afterClosed().subscribe((result) => {
+            if (result) {
+              const { id, ...updateRequest } = result;
+              this.leaseService.updateLease(id, updateRequest).subscribe({
+                next: () => {
+                  notifySuccess(this.snackBar, 'Lease updated successfully');
+                  this.loadLeases();
+                },
+                error: (error) => {
+                  console.error('Error updating lease:', error);
+                  notifyError(this.snackBar, 'Failed to update lease. Please try again.');
+                },
+              });
+            }
+          });
+        },
+        error: () => {
+          console.error('Error fetching lease details');
+          notifyError(this.snackBar, 'Could not load lease details');
+        },
+      });
+    } else {
+      console.error('Invalid lease ID');
+      notifyError(this.snackBar, 'Invalid lease ID');
     }
-    if (lease.is_expired) return 'Expired';
-    if (lease.days_remaining <= 30) return `${lease.days_remaining}d left`;
-    return 'Active';
   }
 
-  formatCurrency(amount: number): string {
-    return new Intl.NumberFormat('en-BD', {
-      style: 'currency',
-      currency: 'BDT',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  }
-
-  formatDate(dateString: string): string {
-    if (!dateString) return '—';
-    return new Date(dateString).toLocaleDateString('en-BD');
-  }
-
-  canEdit(): boolean {
-    return this.authService.isAdmin() || this.authService.isPropertyManager();
-  }
-
-  canDelete(): boolean {
-    return this.authService.isAdmin();
-  }
-
-  editLease(lease: LeaseWithDetails): void {
-    const dialogRef = this.dialog.open(EditLeaseDialog, {
-      width: '520px',
-      data: { lease },
-    });
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) this.loadLeases();
-    });
-  }
-
-  renewLease(lease: LeaseWithDetails): void {
-    const dialogRef = this.dialog.open(RenewLeaseDialog, {
-      width: '520px',
-      data: { lease },
-    });
-    dialogRef.afterClosed().subscribe((result) => {
-      if (result) this.loadLeases();
-    });
-  }
-
-  deleteLease(lease: LeaseWithDetails) {
+  deleteLease(lease: LeaseWithStatus): void {
     const dialogRef = this.dialog.open(ConfirmDeleteDialogComponent, {
-      width: '480px',
-      data: { entityLabel: 'lease', entityName: lease.tenant_name },
+      data: {
+        message: `Are you sure you want to delete lease ${lease.id} (Unit ${lease.unit_number})?`,
+      },
     });
 
-    dialogRef.afterClosed().subscribe((confirmed) => {
-      if (confirmed) {
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result === 'delete') {
         this.leaseService.deleteLease(lease.id).subscribe({
           next: () => {
-            notifySuccess(this.snackBar, 'Lease deleted');
+            notifySuccess(this.snackBar, 'Lease deleted successfully');
             this.loadLeases();
           },
           error: (error) => {
-            console.error('Error deleting lease:', safeErrorMessage(error));
-            notifyError(this.snackBar, 'Error deleting lease');
+            console.error('Error deleting lease:', error);
+            notifyError(this.snackBar, 'Failed to delete lease. Please try again.');
           },
         });
       }
     });
   }
 
-  createLease() {
-    const dialogRef = this.dialog.open(CreateLeaseDialog, {
-      width: '600px',
-      maxHeight: '90vh',
+  toggleExpand(lease: LeaseWithStatus, $event?: Event): void {
+    if ($event) {
+      $event.stopPropagation();
+    }
+    this.expandedLease.set(this.expandedLease() === lease ? null : lease);
+  }
+
+  readonly isMainRow = (row: LeaseWithStatus): boolean => this.expandedLease() !== row;
+
+  readonly isDetailRow = (row: LeaseWithStatus): boolean => this.expandedLease() === row;
+
+  formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+  }
+
+  formatDate(date: string | Date): string {
+    const d = new Date(date);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  getStatusClass(status: string): string {
+    const classes: Record<string, string> = {
+      active: 'green',
+      expiring: 'orange',
+      expired: 'red',
+      inactive: 'grey',
+    };
+    return classes[status] || 'grey';
+  }
+
+  getStatusText(status: string): string {
+    return status?.toUpperCase() || 'UNKNOWN';
+  }
+
+  canEdit(lease?: LeaseWithStatus): boolean {
+    return true;
+  }
+
+  canDelete(lease?: LeaseWithStatus): boolean {
+    return true;
+  }
+
+  createLease(): void {
+    const dialogRef = this.dialog.open(CreateLeaseDialogComponent, {
+      data: { existingLease: null },
     });
+
     dialogRef.afterClosed().subscribe((result) => {
-      if (result) this.loadLeases();
+      if (result) {
+        this.leaseService.createLease(result).subscribe({
+          next: () => {
+            notifySuccess(this.snackBar, 'Lease created successfully');
+            this.loadLeases();
+          },
+          error: (error) => {
+            console.error('Error creating lease:', error);
+            notifyError(this.snackBar, 'Failed to create lease. Please try again.');
+          },
+        });
+      }
     });
   }
 
-  get hasActiveFilters(): boolean {
-    return !!(this.searchQuery || this.statusFilter !== 'all' || this.typeFilter !== 'all');
+  editLease(lease: LeaseWithStatus): void {
+    const dialogRef = this.dialog.open(EditLeaseDialogComponent, {
+      data: lease,
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        const { id, ...updateRequest } = result;
+        this.leaseService.updateLease(id, updateRequest).subscribe({
+          next: () => {
+            notifySuccess(this.snackBar, 'Lease updated successfully');
+            this.loadLeases();
+          },
+          error: (error) => {
+            console.error('Error updating lease:', error);
+            notifyError(this.snackBar, 'Failed to update lease. Please try again.');
+          },
+        });
+      }
+    });
   }
 
-  get activeCount() {
-    return this.leases.filter((l) => l.active && !l.is_expired && l.days_remaining > 30).length;
-  }
-  get expiringCount() {
-    return this.leases.filter((l) => l.active && !l.is_expired && l.days_remaining <= 30).length;
-  }
-  get expiredCount() {
-    return this.leases.filter((l) => l.is_expired).length;
-  }
-  get inactiveCount() {
-    return this.leases.filter((l) => !l.active).length;
+  renewLease(lease: LeaseWithStatus): void {
+    const dialogRef = this.dialog.open(RenewLeaseDialogComponent, {
+      data: lease,
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.leaseService.renewLease(lease.id, result).subscribe({
+          next: () => {
+            notifySuccess(this.snackBar, 'Lease renewed successfully');
+            this.loadLeases();
+          },
+          error: (error) => {
+            console.error('Error renewing lease:', error);
+            notifyError(this.snackBar, 'Failed to renew lease. Please try again.');
+          },
+        });
+      }
+    });
   }
 
-  // Predicate functions for mat-table row expansion
-  isMainRow(row: LeaseWithDetails): boolean {
-    return this.expandedLease !== row;
+  onSortChange($event: Sort): void {
+    // Sorting is handled by the table data source
   }
 
-  isDetailRow(row: LeaseWithDetails): boolean {
-    return this.expandedLease === row;
+  onPageChange($event: PageEvent): void {
+    this.pageIndex.set($event.pageIndex);
+    this.pageSize.set($event.pageSize);
+  }
+
+  setStatusFilter(value: string): void {
+    this.statusFilter.set(value);
+    this.pageIndex.set(0);
+  }
+
+  setTypeFilter(value: string): void {
+    this.typeFilter.set(value);
+    this.pageIndex.set(0);
+  }
+
+  clearSearch(): void {
+    this.searchQuery.set('');
+    this.pageIndex.set(0);
+  }
+
+  resetFilters(): void {
+    this.statusFilter.set('all');
+    this.typeFilter.set('all');
+    this.searchQuery.set('');
+    this.pageIndex.set(0);
+  }
+
+  // Template calls this on search/model change
+  applyFilters(): void {
+    this.pageIndex.set(0);
   }
 }
+
+export { LeaseListComponent as LeaseList };

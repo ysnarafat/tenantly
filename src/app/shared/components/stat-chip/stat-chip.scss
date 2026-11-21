@@ -1,0 +1,70 @@
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background-color 0.2s, color 0.2s;
+
+  .chip-amount {
+    font-weight: 500;
+  }
+
+  .chip-label {
+    font-weight: 400;
+  }
+
+  // Blue shades (total, pending, outstanding, info)
+  &.total,
+  &.pending,
+  &.outstanding,
+  &.info {
+    background: var(--bg-chip-blue);
+    color: var(--text-chip-blue);
+  }
+
+  // Green shades (active, saved, success)
+  &.active,
+  &.saved,
+  &.success {
+    background: var(--bg-chip-green);
+    color: var(--text-chip-green);
+  }
+
+  // Orange shades (expiring, warning)
+  &.expiring,
+  &.warning {
+    background: var(--bg-chip-orange);
+    color: var(--text-chip-orange);
+  }
+
+  // Red shades (expired, failed, error)
+  &.expired,
+  &.failed,
+  &.error {
+    background: var(--bg-chip-red);
+    color: var(--text-chip-red);
+  }
+
+  // Grey shades (inactive)
+  &.inactive {
+    background: var(--bg-chip-grey);
+    color: var(--text-chip-grey);
+  }
+
+  // Purple (optional, for future use)
+  &.purple {
+    background: var(--bg-chip-purple);
+    color: var(--text-chip-purple);
+  }
+
+  // When label is shown, amount gets slightly bolder
+  &.chip-with-label {
+    .chip-amount {
+      font-weight: 600;
+    }
+  }
+}

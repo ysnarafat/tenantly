@@ -1,7 +1,10 @@
 import { Component, ElementRef, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogRef, MatDialogModule } from '@angular/material/dialog';
+
+export { CreateLeaseDialogComponent as CreateLeaseDialog };
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { DocumentAttachmentsComponent } from '../../../shared/components/document-attachments/document-attachments.component';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import {
@@ -67,13 +70,14 @@ function integerValidator(control: AbstractControl): ValidationErrors | null {
     TranslateModule,
     LeaseChargesEditor,
     LeaseCustomFieldsEditor,
+    DocumentAttachmentsComponent,
   ],
   templateUrl: './create-lease-dialog.html',
   styleUrls: ['./create-lease-dialog.scss'],
 })
-export class CreateLeaseDialog implements OnInit {
+export class CreateLeaseDialogComponent implements OnInit {
   private fb = inject(FormBuilder);
-  private dialogRef = inject(MatDialogRef<CreateLeaseDialog>);
+  private dialogRef = inject(MatDialogRef<CreateLeaseDialogComponent>);
   private leaseService = inject(LeaseService);
   private propertyService = inject(PropertyService);
   private buildingService = inject(BuildingService);
@@ -107,7 +111,13 @@ export class CreateLeaseDialog implements OnInit {
   pendingCharges: LeaseChargeDraft[] = [];
   customFields: LeaseCustomFields = {};
 
+  // Document attachments for the lease
+  attachments: any[] = [];
+
+  isUploading: boolean = false;
+
   constructor() {
+    this.attachments = [];
     this.leaseForm = this.fb.group({
       tenant_id: [null, Validators.required],
       property_id: [null, Validators.required],
@@ -425,4 +435,10 @@ export class CreateLeaseDialog implements OnInit {
       invalidEl?.focus();
     });
   }
+
+  onAttachmentsChange(event: { value: any[] }) {
+    this.attachments = event.value || [];
+  }
 }
+
+export interface CreateLeaseDialogComponent {}

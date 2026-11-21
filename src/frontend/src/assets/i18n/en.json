@@ -106,14 +106,14 @@
     },
     "FILTERS": {
       "SEARCH_LABEL": "Search leases",
-      "SEARCH_PLACEHOLDER": "Tenant, unit, building or property\u00e2\u20ac\u00a6",
+      "SEARCH_PLACEHOLDER": "Tenant, unit, building or property...",
       "STATUS_LABEL": "Status",
       "TYPE_LABEL": "Type",
       "RESIDENTIAL": "Residential",
       "COMMERCIAL": "Commercial",
       "ALL": "All"
     },
-    "LOADING": "Loading leases\u00e2\u20ac\u00a6",
+    "LOADING": "Loading leases...",
     "TABLE": {
       "UNIT": "Unit",
       "TENANT": "Tenant",

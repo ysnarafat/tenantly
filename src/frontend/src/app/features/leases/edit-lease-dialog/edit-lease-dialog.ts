@@ -1,6 +1,8 @@
 import { Component, inject, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+
+export { EditLeaseDialogComponent as EditLeaseDialog };
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
@@ -58,9 +60,9 @@ function endDateAfterStartDate(group: AbstractControl): ValidationErrors | null 
   templateUrl: './edit-lease-dialog.html',
   styleUrls: ['./edit-lease-dialog.scss'],
 })
-export class EditLeaseDialog {
+export class EditLeaseDialogComponent {
   private fb = inject(FormBuilder);
-  private dialogRef = inject(MatDialogRef<EditLeaseDialog>);
+  private dialogRef = inject(MatDialogRef<EditLeaseDialogComponent>);
   private leaseService = inject(LeaseService);
   private snackBar = inject(MatSnackBar);
 
@@ -191,3 +193,5 @@ export class EditLeaseDialog {
     return date.toISOString().split('T')[0];
   }
 }
+
+export interface EditLeaseDialogComponent {}
