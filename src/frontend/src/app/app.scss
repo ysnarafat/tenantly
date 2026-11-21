@@ -442,7 +442,15 @@ mat-nav-list {
     }
 
     &::after {
-      display: none;
+      content: '';
+      position: absolute;
+      right: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 20px;
+      background: var(--nav-active-color);
+      border-radius: 2px;
     }
   }
 }
