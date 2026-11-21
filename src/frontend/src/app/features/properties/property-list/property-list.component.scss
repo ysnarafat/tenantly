@@ -103,6 +103,18 @@
       color: var(--text-muted);
       margin-right: 4px;
     }
+
+    mat-mdc-text-field-wrapper {
+      min-height: 36px;
+    }
+
+    mat-mdc-form-field-infix {
+      padding: 0 !important;
+    }
+
+    mat-mdc-text-field-wrapper input {
+      height: 36px;
+    }
   }
 
   .filter-field {
@@ -111,7 +123,7 @@
     margin: 0;
 
     mat-mdc-text-field-wrapper {
-      min-height: 40px;
+      min-height: 36px;
     }
 
     mat-mdc-form-field-infix {
