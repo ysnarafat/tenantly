@@ -144,6 +144,7 @@
   .search-form-field {
     min-width: 280px;
     flex: 1 1 340px;
+    max-width: calc(100% - 320px);
 
     .mat-mdc-text-field-wrapper {
       height: 40px;
@@ -151,6 +152,10 @@
 
     .mat-mdc-text-field-wrapper input {
       height: 40px;
+    }
+
+    .mat-mdc-form-field-infix {
+      padding: 0 !important;
     }
   }
 
@@ -164,6 +169,18 @@
   .filter-form-field {
     min-width: 150px;
     height: 40px;
+
+    .mat-mdc-text-field-wrapper {
+      height: 40px;
+    }
+
+    .mat-mdc-form-field-infix {
+      padding: 0 !important;
+    }
+
+    mat-select {
+      height: 40px;
+    }
   }
 }
 
@@ -172,12 +189,16 @@
   align-items: center;
   gap: 8px;
   margin-left: auto;
+  height: 40px;
 }
 
 .results-count {
   color: var(--text-muted);
   font-size: 13px;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  height: 40px;
 }
 
 .btn-text {
@@ -213,6 +234,7 @@
 
 .apply-filters {
   white-space: nowrap;
+  min-height: 40px;
 }
 
 // ── Table card ────────────────────────────────────────────────────────────────
