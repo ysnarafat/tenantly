@@ -98,10 +98,23 @@
     flex: 1 1 420px;
     min-width: 280px;
     margin: 0;
+    height: 40px;
 
     mat-icon[matPrefix] {
       color: var(--text-muted);
       margin-right: 4px;
+    }
+
+    mat-mdc-text-field-wrapper {
+      height: 40px;
+    }
+
+    mat-mdc-form-field-infix {
+      padding: 0 !important;
+    }
+
+    .mat-mdc-text-field-wrapper input {
+      height: 40px;
     }
   }
 
@@ -109,6 +122,19 @@
     flex: 0 1 180px;
     min-width: 150px;
     margin: 0;
+    height: 40px;
+
+    mat-mdc-text-field-wrapper {
+      height: 40px;
+    }
+
+    mat-mdc-form-field-infix {
+      padding: 0 !important;
+    }
+
+    mat-select {
+      height: 40px;
+    }
   }
 }
 
