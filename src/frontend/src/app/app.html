@@ -8,63 +8,63 @@
     </button>
     <div class="app-branding">
       <span class="app-title">Tenantly</span>
-      <span class="app-subtitle">{{ 'NAV.SUBTITLE' | translate }}</span>
     </div>
     <app-organization-selector></app-organization-selector>
     <span class="spacer"></span>
-    @if (themeService.darkModeEnabled) {
+    <div class="toolbar-search">
+      <mat-icon class="search-icon">search</mat-icon>
+      <input type="text" placeholder="Search properties, buildings, units (e.g. Gulshan, Apt 4)" />
+      <kbd class="shortcut-badge">⌘K</kbd>
+    </div>
+    <span class="toolbar-divider"></span>
     <button
       mat-icon-button
+      class="toolbar-icon-btn"
       (click)="themeService.toggle()"
-      class="theme-toggle"
-      [matTooltip]="
-        themeService.isDark()
-          ? ('NAV.TOOLTIPS.LIGHT_MODE' | translate)
-          : ('NAV.TOOLTIPS.DARK_MODE' | translate)
-      "
+      [matTooltip]="themeService.isDark() ? ('NAV.TOOLTIPS.LIGHT_MODE' | translate) : ('NAV.TOOLTIPS.DARK_MODE' | translate)"
     >
       <mat-icon>{{ themeService.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
     </button>
-    }
     <button
       mat-icon-button
+      class="toolbar-icon-btn"
       (click)="languageService.toggle()"
-      class="language-toggle"
       [matTooltip]="languageService.currentLang() === 'en' ? 'বাংলা' : 'English'"
     >
       <mat-icon>language</mat-icon>
     </button>
-    <div class="user-info">
-      <div class="user-details">
-        <span class="user-name">{{ user()?.username || 'User' }}</span>
-        <span class="user-role">{{ userRole() }}</span>
+    <button
+      mat-icon-button
+      class="toolbar-icon-btn notification-btn"
+      [matTooltip]="'Notifications'"
+    >
+      <mat-icon>notifications</mat-icon>
+      <span class="notification-dot"></span>
+    </button>
+    <button mat-icon-button class="toolbar-icon-btn" [matTooltip]="'Settings'">
+      <mat-icon>settings</mat-icon>
+    </button>
+    <div class="user-menu-trigger" [matMenuTriggerFor]="userMenu">
+      <div class="user-avatar" [style.background-color]="userAvatarColor()">
+        {{ userInitials() }}
       </div>
-      <button
-        mat-icon-button
-        [matMenuTriggerFor]="userMenu"
-        class="avatar-btn"
-        [matTooltip]="user()?.username || ''"
-      >
-        <div class="user-avatar" [style.background-color]="userAvatarColor()">
-          {{ userInitials() }}
-        </div>
-      </button>
-      <mat-menu #userMenu="matMenu">
-        <button mat-menu-item disabled>
-          <mat-icon>person</mat-icon>
-          <span>{{ user()?.username }}</span>
-        </button>
-        <button mat-menu-item disabled>
-          <mat-icon>badge</mat-icon>
-          <span>{{ userRole() }}</span>
-        </button>
-        <mat-divider></mat-divider>
-        <button mat-menu-item (click)="logout()">
-          <mat-icon>logout</mat-icon>
-          <span>{{ 'NAV.USER_MENU.LOGOUT' | translate }}</span>
-        </button>
-      </mat-menu>
+      <mat-icon class="avatar-caret">expand_more</mat-icon>
     </div>
+    <mat-menu #userMenu="matMenu" yPosition="below" xPosition="before">
+      <button mat-menu-item disabled>
+        <mat-icon>person</mat-icon>
+        <span>{{ user()?.username }}</span>
+      </button>
+      <button mat-menu-item disabled>
+        <mat-icon>badge</mat-icon>
+        <span>{{ userRole() }}</span>
+      </button>
+      <mat-divider></mat-divider>
+      <button mat-menu-item (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        <span>{{ 'NAV.USER_MENU.LOGOUT' | translate }}</span>
+      </button>
+    </mat-menu>
   </mat-toolbar>
 
   <mat-sidenav-container class="sidenav-container">
