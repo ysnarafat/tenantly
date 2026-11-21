@@ -95,9 +95,12 @@
   }
 
   .search-field {
-    flex: 1 1 420px;
+    display: flex;
+    align-items: center;
+    height: 36px;
+    flex: 0 1 auto;
     min-width: 280px;
-    margin: 0;
+    max-width: calc(100% - 320px);
 
     mat-icon[matPrefix] {
       color: var(--text-muted);
@@ -120,6 +123,7 @@
   .filter-field {
     flex: 0 1 180px;
     min-width: 150px;
+    min-height: 36px;
     margin: 0;
 
     mat-mdc-text-field-wrapper {
