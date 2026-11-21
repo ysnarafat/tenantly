@@ -432,13 +432,15 @@ mat-nav-list {
   }
 
   &.nav-active {
-    background: var(--bg-surface);
+    background: var(--bg-hover);
     color: var(--color-primary);
     font-weight: 600;
     border-radius: 8px;
 
     .nav-icon {
       color: var(--color-primary);
+      // Filled icon style matching new design
+      font-variation-settings: 'FILL' 1;
     }
 
     &::after {
