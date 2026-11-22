@@ -14,7 +14,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { PageEvent } from '@angular/material/paginator';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -31,10 +31,12 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatTabsModule } from '@angular/material/tabs';
+import { MatMenuModule } from '@angular/material/menu';
 import { PaymentService, PaymentFilters } from '../../../core/services/payment.service';
+import { PropertyService } from '../../../core/services/property.service';
 import { LeaseService } from '../../../core/services/lease.service';
 import { LeaseWithDetails } from '../../../core/models/lease.model';
+import { Property, PropertyType } from '../../../core/models/property.model';
 import {
   PaymentWithDetails,
   UpdatePaymentRequest,
@@ -51,8 +53,7 @@ import {
   GenerateMonthlyPaymentsResult,
 } from '../../../core/models/payment.model';
 import { debounceTime, switchMap } from 'rxjs/operators';
-import { of } from 'rxjs';
-import { DataTable } from '../../../shared/components/data-table/data-table';
+import { forkJoin, of } from 'rxjs';
 import { safeErrorMessage } from '../../../shared/utils/error.utils';
 import { notifySuccess, notifyError } from '../../../shared/utils/notify.utils';
 
@@ -69,7 +70,11 @@ interface BuildingNode {
 interface PropertyNode {
   property_id: number;
   property_name: string;
+  property_type: PropertyType | null;
+  address: string;
   buildings: BuildingNode[];
+  totalBuildings: number;
+  unitCount: number;
   totalDue: number;
   totalPaid: number;
   paidCount: number;
@@ -77,6 +82,15 @@ interface PropertyNode {
   overdueCount: number;
   partialCount: number;
   collectionRate: number;
+}
+
+interface MonthlyPaymentTrend {
+  key: string;
+  label: string;
+  month: number;
+  isCurrentMonth: boolean;
+  amountDue: number;
+  amountPaid: number;
 }
 
 @Component({
@@ -92,7 +106,6 @@ interface PropertyNode {
     MatButtonModule,
     MatIconModule,
     MatTableModule,
-    MatPaginatorModule,
     MatSelectModule,
     MatFormFieldModule,
     MatInputModule,
@@ -103,19 +116,21 @@ interface PropertyNode {
     MatSnackBarModule,
     MatDividerModule,
     MatTooltipModule,
-    MatTabsModule,
-    DataTable,
+    MatMenuModule,
   ],
   templateUrl: './payment-list.html',
   styleUrls: ['./payment-list.scss'],
 })
 export class PaymentList implements OnInit {
   private paymentService = inject(PaymentService);
+  private propertyService = inject(PropertyService);
   private dialog = inject(MatDialog);
   private snackBar = inject(MatSnackBar);
 
   payments = signal<PaymentWithDetails[]>([]);
   summary = signal<DashboardSummary | null>(null);
+  monthlyTrend = signal<MonthlyPaymentTrend[]>([]);
+  trendLoading = signal(true);
   loading = signal(false);
   total = signal(0);
   page = signal(1);
@@ -135,18 +150,29 @@ export class PaymentList implements OnInit {
   }
 
   treePayments = signal<PaymentWithDetails[]>([]);
+  properties = signal<Property[]>([]);
+  propertiesLoaded = signal(false);
   treeLoading = signal(false);
   treeFilterMonth: number | '' = '';
   treeFilterYear = new Date().getFullYear();
+  treePropertyType = signal<PropertyType | ''>('');
+  treeSort = signal<'due' | 'collection' | 'alphabetical'>('due');
 
   treeData = computed<PropertyNode[]>(() => {
     const propMap = new Map<number, PropertyNode>();
+    const propertyMetadata = new Map(this.properties().map((property) => [property.id, property]));
+    const unitIds = new Map<number, Set<number>>();
     for (const p of this.treePayments()) {
       if (!propMap.has(p.property_id)) {
+        const metadata = propertyMetadata.get(p.property_id);
         propMap.set(p.property_id, {
           property_id: p.property_id,
           property_name: p.property_name,
+          property_type: metadata?.property_type ?? null,
+          address: [metadata?.address, metadata?.city].filter(Boolean).join(', '),
           buildings: [],
+          totalBuildings: metadata?.total_buildings ?? 0,
+          unitCount: 0,
           totalDue: 0,
           totalPaid: 0,
           paidCount: 0,
@@ -155,8 +181,10 @@ export class PaymentList implements OnInit {
           partialCount: 0,
           collectionRate: 0,
         });
+        unitIds.set(p.property_id, new Set());
       }
       const prop = propMap.get(p.property_id)!;
+      unitIds.get(p.property_id)!.add(p.unit_id);
       let bldg = prop.buildings.find((b) => b.building_id === p.building_id);
       if (!bldg) {
         bldg = {
@@ -180,17 +208,50 @@ export class PaymentList implements OnInit {
       else if (p.status === 'Partial') prop.partialCount++;
       else prop.dueCount++;
     }
-    return Array.from(propMap.values()).map((prop) => ({
+    const properties = Array.from(propMap.values()).map((prop) => ({
       ...prop,
+      totalBuildings: prop.totalBuildings || prop.buildings.length,
+      unitCount: unitIds.get(prop.property_id)!.size,
       collectionRate: prop.totalDue > 0 ? (prop.totalPaid / prop.totalDue) * 100 : 0,
       buildings: prop.buildings.map((b) => ({
         ...b,
         collectionRate: b.totalDue > 0 ? (b.totalPaid / b.totalDue) * 100 : 0,
       })),
     }));
+    return properties
+      .filter(
+        (property) => !this.treePropertyType() || property.property_type === this.treePropertyType()
+      )
+      .sort((a, b) => {
+        if (this.treeSort() === 'collection') return b.collectionRate - a.collectionRate;
+        if (this.treeSort() === 'alphabetical')
+          return a.property_name.localeCompare(b.property_name);
+        return b.totalDue - a.totalDue;
+      });
   });
 
-  displayedColumns = ['tenant', 'unit', 'period', 'amount_due', 'amount_paid', 'status', 'actions'];
+  fullyCollectedProperties = computed(
+    () =>
+      this.treeData().filter(
+        (property) => property.totalDue > 0 && property.totalPaid >= property.totalDue
+      ).length
+  );
+  propertiesNeedingAction = computed(
+    () =>
+      this.treeData().filter(
+        (property) => property.dueCount + property.partialCount + property.overdueCount > 0
+      ).length
+  );
+
+  displayedColumns = [
+    'tenant',
+    'property',
+    'period',
+    'amount_due',
+    'amount_paid',
+    'status',
+    'actions',
+  ];
 
   months = [
     { value: 1, label: 'January' },
@@ -211,16 +272,69 @@ export class PaymentList implements OnInit {
   statuses: PaymentStatus[] = ['Paid', 'Due', 'Partial', 'Overdue'];
 
   totalPages = computed(() => Math.ceil(this.total() / this.pageSize()) || 1);
+  visiblePages = computed(() => {
+    const total = this.totalPages();
+    const current = this.page();
+    const start = Math.max(1, Math.min(current - 1, total - 2));
+    return Array.from({ length: Math.min(3, total) }, (_, index) => start + index);
+  });
+  showingStart = computed(() => (this.total() === 0 ? 0 : (this.page() - 1) * this.pageSize() + 1));
+  showingEnd = computed(() => Math.min(this.page() * this.pageSize(), this.total()));
+  chartMaximum = computed(() =>
+    Math.max(...this.monthlyTrend().map((month) => month.amountPaid), 0)
+  );
 
   ngOnInit(): void {
     this.loadSummary();
     this.loadPayments();
+    this.loadMonthlyTrend();
   }
 
   loadSummary(): void {
     this.paymentService.getDashboardSummary().subscribe({
       next: (s) => this.summary.set(s),
       error: () => {},
+    });
+  }
+
+  loadMonthlyTrend(): void {
+    this.trendLoading.set(true);
+    const now = new Date();
+    const periods = Array.from({ length: 6 }, (_, index) => {
+      const date = new Date(now.getFullYear(), now.getMonth() - 5 + index, 1);
+      return {
+        date,
+        key: `${date.getFullYear()}-${date.getMonth() + 1}`,
+      };
+    });
+
+    forkJoin(
+      periods.map(({ date }) =>
+        this.paymentService.getAllPayments({
+          year: date.getFullYear(),
+          month: date.getMonth() + 1,
+        })
+      )
+    ).subscribe({
+      next: (results) => {
+        this.monthlyTrend.set(
+          periods.map(({ date, key }, index) => ({
+            key,
+            label: this.months[date.getMonth()].label,
+            month: date.getMonth() + 1,
+            isCurrentMonth:
+              date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth(),
+            amountDue: results[index].reduce((sum, payment) => sum + payment.amount_due, 0),
+            amountPaid: results[index].reduce((sum, payment) => sum + payment.amount_paid, 0),
+          }))
+        );
+        this.trendLoading.set(false);
+      },
+      error: (error) => {
+        this.trendLoading.set(false);
+        console.error('Failed to load payment trends:', safeErrorMessage(error));
+        notifyError(this.snackBar, 'Failed to load payment trends');
+      },
     });
   }
 
@@ -250,12 +364,12 @@ export class PaymentList implements OnInit {
 
   loadTreePayments(): void {
     this.treeLoading.set(true);
-    const filters: PaymentFilters = { page: 1, page_size: 500 };
+    const filters: PaymentFilters = {};
     if (this.treeFilterMonth) filters['month'] = +this.treeFilterMonth;
     if (this.treeFilterYear) filters['year'] = +this.treeFilterYear;
-    this.paymentService.getPayments(filters).subscribe({
-      next: (res) => {
-        this.treePayments.set(res.payments ?? []);
+    this.paymentService.getAllPayments(filters).subscribe({
+      next: (payments) => {
+        this.treePayments.set(payments);
         this.treeLoading.set(false);
       },
       error: () => {
@@ -267,13 +381,51 @@ export class PaymentList implements OnInit {
 
   onTabChange(index: number): void {
     this.activeTab.set(index);
-    if (index === 1 && this.treePayments().length === 0) this.loadTreePayments();
+    if (index === 1) {
+      if (this.treePayments().length === 0) this.loadTreePayments();
+      if (!this.propertiesLoaded()) this.loadPropertyMetadata();
+    }
+  }
+
+  private loadPropertyMetadata(page = 1, loaded: Property[] = []): void {
+    this.propertyService.getProperties({ page, page_size: 100 }).subscribe({
+      next: (response) => {
+        const properties = [...loaded, ...response.properties];
+        if (page < response.pagination.total_pages) {
+          this.loadPropertyMetadata(page + 1, properties);
+          return;
+        }
+        this.properties.set(properties);
+        this.propertiesLoaded.set(true);
+      },
+      error: (error) => {
+        console.error('Failed to load property details:', safeErrorMessage(error));
+        notifyError(this.snackBar, 'Failed to load property details');
+      },
+    });
   }
 
   onPageChange(event: PageEvent): void {
     this.page.set(event.pageIndex + 1);
     this.pageSize.set(event.pageSize);
     this.loadPayments();
+  }
+
+  goToPage(page: number): void {
+    if (page < 1 || page > this.totalPages() || page === this.page()) return;
+    this.page.set(page);
+    this.loadPayments();
+  }
+
+  get selectedPeriod(): string {
+    return this.filterMonth ? `${this.filterYear}-${this.filterMonth}` : `${this.filterYear}-all`;
+  }
+
+  onPeriodChange(period: string): void {
+    const [year, month] = period.split('-');
+    this.filterYear = Number(year);
+    this.filterMonth = month === 'all' ? '' : month;
+    this.applyFilters();
   }
 
   applyFilters(): void {
@@ -375,6 +527,105 @@ export class PaymentList implements OnInit {
     });
   }
 
+  exportPayments(): void {
+    const filters: PaymentFilters = {};
+    if (this.filterStatus) filters['status'] = this.filterStatus;
+    if (this.filterMonth) filters['month'] = +this.filterMonth;
+    if (this.filterYear) filters['year'] = +this.filterYear;
+
+    this.paymentService.getAllPayments(filters).subscribe({
+      next: (payments) => {
+        if (!payments.length) {
+          notifyError(this.snackBar, 'No payments to export');
+          return;
+        }
+
+        const headers = [
+          'Tenant',
+          'Unit',
+          'Property',
+          'Building',
+          'Period',
+          'Amount Due',
+          'Amount Paid',
+          'Status',
+          'Receipt',
+        ];
+        const rows = payments.map((payment) => [
+          payment.tenant_name,
+          payment.unit_number,
+          payment.property_name,
+          payment.building_name,
+          `${this.monthName(payment.month)} ${payment.year}`,
+          payment.amount_due,
+          payment.amount_paid,
+          payment.status,
+          payment.receipt_number ?? '',
+        ]);
+        this.downloadCsv(`payments-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
+      },
+      error: (error) => {
+        console.error('Failed to export payments:', safeErrorMessage(error));
+        notifyError(this.snackBar, 'Failed to export payments');
+      },
+    });
+  }
+
+  exportPortfolioSummary(): void {
+    const properties = this.treeData();
+    if (!properties.length) {
+      notifyError(this.snackBar, 'No property data to export');
+      return;
+    }
+
+    const rows = properties.map((property) => [
+      property.property_name,
+      property.property_type ?? '',
+      property.address,
+      property.totalBuildings,
+      property.unitCount,
+      property.totalDue,
+      property.totalPaid,
+      property.collectionRate,
+    ]);
+    this.downloadCsv(
+      `portfolio-summary-${new Date().toISOString().slice(0, 10)}.csv`,
+      [
+        'Property',
+        'Type',
+        'Address',
+        'Buildings',
+        'Units with payments',
+        'Amount due',
+        'Amount paid',
+        'Collection rate (%)',
+      ],
+      rows
+    );
+  }
+
+  private downloadCsv(fileName: string, headers: string[], rows: (string | number)[][]): void {
+    const csv = [headers, ...rows]
+      .map((row) =>
+        row
+          .map((value) => {
+            const text = String(value).replaceAll('"', '""');
+            const safeText =
+              typeof value === 'string' && /^[\s]*[=+\-@]/.test(text) ? `'${text}` : text;
+            return `"${safeText}"`;
+          })
+          .join(',')
+      )
+      .join('\r\n');
+    const blob = new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   getStatusClass(status: PaymentStatus): string {
     const map: Record<PaymentStatus, string> = {
       Paid: 'status-paid',
@@ -387,6 +638,18 @@ export class PaymentList implements OnInit {
 
   monthName(month: number): string {
     return this.months.find((m) => m.value === month)?.label.slice(0, 3) ?? month.toString();
+  }
+
+  tenantInitials(name?: string): string {
+    return (
+      name
+        ?.trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((part) => part[0])
+        .join('')
+        .toUpperCase() || '—'
+    );
   }
 
   collectionRateColor(rate: number): string {

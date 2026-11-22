@@ -195,6 +195,44 @@ describe('PaymentService', () => {
     });
   });
 
+  describe('getAllPayments', () => {
+    it('retrieves every page for the requested period', () => {
+      const secondPayment = { ...mockPayment, id: 2 };
+      let result: PaymentWithDetails[] | undefined;
+
+      service.getAllPayments({ month: 5, year: 2026 }).subscribe((payments) => {
+        result = payments;
+      });
+
+      const firstPage = httpMock.expectOne(
+        (request) =>
+          request.url === apiUrl &&
+          request.params.get('month') === '5' &&
+          request.params.get('year') === '2026' &&
+          request.params.get('page') === '1' &&
+          request.params.get('page_size') === '100'
+      );
+      firstPage.flush({ ...mockListResponse, total: 2, total_pages: 2 });
+
+      const secondPage = httpMock.expectOne(
+        (request) =>
+          request.url === apiUrl &&
+          request.params.get('month') === '5' &&
+          request.params.get('year') === '2026' &&
+          request.params.get('page') === '2'
+      );
+      secondPage.flush({
+        ...mockListResponse,
+        payments: [secondPayment],
+        page: 2,
+        total: 2,
+        total_pages: 2,
+      });
+
+      expect(result?.map((payment) => payment.id)).toEqual([mockPayment.id, secondPayment.id]);
+    });
+  });
+
   // ── getPayment ───────────────────────────────────────────────────────────────
 
   describe('getPayment', () => {

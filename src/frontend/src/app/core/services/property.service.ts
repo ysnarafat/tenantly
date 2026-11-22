@@ -18,10 +18,20 @@ export class PropertyService {
   private http = inject(HttpClient);
   private apiUrl = `${environment.apiUrl}/properties`;
 
-  getProperties(params?: { active?: boolean }): Observable<PropertyListResponse> {
+  getProperties(params?: {
+    active?: boolean;
+    page?: number;
+    page_size?: number;
+  }): Observable<PropertyListResponse> {
     let httpParams = new HttpParams();
     if (params?.active !== undefined) {
       httpParams = httpParams.set('active', params.active.toString());
+    }
+    if (params?.page !== undefined) {
+      httpParams = httpParams.set('page', params.page.toString());
+    }
+    if (params?.page_size !== undefined) {
+      httpParams = httpParams.set('page_size', params.page_size.toString());
     }
     return this.http.get<PropertyListResponse>(this.apiUrl, { params: httpParams });
   }

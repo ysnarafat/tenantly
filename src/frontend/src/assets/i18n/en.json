@@ -126,19 +126,30 @@
   },
   "TENANT_LIST": {
     "PAGE_TITLE": "Tenants",
+    "PAGE_SUBTITLE": "Manage resident and commercial leasing records",
     "STATS": {
       "TOTAL": "Total",
       "ACTIVE": "Active",
-      "INACTIVE": "Inactive"
+      "INACTIVE": "Inactive",
+      "NEW_THIS_MONTH": "New this month",
+      "TENANTS": "tenants"
     },
     "BUTTONS": {
-      "ADD_TENANT": "Add Tenant"
+      "ADD_TENANT": "Add Tenant",
+      "EXPORT": "Export List",
+      "APPLY_FILTERS": "Apply Filters"
+    },
+    "EXPORT": {
+      "EMAIL": "Email",
+      "PHONE": "Phone"
     },
     "FILTERS": {
       "SEARCH_LABEL": "Search tenants",
       "SEARCH_PLACEHOLDER": "Name, phone, email or NID…",
       "STATUS_LABEL": "Status",
       "TYPE_LABEL": "Type",
+      "ALL_TYPES": "All Types",
+      "ALL_STATUS": "All Status",
       "INDIVIDUAL": "Individual",
       "BUSINESS": "Business",
       "ALL": "All"
@@ -181,15 +192,63 @@
       "ACTIVE_LEASES": "Active Leases",
       "EXPIRING_SOON": "Expiring Soon",
       "TOTAL_ATTACHMENTS": "Total Attachments",
-      "RECENT_FILES": "Recent Files"
+      "RECENT_FILES": "Recent Files",
+      "EXPIRING_WITHIN_30_DAYS": "expiring within 30 days",
+      "TOTAL_DUE": "Total Rent Due",
+      "TOTAL_DUE_DESCRIPTION": "Across recorded payments",
+      "TOTAL_COLLECTED": "Collected This Month",
+      "TOTAL_COLLECTED_DESCRIPTION": "Paid against recorded payments",
+      "TOTAL_PENDING": "Pending Payments",
+      "OVERDUE": "Overdue",
+      "COLLECTION_EFFICIENCY": "Collection efficiency",
+      "OCCUPANCY_RATE": "Occupancy rate",
+      "UNITS_OCCUPIED": "units occupied",
+      "OCCUPIED": "occupied",
+      "CURRENT_MONTH": "For current month",
+      "PENDING_COUNT": "awaiting clearance",
+      "OVERDUE_UNITS": "units overdue",
+      "LEASES": "Leases",
+      "ACTIVE": "Active",
+      "NEEDS_RENEWAL": "Needs renewal",
+      "VACANT": "Vacant"
     },
     "SECTIONS": {
       "EXPIRING_LEASES": "Leases Expiring Soon",
       "RECENT_LEASES": "Recent Leases",
-      "RECENT_ATTACHMENTS": "Recent Attachments"
+      "RECENT_ATTACHMENTS": "Recent Documents",
+      "PORTFOLIO_OVERVIEW": "Portfolio Overview",
+      "ACTIVE_LEASES_BY_PROPERTY": "Active leases and monthly rent by property",
+      "ACTIVE_LEASE": "active lease",
+      "ACTIVE_LEASES": "active leases",
+      "OF_TOTAL_RENT": "of total rent",
+      "ACTIVE": "Active",
+      "EXPIRING_SOON": "Expiring soon",
+      "EXPIRING_DESCRIPTION": "Ending within the next 30 days",
+      "RECENT_LEASES_DESCRIPTION": "Latest activity across your properties",
+      "EXPIRED": "Expired",
+      "COLLECTION_TRENDS": "Monthly Collection Trends",
+      "COLLECTION_TRENDS_DESCRIPTION": "Compare billed rent with payments received",
+      "RECENT_COLLECTIONS": "Recent Collections & Transactions",
+      "RECENT_COLLECTIONS_DESCRIPTION": "Latest recorded payment transactions",
+      "ACTIVE_PROPERTIES": "Active Properties",
+      "BUILDINGS": "buildings"
     },
     "BUTTONS": {
-      "VIEW_ALL": "View All"
+      "VIEW_ALL": "View All",
+      "VIEW_ALL_LEASES": "View All Leases",
+      "ALL_PAYMENTS": "All Payments",
+      "UPLOAD_DOCUMENT": "Upload New Document",
+      "DOWNLOAD_DOCUMENT": "Download {{name}}"
+    },
+    "TABLE": {
+      "TENANT_UNIT": "Tenant & Unit",
+      "PROPERTY": "Property",
+      "MONTHLY_RENT": "Monthly Rent",
+      "STATUS": "Status"
+    },
+    "TRANSACTIONS": {
+      "PAID_IN_FULL": "Paid In Full",
+      "PARTIAL": "Partial"
     },
     "SUFFIXES": {
       "DAYS_LEFT": "days left",
@@ -197,9 +256,37 @@
     },
     "EMPTY_STATE": {
       "NO_RECENT_LEASES": "No recent leases found.",
-      "NO_RECENT_ATTACHMENTS": "No recent attachments found."
+      "NO_RECENT_ATTACHMENTS": "No recent attachments found.",
+      "NO_PROPERTY_DATA": "No active properties found.",
+      "NO_COLLECTION_DATA": "No payment data is available for this period.",
+      "NO_RECENT_COLLECTIONS": "No recent payment transactions found."
     },
-    "LOADING": "Loading dashboard data..."
+    "CHART": {
+      "LAST_SIX_MONTHS": "Last 6 Months",
+      "YEAR_TO_DATE": "Year to Date",
+      "PERIOD_COLLECTED": "Collected in period",
+      "AVERAGE_EFFICIENCY": "Average collection",
+      "COLLECTION_TARGET": "Efficiency target",
+      "TOTAL_DUE": "Total due",
+      "COLLECTED": "Collected",
+      "PEAK_COLLECTION": "Peak collection",
+      "TARGET_NOTE": "Collection target: 90%",
+      "MONTH_OVER_MONTH": "MoM",
+      "LOWEST_COLLECTION": "Lowest month",
+      "OUTSTANDING_RECEIVABLES": "Outstanding receivables",
+      "FULL_BREAKDOWN": "View full collections breakdown",
+      "CURRENCY_NOTE": "All amounts in Bangladeshi Taka (৳ BDT)"
+    },
+    "LOADING": "Loading dashboard data...",
+    "INTRO": "Welcome back, {{user}}. Overview of your property portfolio, rentals, and collections.",
+    "LIVE_PORTFOLIO": "Live Portfolio",
+    "RECORD_PAYMENT": "Record Payment",
+    "A11Y": {
+      "PORTFOLIO_SUMMARY": "Portfolio summary",
+      "VIEW_DOCUMENTS": "View all documents",
+      "CHART_PERIOD": "Collection chart period",
+      "COLLECTION_CHART": "Monthly billed and collected rent"
+    }
   },
   "CREATE_LEASE_DIALOG": {
     "TITLE": "Create New Lease",
@@ -519,17 +606,25 @@
   },
   "PAYMENT_LIST": {
     "PAGE_TITLE": "Payments",
-    "PAGE_SUBTITLE": "Manage and track all payment transactions",
+    "PAGE_SUBTITLE": "Manage and track all income across your property portfolio.",
+    "A11Y": {
+      "FINANCIAL_SUMMARY": "Financial summary",
+      "PAYMENT_TRENDS": "Monthly billed and collected payments for the last six months"
+    },
     "SUMMARY": {
       "TOTAL_DUE": "Total Due",
       "TOTAL_COLLECTED": "Total Collected",
       "PENDING": "Pending",
       "OVERDUE": "Overdue",
-      "COLLECTION_RATE": "Collection Rate"
+      "COLLECTION_RATE": "Collection Rate",
+      "ALL_PERIODS": "Across all payment periods",
+      "REMAINING_BALANCE": "Outstanding balance",
+      "PAST_DUE_BALANCE": "Past-due balance"
     },
     "TABS": {
       "ALL_PAYMENTS": "All Payments",
-      "BY_PROPERTY": "By Property"
+      "BY_PROPERTY": "By Property",
+      "VIEW_SELECTOR": "Payment views"
     },
     "BUTTONS": {
       "NEW_PAYMENT": "New Payment",
@@ -538,22 +633,35 @@
       "UPDATE": "Update",
       "LOAD": "Load",
       "GENERATE_MONTHLY": "Generate Monthly",
-      "COLLECT_PAYMENTS": "Collect Payments"
+      "COLLECT_PAYMENTS": "Record Payment",
+      "EXPORT_REPORT": "Export Report",
+      "GENERATE_TOOLTIP": "Generate due records for active leases",
+      "RECEIPT": "Receipt"
     },
     "FILTERS": {
       "STATUS": "Status",
       "MONTH": "Month",
       "YEAR": "Year",
-      "ALL": "All"
+      "PERIOD": "Period",
+      "ALL": "All",
+      "ALL_MONTHS": "All months",
+      "OPTIONS": "Filter options"
     },
     "TABLE": {
       "TENANT_UNIT": "Tenant / Unit",
       "PROPERTY": "Property",
       "UNIT": "Unit",
       "PERIOD": "Period",
-      "AMOUNT_DUE": "Due (৳)",
-      "AMOUNT_PAID": "Paid (৳)",
-      "STATUS": "Status"
+      "AMOUNT_DUE": "Due Amount",
+      "AMOUNT_PAID": "Paid Amount",
+      "STATUS": "Status",
+      "ACTIONS": "Actions"
+    },
+    "PAGINATION": {
+      "SHOWING": "Showing {{start}} to {{end}} of {{total}} transactions",
+      "NAVIGATION": "Payment pages",
+      "PREVIOUS": "Previous page",
+      "NEXT": "Next page"
     },
     "STATUS": {
       "PAID": "Paid",
@@ -579,7 +687,39 @@
       "EMPTY_TITLE": "No payments to display",
       "EMPTY_HINT": "Select a period and click Load, or generate monthly payments first",
       "LOADING": "Building tree...",
-      "PAYMENTS_SUFFIX": "payments"
+      "PAYMENTS_SUFFIX": "payments",
+      "PROPERTY_TYPE": "Type",
+      "ALL_PROPERTIES": "All properties",
+      "RESIDENTIAL": "Residential",
+      "COMMERCIAL": "Commercial",
+      "MIXED": "Mixed",
+      "SORT_BY": "Sort",
+      "SORT_HIGHEST_DUE": "Highest due",
+      "SORT_COLLECTION_RATE": "Collection rate",
+      "SORT_ALPHABETICAL": "Alphabetical",
+      "BUILDINGS": "buildings",
+      "UNITS_WITH_PAYMENTS": "units with payments",
+      "COLLECTION": "Collection",
+      "VIEW_PROPERTY": "View property",
+      "MANAGED_PROPERTIES": "Managed properties",
+      "FULLY_COLLECTED": "Fully collected",
+      "ACTION_REQUIRED": "Action required",
+      "EXPORT_SUMMARY": "Export portfolio summary"
+    },
+    "INSIGHTS": {
+      "TRENDS_TITLE": "Payment Trends",
+      "TRENDS_DESCRIPTION": "Payments collected over the last six months",
+      "LAST_SIX_MONTHS": "Last 6 months",
+      "TOTAL_DUE": "Total due",
+      "TOTAL_COLLECTED": "Collected",
+      "LOADING_TRENDS": "Loading payment trends...",
+      "NO_TREND_DATA": "No payment data is available for this period.",
+      "PORTFOLIO_HEALTH": "Portfolio Health",
+      "HEALTH_DESCRIPTION": "Track collection progress and portfolio coverage.",
+      "COLLECTION_GOAL": "Collection goal",
+      "VIEW_DETAILS": "View Details",
+      "PROPERTIES": "properties",
+      "BUILDINGS": "buildings"
     },
     "EMPTY_STATE": "No payments found",
     "LOADING": "Loading payments..."

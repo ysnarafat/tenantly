@@ -1,135 +1,404 @@
 <div class="payment-container">
-  <!-- Page Header + Financial Summary -->
-  <mat-card appearance="outlined" class="header-card">
-    <mat-card-content>
-      <header class="page-header">
-        <div class="header-inner">
-          <div class="header-text">
-            <h1 class="page-title">{{ 'PAYMENT_LIST.PAGE_TITLE' | translate }}</h1>
-            <p class="page-subtitle">{{ 'PAYMENT_LIST.PAGE_SUBTITLE' | translate }}</p>
-          </div>
-          <div class="header-actions">
-            <button
-              mat-flat-button
-              color="primary"
-              (click)="openGenerateDialog()"
-              class="generate-btn"
-              matTooltip="Auto-generate Due records for all active leases"
-            >
-              <mat-icon>bolt</mat-icon>
-              <span class="btn-text"
-                >{{ 'PAYMENT_LIST.BUTTONS.GENERATE_MONTHLY' | translate }}</span
-              >
-            </button>
-            <button
-              mat-flat-button
-              color="accent"
-              routerLink="/payments/collect"
-              class="collect-btn"
-            >
-              <mat-icon>fact_check</mat-icon>
-              <span class="btn-text"
-                >{{ 'PAYMENT_LIST.BUTTONS.COLLECT_PAYMENTS' | translate }}</span
-              >
-            </button>
-            <button mat-flat-button color="primary" (click)="openCreateDialog()" class="create-btn">
-              <mat-icon>add</mat-icon>
-              <span class="btn-text">{{ 'PAYMENT_LIST.BUTTONS.NEW_PAYMENT' | translate }}</span>
-            </button>
-          </div>
-        </div>
-      </header>
+  <header class="page-header">
+    <div class="header-text">
+      <h1 class="page-title">{{ 'PAYMENT_LIST.PAGE_TITLE' | translate }}</h1>
+      <p class="page-subtitle">{{ 'PAYMENT_LIST.PAGE_SUBTITLE' | translate }}</p>
+    </div>
+    <div class="header-actions">
+      <button mat-stroked-button class="export-btn" (click)="exportPayments()">
+        <mat-icon>download</mat-icon>
+        {{ 'PAYMENT_LIST.BUTTONS.EXPORT_REPORT' | translate }}
+      </button>
+      <button mat-flat-button color="primary" routerLink="/payments/collect" class="collect-btn">
+        <mat-icon>add_card</mat-icon>
+        {{ 'PAYMENT_LIST.BUTTONS.COLLECT_PAYMENTS' | translate }}
+      </button>
+      <button
+        mat-flat-button
+        class="generate-btn"
+        (click)="openGenerateDialog()"
+        [matTooltip]="'PAYMENT_LIST.BUTTONS.GENERATE_TOOLTIP' | translate"
+      >
+        <mat-icon>bolt</mat-icon>
+        {{ 'PAYMENT_LIST.BUTTONS.GENERATE_MONTHLY' | translate }}
+      </button>
+    </div>
+  </header>
 
-      <!-- Financial Summary -->
-      @if (summary()) {
-      <section class="summary-section">
-        <div class="summary-cards">
-          <mat-card class="stat-card stat-card-due">
-            <mat-card-content>
-              <div class="stat-icon"><mat-icon>account_balance_wallet</mat-icon></div>
-              <div class="stat-body">
-                <span class="stat-label">{{ 'PAYMENT_LIST.SUMMARY.TOTAL_DUE' | translate }}</span>
-                <span class="stat-value">৳{{ summary()!.total_due | number:'1.0-0' }}</span>
-              </div>
-            </mat-card-content>
-          </mat-card>
-          <mat-card class="stat-card stat-card-paid">
-            <mat-card-content>
-              <div class="stat-icon"><mat-icon>check_circle</mat-icon></div>
-              <div class="stat-body">
-                <span class="stat-label"
-                  >{{ 'PAYMENT_LIST.SUMMARY.TOTAL_COLLECTED' | translate }}</span
-                >
-                <span class="stat-value">৳{{ summary()!.total_paid | number:'1.0-0' }}</span>
-              </div>
-            </mat-card-content>
-          </mat-card>
-          <mat-card class="stat-card stat-card-pending">
-            <mat-card-content>
-              <div class="stat-icon"><mat-icon>schedule</mat-icon></div>
-              <div class="stat-body">
-                <span class="stat-label">{{ 'PAYMENT_LIST.SUMMARY.PENDING' | translate }}</span>
-                <span class="stat-value">৳{{ summary()!.total_pending | number:'1.0-0' }}</span>
-              </div>
-            </mat-card-content>
-          </mat-card>
-          <mat-card class="stat-card stat-card-overdue">
-            <mat-card-content>
-              <div class="stat-icon"><mat-icon>error</mat-icon></div>
-              <div class="stat-body">
-                <span class="stat-label">{{ 'PAYMENT_LIST.SUMMARY.OVERDUE' | translate }}</span>
-                <span class="stat-value">৳{{ summary()!.total_overdue | number:'1.0-0' }}</span>
-              </div>
-            </mat-card-content>
-          </mat-card>
-          <mat-card class="stat-card stat-card-rate collection-card">
-            <mat-card-content>
-              <div class="stat-icon"><mat-icon>trending_up</mat-icon></div>
-              <div class="stat-body">
-                <span class="stat-label"
-                  >{{ 'PAYMENT_LIST.SUMMARY.COLLECTION_RATE' | translate }}</span
-                >
-                <span class="stat-value">{{ summary()!.collection_rate | number:'1.1-1' }}%</span>
-                <mat-progress-bar
-                  mode="determinate"
-                  [value]="summary()!.collection_rate"
-                  class="progress-bar"
-                ></mat-progress-bar>
-              </div>
-            </mat-card-content>
-          </mat-card>
-        </div>
-      </section>
-      }
-    </mat-card-content>
-  </mat-card>
-
-  <!-- View Tabs -->
-  <mat-tab-group
-    (selectedIndexChange)="onTabChange($event)"
-    animationDuration="150ms"
-    class="view-tabs"
+  @if (summary()) {
+  <section
+    class="summary-cards"
+    [attr.aria-label]="'PAYMENT_LIST.A11Y.FINANCIAL_SUMMARY' | translate"
   >
-    <!-- ── Tab 1: All Payments ── -->
-    <mat-tab [label]="'PAYMENT_LIST.TABS.ALL_PAYMENTS' | translate">
-      <div class="tab-pane">
-        <mat-card appearance="outlined" class="filters-section">
+    <article class="stat-card stat-card-due">
+      <div class="stat-heading">
+        <span>{{ 'PAYMENT_LIST.SUMMARY.TOTAL_DUE' | translate }}</span>
+        <span class="stat-icon"><mat-icon>payments</mat-icon></span>
+      </div>
+      <strong class="stat-value">৳{{ summary()!.total_due | number:'1.0-0' }}</strong>
+      <span class="stat-caption">{{ 'PAYMENT_LIST.SUMMARY.ALL_PERIODS' | translate }}</span>
+    </article>
+    <article class="stat-card stat-card-paid">
+      <div class="stat-heading">
+        <span>{{ 'PAYMENT_LIST.SUMMARY.TOTAL_COLLECTED' | translate }}</span>
+        <span class="stat-icon"><mat-icon>check_circle</mat-icon></span>
+      </div>
+      <strong class="stat-value">৳{{ summary()!.total_paid | number:'1.0-0' }}</strong>
+      <div class="collection-rate">
+        <div class="collection-rate-label">
+          <span>{{ 'PAYMENT_LIST.SUMMARY.COLLECTION_RATE' | translate }}</span>
+          <strong>{{ summary()!.collection_rate | number:'1.1-1' }}%</strong>
+        </div>
+        <mat-progress-bar
+          mode="determinate"
+          [value]="summary()!.collection_rate"
+        ></mat-progress-bar>
+      </div>
+    </article>
+    <article class="stat-card stat-card-pending">
+      <div class="stat-heading">
+        <span>{{ 'PAYMENT_LIST.SUMMARY.PENDING' | translate }}</span>
+        <span class="stat-icon"><mat-icon>schedule</mat-icon></span>
+      </div>
+      <strong class="stat-value">৳{{ summary()!.total_pending | number:'1.0-0' }}</strong>
+      <span class="stat-caption">{{ 'PAYMENT_LIST.SUMMARY.REMAINING_BALANCE' | translate }}</span>
+    </article>
+    <article class="stat-card stat-card-overdue">
+      <div class="stat-heading">
+        <span>{{ 'PAYMENT_LIST.SUMMARY.OVERDUE' | translate }}</span>
+        <span class="stat-icon"><mat-icon>error_outline</mat-icon></span>
+      </div>
+      <strong class="stat-value">৳{{ summary()!.total_overdue | number:'1.0-0' }}</strong>
+      <span class="stat-caption">{{ 'PAYMENT_LIST.SUMMARY.PAST_DUE_BALANCE' | translate }}</span>
+    </article>
+  </section>
+  }
+
+  <section class="payments-workspace">
+    <div class="payments-toolbar">
+      <div
+        class="payment-tabs"
+        role="group"
+        [attr.aria-label]="'PAYMENT_LIST.TABS.VIEW_SELECTOR' | translate"
+      >
+        <button
+          type="button"
+          [attr.aria-pressed]="activeTab() === 0"
+          [class.active]="activeTab() === 0"
+          (click)="onTabChange(0)"
+        >
+          {{ 'PAYMENT_LIST.TABS.ALL_PAYMENTS' | translate }}
+        </button>
+        <button
+          type="button"
+          [attr.aria-pressed]="activeTab() === 1"
+          [class.active]="activeTab() === 1"
+          (click)="onTabChange(1)"
+        >
+          {{ 'PAYMENT_LIST.TABS.BY_PROPERTY' | translate }}
+        </button>
+      </div>
+      @if (activeTab() === 0) {
+      <div class="payment-filters">
+        <label class="compact-filter">
+          <span>{{ 'PAYMENT_LIST.FILTERS.STATUS' | translate }}</span>
+          <select
+            [(ngModel)]="filterStatus"
+            (ngModelChange)="applyFilters()"
+            [attr.aria-label]="'PAYMENT_LIST.FILTERS.STATUS' | translate"
+          >
+            <option value="">{{ 'PAYMENT_LIST.FILTERS.ALL' | translate }}</option>
+            @for (s of statuses; track s) {
+            <option [value]="s">{{ 'PAYMENT_LIST.STATUS.' + s.toUpperCase() | translate }}</option>
+            }
+          </select>
+        </label>
+        <label class="compact-filter period-filter">
+          <span>{{ 'PAYMENT_LIST.FILTERS.PERIOD' | translate }}</span>
+          <select
+            [ngModel]="selectedPeriod"
+            (ngModelChange)="onPeriodChange($event)"
+            [attr.aria-label]="'PAYMENT_LIST.FILTERS.PERIOD' | translate"
+          >
+            @for (y of years; track y) {
+            <optgroup [label]="y.toString()">
+              <option [value]="y + '-all'">
+                {{ 'PAYMENT_LIST.FILTERS.ALL_MONTHS' | translate }} · {{ y }}
+              </option>
+              @for (m of months; track m.value) {
+              <option [value]="y + '-' + m.value">
+                {{ 'PAYMENT_LIST.MONTHS.' + m.label.toUpperCase() | translate }} {{ y }}
+              </option>
+              }
+            </optgroup>
+            }
+          </select>
+        </label>
+        <button
+          type="button"
+          class="filter-options-button"
+          [matMenuTriggerFor]="filterOptionsMenu"
+          [attr.aria-label]="'PAYMENT_LIST.FILTERS.OPTIONS' | translate"
+        >
+          <mat-icon>tune</mat-icon>
+        </button>
+        <mat-menu #filterOptionsMenu="matMenu">
+          <button mat-menu-item [disabled]="!hasActiveFilters" (click)="clearFilters()">
+            <mat-icon>filter_alt_off</mat-icon>
+            {{ 'COMMON.BUTTONS.RESET' | translate }}
+          </button>
+        </mat-menu>
+      </div>
+      }
+    </div>
+    @if (activeTab() === 0) {
+    <div class="payments-section">
+      @if (loading()) {
+      <div class="payments-table-state" role="status">
+        <mat-spinner diameter="32"></mat-spinner>
+        <span>{{ 'PAYMENT_LIST.LOADING' | translate }}</span>
+      </div>
+      } @else if (payments().length === 0) {
+      <div class="payments-table-state">
+        <mat-icon>payments</mat-icon>
+        <span>{{ 'PAYMENT_LIST.EMPTY_STATE' | translate }}</span>
+      </div>
+      } @else {
+      <div class="payments-table-scroll">
+        <table mat-table [dataSource]="payments()" class="payments-table">
+          <ng-container matColumnDef="tenant">
+            <th mat-header-cell *matHeaderCellDef class="col-tenant">
+              {{ 'PAYMENT_LIST.TABLE.TENANT_UNIT' | translate }}
+            </th>
+            <td mat-cell *matCellDef="let p">
+              <div class="tenant-cell">
+                <span class="tenant-avatar" aria-hidden="true"
+                  >{{ tenantInitials(p.tenant_name) }}</span
+                >
+                <div class="cell-stack">
+                  <span class="cell-main">{{ p.tenant_name || '—' }}</span>
+                  <span class="cell-sub">{{ p.unit_number }}</span>
+                </div>
+              </div>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="property">
+            <th mat-header-cell *matHeaderCellDef class="col-property">
+              {{ 'PAYMENT_LIST.TABLE.PROPERTY' | translate }}
+            </th>
+            <td mat-cell *matCellDef="let p">
+              <div class="property-table-cell">
+                <span>{{ p.property_name || '—' }}</span>
+                <small
+                  >{{ p.property_name }}, {{ 'PAYMENT_LIST.TABLE.UNIT' | translate }} {{
+                  p.unit_number }}</small
+                >
+              </div>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="period">
+            <th mat-header-cell *matHeaderCellDef class="col-period">
+              {{ 'PAYMENT_LIST.TABLE.PERIOD' | translate }}
+            </th>
+            <td mat-cell *matCellDef="let p">{{ monthName(p.month) }} {{ p.year }}</td>
+          </ng-container>
+          <ng-container matColumnDef="amount_due">
+            <th mat-header-cell *matHeaderCellDef class="col-amount">
+              {{ 'PAYMENT_LIST.TABLE.AMOUNT_DUE' | translate }}
+            </th>
+            <td mat-cell *matCellDef="let p" class="amount-cell">
+              ৳{{ p.amount_due | number:'1.2-2' }}
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="amount_paid">
+            <th mat-header-cell *matHeaderCellDef class="col-amount">
+              {{ 'PAYMENT_LIST.TABLE.AMOUNT_PAID' | translate }}
+            </th>
+            <td mat-cell *matCellDef="let p" class="amount-cell amount-paid-cell">
+              ৳{{ p.amount_paid | number:'1.2-2' }}
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef class="col-status">
+              {{ 'PAYMENT_LIST.TABLE.STATUS' | translate }}
+            </th>
+            <td mat-cell *matCellDef="let p">
+              <span
+                class="payment-status"
+                [class]="'payment-status status-' + p.status.toLowerCase()"
+              >
+                <i aria-hidden="true"></i>
+                {{ 'PAYMENT_LIST.STATUS.' + p.status.toUpperCase() | translate }}
+              </span>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="col-actions">
+              {{ 'PAYMENT_LIST.TABLE.ACTIONS' | translate }}
+            </th>
+            <td mat-cell *matCellDef="let p" class="actions-cell">
+              <button
+                mat-icon-button
+                [matMenuTriggerFor]="paymentActionsMenu"
+                [attr.aria-label]="'COMMON.ACTIONS.MORE' | translate"
+              >
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #paymentActionsMenu="matMenu">
+                <button mat-menu-item (click)="openUpdateDialog(p)">
+                  <mat-icon>edit</mat-icon>
+                  {{ 'PAYMENT_LIST.BUTTONS.UPDATE' | translate }}
+                </button>
+                @if (p.amount_paid > 0) {
+                <button mat-menu-item (click)="downloadReceipt(p)">
+                  <mat-icon>receipt_long</mat-icon>
+                  {{ 'PAYMENT_LIST.BUTTONS.RECEIPT' | translate }}
+                </button>
+                }
+              </mat-menu>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+      </div>
+      } @if (!loading() && payments().length > 0) {
+      <div class="mobile-cards-list">
+        @for (p of payments(); track p.id) {
+        <mat-card class="payment-card">
+          <mat-card-header>
+            <div class="card-header-content">
+              <div class="card-left">
+                <span class="tenant-avatar" aria-hidden="true"
+                  >{{ tenantInitials(p.tenant_name) }}</span
+                >
+                <div>
+                  <div class="card-tenant">{{ p.tenant_name || '—' }}</div>
+                  <div class="card-location">
+                    {{ p.property_name }} · {{ p.building_name }} · {{ p.unit_number }}
+                  </div>
+                </div>
+              </div>
+              <mat-chip-set>
+                <mat-chip [class]="'status-' + p.status.toLowerCase()" size="small"
+                  >{{ 'PAYMENT_LIST.STATUS.' + p.status.toUpperCase() | translate }}</mat-chip
+                >
+              </mat-chip-set>
+            </div>
+          </mat-card-header>
+          <mat-card-content class="card-amounts">
+            <div class="amount-row">
+              <span class="period-label">{{ monthName(p.month) }} {{ p.year }}</span>
+            </div>
+            <div class="amount-row">
+              <div class="amount-col">
+                <span class="amount-label">{{ 'PAYMENT_LIST.TABLE.AMOUNT_DUE' | translate }}</span>
+                <span class="amount-value">৳{{ p.amount_due | number:'1.2-2' }}</span>
+              </div>
+              <div class="amount-col">
+                <span class="amount-label">{{ 'PAYMENT_LIST.TABLE.AMOUNT_PAID' | translate }}</span>
+                <span class="amount-value">৳{{ p.amount_paid | number:'1.2-2' }}</span>
+              </div>
+            </div>
+          </mat-card-content>
+          <mat-card-actions>
+            <button mat-button color="primary" (click)="openUpdateDialog(p)" class="edit-btn">
+              <mat-icon>edit</mat-icon>
+              <span class="edit-text">{{ 'PAYMENT_LIST.BUTTONS.UPDATE' | translate }}</span>
+            </button>
+            @if (p.amount_paid > 0) {
+            <button mat-button (click)="downloadReceipt(p)">
+              <mat-icon>receipt_long</mat-icon>
+              <span class="edit-text">{{ 'PAYMENT_LIST.BUTTONS.RECEIPT' | translate }}</span>
+            </button>
+            }
+          </mat-card-actions>
+        </mat-card>
+        }
+      </div>
+
+      } @if (total() > 0) {
+      <footer class="payments-pagination">
+        <span>
+          {{ 'PAYMENT_LIST.PAGINATION.SHOWING' | translate: { start: showingStart(), end:
+          showingEnd(), total: total() } }}
+        </span>
+        <nav
+          class="page-controls"
+          [attr.aria-label]="'PAYMENT_LIST.PAGINATION.NAVIGATION' | translate"
+        >
+          <button
+            type="button"
+            (click)="goToPage(page() - 1)"
+            [disabled]="page() === 1"
+            [attr.aria-label]="'PAYMENT_LIST.PAGINATION.PREVIOUS' | translate"
+          >
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          @for (pageNumber of visiblePages(); track pageNumber) {
+          <button
+            type="button"
+            [class.current-page]="pageNumber === page()"
+            [attr.aria-current]="pageNumber === page() ? 'page' : null"
+            (click)="goToPage(pageNumber)"
+          >
+            {{ pageNumber }}
+          </button>
+          }
+          <button
+            type="button"
+            (click)="goToPage(page() + 1)"
+            [disabled]="page() === totalPages()"
+            [attr.aria-label]="'PAYMENT_LIST.PAGINATION.NEXT' | translate"
+          >
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </nav>
+      </footer>
+      }
+    </div>
+    } @else {
+    <div class="property-view">
+      <!-- Tree Filters -->
+      <section class="tree-filters-section">
+        <mat-card appearance="outlined" class="filters-card">
           <mat-card-content>
-            <div class="filters-bar">
-              <mat-form-field appearance="outline" class="form-field filter-field">
-                <mat-label>{{ 'PAYMENT_LIST.FILTERS.STATUS' | translate }}</mat-label>
-                <mat-select [(ngModel)]="filterStatus">
-                  <mat-option value="">{{ 'PAYMENT_LIST.FILTERS.ALL' | translate }}</mat-option>
-                  @for (s of statuses; track s) {
-                  <mat-option [value]="s"
-                    >{{ 'PAYMENT_LIST.STATUS.' + s.toUpperCase() | translate }}</mat-option
+            <div class="tree-filters-row">
+              <mat-form-field appearance="outline" class="form-field tree-field">
+                <mat-label>{{ 'PAYMENT_LIST.TREE.PROPERTY_TYPE' | translate }}</mat-label>
+                <mat-select
+                  [ngModel]="treePropertyType()"
+                  (ngModelChange)="treePropertyType.set($event)"
+                >
+                  <mat-option value=""
+                    >{{ 'PAYMENT_LIST.TREE.ALL_PROPERTIES' | translate }}</mat-option
                   >
-                  }
+                  <mat-option value="Residential"
+                    >{{ 'PAYMENT_LIST.TREE.RESIDENTIAL' | translate }}</mat-option
+                  >
+                  <mat-option value="Commercial"
+                    >{{ 'PAYMENT_LIST.TREE.COMMERCIAL' | translate }}</mat-option
+                  >
+                  <mat-option value="Mixed">{{ 'PAYMENT_LIST.TREE.MIXED' | translate }}</mat-option>
                 </mat-select>
               </mat-form-field>
-              <mat-form-field appearance="outline" class="form-field filter-field">
+              <mat-form-field appearance="outline" class="form-field tree-field">
+                <mat-label>{{ 'PAYMENT_LIST.TREE.SORT_BY' | translate }}</mat-label>
+                <mat-select [ngModel]="treeSort()" (ngModelChange)="treeSort.set($event)">
+                  <mat-option value="due"
+                    >{{ 'PAYMENT_LIST.TREE.SORT_HIGHEST_DUE' | translate }}</mat-option
+                  >
+                  <mat-option value="collection"
+                    >{{ 'PAYMENT_LIST.TREE.SORT_COLLECTION_RATE' | translate }}</mat-option
+                  >
+                  <mat-option value="alphabetical"
+                    >{{ 'PAYMENT_LIST.TREE.SORT_ALPHABETICAL' | translate }}</mat-option
+                  >
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="form-field tree-field">
                 <mat-label>{{ 'PAYMENT_LIST.FILTERS.MONTH' | translate }}</mat-label>
-                <mat-select [(ngModel)]="filterMonth">
+                <mat-select [(ngModel)]="treeFilterMonth">
                   <mat-option value="">{{ 'PAYMENT_LIST.FILTERS.ALL' | translate }}</mat-option>
                   @for (m of months; track m.value) {
                   <mat-option [value]="m.value"
@@ -138,440 +407,258 @@
                   }
                 </mat-select>
               </mat-form-field>
-              <mat-form-field appearance="outline" class="form-field filter-field">
+              <mat-form-field appearance="outline" class="form-field tree-field">
                 <mat-label>{{ 'PAYMENT_LIST.FILTERS.YEAR' | translate }}</mat-label>
-                <mat-select [(ngModel)]="filterYear">
+                <mat-select [(ngModel)]="treeFilterYear">
                   @for (y of years; track y) {
                   <mat-option [value]="y">{{ y }}</mat-option>
                   }
                 </mat-select>
               </mat-form-field>
-              <div class="filter-actions">
-                <button mat-flat-button color="primary" (click)="applyFilters()">
-                  <mat-icon>search</mat-icon>
-                  {{ 'PAYMENT_LIST.BUTTONS.APPLY' | translate }}
-                </button>
-                @if (hasActiveFilters) {
-                <button mat-stroked-button class="reset-filters-btn" (click)="clearFilters()">
-                  <mat-icon>filter_alt_off</mat-icon>
-                  {{ 'COMMON.BUTTONS.RESET' | translate }}
-                </button>
-                }
-              </div>
+              <button
+                mat-flat-button
+                color="primary"
+                (click)="loadTreePayments()"
+                class="tree-load-btn"
+              >
+                <mat-icon>refresh</mat-icon>
+                {{ 'PAYMENT_LIST.BUTTONS.LOAD' | translate }}
+              </button>
             </div>
           </mat-card-content>
         </mat-card>
+      </section>
 
-        <mat-card appearance="outlined" class="payments-section">
-          <mat-card-content>
-            <app-data-table
-              [dataSource]="payments()"
-              [displayedColumns]="displayedColumns"
-              [loading]="loading()"
-              [loadingMessage]="'PAYMENT_LIST.LOADING' | translate"
-              [showPaginator]="false"
-              emptyIcon="payments"
-              [emptyMessage]="'PAYMENT_LIST.EMPTY_STATE' | translate"
-            >
-              <ng-container matColumnDef="tenant">
-                <th mat-header-cell *matHeaderCellDef class="col-tenant">
-                  {{ 'PAYMENT_LIST.TABLE.TENANT_UNIT' | translate }}
-                </th>
-                <td
-                  mat-cell
-                  *matCellDef="let p"
-                  [attr.data-label]="'PAYMENT_LIST.TABLE.TENANT_UNIT' | translate"
-                >
-                  <div class="cell-stack">
-                    <span class="cell-main">{{ p.tenant_name || '—' }}</span>
-                    <span class="cell-sub">{{ p.unit_number }} • {{ p.building_name }}</span>
-                  </div>
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="unit">
-                <th mat-header-cell *matHeaderCellDef class="col-property">
-                  {{ 'PAYMENT_LIST.TABLE.PROPERTY' | translate }}
-                </th>
-                <td
-                  mat-cell
-                  *matCellDef="let p"
-                  [attr.data-label]="'PAYMENT_LIST.TABLE.PROPERTY' | translate"
-                >
-                  <div class="cell-stack">
-                    <span class="cell-main">{{ p.property_name || '—' }}</span>
-                    <span class="cell-sub">{{ p.building_code }}</span>
-                  </div>
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="period">
-                <th mat-header-cell *matHeaderCellDef class="col-period">
-                  {{ 'PAYMENT_LIST.TABLE.PERIOD' | translate }}
-                </th>
-                <td
-                  mat-cell
-                  *matCellDef="let p"
-                  [attr.data-label]="'PAYMENT_LIST.TABLE.PERIOD' | translate"
-                >
-                  {{ monthName(p.month) }} {{ p.year }}
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="amount_due">
-                <th mat-header-cell *matHeaderCellDef class="col-amount">
-                  {{ 'PAYMENT_LIST.TABLE.AMOUNT_DUE' | translate }}
-                </th>
-                <td
-                  mat-cell
-                  *matCellDef="let p"
-                  class="amount-cell"
-                  [attr.data-label]="'PAYMENT_LIST.TABLE.AMOUNT_DUE' | translate"
-                >
-                  {{ p.amount_due | number:'1.2-2' }}
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="amount_paid">
-                <th mat-header-cell *matHeaderCellDef class="col-amount">
-                  {{ 'PAYMENT_LIST.TABLE.AMOUNT_PAID' | translate }}
-                </th>
-                <td
-                  mat-cell
-                  *matCellDef="let p"
-                  class="amount-cell"
-                  [attr.data-label]="'PAYMENT_LIST.TABLE.AMOUNT_PAID' | translate"
-                >
-                  {{ p.amount_paid | number:'1.2-2' }}
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="status">
-                <th mat-header-cell *matHeaderCellDef class="col-status">
-                  {{ 'PAYMENT_LIST.TABLE.STATUS' | translate }}
-                </th>
-                <td
-                  mat-cell
-                  *matCellDef="let p"
-                  [attr.data-label]="'PAYMENT_LIST.TABLE.STATUS' | translate"
-                >
-                  <mat-chip-set>
-                    <mat-chip [class]="'status-' + p.status.toLowerCase()" highlighted
-                      >{{ p.status }}</mat-chip
-                    >
-                  </mat-chip-set>
-                </td>
-              </ng-container>
-              <ng-container matColumnDef="actions">
-                <th mat-header-cell *matHeaderCellDef class="col-actions"></th>
-                <td mat-cell *matCellDef="let p" data-label="">
-                  <button mat-icon-button (click)="openUpdateDialog(p)" matTooltip="Edit payment">
-                    <mat-icon>edit</mat-icon>
-                  </button>
-                  @if (p.amount_paid > 0) {
-                  <button
-                    mat-icon-button
-                    (click)="downloadReceipt(p)"
-                    matTooltip="Download receipt"
-                  >
-                    <mat-icon>receipt_long</mat-icon>
-                  </button>
-                  }
-                </td>
-              </ng-container>
-            </app-data-table>
-
-            @if (!loading() && payments().length > 0) {
-            <div class="mobile-cards-list">
-              @for (p of payments(); track p.id) {
-              <mat-card class="payment-card">
-                <mat-card-header>
-                  <div class="card-header-content">
-                    <div class="card-left">
-                      <div class="card-tenant">{{ p.tenant_name || '—' }}</div>
-                      <div class="card-location">{{ p.unit_number }} • {{ p.building_name }}</div>
-                    </div>
-                    <mat-chip-set>
-                      <mat-chip [class]="'status-' + p.status.toLowerCase()" size="small"
-                        >{{ p.status }}</mat-chip
-                      >
-                    </mat-chip-set>
-                  </div>
-                </mat-card-header>
-                <mat-card-content class="card-amounts">
-                  <div class="amount-row">
-                    <span class="period-label">{{ monthName(p.month) }} {{ p.year }}</span>
-                  </div>
-                  <div class="amount-row">
-                    <div class="amount-col">
-                      <span class="amount-label">Due</span>
-                      <span class="amount-value">৳{{ p.amount_due | number:'1.2-2' }}</span>
-                    </div>
-                    <div class="amount-col">
-                      <span class="amount-label">Paid</span>
-                      <span class="amount-value">৳{{ p.amount_paid | number:'1.2-2' }}</span>
-                    </div>
-                  </div>
-                </mat-card-content>
-                <mat-card-actions>
-                  <button mat-button color="primary" (click)="openUpdateDialog(p)" class="edit-btn">
-                    <mat-icon>edit</mat-icon>
-                    <span class="edit-text">Update</span>
-                  </button>
-                  @if (p.amount_paid > 0) {
-                  <button mat-button (click)="downloadReceipt(p)">
-                    <mat-icon>receipt_long</mat-icon>
-                    <span class="edit-text">Receipt</span>
-                  </button>
-                  }
-                </mat-card-actions>
-              </mat-card>
-              }
-            </div>
-
-            }
-
-            <mat-paginator
-              [length]="total()"
-              [pageSize]="pageSize()"
-              [pageSizeOptions]="[10, 20, 50]"
-              (page)="onPageChange($event)"
-              class="pagination"
-            ></mat-paginator>
-          </mat-card-content>
-        </mat-card>
+      <!-- Tree Content -->
+      @if (treeLoading()) {
+      <div class="tree-loading">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>{{ 'PAYMENT_LIST.TREE.LOADING' | translate }}</p>
       </div>
-    </mat-tab>
-
-    <!-- ── Tab 2: By Property ── -->
-    <mat-tab [label]="'PAYMENT_LIST.TABS.BY_PROPERTY' | translate">
-      <div class="tab-pane">
-        <!-- Tree Filters -->
-        <section class="tree-filters-section">
-          <mat-card appearance="outlined" class="filters-card">
+      } @else if (treeData().length === 0) {
+      <mat-card appearance="outlined" class="empty-card">
+        <mat-card-content class="empty-content">
+          <mat-icon class="empty-icon">account_tree</mat-icon>
+          <h3>{{ 'PAYMENT_LIST.TREE.EMPTY_TITLE' | translate }}</h3>
+          <p>{{ 'PAYMENT_LIST.TREE.EMPTY_HINT' | translate }}</p>
+        </mat-card-content>
+      </mat-card>
+      } @else {
+      <div class="tree-view">
+        @for (property of treeData(); track property.property_id) {
+        <div class="property-block">
+          <!-- Property Card -->
+          <mat-card
+            class="property-card"
+            [style.border-left-color]="collectionRateColor(property.collectionRate)"
+          >
             <mat-card-content>
-              <div class="tree-filters-row">
-                <mat-form-field appearance="outline" class="form-field tree-field">
-                  <mat-label>{{ 'PAYMENT_LIST.FILTERS.MONTH' | translate }}</mat-label>
-                  <mat-select [(ngModel)]="treeFilterMonth">
-                    <mat-option value="">{{ 'PAYMENT_LIST.FILTERS.ALL' | translate }}</mat-option>
-                    @for (m of months; track m.value) {
-                    <mat-option [value]="m.value"
-                      >{{ 'PAYMENT_LIST.MONTHS.' + m.label.toUpperCase() | translate }}</mat-option
+              <div class="property-card-layout">
+                <div class="property-identity">
+                  <mat-icon class="prop-icon">
+                    {{ property.property_type === 'Commercial' ? 'storefront' : 'domain' }}
+                  </mat-icon>
+                  <div class="property-description">
+                    <div class="property-name">{{ property.property_name }}</div>
+                    <div class="property-tags">
+                      @if (property.property_type) {
+                      <span class="property-type-tag">
+                        {{ 'PAYMENT_LIST.TREE.' + property.property_type.toUpperCase() | translate
+                        }}
+                      </span>
+                      }
+                      <span class="property-meta">
+                        {{ property.totalBuildings }} {{ 'PAYMENT_LIST.TREE.BUILDINGS' | translate
+                        }} · {{ property.unitCount }} {{ 'PAYMENT_LIST.TREE.UNITS_WITH_PAYMENTS' |
+                        translate }}
+                      </span>
+                    </div>
+                    @if (property.address) {
+                    <p class="property-address">
+                      <mat-icon>location_on</mat-icon>
+                      {{ property.address }}
+                    </p>
+                    }
+                  </div>
+                </div>
+                <div class="property-financials">
+                  <div class="property-collection">
+                    <span class="prop-fin-label"
+                      >{{ 'PAYMENT_LIST.TREE.COLLECTION' | translate }}</span
                     >
-                    }
-                  </mat-select>
-                </mat-form-field>
-                <mat-form-field appearance="outline" class="form-field tree-field">
-                  <mat-label>{{ 'PAYMENT_LIST.FILTERS.YEAR' | translate }}</mat-label>
-                  <mat-select [(ngModel)]="treeFilterYear">
-                    @for (y of years; track y) {
-                    <mat-option [value]="y">{{ y }}</mat-option>
-                    }
-                  </mat-select>
-                </mat-form-field>
-                <button
-                  mat-flat-button
-                  color="primary"
-                  (click)="loadTreePayments()"
-                  class="tree-load-btn"
-                  style="margin-left: auto"
-                >
-                  <mat-icon>refresh</mat-icon>
-                  {{ 'PAYMENT_LIST.BUTTONS.LOAD' | translate }}
-                </button>
+                    <div class="property-collection-amounts">
+                      <strong class="prop-fin-value collected">
+                        ৳{{ property.totalPaid | number:'1.0-0' }}
+                      </strong>
+                      <span> / ৳{{ property.totalDue | number:'1.0-0' }}</span>
+                    </div>
+                    <mat-progress-bar
+                      mode="determinate"
+                      [value]="property.collectionRate"
+                      class="prop-rate-bar"
+                    ></mat-progress-bar>
+                    <span class="property-collection-rate">
+                      {{ property.collectionRate | number:'1.1-1' }}% {{
+                      'PAYMENT_LIST.INSIGHTS.TOTAL_COLLECTED' | translate }}
+                    </span>
+                  </div>
+                  <div class="property-actions">
+                    <a
+                      mat-stroked-button
+                      [routerLink]="['/properties', property.property_id]"
+                      class="property-view-button"
+                    >
+                      <mat-icon>apartment</mat-icon>
+                      {{ 'PAYMENT_LIST.TREE.VIEW_PROPERTY' | translate }}
+                    </a>
+                  </div>
+                </div>
               </div>
             </mat-card-content>
           </mat-card>
-        </section>
 
-        <!-- Tree Content -->
-        @if (treeLoading()) {
-        <div class="tree-loading">
-          <mat-spinner diameter="40"></mat-spinner>
-          <p>{{ 'PAYMENT_LIST.TREE.LOADING' | translate }}</p>
-        </div>
-        } @else if (treeData().length === 0) {
-        <mat-card appearance="outlined" class="empty-card">
-          <mat-card-content class="empty-content">
-            <mat-icon class="empty-icon">account_tree</mat-icon>
-            <h3>{{ 'PAYMENT_LIST.TREE.EMPTY_TITLE' | translate }}</h3>
-            <p>{{ 'PAYMENT_LIST.TREE.EMPTY_HINT' | translate }}</p>
-          </mat-card-content>
-        </mat-card>
-        } @else {
-        <div class="tree-view">
-          @for (property of treeData(); track property.property_id) {
-          <div class="property-block">
-            <!-- Property Card -->
-            <mat-card
-              class="property-card"
-              [style.border-left-color]="collectionRateColor(property.collectionRate)"
-            >
-              <mat-card-content>
-                <div class="property-card-layout">
-                  <div class="property-identity">
-                    <mat-icon class="prop-icon">location_city</mat-icon>
-                    <div>
-                      <div class="property-name">{{ property.property_name }}</div>
-                      <div class="property-meta">
-                        {{ property.buildings.length }} building{{ property.buildings.length !== 1 ?
-                        's' : '' }}
-                      </div>
-                    </div>
-                  </div>
-                  <div class="property-financials">
-                    <div class="prop-fin-item">
-                      <span class="prop-fin-label"
-                        >{{ 'PAYMENT_LIST.SUMMARY.TOTAL_DUE' | translate }}</span
-                      >
-                      <span class="prop-fin-value">৳{{ property.totalDue | number:'1.0-0' }}</span>
-                    </div>
-                    <div class="prop-fin-sep"></div>
-                    <div class="prop-fin-item">
-                      <span class="prop-fin-label"
-                        >{{ 'PAYMENT_LIST.SUMMARY.TOTAL_COLLECTED' | translate }}</span
-                      >
-                      <span class="prop-fin-value collected"
-                        >৳{{ property.totalPaid | number:'1.0-0' }}</span
-                      >
-                    </div>
-                    <div class="prop-fin-sep"></div>
-                    <div class="prop-badges">
-                      @if (property.paidCount > 0) {
-                      <span class="tree-badge badge-paid">{{ property.paidCount }} Paid</span>
-                      } @if (property.partialCount > 0) {
-                      <span class="tree-badge badge-partial"
-                        >{{ property.partialCount }} Partial</span
-                      >
-                      } @if (property.dueCount > 0) {
-                      <span class="tree-badge badge-due">{{ property.dueCount }} Due</span>
-                      } @if (property.overdueCount > 0) {
-                      <span class="tree-badge badge-overdue"
-                        >{{ property.overdueCount }} Overdue</span
-                      >
-                      }
-                    </div>
-                    <div class="prop-rate-block">
-                      <span
-                        class="prop-rate-pct"
-                        [style.color]="collectionRateColor(property.collectionRate)"
-                      >
-                        {{ property.collectionRate | number:'1.0-0' }}%
-                      </span>
-                      <mat-progress-bar
-                        mode="determinate"
-                        [value]="property.collectionRate"
-                        class="prop-rate-bar"
-                      ></mat-progress-bar>
-                    </div>
-                  </div>
+          <!-- Buildings -->
+          <div class="buildings-stack">
+            @for (building of property.buildings; track building.building_id) {
+            <mat-card class="building-card" appearance="outlined">
+              <div class="building-header">
+                <div class="building-title-row">
+                  <mat-icon class="bldg-icon">business</mat-icon>
+                  <span class="building-name">{{ building.building_name }}</span>
+                  <span class="building-code-chip">{{ building.building_code }}</span>
                 </div>
-              </mat-card-content>
+                <div class="building-summary-row">
+                  <span class="bldg-count">
+                    {{ building.payments.length }} {{ 'PAYMENT_LIST.TREE.PAYMENTS_SUFFIX' |
+                    translate }}
+                  </span>
+                  <span
+                    >{{ 'PAYMENT_LIST.TABLE.AMOUNT_DUE' | translate }}:
+                    <strong class="bldg-due">৳{{ building.totalDue | number:'1.0-0' }}</strong>
+                  </span>
+                  <span
+                    >{{ 'PAYMENT_LIST.TABLE.AMOUNT_PAID' | translate }}:
+                    <strong class="bldg-paid">৳{{ building.totalPaid | number:'1.0-0' }}</strong>
+                  </span>
+                  <span
+                    class="bldg-rate"
+                    [style.color]="collectionRateColor(building.collectionRate)"
+                  >
+                    {{ building.collectionRate | number:'1.1-1' }}% {{
+                    'PAYMENT_LIST.INSIGHTS.TOTAL_COLLECTED' | translate }}
+                  </span>
+                </div>
+              </div>
             </mat-card>
-
-            <!-- Buildings -->
-            <div class="buildings-stack">
-              @for (building of property.buildings; track building.building_id) {
-              <mat-card class="building-card" appearance="outlined">
-                <div class="building-header">
-                  <div class="building-title-row">
-                    <mat-icon class="bldg-icon">business</mat-icon>
-                    <span class="building-name">{{ building.building_name }}</span>
-                    <span class="building-code-chip">{{ building.building_code }}</span>
-                  </div>
-                  <div class="building-summary-row">
-                    <span class="bldg-count"
-                      >{{ building.payments.length }} {{ 'PAYMENT_LIST.TREE.PAYMENTS_SUFFIX' |
-                      translate }}</span
-                    >
-                    <span class="bldg-amounts">
-                      <span class="bldg-paid">৳{{ building.totalPaid | number:'1.0-0' }}</span>
-                      <span class="bldg-sep"> / </span>
-                      <span class="bldg-due">৳{{ building.totalDue | number:'1.0-0' }}</span>
-                    </span>
-                    <span
-                      class="bldg-rate"
-                      [style.color]="collectionRateColor(building.collectionRate)"
-                    >
-                      {{ building.collectionRate | number:'1.0-0' }}%
-                    </span>
-                  </div>
-                </div>
-                <div class="bldg-table-wrap">
-                  <table class="bldg-table">
-                    <thead>
-                      <tr>
-                        <th>{{ 'PAYMENT_LIST.TABLE.TENANT_UNIT' | translate }}</th>
-                        <th>{{ 'PAYMENT_LIST.TABLE.UNIT' | translate }}</th>
-                        <th>{{ 'PAYMENT_LIST.TABLE.PERIOD' | translate }}</th>
-                        <th class="num">{{ 'PAYMENT_LIST.TABLE.AMOUNT_DUE' | translate }}</th>
-                        <th class="num">{{ 'PAYMENT_LIST.TABLE.AMOUNT_PAID' | translate }}</th>
-                        <th>{{ 'PAYMENT_LIST.TABLE.STATUS' | translate }}</th>
-                        <th></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (p of building.payments; track p.id) {
-                      <tr class="bldg-row">
-                        <td [attr.data-label]="'PAYMENT_LIST.TABLE.TENANT_UNIT' | translate">
-                          {{ p.tenant_name || '—' }}
-                        </td>
-                        <td
-                          class="unit-cell"
-                          [attr.data-label]="'PAYMENT_LIST.TABLE.UNIT' | translate"
-                        >
-                          {{ p.unit_number }}
-                        </td>
-                        <td
-                          class="period-cell"
-                          [attr.data-label]="'PAYMENT_LIST.TABLE.PERIOD' | translate"
-                        >
-                          {{ monthName(p.month) }} {{ p.year }}
-                        </td>
-                        <td
-                          class="num mono"
-                          [attr.data-label]="'PAYMENT_LIST.TABLE.AMOUNT_DUE' | translate"
-                        >
-                          {{ p.amount_due | number:'1.0-0' }}
-                        </td>
-                        <td
-                          class="num mono"
-                          [attr.data-label]="'PAYMENT_LIST.TABLE.AMOUNT_PAID' | translate"
-                        >
-                          {{ p.amount_paid | number:'1.0-0' }}
-                        </td>
-                        <td [attr.data-label]="'PAYMENT_LIST.TABLE.STATUS' | translate">
-                          <span [class]="'inline-badge status-' + p.status.toLowerCase()"
-                            >{{ p.status }}</span
-                          >
-                        </td>
-                        <td class="action-cell" data-label="">
-                          <button
-                            mat-icon-button
-                            (click)="openUpdateDialog(p)"
-                            matTooltip="Edit payment"
-                          >
-                            <mat-icon>edit</mat-icon>
-                          </button>
-                          @if (p.amount_paid > 0) {
-                          <button
-                            mat-icon-button
-                            (click)="downloadReceipt(p)"
-                            matTooltip="Download receipt"
-                          >
-                            <mat-icon>receipt_long</mat-icon>
-                          </button>
-                          }
-                        </td>
-                      </tr>
-                      }
-                    </tbody>
-                  </table>
-                </div>
-              </mat-card>
-              }
-            </div>
+            }
           </div>
-          }
         </div>
         }
       </div>
-    </mat-tab>
-  </mat-tab-group>
+      <footer class="portfolio-summary">
+        <div class="portfolio-summary-facts">
+          <span>
+            <i class="summary-dot summary-dot-primary"></i>
+            {{ 'PAYMENT_LIST.TREE.MANAGED_PROPERTIES' | translate }}:
+            <strong>{{ treeData().length }}</strong>
+          </span>
+          <span>
+            <i class="summary-dot summary-dot-success"></i>
+            {{ 'PAYMENT_LIST.TREE.FULLY_COLLECTED' | translate }}:
+            <strong>{{ fullyCollectedProperties() }}</strong>
+          </span>
+          <span>
+            <i class="summary-dot summary-dot-warning"></i>
+            {{ 'PAYMENT_LIST.TREE.ACTION_REQUIRED' | translate }}:
+            <strong>{{ propertiesNeedingAction() }}</strong>
+          </span>
+        </div>
+        <button mat-stroked-button (click)="exportPortfolioSummary()">
+          <mat-icon>download</mat-icon>
+          {{ 'PAYMENT_LIST.TREE.EXPORT_SUMMARY' | translate }}
+        </button>
+      </footer>
+      }
+    </div>
+    }
+  </section>
+
+  <section class="insights-grid">
+    <article class="insight-card trend-card">
+      <div class="insight-heading">
+        <div>
+          <h2>{{ 'PAYMENT_LIST.INSIGHTS.TRENDS_TITLE' | translate }}</h2>
+          <p>{{ 'PAYMENT_LIST.INSIGHTS.TRENDS_DESCRIPTION' | translate }}</p>
+        </div>
+        <span class="insight-period"
+          >{{ 'PAYMENT_LIST.INSIGHTS.LAST_SIX_MONTHS' | translate }}</span
+        >
+      </div>
+      @if (trendLoading()) {
+      <p class="insight-empty" role="status">
+        {{ 'PAYMENT_LIST.INSIGHTS.LOADING_TRENDS' | translate }}
+      </p>
+      } @else if (monthlyTrend().length) {
+      <div
+        class="trend-chart"
+        role="img"
+        [attr.aria-label]="'PAYMENT_LIST.A11Y.PAYMENT_TRENDS' | translate"
+      >
+        @for (month of monthlyTrend(); track month.key) {
+        <div class="trend-month">
+          <div class="trend-bars">
+            <span
+              class="trend-bar"
+              [class.current-month-bar]="month.isCurrentMonth"
+              [style.height.%]="chartMaximum() ? month.amountPaid / chartMaximum() * 100 : 0"
+              [attr.title]="('PAYMENT_LIST.INSIGHTS.TOTAL_COLLECTED' | translate) + ': ৳' + (month.amountPaid | number:'1.0-0')"
+            ></span>
+          </div>
+          <span>{{ 'PAYMENT_LIST.MONTHS.' + month.label.toUpperCase() | translate }}</span>
+        </div>
+        }
+      </div>
+      } @else {
+      <p class="insight-empty">{{ 'PAYMENT_LIST.INSIGHTS.NO_TREND_DATA' | translate }}</p>
+      }
+    </article>
+
+    @if (summary(); as paymentSummary) {
+    <article class="insight-card health-card">
+      <div>
+        <h2>{{ 'PAYMENT_LIST.INSIGHTS.PORTFOLIO_HEALTH' | translate }}</h2>
+        <p>{{ 'PAYMENT_LIST.INSIGHTS.HEALTH_DESCRIPTION' | translate }}</p>
+        <div class="goal-block">
+          <div class="goal-label">
+            <span>{{ 'PAYMENT_LIST.INSIGHTS.COLLECTION_GOAL' | translate }}</span>
+            <strong>95%</strong>
+          </div>
+          <mat-progress-bar
+            mode="determinate"
+            [value]="paymentSummary.collection_rate"
+          ></mat-progress-bar>
+          <span class="goal-caption">
+            {{ paymentSummary.collection_rate | number:'1.1-1' }}% {{
+            'PAYMENT_LIST.SUMMARY.COLLECTION_RATE' | translate }}
+          </span>
+        </div>
+        <a mat-stroked-button color="primary" routerLink="/reports">
+          {{ 'PAYMENT_LIST.INSIGHTS.VIEW_DETAILS' | translate }}
+        </a>
+      </div>
+      <div class="portfolio-facts">
+        <span class="fact-icon"><mat-icon>verified</mat-icon></span>
+        <span>
+          <strong
+            >{{ paymentSummary.property_count }} {{ 'PAYMENT_LIST.INSIGHTS.PROPERTIES' | translate
+            }}</strong
+          >
+          <small>
+            {{ paymentSummary.building_count }} {{ 'PAYMENT_LIST.INSIGHTS.BUILDINGS' | translate }}
+          </small>
+        </span>
+      </div>
+    </article>
+    }
+  </section>
 </div>
