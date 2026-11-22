@@ -176,6 +176,55 @@ func TestAuthRequiredContextPopulation(t *testing.T) {
 	})
 }
 
+func TestRequireTokenAudienceSeparatesCustomerAndOperationsAPIs(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	secret := "test-secret"
+
+	tests := []struct {
+		name           string
+		role           string
+		audience       string
+		hasAudience    bool
+		required       string
+		expectedStatus int
+	}{
+		{name: "customer token reaches customer API", role: RoleOrgAdmin, audience: "customer", hasAudience: true, required: "customer", expectedStatus: http.StatusOK},
+		{name: "operations token is rejected by customer API", role: RoleSuperAdmin, audience: "operations", hasAudience: true, required: "customer", expectedStatus: http.StatusForbidden},
+		{name: "customer-scoped platform admin token is rejected by customer API", role: RoleSuperAdmin, audience: "customer", hasAudience: true, required: "customer", expectedStatus: http.StatusForbidden},
+		{name: "customer token is rejected by operations API", role: RoleOrgAdmin, audience: "customer", hasAudience: true, required: "operations", expectedStatus: http.StatusForbidden},
+		{name: "legacy customer token remains valid", role: RoleOrgAdmin, required: "customer", expectedStatus: http.StatusOK},
+		{name: "legacy platform admin token is rejected by customer API", role: RoleSuperAdmin, required: "customer", expectedStatus: http.StatusForbidden},
+		{name: "legacy unrecognized staff role is rejected by customer API", role: "SUPPORT_AGENT", required: "customer", expectedStatus: http.StatusForbidden},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			claims := jwt.MapClaims{
+				"user_id":  1,
+				"username": "testuser",
+				"role":     tt.role,
+				"exp":      time.Now().Add(time.Hour).Unix(),
+			}
+			if tt.hasAudience {
+				claims["aud"] = tt.audience
+			}
+			token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(secret))
+			assert.NoError(t, err)
+
+			router := gin.New()
+			router.Use(AuthRequired(secret, nil), RequireTokenAudience(tt.required))
+			router.GET("/test", func(c *gin.Context) { c.Status(http.StatusOK) })
+
+			request := httptest.NewRequest(http.MethodGet, "/test", nil)
+			request.Header.Set("Authorization", "Bearer "+token)
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, request)
+
+			assert.Equal(t, tt.expectedStatus, response.Code)
+		})
+	}
+}
+
 func TestRequireRole(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 

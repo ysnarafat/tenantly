@@ -53,6 +53,24 @@
       "CONFIRM_BUTTON": "{{entityLabel}} মুছুন"
     }
   },
+  "INVITATION_ACTIVATION": {
+    "TITLE": "আপনার Tenantly অ্যাকাউন্ট সক্রিয় করুন",
+    "VALIDATING": "আমন্ত্রণ যাচাই করা হচ্ছে…",
+    "ERROR_INVALID": "এই আমন্ত্রণের লিংকটি অবৈধ, মেয়াদোত্তীর্ণ বা ইতিমধ্যে ব্যবহৃত হয়েছে।",
+    "GO_TO_LOGIN": "সাইন ইন করুন",
+    "INVITED_TO": "আপনাকে এই প্রতিষ্ঠান পরিচালনার জন্য আমন্ত্রণ জানানো হয়েছে:",
+    "FIRST_NAME": "নামের প্রথম অংশ",
+    "LAST_NAME": "নামের শেষ অংশ",
+    "REQUIRED": "এই তথ্যটি আবশ্যক।",
+    "PASSWORD": "পাসওয়ার্ড তৈরি করুন",
+    "PASSWORD_HELP": "বড় হাতের, ছোট হাতের অক্ষর, সংখ্যা ও চিহ্নসহ ৮–৭২ অক্ষর ব্যবহার করুন।",
+    "PASSWORD_ERROR": "পাসওয়ার্ডটি নির্ধারিত শর্ত পূরণ করেনি।",
+    "CONFIRM_PASSWORD": "পাসওয়ার্ড নিশ্চিত করুন",
+    "PASSWORD_MISMATCH": "পাসওয়ার্ড দুটি মেলেনি।",
+    "SUBMITTING": "অ্যাকাউন্ট সক্রিয় করা হচ্ছে…",
+    "SUBMIT": "অ্যাকাউন্ট তৈরি করুন",
+    "ERROR_SUBMIT": "অ্যাকাউন্ট সক্রিয় করা যায়নি। আবার চেষ্টা করুন।"
+  },
   "DUE_LIST": {
     "PAGE_TITLE": "ভাড়া বাকি তালিকা",
     "REFRESH": "রিফ্রেশ",
@@ -126,19 +144,30 @@
   },
   "TENANT_LIST": {
     "PAGE_TITLE": "ভাড়াটেরা",
+    "PAGE_SUBTITLE": "আবাসিক ও বাণিজ্যিক ভাড়ার রেকর্ড পরিচালনা করুন",
     "STATS": {
       "TOTAL": "মোট",
       "ACTIVE": "সক্রিয়",
-      "INACTIVE": "নিষ্ক্রিয়"
+      "INACTIVE": "নিষ্ক্রিয়",
+      "NEW_THIS_MONTH": "এই মাসে নতুন",
+      "TENANTS": "জন ভাড়াটে"
     },
     "BUTTONS": {
-      "ADD_TENANT": "নতুন ভাড়াটে যোগ করুন"
+      "ADD_TENANT": "নতুন ভাড়াটে যোগ করুন",
+      "EXPORT": "তালিকা রপ্তানি",
+      "APPLY_FILTERS": "ফিল্টার প্রয়োগ"
+    },
+    "EXPORT": {
+      "EMAIL": "ইমেইল",
+      "PHONE": "ফোন"
     },
     "FILTERS": {
       "SEARCH_LABEL": "ভাড়াটে খুঁজুন",
       "SEARCH_PLACEHOLDER": "নাম, ফোন, ইমেল বা নাগরিকত্ব নম্বর…",
       "STATUS_LABEL": "অবস্থা",
       "TYPE_LABEL": "ধরন",
+      "ALL_TYPES": "সব ধরন",
+      "ALL_STATUS": "সব অবস্থা",
       "INDIVIDUAL": "ব্যক্তিগত",
       "BUSINESS": "ব্যবসা",
       "ALL": "সব"
@@ -181,15 +210,63 @@
       "ACTIVE_LEASES": "সক্রিয় লীজ",
       "EXPIRING_SOON": "শীঘ্রই শেষ হবে",
       "TOTAL_ATTACHMENTS": "মোট সংযুক্তি",
-      "RECENT_FILES": "সাম্প্রতিক ফাইল"
+      "RECENT_FILES": "সাম্প্রতিক ফাইল",
+      "EXPIRING_WITHIN_30_DAYS": "৩০ দিনের মধ্যে শেষ হবে",
+      "TOTAL_DUE": "মোট বকেয়া ভাড়া",
+      "TOTAL_DUE_DESCRIPTION": "নথিভুক্ত পেমেন্টের মোট",
+      "TOTAL_COLLECTED": "এই মাসে সংগৃহীত",
+      "TOTAL_COLLECTED_DESCRIPTION": "নথিভুক্ত পেমেন্টের বিপরীতে পরিশোধিত",
+      "TOTAL_PENDING": "অপেক্ষমাণ পেমেন্ট",
+      "OVERDUE": "মেয়াদোত্তীর্ণ",
+      "COLLECTION_EFFICIENCY": "আদায়ের হার",
+      "OCCUPANCY_RATE": "দখলের হার",
+      "UNITS_OCCUPIED": "টি ইউনিট দখলকৃত",
+      "OCCUPIED": "দখলকৃত",
+      "CURRENT_MONTH": "চলতি মাসের জন্য",
+      "PENDING_COUNT": "অপেক্ষমাণ",
+      "OVERDUE_UNITS": "টি ইউনিটের বকেয়া",
+      "LEASES": "টি লীজ",
+      "ACTIVE": "সক্রিয়",
+      "NEEDS_RENEWAL": "নবায়ন প্রয়োজন",
+      "VACANT": "খালি"
     },
     "SECTIONS": {
       "EXPIRING_LEASES": "শীঘ্রই শেষ হওয়া লীজ",
       "RECENT_LEASES": "সাম্প্রতিক লীজ",
-      "RECENT_ATTACHMENTS": "সাম্প্রতিক সংযুক্তি"
+      "RECENT_ATTACHMENTS": "সাম্প্রতিক নথি",
+      "PORTFOLIO_OVERVIEW": "পোর্টফোলিও সারসংক্ষেপ",
+      "ACTIVE_LEASES_BY_PROPERTY": "সম্পত্তি অনুযায়ী সক্রিয় লীজ ও মাসিক ভাড়া",
+      "ACTIVE_LEASE": "সক্রিয় লীজ",
+      "ACTIVE_LEASES": "সক্রিয় লীজ",
+      "OF_TOTAL_RENT": "মোট ভাড়ার",
+      "ACTIVE": "সক্রিয়",
+      "EXPIRING_SOON": "শীঘ্রই শেষ হবে",
+      "EXPIRING_DESCRIPTION": "আগামী ৩০ দিনের মধ্যে শেষ হবে",
+      "RECENT_LEASES_DESCRIPTION": "আপনার সম্পত্তির সাম্প্রতিক কার্যকলাপ",
+      "EXPIRED": "মেয়াদ শেষ",
+      "COLLECTION_TRENDS": "মাসিক ভাড়া আদায়ের প্রবণতা",
+      "COLLECTION_TRENDS_DESCRIPTION": "বিল করা ভাড়া ও প্রাপ্ত পেমেন্টের তুলনা",
+      "RECENT_COLLECTIONS": "সাম্প্রতিক আদায় ও লেনদেন",
+      "RECENT_COLLECTIONS_DESCRIPTION": "সাম্প্রতিক নথিভুক্ত পেমেন্ট লেনদেন",
+      "ACTIVE_PROPERTIES": "সক্রিয় সম্পত্তি",
+      "BUILDINGS": "টি ভবন"
     },
     "BUTTONS": {
-      "VIEW_ALL": "সব দেখুন"
+      "VIEW_ALL": "সব দেখুন",
+      "VIEW_ALL_LEASES": "সব লীজ দেখুন",
+      "ALL_PAYMENTS": "সব পেমেন্ট",
+      "UPLOAD_DOCUMENT": "নতুন নথি আপলোড করুন",
+      "DOWNLOAD_DOCUMENT": "{{name}} ডাউনলোড করুন"
+    },
+    "TABLE": {
+      "TENANT_UNIT": "ভাড়াটে ও ইউনিট",
+      "PROPERTY": "সম্পত্তি",
+      "MONTHLY_RENT": "মাসিক ভাড়া",
+      "STATUS": "অবস্থা"
+    },
+    "TRANSACTIONS": {
+      "PAID_IN_FULL": "সম্পূর্ণ পরিশোধিত",
+      "PARTIAL": "আংশিক"
     },
     "SUFFIXES": {
       "DAYS_LEFT": "দিন বাকি",
@@ -197,9 +274,37 @@
     },
     "EMPTY_STATE": {
       "NO_RECENT_LEASES": "কোনো সাম্প্রতিক লীজ পাওয়া যায়নি।",
-      "NO_RECENT_ATTACHMENTS": "কোনো সাম্প্রতিক সংযুক্তি পাওয়া যায়নি।"
+      "NO_RECENT_ATTACHMENTS": "কোনো সাম্প্রতিক সংযুক্তি পাওয়া যায়নি।",
+      "NO_PROPERTY_DATA": "কোনো সক্রিয় সম্পত্তি পাওয়া যায়নি।",
+      "NO_COLLECTION_DATA": "এই সময়ের জন্য কোনো পেমেন্ট তথ্য নেই।",
+      "NO_RECENT_COLLECTIONS": "কোনো সাম্প্রতিক পেমেন্ট লেনদেন পাওয়া যায়নি।"
     },
-    "LOADING": "ড্যাশবোর্ড ডেটা লোড হচ্ছে..."
+    "CHART": {
+      "LAST_SIX_MONTHS": "গত ৬ মাস",
+      "YEAR_TO_DATE": "চলতি বছর",
+      "PERIOD_COLLECTED": "সময়ে মোট আদায়",
+      "AVERAGE_EFFICIENCY": "গড় আদায়ের হার",
+      "COLLECTION_TARGET": "আদায়ের লক্ষ্য",
+      "TOTAL_DUE": "মোট বকেয়া",
+      "COLLECTED": "আদায়",
+      "PEAK_COLLECTION": "সর্বোচ্চ আদায়",
+      "TARGET_NOTE": "আদায়ের লক্ষ্য: ৯০%",
+      "MONTH_OVER_MONTH": "মাসিক পরিবর্তন",
+      "LOWEST_COLLECTION": "সর্বনিম্ন মাস",
+      "OUTSTANDING_RECEIVABLES": "অনাদায়ী পাওনা",
+      "FULL_BREAKDOWN": "আদায়ের বিস্তারিত দেখুন",
+      "CURRENCY_NOTE": "সব পরিমাণ বাংলাদেশি টাকা (৳ BDT)"
+    },
+    "LOADING": "ড্যাশবোর্ড ডেটা লোড হচ্ছে...",
+    "INTRO": "স্বাগতম, {{user}}। আপনার সম্পত্তি, ভাড়া এবং আদায়ের সারসংক্ষেপ।",
+    "LIVE_PORTFOLIO": "লাইভ পোর্টফোলিও",
+    "RECORD_PAYMENT": "পেমেন্ট নথিভুক্ত করুন",
+    "A11Y": {
+      "PORTFOLIO_SUMMARY": "পোর্টফোলিও সারসংক্ষেপ",
+      "VIEW_DOCUMENTS": "সব নথি দেখুন",
+      "CHART_PERIOD": "আদায় চার্টের সময়সীমা",
+      "COLLECTION_CHART": "মাসিক বিল ও আদায়কৃত ভাড়া"
+    }
   },
   "CREATE_LEASE_DIALOG": {
     "TITLE": "নতুন লীজ তৈরি করুন",
@@ -519,17 +624,25 @@
   },
   "PAYMENT_LIST": {
     "PAGE_TITLE": "পেমেন্ট",
-    "PAGE_SUBTITLE": "সকল পেমেন্ট লেনদেন পরিচালনা ও ট্র্যাক করুন",
+    "PAGE_SUBTITLE": "আপনার সম্পত্তি পোর্টফোলিওর সব আয় পরিচালনা ও ট্র্যাক করুন।",
+    "A11Y": {
+      "FINANCIAL_SUMMARY": "আর্থিক সারসংক্ষেপ",
+      "PAYMENT_TRENDS": "গত ছয় মাসের বিল ও আদায়কৃত পেমেন্ট"
+    },
     "SUMMARY": {
       "TOTAL_DUE": "মোট বকেয়া",
       "TOTAL_COLLECTED": "মোট সংগৃহীত",
       "PENDING": "অপেক্ষমাণ",
       "OVERDUE": "নির্ধারিত সময় অতিক্রম করেছে",
-      "COLLECTION_RATE": "সংগ্রহের হার"
+      "COLLECTION_RATE": "সংগ্রহের হার",
+      "ALL_PERIODS": "সব পেমেন্ট সময়কাল মিলিয়ে",
+      "REMAINING_BALANCE": "বকেয়া ব্যালেন্স",
+      "PAST_DUE_BALANCE": "মেয়াদোত্তীর্ণ বকেয়া"
     },
     "TABS": {
       "ALL_PAYMENTS": "সকল পেমেন্ট",
-      "BY_PROPERTY": "সম্পত্তি অনুযায়ী"
+      "BY_PROPERTY": "সম্পত্তি অনুযায়ী",
+      "VIEW_SELECTOR": "পেমেন্টের ধরন"
     },
     "BUTTONS": {
       "NEW_PAYMENT": "নতুন পেমেন্ট",
@@ -538,22 +651,35 @@
       "UPDATE": "আপডেট করুন",
       "LOAD": "লোড করুন",
       "GENERATE_MONTHLY": "মাসিক তৈরি করুন",
-      "COLLECT_PAYMENTS": "পেমেন্ট সংগ্রহ করুন"
+      "COLLECT_PAYMENTS": "পেমেন্ট রেকর্ড করুন",
+      "EXPORT_REPORT": "রিপোর্ট এক্সপোর্ট করুন",
+      "GENERATE_TOOLTIP": "সক্রিয় লীজের জন্য বকেয়া রেকর্ড তৈরি করুন",
+      "RECEIPT": "রসিদ"
     },
     "FILTERS": {
       "STATUS": "স্থিতি",
       "MONTH": "মাস",
       "YEAR": "বছর",
-      "ALL": "সব"
+      "PERIOD": "সময়কাল",
+      "ALL": "সব",
+      "ALL_MONTHS": "সব মাস",
+      "OPTIONS": "ফিল্টার অপশন"
     },
     "TABLE": {
       "TENANT_UNIT": "ভাড়াটে / ইউনিট",
       "PROPERTY": "সম্পত্তি",
       "UNIT": "ইউনিট",
       "PERIOD": "সময়কাল",
-      "AMOUNT_DUE": "বকেয়া (৳)",
-      "AMOUNT_PAID": "পরিশোধিত (৳)",
-      "STATUS": "স্থিতি"
+      "AMOUNT_DUE": "বকেয়ার পরিমাণ",
+      "AMOUNT_PAID": "পরিশোধিত পরিমাণ",
+      "STATUS": "স্থিতি",
+      "ACTIONS": "কার্যক্রম"
+    },
+    "PAGINATION": {
+      "SHOWING": "{{total}}টি পেমেন্টের মধ্যে {{start}} থেকে {{end}} দেখানো হচ্ছে",
+      "NAVIGATION": "পেমেন্ট পৃষ্ঠা",
+      "PREVIOUS": "আগের পৃষ্ঠা",
+      "NEXT": "পরের পৃষ্ঠা"
     },
     "STATUS": {
       "PAID": "পরিশোধিত",
@@ -579,7 +705,39 @@
       "EMPTY_TITLE": "কোনো পেমেন্ট নেই",
       "EMPTY_HINT": "একটি সময়কাল নির্বাচন করে লোড করুন, অথবা মাসিক পেমেন্ট তৈরি করুন",
       "LOADING": "ট্রি তৈরি হচ্ছে...",
-      "PAYMENTS_SUFFIX": "পেমেন্ট"
+      "PAYMENTS_SUFFIX": "পেমেন্ট",
+      "PROPERTY_TYPE": "ধরন",
+      "ALL_PROPERTIES": "সব সম্পত্তি",
+      "RESIDENTIAL": "আবাসিক",
+      "COMMERCIAL": "বাণিজ্যিক",
+      "MIXED": "মিশ্র",
+      "SORT_BY": "সাজান",
+      "SORT_HIGHEST_DUE": "সর্বোচ্চ বকেয়া",
+      "SORT_COLLECTION_RATE": "আদায়ের হার",
+      "SORT_ALPHABETICAL": "বর্ণানুক্রমে",
+      "BUILDINGS": "ভবন",
+      "UNITS_WITH_PAYMENTS": "পেমেন্টসহ ইউনিট",
+      "COLLECTION": "আদায়",
+      "VIEW_PROPERTY": "সম্পত্তি দেখুন",
+      "MANAGED_PROPERTIES": "পরিচালিত সম্পত্তি",
+      "FULLY_COLLECTED": "সম্পূর্ণ আদায়",
+      "ACTION_REQUIRED": "পদক্ষেপ প্রয়োজন",
+      "EXPORT_SUMMARY": "পোর্টফোলিও সারাংশ রপ্তানি"
+    },
+    "INSIGHTS": {
+      "TRENDS_TITLE": "পেমেন্টের প্রবণতা",
+      "TRENDS_DESCRIPTION": "গত ছয় মাসে আদায়কৃত পেমেন্ট",
+      "LAST_SIX_MONTHS": "গত ৬ মাস",
+      "TOTAL_DUE": "মোট বকেয়া",
+      "TOTAL_COLLECTED": "আদায়",
+      "LOADING_TRENDS": "পেমেন্টের প্রবণতা লোড হচ্ছে...",
+      "NO_TREND_DATA": "এই সময়ের জন্য কোনো পেমেন্ট তথ্য নেই।",
+      "PORTFOLIO_HEALTH": "পোর্টফোলিওর অবস্থা",
+      "HEALTH_DESCRIPTION": "আদায়ের অগ্রগতি ও পোর্টফোলিওর পরিধি দেখুন।",
+      "COLLECTION_GOAL": "আদায়ের লক্ষ্য",
+      "VIEW_DETAILS": "বিস্তারিত দেখুন",
+      "PROPERTIES": "টি সম্পত্তি",
+      "BUILDINGS": "টি ভবন"
     },
     "EMPTY_STATE": "কোনো পেমেন্ট পাওয়া যায়নি",
     "LOADING": "পেমেন্ট লোড হচ্ছে..."
@@ -824,6 +982,38 @@
     "LOADING": "সংযুক্তি লোড হচ্ছে...",
     "NO_DESCRIPTION": "কোনো বিবরণ নেই"
   },
+  "SUPPORT_CENTER": {
+    "EYEBROW": "গ্রাহক সহায়তা",
+    "PAGE_TITLE": "সহায়তা কেন্দ্র",
+    "PAGE_SUBTITLE": "টিকিট তৈরি করুন অথবা আমাদের সহায়তা দলের সাথে কথোপকথন চালিয়ে যান।",
+    "NEW_TICKET": "সহায়তার টিকিট তৈরি করুন",
+    "SUBJECT": "বিষয়",
+    "SUBJECT_PLACEHOLDER": "কী বিষয়ে সহায়তা প্রয়োজন?",
+    "DESCRIPTION": "আমরা কীভাবে সহায়তা করতে পারি?",
+    "DESCRIPTION_PLACEHOLDER": "সমস্যা এবং ইতিমধ্যে চেষ্টা করা পদক্ষেপগুলো লিখুন।",
+    "SUBMIT": "টিকিট জমা দিন",
+    "SUBMITTING": "জমা হচ্ছে…",
+    "CASE_CREATED": "সহায়তার টিকিট তৈরি হয়েছে।",
+    "MY_TICKETS": "আপনার টিকিট",
+    "LOADING": "টিকিট লোড হচ্ছে…",
+    "EMPTY_TICKETS": "আপনি এখনো কোনো সহায়তার টিকিট তৈরি করেননি।",
+    "LOADING_CONVERSATION": "কথোপকথন লোড হচ্ছে…",
+    "YOU": "আপনি",
+    "NO_REPLIES": "এখনো কোনো উত্তর নেই। আমাদের দল এখানে উত্তর দেবে।",
+    "REPLY": "উত্তর",
+    "REPLY_PLACEHOLDER": "সহায়তা দলের জন্য বার্তা লিখুন…",
+    "SEND_REPLY": "উত্তর পাঠান",
+    "SELECT_TICKET": "একটি টিকিট নির্বাচন করুন",
+    "SELECT_TICKET_HINT": "অবস্থা ও কথোপকথন দেখতে একটি টিকিট বেছে নিন।",
+    "ERROR": "সহায়তার অনুরোধ সম্পন্ন করা যায়নি। আবার চেষ্টা করুন।",
+    "STATUS": {
+      "OPEN": "খোলা",
+      "IN_PROGRESS": "চলমান",
+      "WAITING": "অপেক্ষমাণ",
+      "RESOLVED": "সমাধান হয়েছে",
+      "CLOSED": "বন্ধ"
+    }
+  },
   "NAV": {
     "SUBTITLE": "সম্পত্তি ব্যবস্থাপনা",
     "SECTIONS": {
@@ -838,9 +1028,14 @@
       "PAYMENTS": "পেমেন্ট",
       "REPORTS": "রিপোর্ট",
       "DOCUMENTS": "ডকুমেন্ট",
+      "SUPPORT": "সহায়তা কেন্দ্র",
       "ORGANIZATIONS": "সংগঠনসমূহ",
       "INVITATIONS": "আমন্ত্রণ",
       "USERS": "ব্যবহারকারী"
+    },
+    "SUBMENU": {
+      "COLLECT_PAYMENTS": "পেমেন্ট রেকর্ড করুন",
+      "ELECTRICITY_BILLS": "বিদ্যুৎ বিল"
     },
     "USER_MENU": {
       "LOGOUT": "লগআউট"
@@ -882,6 +1077,7 @@
       "DESCRIPTION": "Tenantly বাংলাদেশের জন্য তৈরি সম্পত্তি ও ভাড়া ব্যবস্থাপনা সিস্টেম — প্রতিটি ইউনিট, ভাড়াটে এবং ক্যাশ, ব্যাংক ট্রান্সফার, বিকাশ বা নগদে করা প্রতিটি পেমেন্টের হিসাব রাখুন, ইংরেজি অথবা বাংলায়।"
     },
     "NAV": {
+      "PRICING": "মূল্য",
       "FAQ": "প্রশ্নোত্তর",
       "CONTACT": "যোগাযোগ",
       "LOGIN": "লগ ইন"
@@ -914,6 +1110,21 @@
       "PORTFOLIO_TITLE": "প্রতিটি ভবন, প্রতিটি ইউনিট, চোখের সামনে",
       "PORTFOLIO_BODY": "একটা বাড়ি হোক বা পুরো একটা অ্যাপার্টমেন্ট ভবন — প্রপার্টি, ভবন ও ইউনিট সাজান ঠিক যেভাবে আপনি ভাবেন।"
     },
+    "PRICING": {
+      "EYEBROW": "প্রতিটি পোর্টফোলিওর জন্য পরিকল্পনা",
+      "TITLE": "সহজ পরিকল্পনা, স্পষ্ট সীমা",
+      "SUBTITLE": "আপনার প্রপার্টি ও টিমের জন্য উপযুক্ত পরিকল্পনা বেছে নিন। শুরু করতে আমাদের সাথে যোগাযোগ করুন।",
+      "LOADING": "পরিকল্পনা লোড হচ্ছে…",
+      "ERROR": "এই মুহূর্তে পরিকল্পনা দেখা যাচ্ছে না। বিস্তারিত জানতে আমাদের সাথে যোগাযোগ করুন।",
+      "EMPTY": "এই মুহূর্তে কোনো পরিকল্পনা প্রকাশিত নেই। আপনার পোর্টফোলিও নিয়ে কথা বলতে আমাদের সাথে যোগাযোগ করুন।",
+      "POPULAR": "সবচেয়ে জনপ্রিয়",
+      "CONTACT_PRICE": "আলোচনা করুন",
+      "PER_PERIOD": {
+        "monthly": "প্রতি মাসে",
+        "yearly": "প্রতি বছরে"
+      },
+      "CONTACT_CTA": "আমাদের সাথে কথা বলুন"
+    },
     "FAQ": {
       "EYEBROW": "সহজ ভাষায় উত্তর",
       "TITLE": "এটা কি আসলেই সহজ?",
@@ -932,7 +1143,7 @@
       "Q7_Q": "আমার ভাড়াটেদের এনআইডি ও ব্যক্তিগত তথ্য কি সুরক্ষিত?",
       "Q7_A": "হ্যাঁ। জাতীয় পরিচয়পত্র নম্বর এনক্রিপ্ট করে রাখা হয়, এবং স্পর্শকাতর কাজের জন্য দ্বিতীয় ধাপের যাচাই লাগে — তাই শুধু পাসওয়ার্ড অনুমান করে এই তথ্যে পৌঁছানো যায় না।",
       "Q8_Q": "এর খরচ কেমন?",
-      "Q8_A": "আপনার কতটি প্রপার্টি ও টিম মেম্বার লাগবে তার উপর নির্ভর করে। আমাদের সাথে কথা বলুন, আপনার পোর্টফোলিওর জন্য উপযুক্ত পরিকল্পনা ঠিক করে দেব।"
+      "Q8_A": "Tenantly-তে বেসিক, প্রফেশনাল ও এন্টারপ্রাইজ পরিকল্পনা রয়েছে। বর্তমান সুবিধা ও সীমা মূল্য তালিকায় দেখুন, এবং পরিকল্পনা বেছে নিতে আমাদের সাথে যোগাযোগ করুন।"
     },
     "CTA": {
       "TITLE": "খাতা চিরতরে বন্ধ করতে প্রস্তুত?",
@@ -950,5 +1161,52 @@
   },
   "LEASE_CUSTOM_FIELDS": {
     "SECTION_TITLE": "কাস্টম ফিল্ড"
+  },
+  "BILLING_RUN": {
+    "PAGE_TITLE": "বিদ্যুৎ বিল",
+    "SUBTITLE": "একটি ভবনের মাসিক বিদ্যুৎ বিল লিখুন এবং তালিকা প্রিন্ট করুন।",
+    "PAYMENTS": "পেমেন্ট",
+    "PROPERTY": "সম্পত্তি",
+    "SELECT_PROPERTY": "সম্পত্তি নির্বাচন করুন",
+    "BUILDING": "ভবন",
+    "SELECT_BUILDING": "ভবন নির্বাচন করুন",
+    "MONTH": "মাস",
+    "YEAR": "বছর",
+    "CREATE": "বিদ্যুৎ বিলের তালিকা তৈরি করুন",
+    "PRINT_REGISTER": "তালিকা প্রিন্ট করুন",
+    "FINALIZE": "তালিকা চূড়ান্ত করুন",
+    "CONFIRM_FINALIZE": "এই ভবনের বিদ্যুৎ বিলের তালিকা চূড়ান্ত করবেন? এরপর এটি পরিবর্তন করা যাবে না।",
+    "DRAFT": "খসড়া",
+    "FINALIZED": "চূড়ান্ত",
+    "NO_UNITS": "এই ভবনে কোনো সক্রিয় ইউনিট নেই।",
+    "UNIT": "ইউনিট",
+    "METER_NUMBER": "মিটারের নম্বর",
+    "ELECTRICITY_AMOUNT": "বিদ্যুৎ বিল (৳)",
+    "UNIT_TYPE": "ইউনিটের ধরন",
+    "FLOOR": "তলা",
+    "SAVE": "সংরক্ষণ",
+    "SAVING": "সংরক্ষণ হচ্ছে...",
+    "BUILDING_TOTAL": "ভবনের মোট",
+    "PRINT_TITLE": "বিদ্যুৎ বিলের তালিকা",
+    "PREPARED_DATE": "তৈরির তারিখ",
+    "MONTHLY_BILLING_LINK": "বিদ্যুৎ বিল",
+    "CREATE_MONTHLY_BILL": "বিদ্যুৎ বিলের তালিকা তৈরি করুন",
+    "LOADING": "লোড হচ্ছে...",
+    "YEAR_HINT": "২০২০ থেকে ২০৩০ এর মধ্যে বছর লিখুন",
+    "ERRORS": {
+      "LOAD_PROPERTIES": "সম্পত্তির তালিকা লোড করা যায়নি।",
+      "LOAD_BUILDINGS": "ভবনের তালিকা লোড করা যায়নি।",
+      "LOAD_RUN": "বিলিং রান লোড করা যায়নি।",
+      "CREATE_RUN": "বিলিং রান তৈরি করা যায়নি।",
+      "SAVE_ELECTRICITY": "বিদ্যুতের পরিমাণ সংরক্ষণ করা যায়নি।",
+      "FINALIZE_RUN": "বিদ্যুৎ বিলের তালিকা চূড়ান্ত করা যায়নি।",
+      "INVALID_AMOUNT": "সঠিক শূন্য বা তার বেশি বিদ্যুৎ বিল লিখুন।",
+      "MISSING_AMOUNTS": "প্রিন্ট বা চূড়ান্ত করার আগে প্রতিটি ইউনিটের বিদ্যুৎ বিল লিখুন।"
+    },
+    "FILTERS_LABEL": "ফিল্টার",
+    "UNITS_TOTAL": "ইউনিট",
+    "TOTAL_AMOUNT_LABEL": "মোট পরিমাণ",
+    "COMPLETED_UNITS_LABEL": "সম্পন্ন",
+    "BATCH_SAVE": "একসাথে সংরক্ষণ"
   }
 }

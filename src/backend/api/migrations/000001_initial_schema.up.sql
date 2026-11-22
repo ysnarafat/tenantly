@@ -70,16 +70,36 @@ CREATE TABLE units (
     UNIQUE(building_id, unit_number)
 );
 
--- Create tenants table
+-- Create tenants table (non-PII operational data only). All personally
+-- identifiable information lives in the separate tenant_pii table below, so
+-- the operational table can be read/broadly granted without exposing PII.
 CREATE TABLE tenants (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     tenant_type VARCHAR(20) NOT NULL CHECK (tenant_type IN ('Individual', 'Business')),
-    phone_number VARCHAR(20),
-    email VARCHAR(100),
-    nid_number VARCHAR(20),
     address TEXT,
     active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    updated_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC')
+);
+
+-- Create tenant_pii table (isolated PII for a tenant). Holds plaintext copies
+-- (phone_number, email, nid_number) used operationally for SMS/display/backfill
+-- alongside AES-256-GCM ciphertext (<field>_encrypted) and deterministic keyed
+-- hashes (<field>_hash) for equality lookups without decryption. NID additionally
+-- exposes a non-sensitive last-four projection.
+CREATE TABLE tenant_pii (
+    tenant_id INTEGER PRIMARY KEY REFERENCES tenants(id) ON DELETE CASCADE,
+    phone_number VARCHAR(20),
+    phone_encrypted TEXT,
+    phone_hash VARCHAR(64),
+    email VARCHAR(100),
+    email_encrypted TEXT,
+    email_hash VARCHAR(64),
+    nid_number VARCHAR(20),
+    nid_encrypted TEXT,
+    nid_last_four VARCHAR(4),
+    nid_hash VARCHAR(64),
     created_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC'),
     updated_at TIMESTAMP DEFAULT (NOW() AT TIME ZONE 'UTC')
 );
@@ -217,11 +237,16 @@ COMMENT ON INDEX idx_units_building_floor_section IS 'Index for building-specifi
 COMMENT ON INDEX idx_units_property_building_type IS 'Index for property-level unit queries across buildings by type';
 COMMENT ON INDEX idx_units_hierarchy_analytics IS 'Index optimized for hierarchical reporting and analytics queries';
 
--- Tenant indexes
+-- Tenant indexes (non-PII)
 CREATE INDEX idx_tenants_active ON tenants(active);
-CREATE INDEX idx_tenants_phone ON tenants(phone_number);
-CREATE INDEX idx_tenants_email ON tenants(email);
-CREATE INDEX idx_tenants_nid ON tenants(nid_number) WHERE nid_number IS NOT NULL;
+CREATE INDEX idx_tenants_name ON tenants(name);
+
+-- Tenant PII indexes. Lookups for phone/email/NID go through the deterministic
+-- hash columns so plaintext is never compared against.
+CREATE INDEX idx_tenant_pii_tenant_id ON tenant_pii(tenant_id);
+CREATE INDEX idx_tenant_pii_phone_hash ON tenant_pii(phone_hash) WHERE phone_hash IS NOT NULL;
+CREATE INDEX idx_tenant_pii_email_hash ON tenant_pii(email_hash) WHERE email_hash IS NOT NULL;
+CREATE INDEX idx_tenant_pii_nid_hash ON tenant_pii(nid_hash) WHERE nid_hash IS NOT NULL;
 
 -- Lease indexes
 CREATE INDEX idx_leases_unit_id ON leases(unit_id);

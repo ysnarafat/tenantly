@@ -40,17 +40,19 @@ type UpdateOrganizationRequest struct {
 
 // UserInvitation represents an invitation for a user to join an organization
 type UserInvitation struct {
-	ID               int        `json:"id" db:"id"`
-	OrganizationID   int        `json:"organization_id" db:"organization_id"`
-	Email            string     `json:"email" db:"email"`
-	Role             string     `json:"role" db:"role"`
-	InvitationToken  string     `json:"invitation_token" db:"invitation_token"`
-	ExpiresAt        time.Time  `json:"expires_at" db:"expires_at"`
-	AcceptedAt       *time.Time `json:"accepted_at" db:"accepted_at"`
-	AcceptedByUserID *int       `json:"accepted_by_user_id" db:"accepted_by_user_id"`
-	InvitedByUserID  int        `json:"invited_by_user_id" db:"invited_by_user_id"`
-	CreatedAt        time.Time  `json:"created_at" db:"created_at"`
-	UpdatedAt        time.Time  `json:"updated_at" db:"updated_at"`
+	ID                  int        `json:"id" db:"id"`
+	OrganizationID      int        `json:"organization_id" db:"organization_id"`
+	OrganizationName    string     `json:"organization_name,omitempty" db:"organization_name"`
+	Email               string     `json:"email" db:"email"`
+	Role                string     `json:"role" db:"role"`
+	InvitationToken     string     `json:"-" db:"invitation_token"`
+	EmailDeliveryStatus string     `json:"email_delivery_status,omitempty" db:"email_delivery_status"`
+	ExpiresAt           time.Time  `json:"expires_at" db:"expires_at"`
+	AcceptedAt          *time.Time `json:"accepted_at" db:"accepted_at"`
+	AcceptedByUserID    *int       `json:"accepted_by_user_id" db:"accepted_by_user_id"`
+	InvitedByUserID     int        `json:"invited_by_user_id" db:"invited_by_user_id"`
+	CreatedAt           time.Time  `json:"created_at" db:"created_at"`
+	UpdatedAt           time.Time  `json:"updated_at" db:"updated_at"`
 }
 
 // InviteUserRequest is the request payload for inviting a user to an organization

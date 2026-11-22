@@ -1,0 +1,282 @@
+:host {
+  display: block;
+  padding: 32px;
+  color: var(--text-primary, #202437);
+}
+
+.page-heading {
+  margin-bottom: 24px;
+}
+
+.page-heading h1,
+.detail-heading h2 {
+  margin: 4px 0;
+  font-size: 1.65rem;
+}
+
+.page-heading p,
+.detail-heading .eyebrow {
+  margin: 0;
+}
+
+.eyebrow {
+  color: var(--text-secondary, #777b8d);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.muted,
+.empty {
+  color: var(--text-secondary, #777b8d);
+}
+
+.support-layout {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.8fr) minmax(380px, 1.2fr);
+  align-items: start;
+  gap: 20px;
+}
+
+.ticket-column {
+  display: grid;
+  gap: 20px;
+}
+
+.panel,
+.ticket-row {
+  border: 1px solid var(--border-color, #e1e4eb);
+  border-radius: 12px;
+  background: var(--surface-primary, #fff);
+}
+
+.new-ticket,
+.ticket-detail {
+  padding: 20px;
+}
+
+.new-ticket,
+.reply-form {
+  display: grid;
+  gap: 14px;
+}
+
+h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+input,
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color, #d8dce5);
+  border-radius: 8px;
+  background: var(--surface-primary, #fff);
+  color: var(--text-primary, #202437);
+  font: inherit;
+  font-weight: 400;
+}
+
+input:focus,
+textarea:focus {
+  outline: 2px solid var(--color-primary, #5264d8);
+  outline-offset: 1px;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.primary {
+  justify-self: end;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--color-primary, #5264d8);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.list-heading,
+.detail-heading,
+.message header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.list-heading {
+  margin-bottom: 10px;
+}
+
+.count {
+  color: var(--text-secondary, #777b8d);
+  font-size: 0.8rem;
+}
+
+.ticket-list {
+  display: grid;
+  gap: 8px;
+}
+
+.ticket-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ticket-row.selected {
+  border-color: var(--color-primary, #5264d8);
+  background: var(--surface-secondary, #f7f8ff);
+}
+
+.ticket-row-main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ticket-row-main strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ticket-row small,
+.message time {
+  color: var(--text-secondary, #777b8d);
+  font-size: 0.72rem;
+}
+
+.status {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: #fff4df;
+  color: #93651a;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.status.resolved,
+.status.closed {
+  background: #e8f6ee;
+  color: #287452;
+}
+
+.ticket-detail {
+  min-height: 420px;
+}
+
+.conversation {
+  display: grid;
+  gap: 10px;
+  max-height: 520px;
+  margin: 22px 0;
+  overflow: auto;
+}
+
+.message {
+  padding: 12px;
+  border-radius: 9px;
+  background: var(--surface-secondary, #f6f7fa);
+}
+
+.customer-message {
+  border-inline-start: 3px solid var(--color-primary, #5264d8);
+}
+
+.message header {
+  color: var(--text-primary, #202437);
+  font-size: 0.8rem;
+}
+
+.message p {
+  margin: 8px 0 0;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.detail-empty,
+.empty {
+  padding: 24px;
+  text-align: center;
+}
+
+.detail-empty {
+  display: grid;
+  place-items: center;
+  min-height: 360px;
+  color: var(--text-secondary, #777b8d);
+}
+
+.detail-empty mat-icon {
+  width: 44px;
+  height: 44px;
+  font-size: 44px;
+}
+
+.feedback {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: 8px;
+}
+
+.feedback.error {
+  background: #fff0ef;
+  color: #a53d38;
+}
+
+.feedback.success {
+  background: #eaf8f1;
+  color: #287452;
+}
+
+@media (max-width: 850px) {
+  :host {
+    padding: 20px;
+  }
+
+  .support-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  :host {
+    padding: 14px;
+  }
+
+  .new-ticket,
+  .ticket-detail {
+    padding: 15px;
+  }
+
+  .ticket-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

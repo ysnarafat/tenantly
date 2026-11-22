@@ -22,8 +22,11 @@ func NewUserInvitationRepository(db *sqlx.DB) *UserInvitationRepository {
 // Create inserts a new user invitation into the database
 func (r *UserInvitationRepository) Create(invitation *models.UserInvitation) error {
 	query := `
-		INSERT INTO user_invitations (organization_id, email, role, invitation_token, expires_at, invited_by_user_id)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO user_invitations (
+			organization_id, email, role, invitation_token, expires_at, invited_by_user_id,
+			email_delivery_status
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, 'pending')
 		RETURNING id, created_at, updated_at
 	`
 
@@ -41,6 +44,26 @@ func (r *UserInvitationRepository) Create(invitation *models.UserInvitation) err
 		return fmt.Errorf("failed to create user invitation: %w", err)
 	}
 
+	return nil
+}
+
+func (r *UserInvitationRepository) UpdateDeliveryStatus(invitationID int, status string) error {
+	result, err := r.db.Exec(`
+		UPDATE user_invitations
+		SET email_delivery_status = $2,
+			last_sent_at = CASE WHEN $2 = 'sent' THEN NOW() AT TIME ZONE 'UTC' ELSE last_sent_at END,
+			updated_at = NOW() AT TIME ZONE 'UTC'
+		WHERE id = $1`, invitationID, status)
+	if err != nil {
+		return fmt.Errorf("failed to update invitation email status: %w", err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to check invitation email status: %w", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("invitation not found")
+	}
 	return nil
 }
 
@@ -190,27 +213,38 @@ func (r *UserInvitationRepository) GetPendingByOrganization(orgID int) ([]*model
 }
 
 // AcceptInvitation marks an invitation as accepted
-func (r *UserInvitationRepository) AcceptInvitation(invitationID int, userID int) error {
-	query := `
+func (r *UserInvitationRepository) AcceptInvitation(token string, userID int) error {
+	tx, err := r.db.Beginx()
+	if err != nil {
+		return fmt.Errorf("failed to begin invitation acceptance: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var organizationID int
+	var role string
+	err = tx.QueryRow(`
 		UPDATE user_invitations
 		SET accepted_at = $1, accepted_by_user_id = $2
-		WHERE id = $3 AND accepted_at IS NULL AND expires_at > NOW()
-	`
-
-	result, err := r.db.Exec(query, time.Now(), userID, invitationID)
+		WHERE invitation_token = $3 AND accepted_at IS NULL AND expires_at > NOW()
+		RETURNING organization_id, role`, time.Now(), userID, token).Scan(&organizationID, &role)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("invitation not found or already accepted or expired")
+		}
 		return fmt.Errorf("failed to accept invitation: %w", err)
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get rows affected: %w", err)
+	if _, err := tx.Exec(`
+		INSERT INTO user_organization_roles (user_id, organization_id, role)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (user_id, organization_id)
+		DO UPDATE SET role = EXCLUDED.role, updated_at = NOW() AT TIME ZONE 'UTC'`,
+		userID, organizationID, role); err != nil {
+		return fmt.Errorf("failed to assign invited organization role: %w", err)
 	}
-
-	if rowsAffected == 0 {
-		return fmt.Errorf("invitation not found or already accepted or expired")
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit invitation acceptance: %w", err)
 	}
-
 	return nil
 }
 

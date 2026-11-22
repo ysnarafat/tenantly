@@ -1,4 +1,4 @@
-import { Component, OnDestroy, effect, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Meta, Title } from '@angular/platform-browser';
 import { MatIconModule } from '@angular/material/icon';
@@ -6,6 +6,9 @@ import { MatButtonModule } from '@angular/material/button';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { LanguageService } from '../../../core/services/language.service';
 import { ThemeService } from '../../../core/services/theme.service';
+import { PlanService } from '../../../core/services/plan.service';
+import { PublicPlan } from '../../../core/models/plan.model';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 interface Feature {
   key: string;
@@ -36,6 +39,8 @@ export class Homepage implements OnDestroy {
   private title = inject(Title);
   private meta = inject(Meta);
   private translate = inject(TranslateService);
+  private planService = inject(PlanService);
+  private destroyRef = inject(DestroyRef);
 
   readonly contactEmail = 'hello@tenantly.com';
   readonly currentYear = new Date().getFullYear();
@@ -43,6 +48,9 @@ export class Homepage implements OnDestroy {
   readonly faqKeys = FAQ_KEYS;
 
   openFaq = signal<string | null>(FAQ_KEYS[0]);
+  plans = signal<PublicPlan[]>([]);
+  pricingLoading = signal(true);
+  pricingError = signal(false);
 
   private canonicalLink?: HTMLLinkElement;
 
@@ -71,6 +79,19 @@ export class Homepage implements OnDestroy {
           });
         });
     });
+    this.planService
+      .getPublicPlans()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ plans }) => {
+          this.plans.set(plans);
+          this.pricingLoading.set(false);
+        },
+        error: () => {
+          this.pricingError.set(true);
+          this.pricingLoading.set(false);
+        },
+      });
     this.setCanonicalLink();
   }
 
@@ -89,6 +110,34 @@ export class Homepage implements OnDestroy {
 
   entryNumber(index: number): string {
     return String(index + 1).padStart(2, '0');
+  }
+
+  planName(plan: PublicPlan): string {
+    return this.languageService.currentLang() === 'bn' ? plan.name_bn : plan.name_en;
+  }
+
+  planDescription(plan: PublicPlan): string {
+    return this.languageService.currentLang() === 'bn' ? plan.description_bn : plan.description_en;
+  }
+
+  planFeatures(plan: PublicPlan): string[] {
+    return this.languageService.currentLang() === 'bn' ? plan.features_bn : plan.features_en;
+  }
+
+  planPrice(plan: PublicPlan): string {
+    if (plan.price_minor === null) {
+      return '';
+    }
+    return new Intl.NumberFormat(this.languageService.currentLang() === 'bn' ? 'bn-BD' : 'en-BD', {
+      style: 'currency',
+      currency: plan.currency,
+      maximumFractionDigits: 2,
+    }).format(plan.price_minor / 100);
+  }
+
+  planContactHref(plan: PublicPlan): string {
+    const subject = encodeURIComponent(`Tenantly ${this.planName(plan)} plan`);
+    return `mailto:${this.contactEmail}?subject=${subject}`;
   }
 
   private setCanonicalLink(): void {

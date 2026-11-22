@@ -38,10 +38,7 @@
               "src/site.webmanifest",
               "src/assets"
             ],
-            "styles": [
-              "@angular/material/prebuilt-themes/azure-blue.css",
-              "src/styles.scss"
-            ],
+            "styles": ["@angular/material/prebuilt-themes/azure-blue.css", "src/styles.scss"],
             "scripts": [],
             "browser": "src/main.ts"
           },
@@ -116,10 +113,7 @@
               "src/site.webmanifest",
               "src/assets"
             ],
-            "styles": [
-              "@angular/material/prebuilt-themes/azure-blue.css",
-              "src/styles.scss"
-            ],
+            "styles": ["@angular/material/prebuilt-themes/azure-blue.css", "src/styles.scss"],
             "scripts": []
           }
         },
@@ -127,6 +121,69 @@
           "builder": "@angular-eslint/builder:lint",
           "options": {
             "lintFilePatterns": ["src/**/*.ts", "src/**/*.html"]
+          }
+        }
+      }
+    },
+    "operations-portal": {
+      "projectType": "application",
+      "root": "operations-portal",
+      "sourceRoot": "operations-portal/src",
+      "prefix": "ops",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "outputPath": {
+              "base": "dist/operations-portal"
+            },
+            "index": "operations-portal/src/index.html",
+            "polyfills": ["zone.js"],
+            "tsConfig": "operations-portal/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "styles": ["operations-portal/src/styles.scss"],
+            "scripts": [],
+            "browser": "operations-portal/src/main.ts"
+          },
+          "configurations": {
+            "production": {
+              "optimization": true,
+              "outputHashing": "all",
+              "fileReplacements": [
+                {
+                  "replace": "operations-portal/src/environments/environment.ts",
+                  "with": "operations-portal/src/environments/environment.prod.ts"
+                }
+              ]
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "operations-portal:build:production"
+            },
+            "development": {
+              "buildTarget": "operations-portal:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:karma",
+          "options": {
+            "polyfills": ["zone.js", "zone.js/testing"],
+            "tsConfig": "operations-portal/tsconfig.spec.json",
+            "inlineStyleLanguage": "scss",
+            "styles": ["operations-portal/src/styles.scss"],
+            "scripts": []
           }
         }
       }

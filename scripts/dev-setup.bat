@@ -1,33 +1,28 @@
 @echo off
-echo Setting up Tenantly development environment...
+setlocal
 
-REM Create .env file from example if it doesn't exist
-if not exist .env (
-    copy .env.example .env
-    echo Created .env file from .env.example
-    echo Please update the .env file with your actual configuration values
+for %%I in ("%~dp0..") do set "ROOT=%%~fI"
+
+if not exist "%ROOT%\src\backend\api\go.mod" (
+    echo Backend API was not found under "%ROOT%\src\backend\api".
+    pause
+    exit /b 1
 )
 
-REM Start PostgreSQL with Docker
-echo Starting PostgreSQL database...
-docker run -d --name tenantly-postgres -e POSTGRES_DB=tenantly -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=password -p 5432:5432 postgres:18.0-alpine
+if not exist "%ROOT%\src\frontend\package.json" (
+    echo Frontend was not found under "%ROOT%\src\frontend".
+    pause
+    exit /b 1
+)
 
-REM Wait for PostgreSQL to be ready
-echo Waiting for PostgreSQL to be ready...
-timeout /t 10 /nobreak > nul
+if not exist "%ROOT%\.env" if exist "%ROOT%\.env.example" (
+    copy "%ROOT%\.env.example" "%ROOT%\.env" > nul
+    echo Created .env from .env.example.
+)
 
-REM Run database migrations
-echo Running database migrations...
-cd backend/api && go run cmd/server/main.go migrate || echo Migration will be implemented in later tasks
-cd ..\..
+echo Starting Tenantly API, frontend, and operations-portal...
+echo PostgreSQL must already be running for the API to connect.
 
-echo Development environment setup complete!
-echo.
-echo To start the services:
-echo 1. Go API: cd backend/api ^&^& go run cmd/server/main.go
-echo 2. Angular Frontend: cd frontend ^&^& npm install ^&^& npm start
-echo 3. C# Notification Service: cd backend/notification-service ^&^& dotnet run
-echo.
-echo Or use Docker Compose: docker-compose up
-
-pause
+start "Tenantly API" /D "%ROOT%\src\backend\api" cmd /k "go run ./cmd/server"
+start "Tenantly Frontend" /D "%ROOT%\src\frontend" cmd /k "npm start"
+start "Tenantly Operations Portal" /D "%ROOT%\src\frontend" cmd /k "npm run start:operations"

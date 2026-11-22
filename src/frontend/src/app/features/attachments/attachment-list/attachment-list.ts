@@ -86,12 +86,12 @@ export class AttachmentList implements OnInit {
     }
 
     observable.subscribe({
-      next: (attachments) => {
+      next: (attachments: Attachment[]) => {
         this.attachments = attachments;
         this.applyFilters();
         this.loading = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading attachments:', safeErrorMessage(error));
         notifyError(this.snackBar, 'Error loading attachments');
         this.loading = false;
@@ -187,7 +187,7 @@ export class AttachmentList implements OnInit {
         link.click();
         window.URL.revokeObjectURL(url);
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error downloading attachment:', safeErrorMessage(error));
         notifyError(this.snackBar, 'Error downloading attachment');
       },
@@ -221,7 +221,7 @@ export class AttachmentList implements OnInit {
       `"${attachment.file_name}" deleted`,
       () => {
         this.attachmentService.deleteAttachment(attachment.id).subscribe({
-          error: (error) => {
+          error: (error: any) => {
             console.error('Error deleting attachment:', safeErrorMessage(error));
             notifyError(this.snackBar, 'Error deleting attachment');
             this.loadAttachments();

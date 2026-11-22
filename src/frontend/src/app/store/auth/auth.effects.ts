@@ -27,7 +27,7 @@ export class AuthEffects {
       ofType(AuthActions.login),
       exhaustMap(({ credentials }) =>
         // withCredentials: the backend sets the refresh token as an httpOnly cookie on this response.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         this.http
           .post<any>(`${environment.apiUrl}/auth/login`, credentials, { withCredentials: true })
           .pipe(
@@ -172,7 +172,7 @@ export class AuthEffects {
       exhaustMap(() =>
         // No body needed — the httpOnly refresh cookie is sent automatically
         // via withCredentials; the browser holds it, not this code.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
         this.http
           .post<any>(`${environment.apiUrl}/auth/refresh`, {}, { withCredentials: true })
           .pipe(

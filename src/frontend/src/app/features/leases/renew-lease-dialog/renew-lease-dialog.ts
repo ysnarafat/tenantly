@@ -59,9 +59,9 @@ function atLeastOnePositive(group: AbstractControl): ValidationErrors | null {
   templateUrl: './renew-lease-dialog.html',
   styleUrl: './renew-lease-dialog.scss',
 })
-export class RenewLeaseDialog {
+export class RenewLeaseDialogComponent {
   private fb = inject(FormBuilder);
-  private dialogRef = inject(MatDialogRef<RenewLeaseDialog>);
+  private dialogRef = inject(MatDialogRef<RenewLeaseDialogComponent>);
   private leaseService = inject(LeaseService);
   private snackBar = inject(MatSnackBar);
 
@@ -156,3 +156,6 @@ export class RenewLeaseDialog {
     return date.toISOString().split('T')[0];
   }
 }
+
+export interface RenewLeaseDialogComponent {}
+export { RenewLeaseDialogComponent as RenewLeaseDialog };

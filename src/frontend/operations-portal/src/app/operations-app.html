@@ -1,0 +1,483 @@
+@if (!authenticated) {
+<main class="login-page">
+  <form class="login-card" (ngSubmit)="login()">
+    <div class="brand-mark">T</div>
+    <p class="eyebrow">TENANTLY · INTERNAL</p>
+    <h1>Operations portal</h1>
+    <p class="muted">Sign in with a platform administrator account.</p>
+    @if (loginError) {
+    <div class="message error" role="alert">{{ loginError }}</div>
+    }
+    <label>
+      Username
+      <input name="username" [(ngModel)]="username" required autocomplete="username" />
+    </label>
+    <label>
+      Password
+      <input
+        name="password"
+        type="password"
+        [(ngModel)]="password"
+        required
+        autocomplete="current-password"
+      />
+    </label>
+    <button class="primary wide" type="submit" [disabled]="busy">
+      {{ busy ? 'Signing in…' : 'Sign in' }}
+    </button>
+  </form>
+</main>
+} @else {
+<div class="portal-shell">
+  <aside class="sidebar">
+    <a class="brand" href="/" aria-label="Tenantly Operations home">
+      <span class="brand-mark">T</span>
+      <span>Tenantly <small>OPERATIONS</small></span>
+    </a>
+    <p class="nav-label">WORKSPACE</p>
+    <button [class.active]="activeTab === 'plans'" (click)="selectTab('plans')">
+      <span class="nav-icon">◇</span> Plans & pricing
+    </button>
+    <button [class.active]="activeTab === 'customers'" (click)="selectTab('customers')">
+      <span class="nav-icon">▦</span> Customers
+    </button>
+    <button [class.active]="activeTab === 'onboarding'" (click)="selectTab('onboarding')">
+      <span class="nav-icon">＋</span> Onboard organization
+    </button>
+    <button [class.active]="activeTab === 'support'" (click)="selectTab('support')">
+      <span class="nav-icon">◷</span> Support
+    </button>
+    <div class="sidebar-bottom">
+      <span>Platform administration</span>
+      <button class="logout" (click)="logout()">Sign out</button>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <span class="breadcrumb">Tenantly <span>/</span> Operations</span>
+      <span class="secure-label"><span></span> Staff-only workspace</span>
+    </header>
+
+    @if (error) {
+    <div class="message error" role="alert">{{ error }}</div>
+    } @if (notice) {
+    <div class="message success" role="status">{{ notice }}</div>
+    } @if (activeTab === 'plans') {
+    <section>
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">REVENUE CONFIGURATION</p>
+          <h1>Plans & pricing</h1>
+          <p class="muted">Control what prospects see on the Tenantly homepage.</p>
+        </div>
+      </div>
+      <div class="plan-list">
+        @for (plan of plans; track plan.code) {
+        <article class="panel plan-editor">
+          <div class="plan-heading">
+            <div>
+              <span class="plan-code">{{ plan.code }}</span>
+              <h2>{{ plan.name_en }}</h2>
+            </div>
+            <div class="toggle-line">
+              <label><input type="checkbox" [(ngModel)]="plan.is_public" /> Public</label>
+              <label><input type="checkbox" [(ngModel)]="plan.is_active" /> Active</label>
+            </div>
+          </div>
+          <div class="form-grid">
+            <label>Plan name · English<input [(ngModel)]="plan.name_en" /></label>
+            <label>Plan name · বাংলা<input [(ngModel)]="plan.name_bn" /></label>
+            <label class="span-two"
+              >Description · English<textarea rows="2" [(ngModel)]="plan.description_en"></textarea>
+            </label>
+            <label class="span-two"
+              >Description · বাংলা<textarea rows="2" [(ngModel)]="plan.description_bn"></textarea>
+            </label>
+            <label
+              >Price (BDT, leave blank for contact)<input
+                type="number"
+                min="0"
+                step="0.01"
+                [(ngModel)]="plan.price_taka"
+            /></label>
+            <label
+              >Billing period
+              <select [(ngModel)]="plan.billing_period">
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </label>
+            <label
+              >Team member limit<input type="number" min="1" [(ngModel)]="plan.max_users"
+            /></label>
+            <label
+              >Property limit <small>(blank means unlimited)</small>
+              <input type="number" min="1" [(ngModel)]="plan.max_properties" />
+            </label>
+            <label class="span-two"
+              >Features · one per line (English)<textarea
+                rows="4"
+                [(ngModel)]="plan.features_en_text"
+              ></textarea>
+            </label>
+            <label class="span-two"
+              >Features · one per line (বাংলা)<textarea
+                rows="4"
+                [(ngModel)]="plan.features_bn_text"
+              ></textarea>
+            </label>
+            <label>Display order<input type="number" [(ngModel)]="plan.sort_order" /></label>
+          </div>
+          <div class="panel-actions">
+            <span class="muted">Plan code: {{ plan.code }} · price stored in paisa</span>
+            <button class="primary" (click)="savePlan(plan)" [disabled]="plan.saving">
+              {{ plan.saving ? 'Saving…' : 'Save plan' }}
+            </button>
+          </div>
+        </article>
+        } @empty {
+        <div class="panel empty">No plans returned by the API.</div>
+        }
+      </div>
+    </section>
+    } @if (activeTab === 'customers') {
+    <section>
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">CUSTOMER SUCCESS</p>
+          <h1>Organizations</h1>
+          <p class="muted">Review customer contacts and manage manual subscriptions.</p>
+        </div>
+        <span class="count-pill">{{ organizations.length }} organizations</span>
+      </div>
+      <div class="customer-list">
+        @for (organization of organizations; track organization.id) {
+        <article class="panel customer-card">
+          <div class="customer-main">
+            <div class="customer-avatar">{{ organization.name.slice(0, 1).toUpperCase() }}</div>
+            <div>
+              <h2>{{ organization.name }}</h2>
+              <p class="muted">
+                {{ organization.slug }} · {{ organization.active ? 'Active' : 'Inactive' }}
+              </p>
+              <p class="contact">
+                {{ organization.contact_name || 'No organization admin' }} @if
+                (organization.contact_email) {
+                <a [href]="'mailto:' + organization.contact_email"
+                  >{{ organization.contact_email }}</a
+                >
+                }
+              </p>
+            </div>
+          </div>
+          <div class="subscription-controls">
+            <label
+              >Plan
+              <select [(ngModel)]="organization.edit_plan_code">
+                @for (plan of plans; track plan.code) {
+                <option [value]="plan.code">{{ plan.name_en }}</option>
+                }
+              </select>
+            </label>
+            <label
+              >Status
+              <select [(ngModel)]="organization.edit_status">
+                <option value="trialing">Trialing</option>
+                <option value="active">Active</option>
+                <option value="past_due">Past due</option>
+                <option value="canceled">Canceled</option>
+              </select>
+            </label>
+            <label
+              >Renewal date
+              <input type="date" [(ngModel)]="organization.edit_renews_at" />
+            </label>
+            <button
+              class="primary"
+              (click)="saveSubscription(organization)"
+              [disabled]="organization.saving"
+            >
+              {{ organization.saving ? 'Saving…' : 'Update subscription' }}
+            </button>
+          </div>
+          <div class="current-subscription">
+            Current:
+            <strong
+              >{{ organization.subscription_plan_code || organization.subscription_tier }}</strong
+            >
+            · {{ organization.subscription_status }} · {{ organization.max_users }} users
+          </div>
+        </article>
+        } @empty {
+        <div class="panel empty">No organizations found.</div>
+        }
+      </div>
+    </section>
+    } @if (activeTab === 'onboarding') {
+    <section>
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">CUSTOMER ONBOARDING</p>
+          <h1>New organization</h1>
+          <p class="muted">Create the organization and invite its first administrator.</p>
+        </div>
+      </div>
+      <form class="panel onboarding-form" (ngSubmit)="onboardOrganization()">
+        <label
+          >Organization name
+          <input name="organizationName" [(ngModel)]="newOrganization.name" required minlength="2" maxlength="255" />
+        </label>
+        <label
+          >Organization slug
+          <input
+            name="organizationSlug"
+            [(ngModel)]="newOrganization.slug"
+            required
+            minlength="2"
+            maxlength="100"
+            pattern="[a-z0-9]+(-[a-z0-9]+)*"
+            placeholder="example-properties"
+          />
+        </label>
+        <label
+          >Subscription plan
+          <select name="planCode" [(ngModel)]="newOrganization.plan_code" required>
+            @for (plan of plans; track plan.code) {
+            @if (plan.is_active) {
+            <option [value]="plan.code">{{ plan.name_en }}</option>
+            }
+            }
+          </select>
+        </label>
+        <label
+          >First administrator email
+          <input
+            name="adminEmail"
+            type="email"
+            [(ngModel)]="newOrganization.admin_email"
+            required
+            maxlength="100"
+            autocomplete="email"
+          />
+        </label>
+        <div class="panel-actions">
+          <span class="muted">The administrator will set their own password through a one-time email link.</span>
+          <button class="primary" type="submit" [disabled]="onboarding">
+            {{ onboarding ? 'Creating…' : 'Create organization & invite admin' }}
+          </button>
+        </div>
+      </form>
+
+      <div class="page-heading invitation-heading">
+        <div>
+          <p class="eyebrow">ACTIVATION</p>
+          <h2>Pending administrator invitations</h2>
+        </div>
+        <span class="count-pill">{{ pendingInvitations.length }} pending</span>
+      </div>
+      <div class="invitation-list">
+        @for (invitation of pendingInvitations; track invitation.id) {
+        <article class="panel invitation-card">
+          <div>
+            <strong>{{ invitation.email }}</strong>
+            <p class="muted">
+              {{ invitation.organization_name }} · expires {{ formatDate(invitation.expires_at) }}
+            </p>
+            <span class="delivery-status" [class.failed]="invitation.email_delivery_status === 'failed'">
+              Email: {{ invitation.email_delivery_status }}
+            </span>
+          </div>
+          <div class="invitation-actions">
+            <button
+              class="secondary"
+              (click)="resendOrganizationInvitation(invitation)"
+              [disabled]="invitationActionID === invitation.id"
+            >
+              Resend
+            </button>
+            <button
+              class="danger"
+              (click)="revokeOrganizationInvitation(invitation)"
+              [disabled]="invitationActionID === invitation.id"
+            >
+              Revoke
+            </button>
+          </div>
+        </article>
+        } @empty {
+        <div class="panel empty">No pending administrator invitations.</div>
+        }
+      </div>
+    </section>
+    } @if (activeTab === 'support') {
+    <section>
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">CUSTOMER SUCCESS</p>
+          <h1>Support queue</h1>
+          <p class="muted">Internal organization-linked cases and staff-only notes.</p>
+        </div>
+      </div>
+      <div class="support-layout">
+        <div class="support-column">
+          <form class="panel new-case" (ngSubmit)="createCase()">
+            <h2>Open a support case</h2>
+            <label
+              >Organization
+              <select name="organization" [(ngModel)]="newCase.organization_id" required>
+                <option [ngValue]="0" disabled>Select an organization</option>
+                @for (organization of organizations; track organization.id) {
+                <option [ngValue]="organization.id">{{ organization.name }}</option>
+                }
+              </select>
+            </label>
+            <label
+              >Subject<input name="subject" [(ngModel)]="newCase.subject" required maxlength="200"
+            /></label>
+            <label
+              >Details<textarea
+                name="description"
+                rows="3"
+                [(ngModel)]="newCase.description"
+                required
+              ></textarea>
+            </label>
+            <label
+              >Priority
+              <select name="priority" [(ngModel)]="newCase.priority">
+                <option value="low">Low</option>
+                <option value="normal">Normal</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </label>
+            <button class="primary wide" type="submit">Create case</button>
+          </form>
+          <div class="case-list">
+            @for (supportCase of cases; track supportCase.id) {
+            <button
+              class="case-row"
+              [class.selected]="selectedCase?.id === supportCase.id"
+              (click)="openCase(supportCase)"
+            >
+              <span class="case-priority" [class]="'case-priority ' + supportCase.priority"></span>
+              <span class="case-summary">
+                <strong>{{ supportCase.subject }}</strong>
+                <small
+                  >{{ supportCase.organization }} · {{ formatDate(supportCase.updated_at) }}</small
+                >
+              </span>
+              <span class="status-tag" [class]="'status-tag ' + supportCase.status"
+                >{{ supportCase.status.replace('_', ' ') }}</span
+              >
+            </button>
+            } @empty {
+            <div class="panel empty">The support queue is empty.</div>
+            }
+          </div>
+        </div>
+        <article class="panel case-detail">
+          @if (selectedCase; as activeCase) {
+          <div class="case-detail-header">
+            <div>
+              <p class="eyebrow">{{ activeCase.organization }} · CASE #{{ activeCase.id }}</p>
+              <h2>{{ activeCase.subject }}</h2>
+            </div>
+            <div class="case-controls">
+              <label>
+                Status
+                <select
+                  [ngModel]="activeCase.status"
+                  (ngModelChange)="changeCaseStatus(activeCase, $event)"
+                >
+                  <option value="open">Open</option>
+                  <option value="in_progress">In progress</option>
+                  <option value="waiting">Waiting</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </label>
+              <label>
+                Assigned to
+                <select
+                  [ngModel]="activeCase.assigned_to ?? ''"
+                  (ngModelChange)="assignCase(activeCase, $event)"
+                >
+                  <option value="">Unassigned</option>
+                  @for (agent of agents; track agent.id) {
+                  <option [ngValue]="agent.id">{{ agent.name }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+          </div>
+          <h3>Customer conversation</h3>
+          <div class="note-list">
+            <div class="note customer-message">
+              <div>
+                <strong>Original ticket</strong><time>{{ formatDate(activeCase.created_at) }}</time>
+              </div>
+              <p>{{ activeCase.description }}</p>
+            </div>
+            @for (message of caseMessages; track message.id) {
+            <div class="note customer-message">
+              <div>
+                <strong>{{ message.author }}</strong
+                ><time>{{ formatDate(message.created_at) }}</time>
+              </div>
+              <p>{{ message.body }}</p>
+            </div>
+            } @empty {
+            <p class="muted">No replies yet.</p>
+            }
+          </div>
+          <form class="add-note" (ngSubmit)="addMessage()">
+            <textarea
+              name="message"
+              rows="3"
+              [(ngModel)]="messageBody"
+              placeholder="Reply to the customer…"
+              required
+            ></textarea>
+            <button class="primary" type="submit" [disabled]="!messageBody.trim()">
+              Send reply
+            </button>
+          </form>
+          <h3>Internal notes</h3>
+          <div class="note-list">
+            @for (note of caseNotes; track note.id) {
+            <div class="note">
+              <div>
+                <strong>{{ note.author }}</strong><time>{{ formatDate(note.created_at) }}</time>
+              </div>
+              <p>{{ note.body }}</p>
+            </div>
+            } @empty {
+            <p class="muted">No internal notes yet.</p>
+            }
+          </div>
+          <form class="add-note" (ngSubmit)="addNote()">
+            <textarea
+              name="note"
+              rows="3"
+              [(ngModel)]="noteBody"
+              placeholder="Add a staff-only note…"
+              required
+            ></textarea>
+            <button class="primary" type="submit" [disabled]="!noteBody.trim()">Add note</button>
+          </form>
+          } @else {
+          <div class="detail-empty">
+            <span>◷</span>
+            <h2>Select a support case</h2>
+            <p class="muted">Case details and internal notes will appear here.</p>
+          </div>
+          }
+        </article>
+      </div>
+    </section>
+    }
+  </main>
+</div>
+}

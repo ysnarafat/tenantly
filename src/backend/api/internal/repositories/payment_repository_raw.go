@@ -230,7 +230,7 @@ func (r *PaymentRepository) GetActiveLeasesForPeriod(orgID, month, year int, bui
 			l.id AS lease_id,
 			COALESCE(t.id, 0) AS tenant_id,
 			COALESCE(t.name, '') AS tenant_name,
-			COALESCE(t.phone_number, '') AS tenant_phone,
+			COALESCE(pii.phone_number, '') AS tenant_phone,
 			COALESCE(u.property_id, 0) AS property_id,
 			COALESCE(pr.property_name, '') AS property_name,
 			COALESCE(u.building_id, 0) AS building_id,
@@ -292,8 +292,8 @@ func (r *PaymentRepository) GetTenantPaymentSummary(orgID int) ([]*models.Tenant
 		SELECT
 			t.id,
 			t.name,
-			COALESCE(t.phone_number, '')     AS phone_number,
-			COALESCE(t.email, '')            AS email,
+			COALESCE(pii.phone_number, '')     AS phone_number,
+			COALESCE(pii.email, '')            AS email,
 			COALESCE(MIN(u.unit_number), '') AS unit_number,
 			COALESCE(MIN(b.building_name), '') AS building_name,
 			COALESCE(MIN(pr.property_name), '') AS property_name,
@@ -310,7 +310,7 @@ func (r *PaymentRepository) GetTenantPaymentSummary(orgID int) ([]*models.Tenant
 		LEFT JOIN properties pr ON u.property_id = pr.id
 		LEFT JOIN payments p ON p.tenant_id = t.id AND p.organization_id = $1
 		WHERE t.organization_id = $1
-		GROUP BY t.id, t.name, t.phone_number, t.email
+		GROUP BY t.id, t.name, pii.phone_number, pii.email
 		ORDER BY t.name`
 
 	rows, err := r.db.Query(query, orgID)

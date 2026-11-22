@@ -118,11 +118,15 @@ func AuthRequired(jwtSecret string, auditService *database.AuditService) gin.Han
 		}
 
 		username, _ := claims["username"].(string)
+		tokenAudience, _ := claims["aud"].(string)
+		_, tokenAudiencePresent := claims["aud"]
 
 		// Set user context
 		c.Set("user_id", int(userID))
 		c.Set("role", role)
 		c.Set("username", username)
+		c.Set("token_audience", tokenAudience)
+		c.Set("token_audience_present", tokenAudiencePresent)
 
 		// Extract organization_id if present (optional for SUPER_ADMIN)
 		var organizationID *int
@@ -153,6 +157,43 @@ func AuthRequired(jwtSecret string, auditService *database.AuditService) gin.Han
 		}
 
 		c.Next()
+	}
+}
+
+// RequireTokenAudience prevents a valid token issued for one application from
+// being used against another application's API routes. Legacy customer tokens
+// remain valid during rollout, but legacy SUPER_ADMIN tokens are never accepted
+// by customer-app routes.
+func RequireTokenAudience(expected string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		audienceValue, _ := c.Get("token_audience")
+		audience, _ := audienceValue.(string)
+		presentValue, _ := c.Get("token_audience_present")
+		present, _ := presentValue.(bool)
+		roleValue, _ := c.Get("role")
+		role, _ := roleValue.(string)
+
+		if expected == "customer" && role == RoleSuperAdmin {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "Platform administrators must use the Operations Portal",
+				"code":  "OPERATIONS_PORTAL_REQUIRED",
+			})
+			c.Abort()
+			return
+		}
+
+		isLegacyCustomerRole := role == RoleOrgAdmin || role == RoleAdmin ||
+			role == RolePropertyManager || role == RoleAccountant
+		if audience == expected || (expected == "customer" && !present && isLegacyCustomerRole) {
+			c.Next()
+			return
+		}
+
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "Token is not authorized for this application",
+			"code":  "TOKEN_AUDIENCE_MISMATCH",
+		})
+		c.Abort()
 	}
 }
 

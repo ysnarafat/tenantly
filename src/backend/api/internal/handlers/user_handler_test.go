@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/ysnarafat/tenantly/internal/models"
+	"github.com/ysnarafat/tenantly/internal/services"
 )
 
 // MockUserService is a mock implementation of UserServiceInterface
@@ -28,6 +29,14 @@ func (m *MockUserService) CreateUser(req *models.CreateUserRequest) (*models.Use
 }
 
 func (m *MockUserService) Login(req *models.LoginRequest, clientIP, userAgent string) (*models.LoginResponse, error) {
+	args := m.Called(req, clientIP, userAgent)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*models.LoginResponse), args.Error(1)
+}
+
+func (m *MockUserService) LoginOperations(req *models.LoginRequest, clientIP, userAgent string) (*models.LoginResponse, error) {
 	args := m.Called(req, clientIP, userAgent)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -268,6 +277,50 @@ func TestUserHandler_Login(t *testing.T) {
 
 		mockService.AssertExpectations(t)
 	})
+
+	t.Run("Platform administrator must use operations portal", func(t *testing.T) {
+		req := &models.LoginRequest{Username: "platform-admin", Password: "password123"}
+		mockService.On("Login", req, "", "").Return(nil, services.ErrOperationsPortalRequired)
+
+		reqBody, _ := json.Marshal(req)
+		w := httptest.NewRecorder()
+		httpReq, _ := http.NewRequest("POST", "/auth/login", bytes.NewBuffer(reqBody))
+		httpReq.Header.Set("Content-Type", "application/json")
+		router.ServeHTTP(w, httpReq)
+
+		assert.Equal(t, http.StatusForbidden, w.Code)
+		assert.Contains(t, w.Body.String(), "OPERATIONS_PORTAL_REQUIRED")
+		cookies := w.Result().Cookies()
+		assert.Len(t, cookies, 1)
+		assert.Equal(t, refreshCookieName, cookies[0].Name)
+		assert.Equal(t, -1, cookies[0].MaxAge)
+		mockService.AssertExpectations(t)
+	})
+}
+
+func TestUserHandler_LoginOperations(t *testing.T) {
+	mockService := new(MockUserService)
+	handler := NewUserHandler(mockService, "", false)
+	router := setupTestRouter()
+	router.POST("/ops/auth/login", handler.LoginOperations)
+
+	req := &models.LoginRequest{Username: "platform-admin", Password: "password123"}
+	loginResponse := &models.LoginResponse{
+		Token: "operations-token",
+		User:  models.User{ID: 1, Username: req.Username, Role: "SUPER_ADMIN"},
+	}
+	mockService.On("LoginOperations", req, "", "").Return(loginResponse, nil)
+
+	reqBody, _ := json.Marshal(req)
+	w := httptest.NewRecorder()
+	httpReq, _ := http.NewRequest("POST", "/ops/auth/login", bytes.NewBuffer(reqBody))
+	httpReq.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, httpReq)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Empty(t, w.Result().Cookies())
+	assert.Contains(t, w.Body.String(), "operations-token")
+	mockService.AssertExpectations(t)
 }
 
 func TestUserHandler_RefreshToken(t *testing.T) {
@@ -352,6 +405,39 @@ func TestUserHandler_RefreshToken(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "TOKEN_REFRESH_FAILED", response["code"])
 	})
+}
+
+func TestUserHandler_RegisterWithInvitationSetsRefreshCookie(t *testing.T) {
+	mockService := new(MockUserService)
+	handler := NewUserHandler(mockService, "", false)
+	router := setupTestRouter()
+	router.POST("/auth/register-with-invitation", handler.RegisterWithInvitation)
+
+	loginResponse := &models.LoginResponse{
+		Token:        "access-token",
+		RefreshToken: "refresh-token",
+		ExpiresAt:    time.Now().Add(8 * time.Hour),
+	}
+	mockService.On("RegisterWithInvitation", mock.Anything).Return(loginResponse, nil)
+
+	requestBody := `{"email":"admin@example.com","password":"SecurePassword123!","first_name":"Ada","last_name":"Lovelace","invitation_token":"one-time-token"}`
+	request := httptest.NewRequest(http.MethodPost, "/auth/register-with-invitation", bytes.NewBufferString(requestBody))
+	response := httptest.NewRecorder()
+
+	router.ServeHTTP(response, request)
+
+	assert.Equal(t, http.StatusCreated, response.Code)
+	var body map[string]interface{}
+	assert.NoError(t, json.Unmarshal(response.Body.Bytes(), &body))
+	assert.NotContains(t, body, "refresh_token")
+
+	cookies := response.Result().Cookies()
+	assert.Len(t, cookies, 1)
+	assert.Equal(t, refreshCookieName, cookies[0].Name)
+	assert.Equal(t, "refresh-token", cookies[0].Value)
+	assert.Equal(t, refreshCookiePath, cookies[0].Path)
+	assert.True(t, cookies[0].HttpOnly)
+	mockService.AssertExpectations(t)
 }
 
 func TestUserHandler_Logout(t *testing.T) {

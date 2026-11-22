@@ -211,8 +211,15 @@ export class InviteUserComponent implements OnInit {
     this.invitationService
       .sendInvitation(organizationId, { email, firstName, lastName, role })
       .subscribe({
-        next: () => {
-          notifySuccess(this.snackBar, 'Invitation sent successfully');
+        next: (invitation) => {
+          if (invitation.email_delivery_status === 'sent') {
+            notifySuccess(this.snackBar, 'Invitation email sent successfully');
+          } else {
+            notifyError(
+              this.snackBar,
+              'Invitation was saved, but its email could not be delivered'
+            );
+          }
           this.router.navigate(['/admin/invitations']);
         },
         error: (err) => {

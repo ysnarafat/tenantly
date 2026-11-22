@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -30,6 +32,7 @@ func (h *TenantHandler) CreateTenant(c *gin.Context) {
 	userID := c.GetInt("user_id")
 	orgID := c.GetInt("org_id")
 	req.OrganizationID = orgID
+
 	tenant, err := h.tenantService.CreateTenant(&req, userID)
 	if err != nil {
 		// Check for uniqueness errors
@@ -149,4 +152,149 @@ func (h *TenantHandler) DeleteTenant(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Tenant deleted successfully"})
+}
+
+// UploadTenantAttachment handles POST /tenants/:id/attachments
+func (h *TenantHandler) UploadTenantAttachment(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid tenant ID"})
+		return
+	}
+
+	userID := c.GetInt("user_id")
+	userRole := c.GetString("role")
+	orgID := c.GetInt("org_id")
+
+	existingTenant, err := h.tenantService.GetTenantByID(id, orgID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Tenant not found"})
+		return
+	}
+	if existingTenant.OrganizationID != orgID {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Tenant not found"})
+		return
+	}
+
+	if userRole == "Accountant" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "accountants have read-only access to tenants"})
+		return
+	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "UPLOAD_ATTACHMENT_INVALID_BODY", "No file provided", err)
+		return
+	}
+
+	// Open and read file data
+	data, err := file.Open()
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "UPLOAD_ATTACHMENT_READ_FAILED", "Failed to open uploaded file", err)
+		return
+	}
+	defer func() { _ = data.Close() }()
+
+	dataBytes, err := io.ReadAll(data)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "UPLOAD_ATTACHMENT_READ_FAILED", "Failed to read uploaded file", err)
+		return
+	}
+
+	// Handle attachment upload
+	attachment, err := h.tenantService.UploadTenantAttachment(id, file.Filename, dataBytes, userID, orgID)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "UPLOAD_ATTACHMENT_FAILED", "Failed to upload attachment", err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, attachment)
+}
+
+// GetTenantAttachments lists all attachments for a tenant
+func (h *TenantHandler) GetTenantAttachments(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid tenant ID"})
+		return
+	}
+
+	orgID := c.GetInt("org_id")
+
+	attachments, err := h.tenantService.GetTenantAttachments(id, orgID)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "GET_TENANT_ATTACHMENTS_FAILED", "Failed to get tenant attachments", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"attachments": attachments})
+}
+
+// GetTenantAttachmentFile returns an attachment's raw bytes for download
+func (h *TenantHandler) GetTenantAttachmentFile(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid tenant ID"})
+		return
+	}
+
+	attachmentID, err := strconv.Atoi(c.Param("attachmentId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attachment ID"})
+		return
+	}
+
+	orgID := c.GetInt("org_id")
+
+	data, fileName, contentType, err := h.tenantService.GetTenantAttachmentFile(id, attachmentID, orgID)
+	if err != nil {
+		respondError(c, http.StatusNotFound, "GET_TENANT_ATTACHMENT_FAILED", "Attachment not found", err)
+		return
+	}
+
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", fileName))
+	c.Data(http.StatusOK, contentType, data)
+}
+
+// DeleteTenantAttachment removes a mistakenly-uploaded attachment
+func (h *TenantHandler) DeleteTenantAttachment(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid tenant ID"})
+		return
+	}
+
+	attachmentID, err := strconv.Atoi(c.Param("attachmentId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attachment ID"})
+		return
+	}
+
+	orgID := c.GetInt("org_id")
+
+	userID := c.GetInt("user_id")
+	userRole := c.GetString("role")
+
+	// Verify tenant exists and belongs to org
+	tenant, err := h.tenantService.GetTenantByID(id, orgID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Tenant not found"})
+		return
+	}
+	if tenant.OrganizationID != orgID {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Tenant not found"})
+		return
+	}
+
+	if userRole == "Accountant" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "accountants have read-only access to tenants"})
+		return
+	}
+
+	if err := h.tenantService.DeleteTenantAttachment(id, attachmentID, userID, orgID); err != nil {
+		respondError(c, http.StatusBadRequest, "DELETE_TENANT_ATTACHMENT_FAILED", "Failed to delete attachment", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Attachment deleted successfully"})
 }

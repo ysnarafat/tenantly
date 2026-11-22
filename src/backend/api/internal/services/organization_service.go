@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/ysnarafat/tenantly/internal/interfaces"
@@ -11,23 +12,29 @@ import (
 )
 
 type OrganizationService struct {
-	orgRepo              interfaces.OrganizationRepositoryInterface
-	userInvitationRepo   interfaces.UserInvitationRepositoryInterface
-	auditService         interfaces.AuditServiceInterface
-	invitationExpiryDays int
+	orgRepo               interfaces.OrganizationRepositoryInterface
+	userInvitationRepo    interfaces.UserInvitationRepositoryInterface
+	auditService          interfaces.AuditServiceInterface
+	invitationEmailSender InvitationEmailSender
+	invitationExpiryDays  int
 }
 
 func NewOrganizationService(
 	orgRepo interfaces.OrganizationRepositoryInterface,
 	userInvitationRepo interfaces.UserInvitationRepositoryInterface,
 	auditService interfaces.AuditServiceInterface,
+	invitationEmailSender ...InvitationEmailSender,
 ) *OrganizationService {
-	return &OrganizationService{
+	service := &OrganizationService{
 		orgRepo:              orgRepo,
 		userInvitationRepo:   userInvitationRepo,
 		auditService:         auditService,
 		invitationExpiryDays: 7,
 	}
+	if len(invitationEmailSender) > 0 {
+		service.invitationEmailSender = invitationEmailSender[0]
+	}
+	return service
 }
 
 // CreateOrganization creates a new organization (SUPER_ADMIN only)
@@ -170,7 +177,7 @@ func (s *OrganizationService) InviteUserToOrganization(orgID int, req *models.In
 	}
 
 	// Generate invitation token
-	token, err := s.generateInvitationToken()
+	token, err := generateInvitationToken()
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate invitation token: %w", err)
 	}
@@ -189,6 +196,19 @@ func (s *OrganizationService) InviteUserToOrganization(orgID int, req *models.In
 	if err != nil {
 		return nil, fmt.Errorf("failed to create invitation: %w", err)
 	}
+
+	deliveryStatus := "failed"
+	if s.invitationEmailSender == nil {
+		log.Printf("invitation email is not configured for invitation %d", invitation.ID)
+	} else if err := s.invitationEmailSender.SendInvitation(invitation.Email, org.Name, token); err != nil {
+		log.Printf("failed to deliver invitation %d: %v", invitation.ID, err)
+	} else {
+		deliveryStatus = "sent"
+	}
+	if err := s.userInvitationRepo.UpdateDeliveryStatus(invitation.ID, deliveryStatus); err != nil {
+		return nil, fmt.Errorf("invitation was created but email status could not be saved: %w", err)
+	}
+	invitation.EmailDeliveryStatus = deliveryStatus
 
 	// Log audit
 	_ = s.auditService.LogUserAction(invitedByUserID, "INVITE_USER", "user_invitations", &invitation.ID, nil, invitation)
@@ -247,7 +267,7 @@ func (s *OrganizationService) AcceptInvitation(token string, userID int) (*model
 	}
 
 	// Accept the invitation
-	err = s.userInvitationRepo.AcceptInvitation(invitation.ID, userID)
+	err = s.userInvitationRepo.AcceptInvitation(token, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to accept invitation: %w", err)
 	}
@@ -282,6 +302,15 @@ func (s *OrganizationService) ValidateInvitationToken(token string) (*models.Use
 		return nil, fmt.Errorf("invitation has expired")
 	}
 
+	org, err := s.orgRepo.GetByID(invitation.OrganizationID)
+	if err != nil {
+		return nil, fmt.Errorf("invitation organization not found: %w", err)
+	}
+	if org == nil {
+		return nil, fmt.Errorf("invitation organization not found")
+	}
+	invitation.OrganizationName = org.Name
+
 	return invitation, nil
 }
 
@@ -300,7 +329,7 @@ func (s *OrganizationService) validateOrganizationRequest(req *models.CreateOrga
 	return nil
 }
 
-func (s *OrganizationService) generateInvitationToken() (string, error) {
+func generateInvitationToken() (string, error) {
 	b := make([]byte, 32)
 	_, err := rand.Read(b)
 	if err != nil {

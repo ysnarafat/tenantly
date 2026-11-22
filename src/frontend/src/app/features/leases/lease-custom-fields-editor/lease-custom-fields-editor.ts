@@ -34,7 +34,7 @@ export class LeaseCustomFieldsEditor {
   newKey = '';
   newValue = '';
 
-  get entries(): Array<[string, string]> {
+  get entries(): [string, string][] {
     return Object.entries(this.customFields);
   }
 

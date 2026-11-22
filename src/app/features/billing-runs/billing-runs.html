@@ -1,0 +1,132 @@
+<main class="billing-page">
+  <header class="page-header no-print" data-testid="page-header">
+    <div>
+      <h1 data-testid="page-title">{{ 'BILLING_RUN.PAGE_TITLE' | translate }}</h1>
+      <p data-testid="page-description">{{ 'BILLING_RUN.SUBTITLE' | translate }}</p>
+    </div>
+    <a routerLink="/payments" class="btn secondary" data-testid="nav-to-payments">
+      {{ 'BILLING_RUN.PAYMENTS' | translate }}
+    </a>
+  </header>
+
+  <section class="filters-card no-print" data-testid="filters-section" aria-label="Filters">
+    <div class="filter-row">
+      <div class="form-group">
+        <label for="property-filter" class="form-label">
+          {{ 'BILLING_RUN.PROPERTY' | translate }}
+        </label>
+        <select
+          id="property-filter"
+          [(ngModel)]="selectedPropertyId"
+          (ngModelChange)="onPropertyChange($event)"
+          data-testid="property-select"
+          aria-label="{{ 'BILLING_RUN.PROPERTY' | translate }}"
+        >
+          <option [ngValue]="null" data-testid="select-all-properties">
+            {{ 'BILLING_RUN.SELECT_ALL_PROPERTIES' | translate }}
+          </option>
+          <option *ngFor="let property of properties" [ngValue]="property.id"
+                   data-testid="property-option-{{ property.id }}">
+            {{ property.name }} ({{ property.address }})
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="status-filter" class="form-label">
+          {{ 'BILLING_RUN.STATUS' | translate }}
+        </label>
+        <select
+          id="status-filter"
+          [(ngModel)]="selectedStatus"
+          (ngModelChange)="onStatusChange($event)"
+          data-testid="status-select"
+          aria-label="{{ 'BILLING_RUN.STATUS' | translate }}"
+        >
+          <option [ngValue]="null" data-testid="select-all-status">
+            {{ 'BILLING_RUN.SELECT_ALL_STATUS' | translate }}
+          </option>
+          <option *ngFor="let status of statuses" [ngValue]="status"
+                   data-testid="status-option-{{ status }}">
+            {{ status }}
+          </option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="date-from" class="form-label">{{ 'BILLING_RUN.DATE_FROM' | translate }}</label>
+        <input type="date" id="date-from" [(ngModel)]="dateFrom" data-testid="date-from-input"
+               aria-label="{{ 'BILLING_RUN.DATE_FROM' | translate }}" />
+      </div>
+
+      <div class="form-group">
+        <label for="date-to" class="form-label">{{ 'BILLING_RUN.DATE_TO' | translate }}</label>
+        <input type="date" id="date-to" [(ngModel)]="dateTo" data-testid="date-to-input"
+               aria-label="{{ 'BILLING_RUN.DATE_TO' | translate }}" />
+      </div>
+
+      <button class="btn primary" (click)="applyFilters()" data-testid="apply-filters-btn">
+        {{ 'BILLING_RUN.APPLY_FILTERS' | translate }}
+      </button>
+
+      <button *ngIf="selectedPropertyId || selectedStatus || dateFrom || dateTo"
+              class="btn secondary" (click)="resetFilters()" data-testid="reset-filters-btn">
+        {{ 'BILLING_RUN.RESET_FILTERS' | translate }}
+      </button>
+    </div>
+
+    <div *ngIf="filteredRuns.length === 0" class="hint">
+      {{ 'BILLING_RUN.NO_RESULTS_HINT' | translate }}
+    </div>
+  </section>
+
+  <div class="runs-container" data-testid="runs-section">
+    <div *ngIf="filteredRuns.length > 0">
+      <table class="data-table" aria-label="{{ 'BILLING_RUN.TABLE_LABEL' | translate }}">
+        <thead>
+          <tr>
+            <th scope="col" data-testid="run-id-header">{{ 'BILLING_RUN.RUN_ID' | translate }}</th>
+            <th scope="col" data-testid="property-name-header">{{ 'BILLING_RUN.PROPERTY_NAME' | translate }}</th>
+            <th scope="col" data-testid="billing-date-header">{{ 'BILLING_RUN.BILLING_DATE' | translate }}</th>
+            <th scope="col" data-testid="status-header">{{ 'BILLING_RUN.STATUS' | translate }}</th>
+            <th scope="col" data-testid="actions-header">{{ 'BILLING_RUN.ACTIONS' | translate }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let run of filteredRuns" [attr.data-testid]="'run-item-' + run.id">
+            <td scope="row">
+              <span class="id-value">{{ run.id }}</span>
+            </td>
+            <td>{{ run.propertyName }}</td>
+            <td>{{ run.billingDate | date:'yyyy-MM-dd' }}</td>
+            <td>
+              <span [class]="run.statusClass" data-testid="status-badge-{{ run.status }}">
+                {{ run.status }}
+              </span>
+            </td>
+            <td>
+              <div class="actions" aria-label="{{ 'BILLING_RUN.ACTIONS' | translate }}">
+                <button *ngIf="canEditRun(run)" class="btn secondary small" data-testid="edit-run-btn"
+                        (click)="editRun(run)">
+                  {{ 'BILLING_RUN.EDIT' | translate }}
+                </button>
+                <button *ngIf="canCreateNew()" class="btn primary small" data-testid="create-new-run-btn"
+                        (click)="createNewRun()">
+                  {{ 'BILLING_RUN.CREATE_NEW' | translate }}
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div *ngIf="canCreateNew()" class="hint no-margin">
+        <span>{{ 'BILLING_RUN.HINT_CREATE_NEW' | translate }}</span>
+      </div>
+    </div>
+
+    <div *ngIf="filteredRuns.length === 0 && !loading" class="hint">
+      {{ 'BILLING_RUN.NO_DATA_HINT' | translate }}
+    </div>
+  </div>
+</main>

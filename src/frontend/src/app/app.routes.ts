@@ -41,6 +41,14 @@ export const routes: Routes = [
     canActivate: [GuestGuard],
   },
   {
+    path: 'accept-invitation',
+    title: 'Activate your account',
+    loadComponent: () =>
+      import('./features/auth/invitation-activation/invitation-activation').then(
+        (m) => m.InvitationActivation
+      ),
+  },
+  {
     path: 'select-organization',
     title: 'Select organization',
     loadComponent: () =>
@@ -54,6 +62,13 @@ export const routes: Routes = [
     title: 'Dashboard',
     loadComponent: () => import('./features/dashboard/dashboard').then((m) => m.Dashboard),
     canActivate: [AuthGuard],
+  },
+  {
+    path: 'support',
+    title: 'Support Center',
+    loadComponent: () =>
+      import('./features/support/support-center/support-center').then((m) => m.SupportCenter),
+    canActivate: [AuthGuard, permissionGuard(Permission.ACCESS_SUPPORT_CENTER)],
   },
   {
     path: 'properties',
@@ -109,13 +124,24 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/payments/payment-list/payment-list').then((m) => m.PaymentList),
     canActivate: [AuthGuard, permissionGuard(Permission.VIEW_PAYMENTS)],
-  },
-  {
-    path: 'payments/collect',
-    title: 'Collect Payments',
-    loadComponent: () =>
-      import('./features/payments/payment-collect/payment-collect').then((m) => m.PaymentCollect),
-    canActivate: [AuthGuard, permissionGuard(Permission.RECORD_PAYMENTS)],
+    children: [
+      {
+        path: 'collect',
+        title: 'Collect Payments',
+        loadComponent: () =>
+          import('./features/payments/payment-collect/payment-collect').then(
+            (m) => m.PaymentCollect
+          ),
+        canActivate: [AuthGuard, permissionGuard(Permission.RECORD_PAYMENTS)],
+      },
+      {
+        path: 'electricity',
+        title: 'Electricity Bills',
+        loadComponent: () =>
+          import('./features/billing-runs/billing-runs').then((m) => m.BillingRuns),
+        canActivate: [AuthGuard, permissionGuard(Permission.RECORD_PAYMENTS)],
+      },
+    ],
   },
   {
     path: 'reports',

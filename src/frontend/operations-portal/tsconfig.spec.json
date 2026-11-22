@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "outDir": "../out-tsc/operations-portal-spec",
+    "types": ["jasmine"]
+  },
+  "files": [],
+  "include": ["src/**/*.spec.ts", "src/**/*.d.ts"]
+}

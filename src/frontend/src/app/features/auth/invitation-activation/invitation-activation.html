@@ -1,0 +1,59 @@
+<main class="activation-page">
+  <section class="activation-card">
+    <a class="brand" routerLink="/home">TENANTLY</a>
+    <h1>{{ 'INVITATION_ACTIVATION.TITLE' | translate }}</h1>
+
+    @if (loading()) {
+    <p role="status">{{ 'INVITATION_ACTIVATION.VALIDATING' | translate }}</p>
+    } @else if (error()) {
+    <p class="message error" role="alert">{{ error() | translate }}</p>
+    <a routerLink="/login">{{ 'INVITATION_ACTIVATION.GO_TO_LOGIN' | translate }}</a>
+    } @else if (invitation(); as invitation) {
+    <p class="description">
+      {{ 'INVITATION_ACTIVATION.INVITED_TO' | translate }}
+      <strong>{{ invitation.organizationName }}</strong>
+    </p>
+    <p class="email">{{ invitation.email }}</p>
+
+    <form [formGroup]="form" (ngSubmit)="activate()">
+      <label>
+        {{ 'INVITATION_ACTIVATION.FIRST_NAME' | translate }}
+        <input formControlName="firstName" autocomplete="given-name" />
+      </label>
+      @if (form.controls.firstName.touched && form.controls.firstName.invalid) {
+      <small class="field-error">{{ 'INVITATION_ACTIVATION.REQUIRED' | translate }}</small>
+      }
+
+      <label>
+        {{ 'INVITATION_ACTIVATION.LAST_NAME' | translate }}
+        <input formControlName="lastName" autocomplete="family-name" />
+      </label>
+      @if (form.controls.lastName.touched && form.controls.lastName.invalid) {
+      <small class="field-error">{{ 'INVITATION_ACTIVATION.REQUIRED' | translate }}</small>
+      }
+
+      <label>
+        {{ 'INVITATION_ACTIVATION.PASSWORD' | translate }}
+        <input type="password" formControlName="password" autocomplete="new-password" />
+      </label>
+      <small>{{ 'INVITATION_ACTIVATION.PASSWORD_HELP' | translate }}</small>
+      @if (form.controls.password.touched && form.controls.password.invalid) {
+      <small class="field-error">{{ 'INVITATION_ACTIVATION.PASSWORD_ERROR' | translate }}</small>
+      }
+
+      <label>
+        {{ 'INVITATION_ACTIVATION.CONFIRM_PASSWORD' | translate }}
+        <input type="password" formControlName="confirmPassword" autocomplete="new-password" />
+      </label>
+      @if (form.controls.confirmPassword.touched && form.hasError('passwordMismatch')) {
+      <small class="field-error">{{ 'INVITATION_ACTIVATION.PASSWORD_MISMATCH' | translate }}</small>
+      }
+
+      <button type="submit" [disabled]="submitting()">
+        {{ submitting() ? ('INVITATION_ACTIVATION.SUBMITTING' | translate) :
+        ('INVITATION_ACTIVATION.SUBMIT' | translate) }}
+      </button>
+    </form>
+    }
+  </section>
+</main>

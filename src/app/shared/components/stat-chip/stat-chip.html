@@ -1,0 +1,6 @@
+<span [class]="fullClass()">
+  <span class="chip-amount">{{ resolvedAmount() }}</span>
+  @if (showLabel()) {
+  <span class="chip-label">{{ resolvedLabel() }}</span>
+  }
+</span>

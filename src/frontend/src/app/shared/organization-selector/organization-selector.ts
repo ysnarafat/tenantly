@@ -164,6 +164,22 @@ const ROLE_LABELS: Record<string, string> = {
         }
       }
 
+      @media (max-width: 768px) {
+        .org-button {
+          min-width: 48px;
+          min-height: 48px;
+          padding: 4px !important;
+        }
+
+        .org-button-content {
+          gap: 4px;
+        }
+
+        .org-name {
+          display: none;
+        }
+      }
+
       .org-button-content {
         display: flex;
         flex-wrap: nowrap;
@@ -220,17 +236,41 @@ const ROLE_LABELS: Record<string, string> = {
       }
 
       ::ng-deep .org-menu {
+        max-width: calc(100vw - 16px);
+
         .mat-mdc-menu-content {
           padding: 0 !important;
           max-height: 420px;
           overflow-y: auto;
-          width: 300px;
+          width: min(300px, calc(100vw - 16px));
+          box-sizing: border-box;
         }
 
         .mat-mdc-menu-item {
           height: auto !important;
           line-height: normal !important;
           padding: 10px 16px !important;
+        }
+      }
+
+      @media (max-width: 600px) {
+        ::ng-deep .org-menu {
+          max-height: calc(100vh - 16px);
+          max-height: calc(100dvh - 16px);
+
+          .mat-mdc-menu-content {
+            max-height: calc(100vh - 16px);
+            max-height: calc(100dvh - 16px);
+          }
+        }
+
+        .org-menu-row {
+          gap: 8px;
+        }
+
+        .org-menu-name {
+          overflow-wrap: anywhere;
+          white-space: normal;
         }
       }
 

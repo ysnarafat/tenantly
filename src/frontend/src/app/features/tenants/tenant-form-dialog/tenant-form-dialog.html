@@ -107,6 +107,16 @@
         }
       </mat-form-field>
     </div>
+    <!-- Document Attachments -->
+    <div class="full-width">
+      <document-attachments
+        [attachments]="attachments"
+        [isUploading]="isUploading"
+        (uploadProgress)="handleUploadProgress($event)"
+        (fileSelected)="handleFileSelected($event)"
+        (filesDeleted)="handleFilesDeleted($event)"
+      ></document-attachments>
+    </div>
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">

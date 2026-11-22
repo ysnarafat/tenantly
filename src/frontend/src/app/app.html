@@ -8,63 +8,63 @@
     </button>
     <div class="app-branding">
       <span class="app-title">Tenantly</span>
-      <span class="app-subtitle">{{ 'NAV.SUBTITLE' | translate }}</span>
     </div>
     <app-organization-selector></app-organization-selector>
     <span class="spacer"></span>
-    @if (themeService.darkModeEnabled) {
+    <div class="toolbar-search">
+      <mat-icon class="search-icon">search</mat-icon>
+      <input type="text" placeholder="Search properties, buildings, units (e.g. Gulshan, Apt 4)" />
+      <kbd class="shortcut-badge">⌘K</kbd>
+    </div>
+    <span class="toolbar-divider"></span>
     <button
       mat-icon-button
+      class="toolbar-icon-btn"
       (click)="themeService.toggle()"
-      class="theme-toggle"
-      [matTooltip]="
-        themeService.isDark()
-          ? ('NAV.TOOLTIPS.LIGHT_MODE' | translate)
-          : ('NAV.TOOLTIPS.DARK_MODE' | translate)
-      "
+      [matTooltip]="themeService.isDark() ? ('NAV.TOOLTIPS.LIGHT_MODE' | translate) : ('NAV.TOOLTIPS.DARK_MODE' | translate)"
     >
       <mat-icon>{{ themeService.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
     </button>
-    }
     <button
       mat-icon-button
+      class="toolbar-icon-btn"
       (click)="languageService.toggle()"
-      class="language-toggle"
       [matTooltip]="languageService.currentLang() === 'en' ? 'বাংলা' : 'English'"
     >
       <mat-icon>language</mat-icon>
     </button>
-    <div class="user-info">
-      <div class="user-details">
-        <span class="user-name">{{ user()?.username || 'User' }}</span>
-        <span class="user-role">{{ userRole() }}</span>
+    <button
+      mat-icon-button
+      class="toolbar-icon-btn notification-btn"
+      [matTooltip]="'Notifications'"
+    >
+      <mat-icon>notifications</mat-icon>
+      <span class="notification-dot"></span>
+    </button>
+    <button mat-icon-button class="toolbar-icon-btn" [matTooltip]="'Settings'">
+      <mat-icon>settings</mat-icon>
+    </button>
+    <div class="user-menu-trigger" [matMenuTriggerFor]="userMenu">
+      <div class="user-avatar" [style.background-color]="userAvatarColor()">
+        {{ userInitials() }}
       </div>
-      <button
-        mat-icon-button
-        [matMenuTriggerFor]="userMenu"
-        class="avatar-btn"
-        [matTooltip]="user()?.username || ''"
-      >
-        <div class="user-avatar" [style.background-color]="userAvatarColor()">
-          {{ userInitials() }}
-        </div>
-      </button>
-      <mat-menu #userMenu="matMenu">
-        <button mat-menu-item disabled>
-          <mat-icon>person</mat-icon>
-          <span>{{ user()?.username }}</span>
-        </button>
-        <button mat-menu-item disabled>
-          <mat-icon>badge</mat-icon>
-          <span>{{ userRole() }}</span>
-        </button>
-        <mat-divider></mat-divider>
-        <button mat-menu-item (click)="logout()">
-          <mat-icon>logout</mat-icon>
-          <span>{{ 'NAV.USER_MENU.LOGOUT' | translate }}</span>
-        </button>
-      </mat-menu>
+      <mat-icon class="avatar-caret">expand_more</mat-icon>
     </div>
+    <mat-menu #userMenu="matMenu" yPosition="below" xPosition="before">
+      <button mat-menu-item disabled>
+        <mat-icon>person</mat-icon>
+        <span>{{ user()?.username }}</span>
+      </button>
+      <button mat-menu-item disabled>
+        <mat-icon>badge</mat-icon>
+        <span>{{ userRole() }}</span>
+      </button>
+      <mat-divider></mat-divider>
+      <button mat-menu-item (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        <span>{{ 'NAV.USER_MENU.LOGOUT' | translate }}</span>
+      </button>
+    </mat-menu>
   </mat-toolbar>
 
   <mat-sidenav-container class="sidenav-container">
@@ -137,17 +137,57 @@
           <span class="nav-label">{{ 'NAV.ITEMS.LEASES' | translate }}</span>
         </a>
         } @if (canViewPayments()) {
-        <a
-          class="nav-item"
-          routerLink="/payments"
-          routerLinkActive="nav-active"
-          (click)="onNavigate()"
-          [matTooltip]="sidenavCollapsed() && !isMobile() ? ('NAV.ITEMS.PAYMENTS' | translate) : ''"
-          matTooltipPosition="right"
-        >
-          <mat-icon class="nav-icon">payment</mat-icon>
-          <span class="nav-label">{{ 'NAV.ITEMS.PAYMENTS' | translate }}</span>
-        </a>
+        <div class="nav-item-parent" [class.nav-active]="isPaymentsActive()">
+          <a
+            class="nav-item nav-item-parent-link"
+            routerLink="/payments"
+            routerLinkActive=""
+            (click)="onNavigate()"
+            [matTooltip]="sidenavCollapsed() && !isMobile() ? ('NAV.ITEMS.PAYMENTS' | translate) : ''"
+            matTooltipPosition="right"
+          >
+            <mat-icon class="nav-icon">payment</mat-icon>
+            <span class="nav-label">{{ 'NAV.ITEMS.PAYMENTS' | translate }}</span>
+            <mat-icon class="nav-arrow" [class.rotated]="isPaymentsActive()">expand_more</mat-icon>
+          </a>
+          @if (!sidenavCollapsed() && isMobile()) {
+          <div class="nav-submenu">
+            <a
+              class="nav-sub-item"
+              routerLink="/payments"
+              routerLinkActive="nav-active"
+              (click)="onNavigate()"
+              [matTooltip]="'NAV.ITEMS.PAYMENTS' | translate"
+              matTooltipPosition="right"
+            >
+              <mat-icon>receipt_long</mat-icon>
+              <span>{{ 'NAV.ITEMS.PAYMENTS' | translate }}</span>
+            </a>
+            <a
+              class="nav-sub-item"
+              routerLink="/payments/collect"
+              routerLinkActive="nav-active"
+              (click)="onNavigate()"
+              [matTooltip]="'NAV.SUBMENU.COLLECT_PAYMENTS' | translate"
+              matTooltipPosition="right"
+            >
+              <mat-icon>add_card</mat-icon>
+              <span>{{ 'NAV.SUBMENU.COLLECT_PAYMENTS' | translate }}</span>
+            </a>
+            <a
+              class="nav-sub-item"
+              routerLink="/payments/electricity"
+              routerLinkActive="nav-active"
+              (click)="onNavigate()"
+              [matTooltip]="'NAV.SUBMENU.ELECTRICITY_BILLS' | translate"
+              matTooltipPosition="right"
+            >
+              <mat-icon>bolt</mat-icon>
+              <span>{{ 'NAV.SUBMENU.ELECTRICITY_BILLS' | translate }}</span>
+            </a>
+          </div>
+          }
+        </div>
         } @if (canViewReports()) {
         <a
           class="nav-item"
@@ -173,6 +213,18 @@
         >
           <mat-icon class="nav-icon">folder</mat-icon>
           <span class="nav-label">{{ 'NAV.ITEMS.DOCUMENTS' | translate }}</span>
+        </a>
+        } @if (canAccessSupport()) {
+        <a
+          class="nav-item"
+          routerLink="/support"
+          routerLinkActive="nav-active"
+          (click)="onNavigate()"
+          [matTooltip]="sidenavCollapsed() && !isMobile() ? ('NAV.ITEMS.SUPPORT' | translate) : ''"
+          matTooltipPosition="right"
+        >
+          <mat-icon class="nav-icon">support_agent</mat-icon>
+          <span class="nav-label">{{ 'NAV.ITEMS.SUPPORT' | translate }}</span>
         </a>
         } } @if (hasAdminNav()) {
         <div class="nav-section-header">

@@ -1,4 +1,11 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
 .property-card {
+  min-width: 0;
+
   mat-card-header {
     display: flex;
     align-items: center;
@@ -376,9 +383,9 @@
 
       .building-info-btn,
       .building-edit-btn {
-        width: 32px;
-        height: 32px;
-        padding: 4px;
+        width: 44px;
+        height: 44px;
+        padding: 10px;
 
         mat-icon {
           font-size: 18px;
@@ -398,20 +405,36 @@
       grid-template-columns: 1fr;
     }
 
-    .unit-item .unit-actions button {
-      width: 28px;
-      height: 28px;
+    .unit-item {
+      flex-wrap: wrap;
 
-      mat-icon {
-        font-size: 16px;
-        width: 16px;
-        height: 16px;
+      .unit-details {
+        flex: 1 1 calc(100% - 64px);
+      }
+
+      .unit-actions {
+        width: 100%;
+        justify-content: flex-end;
+
+        button {
+          width: 44px;
+          height: 44px;
+        }
       }
     }
 
-    mat-card-actions button {
-      flex: 1 1 auto;
-      justify-content: center;
+    mat-card-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      padding: 8px;
+
+      button {
+        min-width: 0;
+        min-height: 44px;
+        padding: 0 8px;
+        white-space: normal;
+      }
     }
   }
 }

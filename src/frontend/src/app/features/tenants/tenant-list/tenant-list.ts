@@ -4,18 +4,18 @@ import { FormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { MatSelectModule } from '@angular/material/select';
-import { MatOptionModule } from '@angular/material/core';
-import { TranslateModule } from '@ngx-translate/core';
+import { MatMenuModule } from '@angular/material/menu';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { switchMap } from 'rxjs/operators';
 import { TenantService } from '../../../core/services/tenant.service';
 import { MfaService } from '../../../core/services/mfa.service';
@@ -42,16 +42,16 @@ import { ConfirmDeleteDialogComponent } from '../../../shared/components/confirm
     MatCardModule,
     MatButtonModule,
     MatIconModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
     MatDialogModule,
     MatTableModule,
     MatSortModule,
     MatPaginatorModule,
-    MatInputModule,
-    MatFormFieldModule,
     MatTooltipModule,
     MatProgressSpinnerModule,
-    MatSelectModule,
-    MatOptionModule,
+    MatMenuModule,
     TranslateModule,
     DataTable,
   ],
@@ -64,6 +64,7 @@ export class TenantList implements OnInit {
   private mfaService = inject(MfaService);
   private snackBar = inject(MatSnackBar);
   private permissionService = inject(PermissionService);
+  private translate = inject(TranslateService);
 
   private revealState = new Map<number, { nid: boolean; phone: boolean }>();
   get canRevealPii(): boolean {
@@ -147,7 +148,7 @@ export class TenantList implements OnInit {
   pageSize = 10;
   pageIndex = 0;
 
-  displayedColumns: string[] = ['name', 'contact', 'nid', 'status', 'created', 'actions'];
+  displayedColumns: string[] = ['name', 'type', 'contact', 'nid', 'status', 'created', 'actions'];
 
   sortState: Sort = { active: '', direction: '' };
 
@@ -234,20 +235,6 @@ export class TenantList implements OnInit {
     this.updatePagedData();
   }
 
-  setActiveFilter(filter: 'all' | 'active' | 'inactive') {
-    this.activeFilter = filter;
-    this.applyFilters();
-  }
-
-  setTypeFilter(filter: 'all' | 'Individual' | 'Business') {
-    this.typeFilter = filter;
-    this.applyFilters();
-  }
-
-  onSearchChange() {
-    this.applyFilters();
-  }
-
   clearSearch() {
     this.searchQuery = '';
     this.applyFilters();
@@ -281,6 +268,63 @@ export class TenantList implements OnInit {
   }
   get inactiveCount() {
     return this.tenants.filter((t) => !t.active).length;
+  }
+
+  get newThisMonthCount(): number {
+    const now = new Date();
+    return this.tenants.filter((tenant) => {
+      const createdAt = new Date(tenant.created_at);
+      return (
+        createdAt.getMonth() === now.getMonth() && createdAt.getFullYear() === now.getFullYear()
+      );
+    }).length;
+  }
+
+  exportTenants(): void {
+    const headers = [
+      this.translate.instant('TENANT_LIST.TABLE.TENANT'),
+      this.translate.instant('TENANT_LIST.TABLE.TYPE'),
+      this.translate.instant('TENANT_LIST.EXPORT.EMAIL'),
+      this.translate.instant('TENANT_LIST.EXPORT.PHONE'),
+      this.translate.instant('TENANT_LIST.TABLE.NID'),
+      this.translate.instant('TENANT_LIST.TABLE.STATUS'),
+      this.translate.instant('TENANT_LIST.TABLE.JOINED'),
+    ];
+    const rows = this.filteredTenants.map((tenant) => [
+      tenant.name,
+      tenant.tenant_type,
+      tenant.email ?? '',
+      this.isAccountantRole
+        ? tenant.phone_number
+          ? RESTRICTED_LABEL
+          : ''
+        : tenant.phone_number
+          ? maskPhone(tenant.phone_number)
+          : '',
+      this.isAccountantRole
+        ? tenant.nid_last_four
+          ? RESTRICTED_LABEL
+          : ''
+        : tenant.nid_last_four
+          ? maskFromLastFour(tenant.nid_last_four)
+          : '',
+      tenant.active
+        ? this.translate.instant('TENANT_LIST.TABLE.ACTIVE')
+        : this.translate.instant('TENANT_LIST.TABLE.INACTIVE'),
+      new Date(tenant.created_at).toLocaleDateString(),
+    ]);
+    const csvCell = (value: string): string => {
+      const safeValue = /^[\s]*[=+\-@]/.test(value) ? `'${value}` : value;
+      return `"${safeValue.replace(/"/g, '""')}"`;
+    };
+    const csv = [headers, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tenants-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   addTenant() {

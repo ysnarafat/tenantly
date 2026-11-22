@@ -102,6 +102,36 @@ func LastFour(plaintext string) string {
 	return plaintext[len(plaintext)-4:]
 }
 
+// MaskPhone renders a phone number as bullets plus its last four digits (or the
+// whole value if shorter), for non-sensitive display and search. The stored
+// value is always the encrypted ciphertext; this is computed at read time.
+func MaskPhone(plaintext string) string {
+	if plaintext == "" {
+		return ""
+	}
+	return Mask(plaintext)
+}
+
+// MaskEmail renders an email address as its first character plus bullets and the
+// domain (e.g. "j***@example.com"), for non-sensitive display. It never exposes
+// the full local part.
+func MaskEmail(email string) string {
+	if email == "" {
+		return ""
+	}
+	at := strings.Index(email, "@")
+	if at < 0 {
+		// Not a parseable email address; mask the whole string.
+		return Mask(email)
+	}
+	local := email[:at]
+	domain := email[at:]
+	if local == "" {
+		return "*" + domain
+	}
+	return local[:1] + strings.Repeat("*", len(local)-1) + domain
+}
+
 // Mask renders a value as bullets plus its last four characters, matching the
 // frontend's presentation (e.g. "••••••6789").
 func Mask(plaintext string) string {

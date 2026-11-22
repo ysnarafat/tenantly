@@ -32,9 +32,20 @@ export class BuildingService {
     return this.http.get<BuildingListResponse>(this.apiUrl, { params: httpParams });
   }
 
-  getBuildingsByProperty(propertyId: number): Observable<BuildingListResponse> {
+  getBuildingsByProperty(
+    propertyId: number,
+    pagination?: { page?: number; page_size?: number }
+  ): Observable<BuildingListResponse> {
+    let params = new HttpParams();
+    if (pagination?.page !== undefined) {
+      params = params.set('page', pagination.page.toString());
+    }
+    if (pagination?.page_size !== undefined) {
+      params = params.set('page_size', pagination.page_size.toString());
+    }
     return this.http.get<BuildingListResponse>(
-      `${environment.apiUrl}/properties/${propertyId}/buildings`
+      `${environment.apiUrl}/properties/${propertyId}/buildings`,
+      { params }
     );
   }
 

@@ -2,22 +2,6 @@ package models
 
 import "time"
 
-// MaxAttachmentFileSize is the hard cap on any single attachment upload.
-const MaxAttachmentFileSize = 10 * 1024 * 1024 // 10MB
-
-// AllowedAttachmentContentTypes are the only MIME types accepted for payment
-// transaction attachments — images and PDFs. Callers must match this against
-// content sniffed from the file bytes (http.DetectContentType), never the
-// client-supplied filename or Content-Type header, both of which are
-// trivially spoofable.
-var AllowedAttachmentContentTypes = map[string]bool{
-	"image/jpeg":      true,
-	"image/png":       true,
-	"image/gif":       true,
-	"image/webp":      true,
-	"application/pdf": true,
-}
-
 // PaymentTransactionAttachment is a file (receipt photo, bKash/Nagad
 // screenshot, etc.) evidencing one installment of a payment. File bytes are
 // intentionally not part of this struct — they're only ever served through

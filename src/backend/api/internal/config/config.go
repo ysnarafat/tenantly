@@ -61,7 +61,8 @@ type Config struct {
 	// https://app.example.com) used to build links embedded in SMS/email —
 	// currently the "download your receipt" link. It must be reachable by
 	// the recipient's phone, not just internal services.
-	PublicAppURL string
+	PublicAppURL     string
+	InvitationAppURL string
 }
 
 type SMSConfig struct {
@@ -129,8 +130,8 @@ func Load() (*Config, error) {
 		if environment == "production" {
 			return nil, fmt.Errorf("CRITICAL: CORS_ALLOWED_ORIGINS environment variable must be set in production")
 		}
-		fmt.Println("⚠️  WARNING: CORS_ALLOWED_ORIGINS not set. Defaulting to http://localhost:4200 for development.")
-		allowedOrigins = []string{"http://localhost:4200"}
+		fmt.Println("⚠️  WARNING: CORS_ALLOWED_ORIGINS not set. Defaulting to localhost frontends for development.")
+		allowedOrigins = []string{"http://localhost:4200", "http://localhost:4300"}
 	}
 
 	// Trusted proxies for Gin's ClientIP() resolution — empty/unset means Gin
@@ -183,13 +184,14 @@ func Load() (*Config, error) {
 			SMTPPassword: getEnv("SMTP_PASSWORD", ""),
 			FromEmail:    getEnv("FROM_EMAIL", "noreply@tenantly.com"),
 		},
-		Environment:    environment,
-		AllowedOrigins: allowedOrigins,
-		TrustedProxies: trustedProxies,
-		CookieDomain:   getEnv("COOKIE_DOMAIN", ""),
-		CookieSecure:   cookieSecure,
-		NIDProtector:   nidProtector,
-		PublicAppURL:   strings.TrimRight(getEnv("PUBLIC_APP_URL", "http://localhost:8080"), "/"),
+		Environment:      environment,
+		AllowedOrigins:   allowedOrigins,
+		TrustedProxies:   trustedProxies,
+		CookieDomain:     getEnv("COOKIE_DOMAIN", ""),
+		CookieSecure:     cookieSecure,
+		NIDProtector:     nidProtector,
+		PublicAppURL:     strings.TrimRight(getEnv("PUBLIC_APP_URL", "http://localhost:8080"), "/"),
+		InvitationAppURL: strings.TrimRight(getEnv("INVITATION_APP_URL", "http://localhost:4200"), "/"),
 	}
 	return config, nil
 }

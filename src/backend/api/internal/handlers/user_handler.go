@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -11,6 +12,7 @@ import (
 	"github.com/ysnarafat/tenantly/internal/interfaces"
 	"github.com/ysnarafat/tenantly/internal/middleware"
 	"github.com/ysnarafat/tenantly/internal/models"
+	"github.com/ysnarafat/tenantly/internal/services"
 )
 
 const refreshCookieName = "refresh_token"
@@ -50,6 +52,14 @@ func (h *UserHandler) clearRefreshCookie(c *gin.Context) {
 }
 
 func (h *UserHandler) Login(c *gin.Context) {
+	h.login(c, false)
+}
+
+func (h *UserHandler) LoginOperations(c *gin.Context) {
+	h.login(c, true)
+}
+
+func (h *UserHandler) login(c *gin.Context, operations bool) {
 	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		respondError(c, http.StatusBadRequest, "INVALID_REQUEST", "Invalid request format", err)
@@ -71,13 +81,24 @@ func (h *UserHandler) Login(c *gin.Context) {
 	clientIP := c.ClientIP()
 	userAgent := c.GetHeader("User-Agent")
 
-	response, err := h.userService.Login(&req, clientIP, userAgent)
+	login := h.userService.Login
+	if operations {
+		login = h.userService.LoginOperations
+	}
+	response, err := login(&req, clientIP, userAgent)
 	if err != nil {
+		if errors.Is(err, services.ErrOperationsPortalRequired) {
+			h.clearRefreshCookie(c)
+			respondError(c, http.StatusForbidden, "OPERATIONS_PORTAL_REQUIRED", "Use the Operations Portal to sign in", err)
+			return
+		}
 		respondError(c, http.StatusUnauthorized, "LOGIN_FAILED", "Invalid credentials", err)
 		return
 	}
 
-	h.setRefreshCookie(c, response.RefreshToken)
+	if !operations {
+		h.setRefreshCookie(c, response.RefreshToken)
+	}
 	c.JSON(http.StatusOK, response)
 }
 
@@ -467,5 +488,6 @@ func (h *UserHandler) RegisterWithInvitation(c *gin.Context) {
 		return
 	}
 
+	h.setRefreshCookie(c, response.RefreshToken)
 	c.JSON(http.StatusCreated, response)
 }

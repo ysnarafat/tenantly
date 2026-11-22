@@ -1,203 +1,510 @@
 <div class="dashboard-container">
-  <div class="header">
-    <h1>{{ 'DASHBOARD.PAGE_TITLE' | translate }}</h1>
-    <div class="user-info">
-      <mat-chip selected color="primary">{{ userRole$ | async }}</mat-chip>
+  <header class="page-header">
+    <div>
+      <div class="title-row">
+        <h1>{{ 'DASHBOARD.PAGE_TITLE' | translate }}</h1>
+        <span class="live-badge">
+          <span class="live-dot" aria-hidden="true"></span>
+          {{ 'DASHBOARD.LIVE_PORTFOLIO' | translate }}
+        </span>
+      </div>
+      <p class="page-description">
+        {{ 'DASHBOARD.INTRO' | translate: { user: (user$ | async)?.username || 'Admin' } }}
+      </p>
     </div>
-  </div>
 
-  <!-- Statistics Cards -->
-  <div class="stats-grid">
-    <mat-card class="stat-card rent-due">
-      <mat-card-content>
-        <div class="stat-content">
-          <div class="stat-value">{{ formatCurrency(stats.totalRentDue) }}</div>
-          <div class="stat-label">{{ 'DASHBOARD.STATS.TOTAL_RENT_DUE' | translate }}</div>
-        </div>
-        <mat-icon class="stat-icon">account_balance_wallet</mat-icon>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="stat-card collected">
-      <mat-card-content>
-        <div class="stat-content">
-          <div class="stat-value">{{ formatCurrency(stats.collectedThisMonth) }}</div>
-          <div class="stat-label">{{ 'DASHBOARD.STATS.COLLECTED_THIS_MONTH' | translate }}</div>
-        </div>
-        <mat-icon class="stat-icon">trending_up</mat-icon>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="stat-card pending">
-      <mat-card-content>
-        <div class="stat-content">
-          <div class="stat-value">{{ formatCurrency(stats.pendingPayments) }}</div>
-          <div class="stat-label">{{ 'DASHBOARD.STATS.PENDING_PAYMENTS' | translate }}</div>
-        </div>
-        <mat-icon class="stat-icon">schedule</mat-icon>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="stat-card overdue">
-      <mat-card-content>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats.overdueShops }}</div>
-          <div class="stat-label">{{ 'DASHBOARD.STATS.OVERDUE_SHOPS' | translate }}</div>
-        </div>
-        <mat-icon class="stat-icon">warning</mat-icon>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="stat-card active-leases">
-      <mat-card-content>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats.activeLeases }}</div>
-          <div class="stat-label">{{ 'DASHBOARD.STATS.ACTIVE_LEASES' | translate }}</div>
-        </div>
-        <mat-icon class="stat-icon">assignment</mat-icon>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="stat-card expiring">
-      <mat-card-content>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats.expiringLeases }}</div>
-          <div class="stat-label">{{ 'DASHBOARD.STATS.EXPIRING_SOON' | translate }}</div>
-        </div>
-        <mat-icon class="stat-icon">event</mat-icon>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="stat-card attachments">
-      <mat-card-content>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats.totalAttachments }}</div>
-          <div class="stat-label">{{ 'DASHBOARD.STATS.TOTAL_ATTACHMENTS' | translate }}</div>
-        </div>
-        <mat-icon class="stat-icon">attach_file</mat-icon>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card class="stat-card recent-files">
-      <mat-card-content>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats.recentAttachments }}</div>
-          <div class="stat-label">{{ 'DASHBOARD.STATS.RECENT_FILES' | translate }}</div>
-        </div>
-        <mat-icon class="stat-icon">cloud_upload</mat-icon>
-      </mat-card-content>
-    </mat-card>
-  </div>
-
-  <!-- Recent Activity -->
-  <div class="activity-section">
-    <!-- Expiring Leases -->
-    @if ((canViewLeases$ | async) && expiringLeases.length > 0) {
-    <mat-card class="activity-card">
-      <mat-card-header>
-        <mat-card-title>
-          <mat-icon>event</mat-icon>
-          {{ 'DASHBOARD.SECTIONS.EXPIRING_LEASES' | translate }}
-        </mat-card-title>
-        <button mat-button routerLink="/leases" color="primary">
-          {{ 'DASHBOARD.BUTTONS.VIEW_ALL' | translate }}
-        </button>
-      </mat-card-header>
-      <mat-card-content>
-        <div class="lease-list">
-          @for (lease of expiringLeases; track lease) {
-          <div class="lease-item">
-            <div class="lease-info">
-              <div class="shop-name">{{ lease.tenant_name }} ({{ lease.unit_number }})</div>
-              <div class="tenant-name">{{ lease.property_name }}</div>
-            </div>
-            <div class="lease-status">
-              <mat-chip color="warn" selected>
-                {{ lease.days_remaining }} {{ 'DASHBOARD.SUFFIXES.DAYS_LEFT' | translate }}
-              </mat-chip>
-            </div>
-          </div>
-          }
-        </div>
-      </mat-card-content>
-    </mat-card>
+    @if (canRecordPayments()) {
+    <a mat-flat-button color="primary" routerLink="/payments" class="primary-action">
+      <mat-icon>credit_card</mat-icon>
+      {{ 'DASHBOARD.RECORD_PAYMENT' | translate }}
+    </a>
     }
+  </header>
 
-    <!-- Recent Leases -->
-    @if (canViewLeases$ | async) {
-    <mat-card class="activity-card">
-      <mat-card-header>
-        <mat-card-title>
-          <mat-icon>assignment</mat-icon>
-          {{ 'DASHBOARD.SECTIONS.RECENT_LEASES' | translate }}
-        </mat-card-title>
-        <button mat-button routerLink="/leases" color="primary">
-          {{ 'DASHBOARD.BUTTONS.VIEW_ALL' | translate }}
-        </button>
-      </mat-card-header>
-      <mat-card-content>
-        <div class="lease-list">
-          @for (lease of recentLeases; track lease) {
-          <div class="lease-item">
-            <div class="lease-info">
-              <div class="shop-name">{{ lease.tenant_name }} ({{ lease.unit_number }})</div>
-              <div class="tenant-name">{{ lease.property_name }}</div>
-            </div>
-            <div class="lease-rent">
-              {{ formatCurrency(lease.monthly_rent) }}{{ 'DASHBOARD.SUFFIXES.PER_MONTH' | translate
-              }}
-            </div>
-          </div>
-          }
-        </div>
-        @if (recentLeases.length === 0) {
-        <div class="empty-message">{{ 'DASHBOARD.EMPTY_STATE.NO_RECENT_LEASES' | translate }}</div>
-        }
-      </mat-card-content>
-    </mat-card>
-    }
-
-    <!-- Recent Attachments -->
-    @if (canViewAttachments$ | async) {
-    <mat-card class="activity-card">
-      <mat-card-header>
-        <mat-card-title>
-          <mat-icon>attach_file</mat-icon>
-          {{ 'DASHBOARD.SECTIONS.RECENT_ATTACHMENTS' | translate }}
-        </mat-card-title>
-        <button mat-button routerLink="/attachments" color="primary">
-          {{ 'DASHBOARD.BUTTONS.VIEW_ALL' | translate }}
-        </button>
-      </mat-card-header>
-      <mat-card-content>
-        <div class="attachment-list">
-          @for (attachment of recentAttachments; track attachment) {
-          <div class="attachment-item">
-            <mat-icon class="file-icon">{{ getFileIcon(attachment.content_type) }}</mat-icon>
-            <div class="attachment-info">
-              <div class="file-name">{{ attachment.file_name }}</div>
-              <div class="upload-date">{{ formatDate(attachment.created_at) }}</div>
-            </div>
-            <mat-chip [color]="getTypeColor(attachment.attachment_type)" selected>
-              {{ attachment.attachment_type }}
-            </mat-chip>
-          </div>
-          }
-        </div>
-        @if (recentAttachments.length === 0) {
-        <div class="empty-message">
-          {{ 'DASHBOARD.EMPTY_STATE.NO_RECENT_ATTACHMENTS' | translate }}
-        </div>
-        }
-      </mat-card-content>
-    </mat-card>
-    }
-  </div>
-
-  <!-- Loading State -->
   @if (loading) {
-  <div class="loading-container">
-    <p>{{ 'DASHBOARD.LOADING' | translate }}</p>
+  <div class="loading-state" role="status" aria-live="polite">
+    <mat-icon>hourglass_empty</mat-icon>
+    <span>{{ 'DASHBOARD.LOADING' | translate }}</span>
+  </div>
+  } @else {
+  <section class="stats-grid" [attr.aria-label]="'DASHBOARD.A11Y.PORTFOLIO_SUMMARY' | translate">
+    <article class="stat-card">
+      <div class="stat-heading">
+        <span>{{ 'DASHBOARD.STATS.TOTAL_DUE' | translate }}</span>
+        <span class="stat-icon blue"><mat-icon>account_balance_wallet</mat-icon></span>
+      </div>
+      <strong class="stat-value">{{ formatCurrency(stats.totalDue) }}</strong>
+      <span class="stat-note">{{ 'DASHBOARD.STATS.CURRENT_MONTH' | translate }}</span>
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-heading">
+        <span>{{ 'DASHBOARD.STATS.TOTAL_COLLECTED' | translate }}</span>
+        <span class="stat-icon green"><mat-icon>payments</mat-icon></span>
+      </div>
+      <strong class="stat-value">{{ formatCurrency(stats.totalCollected) }}</strong>
+      <div class="stat-detail">
+        <div class="stat-detail-label">
+          <span>{{ 'DASHBOARD.STATS.COLLECTION_EFFICIENCY' | translate }}</span>
+          <strong>{{ stats.collectionRate | number: '1.0-1' }}%</strong>
+        </div>
+        <div
+          class="progress-track"
+          role="progressbar"
+          [attr.aria-label]="'DASHBOARD.STATS.COLLECTION_EFFICIENCY' | translate"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          [attr.aria-valuenow]="stats.collectionRate"
+        >
+          <span class="progress-value" [style.width.%]="stats.collectionRate"></span>
+        </div>
+      </div>
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-heading">
+        <span>{{ 'DASHBOARD.STATS.TOTAL_PENDING' | translate }}</span>
+        <span class="stat-icon orange"><mat-icon>schedule</mat-icon></span>
+      </div>
+      <strong class="stat-value">{{ formatCurrency(stats.pendingPayments) }}</strong>
+      <span class="stat-note"
+        >{{ stats.pendingCount }} {{ 'DASHBOARD.STATS.PENDING_COUNT' | translate }}</span
+      >
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-heading">
+        <span>{{ 'DASHBOARD.STATS.OVERDUE' | translate }}</span>
+        <span class="stat-icon red"><mat-icon>warning</mat-icon></span>
+      </div>
+      <strong class="stat-value overdue-value">{{ formatCurrency(stats.overduePayments) }}</strong>
+      <span class="stat-note"
+        >{{ stats.overdueUnitCount }} {{ 'DASHBOARD.STATS.OVERDUE_UNITS' | translate }}</span
+      >
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-heading">
+        <span>{{ 'DASHBOARD.STATS.ACTIVE_LEASES' | translate }}</span>
+        <span class="stat-icon blue"><mat-icon>real_estate_agent</mat-icon></span>
+      </div>
+      <strong class="stat-value"
+        >{{ stats.activeLeases }} {{ 'DASHBOARD.STATS.ACTIVE' | translate }}</strong
+      >
+      <span class="stat-note">
+        <strong class="occupancy-value">{{ stats.occupancyRate | number: '1.0-0' }}%</strong>
+        {{ 'DASHBOARD.STATS.OCCUPANCY_RATE' | translate }}
+      </span>
+    </article>
+
+    <article class="stat-card">
+      <div class="stat-heading">
+        <span>{{ 'DASHBOARD.STATS.EXPIRING_SOON' | translate }}</span>
+        <span class="stat-icon neutral"><mat-icon>event_repeat</mat-icon></span>
+      </div>
+      <strong class="stat-value"
+        >{{ stats.expiringLeases }} {{ 'DASHBOARD.STATS.LEASES' | translate }}</strong
+      >
+      <span class="stat-note">{{ 'DASHBOARD.STATS.NEEDS_RENEWAL' | translate }}</span>
+    </article>
+  </section>
+
+  <section class="panel trend-panel">
+    <div class="panel-header trend-header">
+      <div class="panel-title">
+        <span class="section-icon blue"><mat-icon>query_stats</mat-icon></span>
+        <div>
+          <div class="trend-title-row">
+            <h2>{{ 'DASHBOARD.SECTIONS.COLLECTION_TRENDS' | translate }}</h2>
+            @if (monthOverMonthChange !== undefined) {
+            <span class="trend-change" [class.negative]="monthOverMonthChange < 0">
+              <mat-icon>{{ monthOverMonthChange >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+              {{ monthOverMonthChange > 0 ? '+' : '' }}{{ monthOverMonthChange | number: '1.1-1' }}%
+              {{ 'DASHBOARD.CHART.MONTH_OVER_MONTH' | translate }}
+            </span>
+            }
+          </div>
+          <p>{{ 'DASHBOARD.SECTIONS.COLLECTION_TRENDS_DESCRIPTION' | translate }}</p>
+        </div>
+      </div>
+      <div
+        class="trend-controls"
+        role="group"
+        [attr.aria-label]="'DASHBOARD.A11Y.CHART_PERIOD' | translate"
+      >
+        <button
+          type="button"
+          [class.selected]="trendRange === 'sixMonths'"
+          [attr.aria-pressed]="trendRange === 'sixMonths'"
+          (click)="setTrendRange('sixMonths')"
+        >
+          {{ 'DASHBOARD.CHART.LAST_SIX_MONTHS' | translate }}
+        </button>
+        <button
+          type="button"
+          [class.selected]="trendRange === 'yearToDate'"
+          [attr.aria-pressed]="trendRange === 'yearToDate'"
+          (click)="setTrendRange('yearToDate')"
+        >
+          {{ 'DASHBOARD.CHART.YEAR_TO_DATE' | translate }}
+        </button>
+        <button
+          type="button"
+          [class.selected]="trendRange === 'year'"
+          [attr.aria-pressed]="trendRange === 'year'"
+          (click)="setTrendRange('year')"
+        >
+          {{ currentYear }}
+        </button>
+      </div>
+    </div>
+
+    <div class="chart-summary">
+      <div>
+        <span>{{ 'DASHBOARD.CHART.PERIOD_COLLECTED' | translate }}</span>
+        <strong>{{ formatCurrency(trendTotalCollected) }}</strong>
+      </div>
+      <div>
+        <span>{{ 'DASHBOARD.CHART.AVERAGE_EFFICIENCY' | translate }}</span>
+        <strong>{{ averageCollectionRate | number: '1.0-1' }}%</strong>
+      </div>
+      <div>
+        <span>{{ 'DASHBOARD.CHART.COLLECTION_TARGET' | translate }}</span>
+        <strong>90%</strong>
+      </div>
+      <p class="chart-currency-note">{{ 'DASHBOARD.CHART.CURRENCY_NOTE' | translate }}</p>
+    </div>
+
+    <div class="chart-legend">
+      <span><i class="legend-swatch due"></i>{{ 'DASHBOARD.CHART.TOTAL_DUE' | translate }}</span>
+      <span
+        ><i class="legend-swatch collected"></i>{{ 'DASHBOARD.CHART.COLLECTED' | translate }}</span
+      >
+      <span
+        ><i class="legend-target"></i>{{ 'DASHBOARD.CHART.COLLECTION_TARGET' | translate }}
+        (90%)</span
+      >
+    </div>
+
+    @if (collectionTrend.length > 0) {
+    <div class="chart-scroll">
+      <svg
+        class="collection-chart"
+        viewBox="0 0 760 250"
+        role="img"
+        [attr.aria-label]="'DASHBOARD.A11Y.COLLECTION_CHART' | translate"
+      >
+        <line x1="52" y1="205" x2="744" y2="205" class="chart-axis" />
+        <line x1="52" y1="55" x2="744" y2="55" class="chart-gridline" />
+        <line x1="52" y1="130" x2="744" y2="130" class="chart-gridline" />
+        <line
+          x1="52"
+          x2="744"
+          [attr.y1]="chartY(chartMaximum * 0.9)"
+          [attr.y2]="chartY(chartMaximum * 0.9)"
+          class="chart-target"
+        />
+        <text x="46" y="59" text-anchor="end" class="chart-axis-label">
+          {{ formatChartAmount(chartMaximum) }}
+        </text>
+        <text x="46" y="134" text-anchor="end" class="chart-axis-label">
+          {{ formatChartAmount(chartMaximum / 2) }}
+        </text>
+        <text x="46" y="209" text-anchor="end" class="chart-axis-label">0</text>
+        @for (point of collectionTrend; track point.key; let i = $index) {
+        <g>
+          <rect
+            [attr.x]="chartX(i) - 12"
+            [attr.y]="chartY(point.totalDue)"
+            width="18"
+            [attr.height]="chartHeight(point.totalDue)"
+            rx="4"
+            class="chart-bar-due"
+          >
+            <title>
+              {{ point.label }} {{ point.year }} · {{ 'DASHBOARD.CHART.TOTAL_DUE' | translate }}: {{
+              formatCurrency(point.totalDue) }}
+            </title>
+          </rect>
+          <rect
+            [attr.x]="chartX(i) + 10"
+            [attr.y]="chartY(point.totalPaid)"
+            width="18"
+            [attr.height]="chartHeight(point.totalPaid)"
+            rx="4"
+            class="chart-bar-collected"
+          >
+            <title>
+              {{ point.label }} {{ point.year }} · {{ 'DASHBOARD.CHART.COLLECTED' | translate }}: {{
+              formatCurrency(point.totalPaid) }} ({{ point.collectionRate | number: '1.0-1' }}%)
+            </title>
+          </rect>
+          <text [attr.x]="chartX(i) + 8" y="230" text-anchor="middle" class="chart-month">
+            {{ trendRange === 'year' ? point.label : point.label + ' ' + point.year }}
+          </text>
+        </g>
+        }
+      </svg>
+    </div>
+    } @else {
+    <p class="empty-state">{{ 'DASHBOARD.EMPTY_STATE.NO_COLLECTION_DATA' | translate }}</p>
+    } @if (peakCollection) {
+    <div class="chart-footer">
+      <span>
+        {{ 'DASHBOARD.CHART.LOWEST_COLLECTION' | translate }}:
+        <strong
+          >{{ lowestCollection?.label }} {{ lowestCollection?.year }} · {{
+          formatCurrency(lowestCollection?.totalPaid ?? 0) }}</strong
+        >
+      </span>
+      <span>
+        {{ 'DASHBOARD.CHART.PEAK_COLLECTION' | translate }}:
+        <strong
+          >{{ peakCollection.label }} {{ peakCollection.year }} · {{
+          formatCurrency(peakCollection.totalPaid) }}</strong
+        >
+      </span>
+      <span>
+        {{ 'DASHBOARD.CHART.OUTSTANDING_RECEIVABLES' | translate }}:
+        <strong class="receivables-value">{{ formatCurrency(outstandingReceivables) }}</strong>
+      </span>
+      <a mat-button color="primary" routerLink="/payments">
+        {{ 'DASHBOARD.CHART.FULL_BREAKDOWN' | translate }}
+        <mat-icon iconPositionEnd>chevron_right</mat-icon>
+      </a>
+    </div>
+    }
+  </section>
+
+  <div class="content-grid">
+    <div class="main-column">
+      @if (canViewLeases$ | async) {
+      <section class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="section-icon blue"><mat-icon>description</mat-icon></span>
+            <div>
+              <h2>{{ 'DASHBOARD.SECTIONS.RECENT_LEASES' | translate }}</h2>
+              <p>{{ 'DASHBOARD.SECTIONS.RECENT_LEASES_DESCRIPTION' | translate }}</p>
+            </div>
+          </div>
+          <a mat-button color="primary" routerLink="/leases">
+            {{ 'DASHBOARD.BUTTONS.VIEW_ALL_LEASES' | translate }}
+            <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+          </a>
+        </div>
+
+        @if (recentLeases.length > 0) {
+        <div class="lease-table-scroll">
+          <table class="lease-table">
+            <thead>
+              <tr>
+                <th>{{ 'DASHBOARD.TABLE.TENANT_UNIT' | translate }}</th>
+                <th>{{ 'DASHBOARD.TABLE.PROPERTY' | translate }}</th>
+                <th>{{ 'DASHBOARD.TABLE.MONTHLY_RENT' | translate }}</th>
+                <th>{{ 'DASHBOARD.TABLE.STATUS' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (lease of recentLeases; track lease.id) {
+              <tr>
+                <td>
+                  <div class="lease-person">
+                    <span class="tenant-avatar" aria-hidden="true"
+                      >{{ lease.tenant_name.slice(0, 1) }}</span
+                    >
+                    <span>
+                      <strong>{{ lease.tenant_name }}</strong>
+                      <small>{{ lease.unit_number }}</small>
+                    </span>
+                  </div>
+                </td>
+                <td>{{ lease.property_name }}</td>
+                <td class="lease-table-rent">{{ formatCurrency(lease.monthly_rent) }}</td>
+                <td>
+                  <span
+                    class="status-badge"
+                    [class.expiring]="lease.days_remaining > 0 && lease.days_remaining <= 30"
+                    [class.expired]="lease.days_remaining <= 0"
+                  >
+                    {{ lease.days_remaining <= 0 ? ('DASHBOARD.SECTIONS.EXPIRED' | translate) :
+                    lease.days_remaining <= 30 ? ('DASHBOARD.SECTIONS.EXPIRING_SOON' | translate) :
+                    ('DASHBOARD.SECTIONS.ACTIVE' | translate) }}
+                  </span>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        } @else {
+        <p class="empty-state">{{ 'DASHBOARD.EMPTY_STATE.NO_RECENT_LEASES' | translate }}</p>
+        }
+      </section>
+      } @if (canViewPayments()) {
+      <section class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="section-icon green"><mat-icon>account_balance</mat-icon></span>
+            <div>
+              <h2>{{ 'DASHBOARD.SECTIONS.RECENT_COLLECTIONS' | translate }}</h2>
+              <p>{{ 'DASHBOARD.SECTIONS.RECENT_COLLECTIONS_DESCRIPTION' | translate }}</p>
+            </div>
+          </div>
+          <a mat-button color="primary" routerLink="/payments">
+            {{ 'DASHBOARD.BUTTONS.ALL_PAYMENTS' | translate }}
+            <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+          </a>
+        </div>
+
+        @if (recentCollections.length > 0) {
+        <div class="compact-list">
+          @for (transaction of recentCollections; track transaction.id) {
+          <article class="transaction-item">
+            <span
+              class="transaction-icon"
+              [class.partial]="transaction.amountPaid < transaction.amountDue"
+            >
+              <mat-icon
+                >{{ transaction.amountPaid < transaction.amountDue ? 'hourglass_top' :
+                'check_circle' }}</mat-icon
+              >
+            </span>
+            <div class="transaction-info">
+              <strong>{{ transaction.tenantName }}</strong>
+              <span>
+                {{ transaction.unitNumber }} · {{ transaction.payment_method || '—' }} @if
+                (transaction.receipt_number) { · {{ transaction.receipt_number }} }
+              </span>
+            </div>
+            <div class="transaction-amount">
+              <strong>+{{ formatCurrency(transaction.amount) }}</strong>
+              <span
+                class="transaction-status"
+                [class.partial]="transaction.amountPaid < transaction.amountDue"
+              >
+                @if (transaction.amountPaid < transaction.amountDue) { {{
+                'DASHBOARD.TRANSACTIONS.PARTIAL' | translate }} ({{ (transaction.amountPaid /
+                transaction.amountDue * 100) | number: '1.0-0' }}%) } @else { {{
+                'DASHBOARD.TRANSACTIONS.PAID_IN_FULL' | translate }} }
+              </span>
+            </div>
+          </article>
+          }
+        </div>
+        } @else {
+        <p class="empty-state">{{ 'DASHBOARD.EMPTY_STATE.NO_RECENT_COLLECTIONS' | translate }}</p>
+        }
+      </section>
+      }
+    </div>
+
+    <aside class="side-column">
+      @if (canViewLeases$ | async) {
+      <section class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="section-icon blue"><mat-icon>location_city</mat-icon></span>
+            <div>
+              <h2>{{ 'DASHBOARD.SECTIONS.PORTFOLIO_OVERVIEW' | translate }}</h2>
+            </div>
+          </div>
+          <span class="portfolio-count">
+            {{ stats.propertyCount }} {{ 'DASHBOARD.SECTIONS.ACTIVE_PROPERTIES' | translate }}
+          </span>
+        </div>
+        @if (propertySummaries.length) {
+        <div class="property-list">
+          @for (property of propertySummaries; track property.propertyId) {
+          <article class="property-card">
+            <div class="property-card-heading">
+              <div class="property-card-name">
+                <h3>{{ property.propertyName }}</h3>
+                <p>
+                  {{ property.address }} · {{ property.buildingCount }} {{
+                  'DASHBOARD.SECTIONS.BUILDINGS' | translate }}
+                </p>
+              </div>
+              <span class="occupancy-badge" [class.high-occupancy]="property.occupancyRate >= 90">
+                {{ property.occupancyRate | number: '1.0-0' }}% {{ 'DASHBOARD.STATS.OCCUPIED' |
+                translate }}
+              </span>
+            </div>
+            <div class="property-meta">
+              <span
+                >{{ property.occupiedUnits }} / {{ property.totalUnits }} {{
+                'DASHBOARD.STATS.UNITS_OCCUPIED' | translate }}</span
+              >
+              <strong>{{ property.vacantUnits }} {{ 'DASHBOARD.STATS.VACANT' | translate }}</strong>
+            </div>
+            <div
+              class="progress-track"
+              role="progressbar"
+              [attr.aria-label]="property.propertyName"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              [attr.aria-valuenow]="property.occupancyRate"
+            >
+              <span class="progress-value" [style.width.%]="property.occupancyRate"></span>
+            </div>
+          </article>
+          }
+        </div>
+        } @else {
+        <p class="empty-state">{{ 'DASHBOARD.EMPTY_STATE.NO_PROPERTY_DATA' | translate }}</p>
+        }
+      </section>
+      } @if (canViewAttachments$ | async) {
+      <section class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <span class="section-icon blue"><mat-icon>folder_shared</mat-icon></span>
+            <div>
+              <h2>{{ 'DASHBOARD.SECTIONS.RECENT_ATTACHMENTS' | translate }}</h2>
+              <p>
+                {{ stats.totalAttachments }} {{ 'DASHBOARD.STATS.TOTAL_ATTACHMENTS' | translate }}
+              </p>
+            </div>
+          </div>
+          <a mat-button color="primary" routerLink="/documents">
+            {{ 'DASHBOARD.BUTTONS.VIEW_ALL' | translate }}
+          </a>
+        </div>
+
+        @if (recentAttachments.length > 0) {
+        <div class="compact-list">
+          @for (attachment of recentAttachments; track attachment.id) {
+          <article class="document-item">
+            <span class="document-icon">
+              <mat-icon>{{ getFileIcon(attachment.content_type) }}</mat-icon>
+            </span>
+            <div class="document-info">
+              <strong>{{ attachment.file_name }}</strong>
+              <span>
+                {{ formatDate(attachment.created_at) }} · {{ attachment.attachment_type }}
+              </span>
+            </div>
+            <button
+              type="button"
+              class="document-download"
+              [attr.aria-label]="'DASHBOARD.BUTTONS.DOWNLOAD_DOCUMENT' | translate: { name: attachment.file_name }"
+              (click)="downloadAttachment(attachment)"
+            >
+              <mat-icon>download</mat-icon>
+            </button>
+          </article>
+          }
+        </div>
+        } @else {
+        <p class="empty-state">{{ 'DASHBOARD.EMPTY_STATE.NO_RECENT_ATTACHMENTS' | translate }}</p>
+        }
+        <a class="upload-document-action" routerLink="/documents">
+          <mat-icon>add_circle</mat-icon>
+          {{ 'DASHBOARD.BUTTONS.UPLOAD_DOCUMENT' | translate }}
+        </a>
+      </section>
+      }
+    </aside>
   </div>
   }
 </div>

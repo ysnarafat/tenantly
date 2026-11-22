@@ -32,10 +32,10 @@
           </mat-select>
         </mat-form-field>
 
-        <button mat-button (click)="openGenerateDialog()">
-          <mat-icon>bolt</mat-icon>
-          {{ 'PAYMENT_COLLECT.GENERATE_BUTTON' | translate }}
-        </button>
+        <a mat-button href="/billing-runs">
+          <mat-icon>receipt_long</mat-icon>
+          {{ 'BILLING_RUN.MONTHLY_BILLING_LINK' | translate }}
+        </a>
 
         @if (rows().length > 0) {
         <div class="stats-row">
@@ -69,10 +69,10 @@
       <mat-icon>task_alt</mat-icon>
       <h2>{{ 'PAYMENT_COLLECT.EMPTY_STATE.TITLE' | translate }}</h2>
       <p>{{ 'PAYMENT_COLLECT.EMPTY_STATE.DESCRIPTION' | translate }}</p>
-      <button mat-flat-button color="primary" (click)="openGenerateDialog()">
-        <mat-icon>bolt</mat-icon>
-        {{ 'PAYMENT_COLLECT.GENERATE_BUTTON' | translate }}
-      </button>
+      <a mat-flat-button color="primary" href="/billing-runs">
+        <mat-icon>receipt_long</mat-icon>
+        {{ 'BILLING_RUN.CREATE_MONTHLY_BILL' | translate }}
+      </a>
     </mat-card-content>
   </mat-card>
   } @if (!loading() && rows().length > 0) {
