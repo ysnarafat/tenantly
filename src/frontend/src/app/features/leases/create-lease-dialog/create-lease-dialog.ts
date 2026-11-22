@@ -114,7 +114,7 @@ export class CreateLeaseDialogComponent implements OnInit {
   // Document attachments for the lease
   attachments: any[] = [];
 
-  isUploading: boolean = false;
+  isUploading = false;
 
   constructor() {
     this.attachments = [];

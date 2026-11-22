@@ -71,28 +71,75 @@
   flex-wrap: wrap;
   gap: 16px;
   align-items: center;
-  padding: 16px;
+  padding: 16px 20px;
   background: var(--bg-secondary);
-  border-radius: 12px;
-  margin-bottom: 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  transition:
+    background 0.25s,
+    border-color 0.25s;
+
+  ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+  }
 
   .search-field {
-    flex: 1;
-    min-width: 250px;
+    display: flex;
+    align-items: center;
+    --mat-form-field-container-height: 36px;
+    --mat-form-field-container-vertical-padding: 8px;
+    min-height: 36px;
+    flex: 0 1 auto;
+    min-width: 280px;
+    max-width: calc(100% - 320px);
+
+    mat-icon[matPrefix] {
+      color: var(--text-muted);
+      margin-right: 4px;
+    }
+
+    mat-mdc-text-field-wrapper {
+      min-height: 36px;
+    }
+
+    mat-mdc-form-field-infix {
+      padding: 0 !important;
+    }
+
+    mat-mdc-text-field-wrapper input {
+      height: 36px;
+    }
   }
 
   .filter-select {
-    min-width: 180px;
+    min-width: 150px;
+    --mat-form-field-container-height: 36px;
+    --mat-form-field-container-vertical-padding: 8px;
+    min-height: 36px;
+
+    mat-mdc-form-field-infix {
+      padding: 0 !important;
+    }
+
+    mat-mdc-text-field-wrapper {
+      min-height: 36px;
+    }
+
+    mat-select {
+      min-height: 36px;
+    }
   }
 
   .results-count {
     margin-left: auto;
     font-size: 0.875rem;
     color: var(--text-secondary);
+    flex-shrink: 0;
   }
 
   .reset-filters-btn {
     margin-left: 8px;
+    flex-shrink: 0;
   }
 }
 
@@ -410,6 +457,8 @@
     .filter-select {
       width: 100%;
       min-width: 0;
+      // Stop the row-direction flex-basis from becoming a height once the bar stacks
+      flex: none;
     }
 
     .results-count {

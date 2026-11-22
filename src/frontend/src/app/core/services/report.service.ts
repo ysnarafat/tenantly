@@ -23,12 +23,12 @@ export interface CollectionSummaryReport {
   total_pending: number;
   total_overdue: number;
   aging_buckets: Record<string, number>;
-  monthly_trend: Array<{
+  monthly_trend: {
     month: string;
     collection_rate: number;
     amount_due: number;
     amount_collected: number;
-  }>;
+  }[];
   report_period: string;
   generated_at: string;
 }
@@ -98,8 +98,8 @@ export class ReportService {
   private apiUrl = `${environment.apiUrl}/reports`;
 
   getFinancialLedger(
-    page: number = 1,
-    pageSize: number = 50,
+    page = 1,
+    pageSize = 50,
     filters?: Record<string, any>
   ): Observable<FinancialLedgerReport> {
     let params = new HttpParams()

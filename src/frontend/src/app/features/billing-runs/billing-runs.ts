@@ -163,7 +163,7 @@ export class BillingRuns implements OnInit {
   batchSaveAll(): void {
     const run = this.run();
     if (!run || run.status !== 'Draft' || !this.hasMissingAmounts()) return;
-    let savedCount = 0;
+    const savedCount = 0;
     let failedCount = 0;
 
     const saveAllItems = async (): Promise<void> => {

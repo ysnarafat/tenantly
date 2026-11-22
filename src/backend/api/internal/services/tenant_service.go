@@ -2,26 +2,31 @@ package services
 
 import (
 	"fmt"
+	"net/http"
+	"slices"
 
 	"github.com/ysnarafat/tenantly/internal/interfaces"
 	"github.com/ysnarafat/tenantly/internal/models"
 )
 
 type TenantService struct {
-	tenantRepo   interfaces.TenantRepositoryInterface
-	leaseRepo    interfaces.LeaseRepositoryInterface
-	auditService interfaces.AuditServiceInterface
+	tenantRepo     interfaces.TenantRepositoryInterface
+	leaseRepo      interfaces.LeaseRepositoryInterface
+	attachmentRepo interfaces.AttachmentRepositoryInterface
+	auditService   interfaces.AuditServiceInterface
 }
 
 func NewTenantService(
 	tenantRepo interfaces.TenantRepositoryInterface,
 	leaseRepo interfaces.LeaseRepositoryInterface,
+	attachmentRepo interfaces.AttachmentRepositoryInterface,
 	auditService interfaces.AuditServiceInterface,
 ) *TenantService {
 	return &TenantService{
-		tenantRepo:   tenantRepo,
-		leaseRepo:    leaseRepo,
-		auditService: auditService,
+		tenantRepo:     tenantRepo,
+		leaseRepo:      leaseRepo,
+		attachmentRepo: attachmentRepo,
+		auditService:   auditService,
 	}
 }
 
@@ -181,10 +186,10 @@ func (s *TenantService) UpdateTenant(id int, req *models.UpdateTenantRequest, us
 		updates["tenant_type"] = *req.TenantType
 	}
 	if req.PhoneNumber != nil {
-		updates["phone_number"] = *req.PhoneNumber
+		updates["phone_encrypted"] = *req.PhoneNumber
 	}
 	if req.Email != nil {
-		updates["email"] = *req.Email
+		updates["email_encrypted"] = *req.Email
 	}
 	if req.NIDNumber != nil {
 		updates["nid_number"] = *req.NIDNumber
@@ -277,4 +282,122 @@ func (s *TenantService) RevealNID(id, orgID, userID int) (string, error) {
 	}
 
 	return nid, nil
+}
+
+// UploadTenantAttachment uploads an attachment for a tenant
+func (s *TenantService) UploadTenantAttachment(tenantID int, fileName string, data []byte, userID, orgID int) (*models.Attachment, error) {
+	// Verify tenant exists and belongs to org
+	tenant, err := s.tenantRepo.GetByID(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("tenant not found")
+	}
+	if tenant.OrganizationID != orgID {
+		return nil, fmt.Errorf("tenant not found")
+	}
+
+	// Validate file
+	if len(data) == 0 {
+		return nil, fmt.Errorf("uploaded file is empty")
+	}
+	if len(data) > models.MaxAttachmentFileSize {
+		return nil, fmt.Errorf("file exceeds the maximum allowed size of %dMB", models.MaxAttachmentFileSize/(1024*1024))
+	}
+
+	detectedType := http.DetectContentType(data)
+	if !slices.Contains(models.AllowedAttachmentContentTypes, detectedType) {
+		return nil, fmt.Errorf("unsupported file type %q — only images and PDF files are allowed", detectedType)
+	}
+
+	if fileName == "" {
+		fileName = "attachment"
+	}
+
+	attachment, err := s.attachmentRepo.CreateTenantAttachment(tenantID, fileName, detectedType, len(data), data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to store attachment: %w", err)
+	}
+
+	attachmentID := int(attachment.ID)
+	_ = s.auditService.LogUserAction(userID, "UPLOAD_TENANT_ATTACHMENT", "tenant_attachments", &attachmentID, nil, map[string]interface{}{
+		"tenant_id":    tenantID,
+		"file_name":    fileName,
+		"file_size":    len(data),
+		"content_type": detectedType,
+	})
+
+	return attachment, nil
+}
+
+// GetTenantAttachments lists all attachments for a tenant
+func (s *TenantService) GetTenantAttachments(tenantID, orgID int) ([]*models.Attachment, error) {
+	// Verify tenant exists and belongs to org
+	tenant, err := s.tenantRepo.GetByID(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("tenant not found")
+	}
+	if tenant.OrganizationID != orgID {
+		return nil, fmt.Errorf("tenant not found")
+	}
+
+	atts, err := s.attachmentRepo.GetAttachmentsByTenantID(tenantID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tenant attachments: %w", err)
+	}
+	return atts, nil
+}
+
+// GetTenantAttachmentFile returns an attachment's raw bytes for download
+func (s *TenantService) GetTenantAttachmentFile(tenantID, attachmentID, orgID int) ([]byte, string, string, error) {
+	// Verify tenant exists and belongs to org
+	tenant, err := s.tenantRepo.GetByID(tenantID)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("tenant not found")
+	}
+	if tenant.OrganizationID != orgID {
+		return nil, "", "", fmt.Errorf("tenant not found")
+	}
+
+	// Get attachment to verify it belongs to this tenant
+	attachment, err := s.attachmentRepo.GetTenantAttachmentByID(attachmentID)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to get attachment: %w", err)
+	}
+	if attachment.TenantID == nil || *attachment.TenantID != int64(tenantID) {
+		return nil, "", "", fmt.Errorf("attachment not found")
+	}
+
+	data, fileName, contentType, err := s.attachmentRepo.GetTenantAttachmentFile(attachmentID)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to get attachment file: %w", err)
+	}
+	return data, fileName, contentType, nil
+}
+
+// DeleteTenantAttachment removes a mistakenly-uploaded attachment
+func (s *TenantService) DeleteTenantAttachment(tenantID, attachmentID, userID, orgID int) error {
+	// Verify tenant exists and belongs to org
+	tenant, err := s.tenantRepo.GetByID(tenantID)
+	if err != nil {
+		return fmt.Errorf("tenant not found")
+	}
+	if tenant.OrganizationID != orgID {
+		return fmt.Errorf("tenant not found")
+	}
+
+	// Get attachment to verify it belongs to this tenant
+	attachment, err := s.attachmentRepo.GetTenantAttachmentByID(attachmentID)
+	if err != nil {
+		return fmt.Errorf("failed to get attachment: %w", err)
+	}
+	if attachment.TenantID == nil || *attachment.TenantID != int64(tenantID) {
+		return fmt.Errorf("attachment not found")
+	}
+
+	if err := s.attachmentRepo.DeleteTenantAttachment(attachmentID); err != nil {
+		return fmt.Errorf("failed to delete attachment: %w", err)
+	}
+
+	_ = s.auditService.LogUserAction(userID, "DELETE_TENANT_ATTACHMENT", "tenant_attachments", &attachmentID, attachment, nil)
+
+	return nil
 }

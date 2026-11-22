@@ -99,6 +99,7 @@ func (s *Server) setupRoutes() {
 	metadataValidator := services.NewBuildingMetadataValidator()
 
 	// Initialize services
+	attachmentRepo := repositories.NewAttachmentRepository(s.db)
 	invitationEmailSender := services.NewSMTPInvitationEmailSender(
 		s.config.EmailProvider.SMTPHost,
 		s.config.EmailProvider.SMTPPort,
@@ -113,9 +114,9 @@ func (s *Server) setupRoutes() {
 	propertyService := services.NewPropertyService(propertyRepo, auditService)
 	buildingService := services.NewBuildingService(buildingRepo, propertyRepo, auditService, metadataValidator)
 	unitService := services.NewUnitService(unitRepo, buildingRepo, propertyRepo, auditService)
-	tenantService := services.NewTenantService(tenantRepo, leaseRepo, auditService)
+	tenantService := services.NewTenantService(tenantRepo, leaseRepo, attachmentRepo, auditService)
 	mfaService := services.NewMFAService(mfaRepo, s.config.NIDProtector, s.config.JWTSecret)
-	leaseService := services.NewLeaseService(leaseRepo, tenantRepo, unitRepo, leaseChargeRepo, auditService)
+	leaseService := services.NewLeaseService(leaseRepo, tenantRepo, unitRepo, leaseChargeRepo, attachmentRepo, auditService)
 	paymentService := services.NewPaymentService(paymentRepo, paymentTransactionRepo, paymentTransactionAttachmentRepo, receiptAccessTokenRepo, notificationRepo, leaseRepo, unitRepo, buildingRepo, propertyRepo, auditService, userRepo, s.config.PublicAppURL)
 	billingRunService := services.NewBillingRunService(billingRunRepo, auditService)
 	reportService := services.NewReportService(paymentRepo, propertyRepo)
@@ -317,6 +318,12 @@ func (s *Server) setupRoutes() {
 				tenants.GET("/:id/nid", middleware.RequireAdminOrPropertyManager(), middleware.RequireStepUp(s.config.JWTSecret), tenantHandler.RevealNID)
 				tenants.PUT("/:id", middleware.RequireAdminOrPropertyManager(), tenantHandler.UpdateTenant)
 				tenants.DELETE("/:id", middleware.RequireAdmin(), tenantHandler.DeleteTenant)
+
+				// Tenant attachment endpoints — file uploads during check-in, etc.
+				tenants.POST("/:id/attachments", middleware.RequireAdminOrPropertyManager(), tenantHandler.UploadTenantAttachment)
+				tenants.GET("/:id/attachments", middleware.RequireAnyRole(), tenantHandler.GetTenantAttachments)
+				tenants.GET("/:id/attachments/:attachmentId", middleware.RequireAnyRole(), tenantHandler.GetTenantAttachmentFile)
+				tenants.DELETE("/:id/attachments/:attachmentId", middleware.RequireAdminOrPropertyManager(), tenantHandler.DeleteTenantAttachment)
 			}
 
 			leases := protected.Group("/leases")
@@ -328,6 +335,10 @@ func (s *Server) setupRoutes() {
 				leases.PUT("/:id", middleware.RequireAdminOrPropertyManager(), leaseHandler.UpdateLease)
 				leases.DELETE("/:id", middleware.RequireAdmin(), leaseHandler.DeleteLease)
 				leases.POST("/:id/terminate", middleware.RequireAdminOrPropertyManager(), leaseHandler.TerminateLease)
+				leases.POST("/:id/attachments", middleware.RequireAdminOrPropertyManager(), leaseHandler.UploadLeaseAttachment)
+				leases.GET("/:id/attachments", middleware.RequireAnyRole(), leaseHandler.GetLeaseAttachments)
+				leases.GET("/:id/attachments/:attachmentId", middleware.RequireAnyRole(), leaseHandler.GetLeaseAttachmentFile)
+				leases.DELETE("/:id/attachments/:attachmentId", middleware.RequireAdminOrPropertyManager(), leaseHandler.DeleteLeaseAttachment)
 				leases.POST("/:id/renew", middleware.RequireAdminOrPropertyManager(), leaseHandler.RenewLease)
 				leases.POST("/:id/charges", middleware.RequireAdminOrPropertyManager(), leaseHandler.AddLeaseCharge)
 				leases.PUT("/:id/charges/:chargeId", middleware.RequireAdminOrPropertyManager(), leaseHandler.UpdateLeaseCharge)

@@ -2,6 +2,8 @@ package services
 
 import (
 	"fmt"
+	"net/http"
+	"slices"
 	"time"
 
 	"github.com/ysnarafat/tenantly/internal/interfaces"
@@ -14,6 +16,7 @@ type LeaseService struct {
 	tenantRepo      interfaces.TenantRepositoryInterface
 	unitRepo        interfaces.UnitRepositoryInterface
 	leaseChargeRepo interfaces.LeaseChargeRepositoryInterface
+	attachmentRepo  interfaces.AttachmentRepositoryInterface
 	auditService    interfaces.AuditServiceInterface
 }
 
@@ -23,6 +26,7 @@ func NewLeaseService(
 	tenantRepo interfaces.TenantRepositoryInterface,
 	unitRepo interfaces.UnitRepositoryInterface,
 	leaseChargeRepo interfaces.LeaseChargeRepositoryInterface,
+	attachmentRepo interfaces.AttachmentRepositoryInterface,
 	auditService interfaces.AuditServiceInterface,
 ) *LeaseService {
 	return &LeaseService{
@@ -30,6 +34,7 @@ func NewLeaseService(
 		tenantRepo:      tenantRepo,
 		unitRepo:        unitRepo,
 		leaseChargeRepo: leaseChargeRepo,
+		attachmentRepo:  attachmentRepo,
 		auditService:    auditService,
 	}
 }
@@ -476,4 +481,122 @@ func (s *LeaseService) GetDueSummary(orgID int) (*models.DueSummary, error) {
 		return nil, fmt.Errorf("failed to get due summary: %w", err)
 	}
 	return summary, nil
+}
+
+// UploadLeaseAttachment uploads an attachment for a lease
+func (s *LeaseService) UploadLeaseAttachment(leaseID int, fileName string, data []byte, userID, orgID int) (*models.Attachment, error) {
+	// Verify lease exists and belongs to org
+	lease, err := s.leaseRepo.GetByID(leaseID)
+	if err != nil {
+		return nil, fmt.Errorf("lease not found")
+	}
+	if lease.OrganizationID != orgID {
+		return nil, fmt.Errorf("lease not found")
+	}
+
+	// Validate file
+	if len(data) == 0 {
+		return nil, fmt.Errorf("uploaded file is empty")
+	}
+	if len(data) > models.MaxAttachmentFileSize {
+		return nil, fmt.Errorf("file exceeds the maximum allowed size of %dMB", models.MaxAttachmentFileSize/(1024*1024))
+	}
+
+	detectedType := http.DetectContentType(data)
+	if !slices.Contains(models.AllowedAttachmentContentTypes, detectedType) {
+		return nil, fmt.Errorf("unsupported file type %q — only images and PDF files are allowed", detectedType)
+	}
+
+	if fileName == "" {
+		fileName = "attachment"
+	}
+
+	attachment, err := s.attachmentRepo.CreateLeaseAttachment(leaseID, fileName, detectedType, len(data), data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to store attachment: %w", err)
+	}
+
+	attachmentID := int(attachment.ID)
+	_ = s.auditService.LogUserAction(userID, "UPLOAD_LEASE_ATTACHMENT", "lease_attachments", &attachmentID, nil, map[string]interface{}{
+		"lease_id":     leaseID,
+		"file_name":    fileName,
+		"file_size":    len(data),
+		"content_type": detectedType,
+	})
+
+	return attachment, nil
+}
+
+// GetLeaseAttachments lists all attachments for a lease
+func (s *LeaseService) GetLeaseAttachments(leaseID, orgID int) ([]*models.Attachment, error) {
+	// Verify lease exists and belongs to org
+	lease, err := s.leaseRepo.GetByID(leaseID)
+	if err != nil {
+		return nil, fmt.Errorf("lease not found")
+	}
+	if lease.OrganizationID != orgID {
+		return nil, fmt.Errorf("lease not found")
+	}
+
+	atts, err := s.attachmentRepo.GetAttachmentsByLeaseID(leaseID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get lease attachments: %w", err)
+	}
+	return atts, nil
+}
+
+// GetLeaseAttachmentFile returns an attachment's raw bytes for download
+func (s *LeaseService) GetLeaseAttachmentFile(leaseID, attachmentID, orgID int) ([]byte, string, string, error) {
+	// Verify lease exists and belongs to org
+	lease, err := s.leaseRepo.GetByID(leaseID)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("lease not found")
+	}
+	if lease.OrganizationID != orgID {
+		return nil, "", "", fmt.Errorf("lease not found")
+	}
+
+	// Get attachment to verify it belongs to this lease
+	attachment, err := s.attachmentRepo.GetLeaseAttachmentByID(attachmentID)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to get attachment: %w", err)
+	}
+	if attachment.LeaseID == nil || *attachment.LeaseID != int64(leaseID) {
+		return nil, "", "", fmt.Errorf("attachment not found")
+	}
+
+	data, fileName, contentType, err := s.attachmentRepo.GetLeaseAttachmentFile(attachmentID)
+	if err != nil {
+		return nil, "", "", fmt.Errorf("failed to get attachment file: %w", err)
+	}
+	return data, fileName, contentType, nil
+}
+
+// DeleteLeaseAttachment removes a mistakenly-uploaded attachment
+func (s *LeaseService) DeleteLeaseAttachment(leaseID, attachmentID, userID, orgID int) error {
+	// Verify lease exists and belongs to org
+	lease, err := s.leaseRepo.GetByID(leaseID)
+	if err != nil {
+		return fmt.Errorf("lease not found")
+	}
+	if lease.OrganizationID != orgID {
+		return fmt.Errorf("lease not found")
+	}
+
+	// Get attachment to verify it belongs to this lease
+	attachment, err := s.attachmentRepo.GetLeaseAttachmentByID(attachmentID)
+	if err != nil {
+		return fmt.Errorf("failed to get attachment: %w", err)
+	}
+	if attachment.LeaseID == nil || *attachment.LeaseID != int64(leaseID) {
+		return fmt.Errorf("attachment not found")
+	}
+
+	if err := s.attachmentRepo.DeleteLeaseAttachment(attachmentID); err != nil {
+		return fmt.Errorf("failed to delete attachment: %w", err)
+	}
+
+	_ = s.auditService.LogUserAction(userID, "DELETE_LEASE_ATTACHMENT", "lease_attachments", &attachmentID, attachment, nil)
+
+	return nil
 }

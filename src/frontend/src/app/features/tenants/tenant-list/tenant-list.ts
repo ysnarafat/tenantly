@@ -142,11 +142,8 @@ export class TenantList implements OnInit {
   loading = false;
 
   searchQuery = '';
-  private appliedSearchQuery = '';
   activeFilter: 'all' | 'active' | 'inactive' = 'all';
   typeFilter: 'all' | 'Individual' | 'Business' = 'all';
-  draftActiveFilter: 'all' | 'active' | 'inactive' = 'all';
-  draftTypeFilter: 'all' | 'Individual' | 'Business' = 'all';
 
   pageSize = 10;
   pageIndex = 0;
@@ -185,8 +182,8 @@ export class TenantList implements OnInit {
   applyFilters() {
     let result = [...this.tenants];
 
-    if (this.appliedSearchQuery.trim()) {
-      const q = this.appliedSearchQuery.toLowerCase();
+    if (this.searchQuery.trim()) {
+      const q = this.searchQuery.toLowerCase();
       result = result.filter(
         (t) =>
           t.name.toLowerCase().includes(q) ||
@@ -238,31 +235,20 @@ export class TenantList implements OnInit {
     this.updatePagedData();
   }
 
-  applyDraftFilters(): void {
-    this.appliedSearchQuery = this.searchQuery;
-    this.activeFilter = this.draftActiveFilter;
-    this.typeFilter = this.draftTypeFilter;
-    this.applyFilters();
-  }
-
   clearSearch() {
     this.searchQuery = '';
-    this.appliedSearchQuery = '';
     this.applyFilters();
   }
 
   resetFilters() {
     this.searchQuery = '';
-    this.appliedSearchQuery = '';
     this.activeFilter = 'all';
     this.typeFilter = 'all';
-    this.draftActiveFilter = 'all';
-    this.draftTypeFilter = 'all';
     this.applyFilters();
   }
 
   get hasActiveFilters(): boolean {
-    return !!(this.appliedSearchQuery || this.activeFilter !== 'all' || this.typeFilter !== 'all');
+    return !!(this.searchQuery || this.activeFilter !== 'all' || this.typeFilter !== 'all');
   }
 
   getInitials(name: string): string {

@@ -273,6 +273,21 @@ type PaymentTransactionAttachmentRepositoryInterface interface {
 	Delete(id int) error
 }
 
+// AttachmentRepositoryInterface defines the interface for tenant and lease attachment repository operations
+// File bytes are stored in Postgres (bytea) rather than on local disk.
+type AttachmentRepositoryInterface interface {
+	CreateTenantAttachment(tenantID int, fileName, contentType string, fileSize int, data []byte) (*models.Attachment, error)
+	CreateLeaseAttachment(leaseID int, fileName, contentType string, fileSize int, data []byte) (*models.Attachment, error)
+	GetTenantAttachmentByID(id int) (*models.Attachment, error)
+	GetLeaseAttachmentByID(id int) (*models.Attachment, error)
+	GetAttachmentsByTenantID(tenantID int) ([]*models.Attachment, error)
+	GetAttachmentsByLeaseID(leaseID int) ([]*models.Attachment, error)
+	GetTenantAttachmentFile(id int) ([]byte, string, string, error)
+	GetLeaseAttachmentFile(id int) ([]byte, string, string, error)
+	DeleteTenantAttachment(id int) error
+	DeleteLeaseAttachment(id int) error
+}
+
 // ReceiptAccessTokenRepositoryInterface defines the interface for receipt access token repository operations
 type ReceiptAccessTokenRepositoryInterface interface {
 	Create(paymentID int, token string, expiresAt time.Time) (*models.ReceiptAccessToken, error)
@@ -351,6 +366,10 @@ type TenantServiceInterface interface {
 	UpdateTenant(id int, req *models.UpdateTenantRequest, userID, orgID int) (*models.TenantResponse, error)
 	DeleteTenant(id int, userID, orgID int) error
 	RevealNID(id, orgID, userID int) (string, error)
+	UploadTenantAttachment(tenantID int, fileName string, data []byte, userID, orgID int) (*models.Attachment, error)
+	GetTenantAttachments(tenantID, orgID int) ([]*models.Attachment, error)
+	GetTenantAttachmentFile(tenantID, attachmentID, orgID int) ([]byte, string, string, error)
+	DeleteTenantAttachment(tenantID, attachmentID, userID, orgID int) error
 }
 
 // PropertyRepositoryInterface defines the interface for property repository operations
@@ -412,6 +431,10 @@ type LeaseServiceInterface interface {
 	GetLeasesByTenant(tenantID int, page, pageSize, orgID int) (*models.LeaseListResponse, error)
 	GetLeasesDue(orgID int) ([]models.LeaseDue, error)
 	GetDueSummary(orgID int) (*models.DueSummary, error)
+	UploadLeaseAttachment(leaseID int, fileName string, data []byte, userID, orgID int) (*models.Attachment, error)
+	GetLeaseAttachments(leaseID, orgID int) ([]*models.Attachment, error)
+	GetLeaseAttachmentFile(leaseID, attachmentID, orgID int) ([]byte, string, string, error)
+	DeleteLeaseAttachment(leaseID, attachmentID, userID, orgID int) error
 }
 
 // ReportServiceInterface defines the interface for report service operations

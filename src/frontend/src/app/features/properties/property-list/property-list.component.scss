@@ -97,7 +97,9 @@
   .search-field {
     display: flex;
     align-items: center;
-    height: 36px;
+    --mat-form-field-container-height: 36px;
+    --mat-form-field-container-vertical-padding: 8px;
+    min-height: 36px;
     flex: 0 1 auto;
     min-width: 280px;
     max-width: calc(100% - 320px);
@@ -123,6 +125,8 @@
   .filter-field {
     flex: 0 1 180px;
     min-width: 150px;
+    --mat-form-field-container-height: 36px;
+    --mat-form-field-container-vertical-padding: 8px;
     min-height: 36px;
     margin: 0;
 

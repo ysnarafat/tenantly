@@ -21,13 +21,13 @@ import { DocumentAttachmentsComponent } from '../../../shared/components/documen
 export interface TenantFormDialogData {
   tenant?: Tenant;
   mode: 'create' | 'edit' | 'view';
-  attachments?: Array<{
+  attachments?: {
     id: number;
     file_name: string;
     content_type: string;
     file_size: number;
     uploaded_at: string;
-  }>;
+  }[];
 }
 
 @Component({

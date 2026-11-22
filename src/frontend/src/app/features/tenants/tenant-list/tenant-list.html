@@ -23,6 +23,7 @@
         <input
           matInput
           [(ngModel)]="searchQuery"
+          (ngModelChange)="applyFilters()"
           [placeholder]="'TENANT_LIST.FILTERS.SEARCH_PLACEHOLDER' | translate"
           [aria-label]="'TENANT_LIST.FILTERS.SEARCH_LABEL' | translate"
         />
@@ -44,7 +45,7 @@
     <div class="filter-group">
       <mat-form-field appearance="outline" class="filter-form-field">
         <mat-label>{{ 'TENANT_LIST.FILTERS.TYPE_LABEL' | translate }}</mat-label>
-        <mat-select [(ngModel)]="draftTypeFilter">
+        <mat-select [(ngModel)]="typeFilter" (ngModelChange)="applyFilters()">
           <mat-option value="all">{{ 'TENANT_LIST.FILTERS.ALL_TYPES' | translate }}</mat-option>
           <mat-option value="Individual"
             >{{ 'TENANT_LIST.FILTERS.INDIVIDUAL' | translate }}</mat-option
@@ -55,7 +56,7 @@
 
       <mat-form-field appearance="outline" class="filter-form-field">
         <mat-label>{{ 'TENANT_LIST.FILTERS.STATUS_LABEL' | translate }}</mat-label>
-        <mat-select [(ngModel)]="draftActiveFilter">
+        <mat-select [(ngModel)]="activeFilter" (ngModelChange)="applyFilters()">
           <mat-option value="all">{{ 'TENANT_LIST.FILTERS.ALL_STATUS' | translate }}</mat-option>
           <mat-option value="active">{{ 'TENANT_LIST.TABLE.ACTIVE' | translate }}</mat-option>
           <mat-option value="inactive">{{ 'TENANT_LIST.TABLE.INACTIVE' | translate }}</mat-option>
@@ -75,10 +76,6 @@
         {{ 'COMMON.BUTTONS.RESET' | translate }}
       </button>
       }
-      <button class="btn-primary apply-filters" type="button" (click)="applyDraftFilters()">
-        <mat-icon>tune</mat-icon>
-        {{ 'TENANT_LIST.BUTTONS.APPLY_FILTERS' | translate }}
-      </button>
     </div>
   </section>
 

@@ -188,7 +188,7 @@ export class LeaseService {
   private http = inject(HttpClient);
   private readonly apiUrl = `${environment.apiUrl}/leases`;
 
-  getAllLeases(page: number = 1, pageSize: number = 10): Observable<LeaseListResponse> {
+  getAllLeases(page = 1, pageSize = 10): Observable<LeaseListResponse> {
     const params = new HttpParams()
       .set('page', page.toString())
       .set('page_size', pageSize.toString());
@@ -236,11 +236,7 @@ export class LeaseService {
     return this.http.post<LeaseWithDetails>(`${this.apiUrl}/${id}/renew`, request);
   }
 
-  getLeasesByUnit(
-    unitId: number,
-    page: number = 1,
-    pageSize: number = 10
-  ): Observable<LeaseListResponse> {
+  getLeasesByUnit(unitId: number, page = 1, pageSize = 10): Observable<LeaseListResponse> {
     const params = new HttpParams()
       .set('page', page.toString())
       .set('page_size', pageSize.toString());
@@ -248,11 +244,7 @@ export class LeaseService {
     return this.http.get<LeaseListResponse>(`${this.apiUrl}/unit/${unitId}`, { params });
   }
 
-  getLeasesByTenant(
-    tenantId: number,
-    page: number = 1,
-    pageSize: number = 10
-  ): Observable<LeaseListResponse> {
+  getLeasesByTenant(tenantId: number, page = 1, pageSize = 10): Observable<LeaseListResponse> {
     const params = new HttpParams()
       .set('page', page.toString())
       .set('page_size', pageSize.toString());

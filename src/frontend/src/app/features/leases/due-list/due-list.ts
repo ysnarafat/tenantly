@@ -1,4 +1,4 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { MatSortModule } from '@angular/material/sort';
@@ -36,7 +36,7 @@ import { LoadingSpinner } from '../../../shared/components/loading-spinner/loadi
   templateUrl: './due-list.html',
   styleUrls: ['./due-list.scss'],
 })
-export class DueList {
+export class DueList implements OnInit {
   private leaseService = inject(LeaseService);
   private authService = inject(AuthService);
   private snackBar = inject(MatSnackBar);

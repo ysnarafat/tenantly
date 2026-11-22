@@ -144,14 +144,36 @@
   .search-field {
     display: flex;
     align-items: center;
-    height: 36px;
+    // Material's inner wrapper height is driven by this token (default 56px).
+    // Set it to 36px so the field matches the button height exactly.
+    --mat-form-field-container-height: 36px;
+    --mat-form-field-container-vertical-padding: 8px;
+    min-height: 36px;
     min-width: 280px;
     flex: 0 1 auto;
     max-width: calc(100% - 320px);
+
+    .mat-mdc-text-field-wrapper {
+      min-height: 36px;
+    }
+
+    .mat-mdc-text-field-wrapper input {
+      height: 36px;
+    }
+
+    .mat-mdc-form-field-infix {
+      padding: 0 !important;
+    }
+
+    ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+      display: none;
+    }
   }
 
   .search-form-field {
     width: 100%;
+    --mat-form-field-container-height: 36px;
+    --mat-form-field-container-vertical-padding: 8px;
     min-height: 36px;
 
     .mat-mdc-text-field-wrapper {
@@ -172,11 +194,13 @@
     align-items: center;
     gap: 12px;
     flex-shrink: 0;
-    height: 36px;
+    min-height: 36px;
   }
 
   .filter-form-field {
     min-width: 150px;
+    --mat-form-field-container-height: 36px;
+    --mat-form-field-container-vertical-padding: 8px;
     min-height: 36px;
 
     .mat-mdc-text-field-wrapper {
@@ -189,6 +213,8 @@
 
     mat-select {
       min-height: 36px;
+      display: flex;
+      align-items: center;
     }
   }
 }
@@ -198,7 +224,7 @@
   align-items: center;
   gap: 8px;
   margin-left: auto;
-  height: 36px;
+  min-height: 36px;
 }
 
 .results-count {
@@ -207,7 +233,7 @@
   white-space: nowrap;
   display: flex;
   align-items: center;
-  height: 36px;
+  min-height: 36px;
 }
 
 .btn-text {

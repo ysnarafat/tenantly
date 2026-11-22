@@ -1,3 +1,5 @@
+-- Audit and security: PII redaction for trigger-generated audit rows
+
 -- Redact PII and secrets from trigger-generated audit rows.
 --
 -- The audit triggers store whole-row JSON via row_to_json/to_jsonb, which for
@@ -5,7 +7,6 @@
 -- (name, email, phone, national ID, address). mask_audit_json() replaces those
 -- values with a placeholder so the audit trail still records that a field
 -- changed, without persisting the sensitive value.
-
 CREATE OR REPLACE FUNCTION mask_audit_json(data jsonb) RETURNS jsonb AS $$
 DECLARE
     sensitive text[] := ARRAY[
@@ -21,8 +22,6 @@ BEGIN
     END IF;
 
     FOREACH k IN ARRAY sensitive LOOP
-        -- Only redact keys that are present and non-null, so an empty field still
-        -- reads as null in the trail rather than looking like it held a value.
         IF data ? k AND jsonb_typeof(data -> k) <> 'null' THEN
             data := jsonb_set(data, ARRAY[k], '"***REDACTED***"'::jsonb, false);
         END IF;
@@ -32,8 +31,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
--- Rebuild the audit trigger to run row JSON through the mask. Triggers reference
--- the function by name, so replacing the body is enough — no need to recreate them.
+-- Replace the audit trigger to run row JSON through the mask.
 CREATE OR REPLACE FUNCTION audit_trigger_function()
 RETURNS TRIGGER AS $$
 BEGIN

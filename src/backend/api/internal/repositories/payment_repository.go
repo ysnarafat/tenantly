@@ -48,7 +48,7 @@ const paymentWithDetailCols = `
 	COALESCE(u.unit_number, '')    AS unit_number,
 	COALESCE(u.unit_type::text, '') AS unit_type,
 	COALESCE(t.name, '')           AS tenant_name,
-	COALESCE(t.phone_number, '')   AS tenant_phone`
+	COALESCE(pii.phone_number, '')   AS tenant_phone`
 
 const paymentDetailJoinsQ = `
 	LEFT JOIN units u       ON p.unit_id = u.id
@@ -421,7 +421,7 @@ func (r *PaymentRepository) SearchLeases(orgID int, query string) ([]*models.Lea
 			l.id                           AS lease_id,
 			COALESCE(t.id, 0)              AS tenant_id,
 			COALESCE(t.name, '')           AS tenant_name,
-			COALESCE(t.phone_number, '')   AS tenant_phone,
+			COALESCE(pii.phone_number, '')   AS tenant_phone,
 			COALESCE(p.id, 0)             AS property_id,
 			COALESCE(p.property_name, '') AS property_name,
 			COALESCE(b.id, 0)             AS building_id,
@@ -453,7 +453,7 @@ func (r *PaymentRepository) SearchLeases(orgID int, query string) ([]*models.Lea
 				OR LOWER(b.building_name) LIKE $2
 				OR LOWER(b.building_code) LIKE $2
 				OR LOWER(u.unit_number) LIKE $2
-				OR COALESCE(LOWER(t.phone_number), '') LIKE $2
+				OR COALESCE(LOWER(pii.phone_number), '') LIKE $2
 				OR CAST(l.id AS TEXT) LIKE $2
 			)
 		ORDER BY t.name, l.start_date DESC

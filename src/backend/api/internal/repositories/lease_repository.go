@@ -161,12 +161,13 @@ func (r *LeaseRepository) GetByIDWithDetails(id int) (*models.LeaseWithDetails, 
 			l.organization_id, l.end_reason, l.renewed_from_lease_id, l.created_at, l.updated_at,
 			p.property_name, b.building_name, b.building_code,
 			u.unit_number, u.unit_type,
-			t.name as tenant_name, t.phone_number as tenant_phone
+			t.name as tenant_name, pii.phone_number as tenant_phone
 		FROM leases l
 		JOIN units u ON l.unit_id = u.id
 		JOIN buildings b ON u.building_id = b.id
 		JOIN properties p ON b.property_id = p.id
 		JOIN tenants t ON l.tenant_id = t.id
+		LEFT JOIN tenant_pii pii ON pii.tenant_id = t.id
 		WHERE l.id = $1
 	`
 
@@ -237,12 +238,13 @@ func (r *LeaseRepository) GetAll(page, pageSize, orgID int) ([]*models.LeaseWith
 			l.organization_id, l.created_at, l.updated_at,
 			p.property_name, b.building_name, b.building_code,
 			u.unit_number, u.unit_type,
-			t.name as tenant_name, t.phone_number as tenant_phone
+			t.name as tenant_name, pii.phone_number as tenant_phone
 		FROM leases l
 		JOIN units u ON l.unit_id = u.id
 		JOIN buildings b ON u.building_id = b.id
 		JOIN properties p ON b.property_id = p.id
 		JOIN tenants t ON l.tenant_id = t.id
+		LEFT JOIN tenant_pii pii ON pii.tenant_id = t.id
 		WHERE l.organization_id = $1
 		ORDER BY l.created_at DESC
 		LIMIT $2 OFFSET $3
@@ -317,12 +319,13 @@ func (r *LeaseRepository) GetByUnitID(unitID int, page, pageSize, orgID int) ([]
 			l.organization_id, l.created_at, l.updated_at,
 			p.property_name, b.building_name, b.building_code,
 			u.unit_number, u.unit_type,
-			t.name as tenant_name, t.phone_number as tenant_phone
+			t.name as tenant_name, pii.phone_number as tenant_phone
 		FROM leases l
 		JOIN units u ON l.unit_id = u.id
 		JOIN buildings b ON u.building_id = b.id
 		JOIN properties p ON b.property_id = p.id
 		JOIN tenants t ON l.tenant_id = t.id
+		LEFT JOIN tenant_pii pii ON pii.tenant_id = t.id
 		WHERE l.unit_id = $1 AND l.organization_id = $2
 		ORDER BY l.start_date DESC
 		LIMIT $3 OFFSET $4
@@ -397,12 +400,13 @@ func (r *LeaseRepository) GetByTenantID(tenantID int, page, pageSize, orgID int)
 			l.organization_id, l.created_at, l.updated_at,
 			p.property_name, b.building_name, b.building_code,
 			u.unit_number, u.unit_type,
-			t.name as tenant_name, t.phone_number as tenant_phone
+			t.name as tenant_name, pii.phone_number as tenant_phone
 		FROM leases l
 		JOIN units u ON l.unit_id = u.id
 		JOIN buildings b ON u.building_id = b.id
 		JOIN properties p ON b.property_id = p.id
 		JOIN tenants t ON l.tenant_id = t.id
+		LEFT JOIN tenant_pii pii ON pii.tenant_id = t.id
 		WHERE l.tenant_id = $1 AND l.organization_id = $2
 		ORDER BY l.start_date DESC
 		LIMIT $3 OFFSET $4
@@ -813,6 +817,7 @@ func (r *LeaseRepository) GetLeasesDueForMonth(orgID int) ([]models.LeaseDue, er
 		INNER JOIN buildings b ON u.building_id = b.id
 		INNER JOIN properties p ON b.property_id = p.id
 		INNER JOIN tenants t ON l.tenant_id = t.id
+		LEFT JOIN tenant_pii pii ON pii.tenant_id = t.id
 		WHERE l.active = true
 			AND l.organization_id = $2
 			AND l.start_date <= CURRENT_DATE
@@ -896,11 +901,12 @@ const leaseWithDetailsCols = `
 	COALESCE(u.unit_number, '')    AS unit_number,
 	COALESCE(u.unit_type::text, '') AS unit_type,
 	COALESCE(t.name, '')           AS tenant_name,
-	COALESCE(t.phone_number, '')   AS tenant_phone`
+	COALESCE(pii.phone_number, '')   AS tenant_phone`
 
 const leaseDetailJoins = `
 	LEFT JOIN units      u  ON l.unit_id   = u.id
-	LEFT JOIN tenants    t  ON l.tenant_id  = t.id
+	LEFT JOIN tenants    t  ON l.tenant_id = t.id
+	LEFT JOIN tenant_pii pii ON pii.tenant_id = t.id
 	LEFT JOIN buildings  b  ON u.building_id = b.id
 	LEFT JOIN properties pr ON u.property_id = pr.id`
 

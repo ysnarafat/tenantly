@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -468,7 +469,7 @@ func (s *PaymentService) UploadPaymentTransactionAttachment(paymentID, transacti
 	}
 
 	detectedType := http.DetectContentType(data)
-	if !models.AllowedAttachmentContentTypes[detectedType] {
+	if !slices.Contains(models.AllowedAttachmentContentTypes, detectedType) {
 		return nil, fmt.Errorf("unsupported file type %q — only images and PDF files are allowed", detectedType)
 	}
 

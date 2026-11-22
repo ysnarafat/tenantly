@@ -21,7 +21,6 @@ export enum AttachmentStatus {
 export interface Attachment {
   id: number;
   file_name: string;
-  file_path: string;
   content_type: string;
   file_size: number;
   attachment_type: AttachmentType;
@@ -72,10 +71,70 @@ export class AttachmentService {
     return this.http.get<Attachment>(`${this.apiUrl}/${id}`);
   }
 
-  getAttachmentsByEntity(entityType: string, entityId: number): Observable<Attachment[]> {
-    return this.http.get<Attachment[]>(`${this.apiUrl}?${entityType}_id=${entityId}`);
+  // Tenant attachment endpoints
+  getAttachmentsByTenant(tenantId: number): Observable<Attachment[]> {
+    return this.http.get<Attachment[]>(`${this.apiUrl}/tenants/${tenantId}/attachments`);
   }
 
+  uploadTenantAttachment(file: File, tenantId: number): Observable<Attachment> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('tenant_id', tenantId.toString());
+
+    return this.http.post<Attachment>(`${this.apiUrl}/tenants/${tenantId}/attachments`, formData);
+  }
+
+  deleteTenantAttachment(attachmentId: number, tenantId: number): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(
+      `${this.apiUrl}/tenants/${tenantId}/attachments/${attachmentId}`
+    );
+  }
+
+  downloadTenantAttachment(attachmentId: number, tenantId: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/tenants/${tenantId}/attachments/${attachmentId}`, {
+      responseType: 'blob',
+    });
+  }
+
+  // Lease attachment endpoints
+  getAttachmentsByLease(leaseId: number): Observable<Attachment[]> {
+    return this.http.get<Attachment[]>(`${this.apiUrl}/leases/${leaseId}/attachments`);
+  }
+
+  uploadLeaseAttachment(file: File, leaseId: number): Observable<Attachment> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('lease_id', leaseId.toString());
+
+    return this.http.post<Attachment>(`${this.apiUrl}/leases/${leaseId}/attachments`, formData);
+  }
+
+  deleteLeaseAttachment(attachmentId: number, leaseId: number): Observable<{ message: string }> {
+    return this.http.delete<{ message: string }>(
+      `${this.apiUrl}/leases/${leaseId}/attachments/${attachmentId}`
+    );
+  }
+
+  downloadLeaseAttachment(attachmentId: number, leaseId: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/leases/${leaseId}/attachments/${attachmentId}`, {
+      responseType: 'blob',
+    });
+  }
+
+  // Generic method for attachment lists that routes to specific endpoints
+  getAttachmentsByEntity(entityType: string, entityId: number): Observable<Attachment[]> {
+    if (entityType === 'tenant') {
+      return this.getAttachmentsByTenant(entityId);
+    } else if (entityType === 'lease') {
+      return this.getAttachmentsByLease(entityId);
+    } else {
+      // For other entity types, fallback to all attachments
+      return this.getAllAttachments();
+    }
+  }
+
+  // Keep existing generic attachment methods for backwards compatibility
+  // and payment/document entity types
   uploadAttachment(request: CreateAttachmentRequest): Observable<Attachment> {
     const formData = new FormData();
     formData.append('file', request.file);

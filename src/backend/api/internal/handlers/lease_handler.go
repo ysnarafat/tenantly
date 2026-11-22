@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -346,4 +348,149 @@ func (h *LeaseHandler) GetDueSummary(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, summary)
+}
+
+// UploadLeaseAttachment handles POST /leases/:id/attachments
+func (h *LeaseHandler) UploadLeaseAttachment(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lease ID"})
+		return
+	}
+
+	userID := c.GetInt("user_id")
+	userRole := c.GetString("role")
+	orgID := c.GetInt("org_id")
+
+	existingLease, err := h.leaseService.GetLeaseByID(id, orgID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Lease not found"})
+		return
+	}
+	if existingLease.OrganizationID != orgID {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Lease not found"})
+		return
+	}
+
+	if userRole == "Accountant" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "accountants have read-only access to leases"})
+		return
+	}
+
+	file, err := c.FormFile("file")
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "UPLOAD_ATTACHMENT_INVALID_BODY", "No file provided", err)
+		return
+	}
+
+	// Open and read file data
+	data, err := file.Open()
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "UPLOAD_ATTACHMENT_READ_FAILED", "Failed to open uploaded file", err)
+		return
+	}
+	defer func() { _ = data.Close() }()
+
+	dataBytes, err := io.ReadAll(data)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "UPLOAD_ATTACHMENT_READ_FAILED", "Failed to read uploaded file", err)
+		return
+	}
+
+	// Handle attachment upload
+	attachment, err := h.leaseService.UploadLeaseAttachment(id, file.Filename, dataBytes, userID, orgID)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "UPLOAD_ATTACHMENT_FAILED", "Failed to upload attachment", err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, attachment)
+}
+
+// GetLeaseAttachments lists all attachments for a lease
+func (h *LeaseHandler) GetLeaseAttachments(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid lease ID"})
+		return
+	}
+
+	orgID := c.GetInt("org_id")
+
+	attachments, err := h.leaseService.GetLeaseAttachments(id, orgID)
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "GET_LEASE_ATTACHMENTS_FAILED", "Failed to get lease attachments", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"attachments": attachments})
+}
+
+// GetLeaseAttachmentFile returns an attachment's raw bytes for download
+func (h *LeaseHandler) GetLeaseAttachmentFile(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lease ID"})
+		return
+	}
+
+	attachmentID, err := strconv.Atoi(c.Param("attachmentId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attachment ID"})
+		return
+	}
+
+	orgID := c.GetInt("org_id")
+
+	data, fileName, contentType, err := h.leaseService.GetLeaseAttachmentFile(id, attachmentID, orgID)
+	if err != nil {
+		respondError(c, http.StatusNotFound, "GET_LEASE_ATTACHMENT_FAILED", "Attachment not found", err)
+		return
+	}
+
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%q", fileName))
+	c.Data(http.StatusOK, contentType, data)
+}
+
+// DeleteLeaseAttachment removes a mistakenly-uploaded attachment
+func (h *LeaseHandler) DeleteLeaseAttachment(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid lease ID"})
+		return
+	}
+
+	attachmentID, err := strconv.Atoi(c.Param("attachmentId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid attachment ID"})
+		return
+	}
+
+	orgID := c.GetInt("org_id")
+
+	userID := c.GetInt("user_id")
+	userRole := c.GetString("role")
+
+	// Verify lease exists and belongs to org
+	lease, err := h.leaseService.GetLeaseByID(id, orgID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Lease not found"})
+		return
+	}
+	if lease.OrganizationID != orgID {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Lease not found"})
+		return
+	}
+
+	if userRole == "Accountant" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "accountants have read-only access to leases"})
+		return
+	}
+
+	if err := h.leaseService.DeleteLeaseAttachment(id, attachmentID, userID, orgID); err != nil {
+		respondError(c, http.StatusBadRequest, "DELETE_LEASE_ATTACHMENT_FAILED", "Failed to delete attachment", err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Attachment deleted successfully"})
 }

@@ -14,16 +14,14 @@ import (
 // rows already encrypted (nid_encrypted set) or without a plaintext value are
 // skipped, so it is safe to run on every startup. The plaintext nid_number
 // column itself is retained for one release and should be dropped in a later
-// migration once every environment has completed this back-fill.
+// migration once every environment has completed the back-fill.
 func BackfillTenantNID(db *sqlx.DB, nid *appcrypto.NIDProtector) error {
-	// The plaintext column is dropped in a later migration once every
-	// environment has drained it; after that there is nothing to back-fill.
 	var hasColumn bool
 	if err := db.QueryRow(`
 		SELECT EXISTS (
 			SELECT 1 FROM information_schema.columns
 			WHERE table_name = 'tenants' AND column_name = 'nid_number'
-		)`).Scan(&hasColumn); err != nil {
+		`).Scan(&hasColumn); err != nil {
 		return fmt.Errorf("failed to check for nid_number column: %w", err)
 	}
 	if !hasColumn {
@@ -31,22 +29,23 @@ func BackfillTenantNID(db *sqlx.DB, nid *appcrypto.NIDProtector) error {
 	}
 
 	rows, err := db.Query(`
-		SELECT id, nid_number
-		FROM tenants
-		WHERE nid_number IS NOT NULL AND nid_number != '' AND nid_encrypted IS NULL`)
+		SELECT t.id, p.nid_number
+		FROM tenants t
+		JOIN tenant_pii p ON p.tenant_id = t.id
+		WHERE t.nid_number IS NOT NULL AND t.nid_number != '' AND p.nid_encrypted IS NULL`)
 	if err != nil {
 		return fmt.Errorf("failed to query tenants for NID back-fill: %w", err)
 	}
 	defer func() { _ = rows.Close() }()
 
 	type pending struct {
-		id        int
+		tenantID  int
 		plaintext string
 	}
 	var todo []pending
 	for rows.Next() {
 		var p pending
-		if err := rows.Scan(&p.id, &p.plaintext); err != nil {
+		if err := rows.Scan(&p.tenantID, &p.plaintext); err != nil {
 			return fmt.Errorf("failed to scan tenant for NID back-fill: %w", err)
 		}
 		todo = append(todo, p)
@@ -62,15 +61,14 @@ func BackfillTenantNID(db *sqlx.DB, nid *appcrypto.NIDProtector) error {
 	for _, p := range todo {
 		encrypted, err := nid.Encrypt(p.plaintext)
 		if err != nil {
-			return fmt.Errorf("failed to encrypt NID for tenant %d: %w", p.id, err)
+			return fmt.Errorf("failed to encrypt NID for tenant %d: %w", p.tenantID, err)
 		}
 		_, err = db.Exec(`
-			UPDATE tenants
+			UPDATE tenant_pii
 			SET nid_encrypted = $1, nid_last_four = $2, nid_hash = $3, nid_number = NULL
-			WHERE id = $4`,
-			encrypted, appcrypto.LastFour(p.plaintext), nid.Hash(p.plaintext), p.id)
+			WHERE tenant_id = $4`, encrypted, appcrypto.LastFour(p.plaintext), nid.Hash(p.plaintext), p.tenantID)
 		if err != nil {
-			return fmt.Errorf("failed to back-fill NID for tenant %d: %w", p.id, err)
+			return fmt.Errorf("failed to back-fill NID for tenant %d: %w", p.tenantID, err)
 		}
 	}
 

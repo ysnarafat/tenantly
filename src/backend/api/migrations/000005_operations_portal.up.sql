@@ -1,3 +1,6 @@
+-- Operations portal: plans, subscriptions, support cases
+
+-- Billing plans
 CREATE TABLE plans (
     id SERIAL PRIMARY KEY,
     code VARCHAR(30) NOT NULL UNIQUE CHECK (code IN ('basic', 'professional', 'enterprise')),
@@ -36,6 +39,7 @@ VALUES
      ARRAY['Everything in Professional', 'Portfolio-level oversight', 'Priority support'],
      ARRAY['প্রফেশনালের সব সুবিধা', 'পোর্টফোলিও পর্যবেক্ষণ', 'অগ্রাধিকারভিত্তিক সহায়তা'], 3);
 
+-- Organization subscriptions
 CREATE TABLE organization_subscriptions (
     id SERIAL PRIMARY KEY,
     organization_id INTEGER NOT NULL UNIQUE REFERENCES organizations(id) ON DELETE CASCADE,
@@ -63,6 +67,7 @@ SELECT o.id, p.id, CASE WHEN o.active THEN 'active' ELSE 'canceled' END,
 FROM organizations o
 JOIN plans p ON p.code = o.subscription_tier;
 
+-- Sync organization subscription trigger function
 CREATE FUNCTION sync_organization_subscription() RETURNS trigger AS $$
 DECLARE
     selected_plan plans%ROWTYPE;
@@ -97,6 +102,7 @@ CREATE TRIGGER organizations_subscription_tier_update
     WHEN (OLD.subscription_tier IS DISTINCT FROM NEW.subscription_tier)
     EXECUTE FUNCTION sync_organization_subscription();
 
+-- Support cases
 CREATE TABLE support_cases (
     id SERIAL PRIMARY KEY,
     organization_id INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
@@ -120,8 +126,18 @@ CREATE TABLE support_case_notes (
     created_at TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC')
 );
 
+-- Support case messages
+CREATE TABLE support_case_messages (
+    id SERIAL PRIMARY KEY,
+    case_id INTEGER NOT NULL REFERENCES support_cases(id) ON DELETE CASCADE,
+    author_id INTEGER NOT NULL REFERENCES users(id),
+    body TEXT NOT NULL CHECK (length(btrim(body)) > 0),
+    created_at TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC')
+);
+
 CREATE INDEX idx_plans_public ON plans(is_public, is_active, sort_order);
 CREATE INDEX idx_subscriptions_status ON organization_subscriptions(status);
 CREATE INDEX idx_support_cases_status ON support_cases(status, updated_at DESC);
 CREATE INDEX idx_support_cases_organization ON support_cases(organization_id, created_at DESC);
 CREATE INDEX idx_support_case_notes_case ON support_case_notes(case_id, created_at);
+CREATE INDEX idx_support_case_messages_case ON support_case_messages(case_id, created_at, id);

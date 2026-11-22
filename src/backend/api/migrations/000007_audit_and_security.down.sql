@@ -1,4 +1,4 @@
--- Restore the original, non-redacting audit trigger function.
+-- Restore the original (unmasked) audit trigger and drop the masking helper.
 CREATE OR REPLACE FUNCTION audit_trigger_function()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -18,3 +18,5 @@ BEGIN
     RETURN NULL;
 END;
 $$ LANGUAGE plpgsql;
+
+DROP FUNCTION IF EXISTS mask_audit_json(jsonb);

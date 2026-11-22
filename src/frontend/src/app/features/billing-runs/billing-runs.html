@@ -238,7 +238,7 @@
       <tbody>
         @for (item of billingRun.items; track item.id; let i = $index) {
         <tr [attr.testId]="'unit-row-{{ item.unit_number }}'" class="table-row">
-          <td scope="row" class="unit-cell">
+          <td class="unit-cell">
             <div class="unit-info">
               <span class="unit-badge">{{ item.unit_number }}</span>
               @if (billingRun.status === 'Draft') {
